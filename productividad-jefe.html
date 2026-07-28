@@ -675,6 +675,7 @@ const SEG_CAMPOS = [
   { key: "incidenteMedioAmb", label: "Incidente Medio Amb." }
 ];
 let seguridad = { accidenteCTP: 0, accidenteSTP: 0, cuasiAccidente: 0, incidenteMedioAmb: 0 };
+let segConfirmado = false; /* se activa al 1er "SÍ", evita repetir el aviso en el mismo reporte */
 
 window.segCambiar = function (campo, delta) {
   const nuevo = Math.max(0, Math.min(5, (seguridad[campo] || 0) + delta));
@@ -706,6 +707,8 @@ function renderSeguridad() {
 }
 
 window.agregarEquipoConConfirmacion = function () {
+  /* Mostrar aviso solo la primera vez que hay ceros (1 vez por reporte) */
+  if (segConfirmado) { agregarEquipo(); return; }
   const ceros = SEG_CAMPOS.filter(c => (seguridad[c.key] || 0) === 0).map(c => c.label);
   if (!ceros.length) { agregarEquipo(); return; }
   const lista = ceros.map(l => `"${l}"`).join(", ");
@@ -716,7 +719,18 @@ window.agregarEquipoConConfirmacion = function () {
 
 window.confirmarSeguridad = function (continuar) {
   document.getElementById("modal-seguridad").classList.remove("visible");
-  if (continuar) agregarEquipo();
+  if (continuar) { segConfirmado = true; agregarEquipo(); }
+};
+
+/* Actualiza el totalizador MIXTO en tiempo real sin rerenderizar la card */
+window.actualizarTotalMixto = function (id) {
+  const eq = equipos.find(e => e.id === id);
+  if (!eq) return;
+  const el = document.getElementById("total-mixto-" + id);
+  if (!el) return;
+  const ciclos  = (parseInt(eq.ciclosBereuter) || 0) + (parseInt(eq.ciclosWyssen)  || 0);
+  const arboles = (parseInt(eq.arbolesBereuter)|| 0) + (parseInt(eq.arbolesWyssen) || 0);
+  el.innerHTML = `Total: <b>${ciclos} ciclos</b> · <b>${arboles} árboles</b>`;
 };
 
 /* ============================================================
@@ -993,13 +1007,13 @@ function camposPorTipo(eq) {
           <div style="flex:1">
             <label>N° Ciclos <span class="req">*</span></label>
             <input type="text" id="in-${eq.id}-ciclosBereuter" inputmode="numeric" value="${esc(eq.ciclosBereuter)}"
-              oninput="setCampo('${eq.id}','ciclosBereuter',this.value,false)">
+              oninput="setCampo('${eq.id}','ciclosBereuter',this.value,false);actualizarTotalMixto('${eq.id}')">
             <div class="msg-error" id="err-${eq.id}-ciclosBereuter">Campo obligatorio</div>
           </div>
           <div style="flex:1">
             <label>Cant. Árboles <span class="req">*</span></label>
             <input type="text" id="in-${eq.id}-arbolesBereuter" inputmode="numeric" value="${esc(eq.arbolesBereuter)}"
-              oninput="setCampo('${eq.id}','arbolesBereuter',this.value,false)">
+              oninput="setCampo('${eq.id}','arbolesBereuter',this.value,false);actualizarTotalMixto('${eq.id}')">
             <div class="msg-error" id="err-${eq.id}-arbolesBereuter">Campo obligatorio</div>
           </div>
         </div>
@@ -1010,13 +1024,13 @@ function camposPorTipo(eq) {
           <div style="flex:1">
             <label>N° Ciclos <span class="req">*</span></label>
             <input type="text" id="in-${eq.id}-ciclosWyssen" inputmode="numeric" value="${esc(eq.ciclosWyssen)}"
-              oninput="setCampo('${eq.id}','ciclosWyssen',this.value,false)">
+              oninput="setCampo('${eq.id}','ciclosWyssen',this.value,false);actualizarTotalMixto('${eq.id}')">
             <div class="msg-error" id="err-${eq.id}-ciclosWyssen">Campo obligatorio</div>
           </div>
           <div style="flex:1">
             <label>Cant. Árboles <span class="req">*</span></label>
             <input type="text" id="in-${eq.id}-arbolesWyssen" inputmode="numeric" value="${esc(eq.arbolesWyssen)}"
-              oninput="setCampo('${eq.id}','arbolesWyssen',this.value,false)">
+              oninput="setCampo('${eq.id}','arbolesWyssen',this.value,false);actualizarTotalMixto('${eq.id}')">
             <div class="msg-error" id="err-${eq.id}-arbolesWyssen">Campo obligatorio</div>
           </div>
         </div>
@@ -1596,6 +1610,7 @@ window.guardarReporte = async function () {
 
 function limpiarFormulario() {
   seguridad = { accidenteCTP: 0, accidenteSTP: 0, cuasiAccidente: 0, incidenteMedioAmb: 0 };
+  segConfirmado = false;
   renderSeguridad();
   equipos = [];
   contadorEq = 0;
