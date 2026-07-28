@@ -722,15 +722,24 @@ window.confirmarSeguridad = function (continuar) {
   if (continuar) { segConfirmado = true; agregarEquipo(); }
 };
 
-/* Actualiza el totalizador MIXTO recibiendo los valores directamente */
+/* Botón 🔄 Calcular del bloque MIXTO */
 window.actualizarTotalMixto = function (id) {
   const eq = equipos.find(e => e.id === id);
-  if (!eq) return;
   const el = document.getElementById("total-mixto-" + id);
   if (!el) return;
-  const ciclos  = (parseInt(eq.ciclosBereuter)  || 0) + (parseInt(eq.ciclosWyssen)  || 0);
-  const arboles = (parseInt(eq.arbolesBereuter) || 0) + (parseInt(eq.arbolesWyssen) || 0);
-  el.innerHTML = `Total: <b>${ciclos} ciclos</b> · <b>${arboles} árboles</b>`;
+  /* Leer directo de los inputs del DOM para no depender del estado */
+  const leer = campo => {
+    const inp = el.closest('.equipo-card')?.querySelector(`[id$="-${campo}"]`);
+    return parseInt(inp?.value) || 0;
+  };
+  const cb = leer("ciclosBereuter"),  cw = leer("ciclosWyssen");
+  const ab = leer("arbolesBereuter"), aw = leer("arbolesWyssen");
+  /* También sincronizar el estado */
+  if (eq) {
+    eq.ciclosBereuter  = cb; eq.ciclosWyssen  = cw;
+    eq.arbolesBereuter = ab; eq.arbolesWyssen = aw;
+  }
+  el.innerHTML = `<b>${cb + cw} ciclos</b> · <b>${ab + aw} árboles</b>`;
 };
 
 /* ============================================================
@@ -1035,9 +1044,11 @@ function camposPorTipo(eq) {
           </div>
         </div>
       </div>
-      <div class="horas-calc" style="margin-top:6px">
-        Total: <b>${(parseInt(eq.ciclosBereuter)||0)+(parseInt(eq.ciclosWyssen)||0)} ciclos</b> · 
-        <b>${(parseInt(eq.arbolesBereuter)||0)+(parseInt(eq.arbolesWyssen)||0)} árboles</b>
+      <div style="display:flex;align-items:center;gap:10px;background:var(--verde-claro);border-radius:8px;padding:8px 12px;margin-top:6px">
+        <button onclick="actualizarTotalMixto('${eq.id}')" style="background:var(--verde-medio);border:none;color:#fff;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;flex:none">🔄 Calcular</button>
+        <span id="total-mixto-${eq.id}" style="font-size:14px;color:var(--verde-oscuro);font-weight:600">
+          ${(parseInt(eq.ciclosBereuter)||0)+(parseInt(eq.ciclosWyssen)||0)} ciclos · ${(parseInt(eq.arbolesBereuter)||0)+(parseInt(eq.arbolesWyssen)||0)} árboles
+        </span>
       </div>`;
     } else {
       html += `<div class="fila">${inputNum("ciclos", "N° Ciclos")}${inputNum("arboles", "Cant. Árboles")}</div>`;
