@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a3a1a">
+<title>Configuración — Corte Alto</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" type="image/png" href="logo.png">
+<style>
+  :root{
+    --verde-oscuro:#1a3a1a;
+    --verde-medio:#2d5a2d;
+    --verde-claro:#e8f0e8;
+    --gris-fondo:#f4f6f4;
+    --borde:#d5ded5;
+    --rojo:#c0392b;
+    --ambar:#b8860b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--gris-fondo);
+    color:#222;
+    padding-bottom:40px;
+  }
+  header{
+    background:linear-gradient(135deg,var(--verde-oscuro),var(--verde-medio));
+    color:#fff;
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    position:sticky;
+    top:0;
+    z-index:50;
+    box-shadow:0 2px 6px rgba(0,0,0,.25);
+  }
+  header .back{
+    font-size:22px;
+    color:#fff;
+    text-decoration:none;
+    line-height:1;
+    padding:4px 8px 6px 0;
+  }
+  header h1{font-size:17px;font-weight:700;line-height:1.2}
+  header p{font-size:12px;opacity:.85}
+
+  .tabs{
+    display:flex;
+    background:#fff;
+    border-bottom:1px solid var(--borde);
+    position:sticky;
+    top:58px;
+    z-index:40;
+    overflow-x:auto;
+  }
+  .tabs button{
+    flex:1;
+    min-width:90px;
+    border:none;
+    background:none;
+    padding:12px 6px;
+    font-size:13px;
+    font-weight:600;
+    color:#666;
+    border-bottom:3px solid transparent;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .tabs button.activo{color:var(--verde-medio);border-bottom-color:var(--verde-medio)}
+
+  main{max-width:640px;margin:0 auto;padding:14px}
+
+  .panel{display:none}
+  .panel.activo{display:block}
+
+  .item-card{
+    background:#fff;
+    border:1px solid var(--borde);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .item-info{flex:1;min-width:0}
+  .item-titulo{font-size:14px;font-weight:700;color:#222}
+  .item-sub{font-size:12px;color:#777;margin-top:2px}
+  .item-acciones{display:flex;gap:14px;flex:none}
+  .item-acciones button{
+    background:none;border:none;font-size:18px;cursor:pointer;padding:2px;
+  }
+  .icon-editar{color:var(--verde-medio)}
+  .icon-eliminar{color:var(--rojo)}
+
+  .btn-agregar{
+    width:100%;
+    background:#fff;
+    border:2px dashed var(--verde-medio);
+    color:var(--verde-medio);
+    padding:13px;border-radius:10px;
+    font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;
+  }
+
+  .vacio{
+    text-align:center;
+    color:#999;
+    font-size:13px;
+    padding:30px 10px;
+  }
+
+  /* ==== Modal ==== */
+  .overlay{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.45);
+    z-index:100;
+    align-items:flex-end;
+    justify-content:center;
+  }
+  .overlay.activo{display:flex}
+  .modal{
+    background:#fff;
+    width:100%;
+    max-width:640px;
+    border-radius:16px 16px 0 0;
+    padding:18px 16px 22px;
+    max-height:88vh;
+    overflow-y:auto;
+  }
+  .modal h3{font-size:16px;color:var(--verde-oscuro);margin-bottom:14px}
+  label{display:block;font-size:12px;font-weight:600;color:#444;margin:10px 0 4px}
+  input,select{
+    width:100%;
+    padding:11px 10px;
+    font-size:15px;
+    border:1px solid var(--borde);
+    border-radius:8px;
+    background:#fff;
+    color:#222;
+    font-family:inherit;
+  }
+  input:focus,select:focus{outline:2px solid var(--verde-medio);border-color:var(--verde-medio)}
+
+  .op-lista{margin-top:6px}
+  .op-item{
+    display:flex;gap:6px;align-items:center;
+    margin-bottom:6px;
+  }
+  .op-item input{flex:1}
+  .op-item .btn-x{
+    background:#fde8e6;border:none;color:var(--rojo);
+    width:38px;height:42px;border-radius:8px;font-size:16px;cursor:pointer;flex:none;
+  }
+  .btn-agregar-op{
+    background:none;
+    border:1.5px dashed var(--verde-medio);
+    color:var(--verde-medio);
+    width:100%;padding:9px;border-radius:8px;
+    font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;
+  }
+
+  .modal-acciones{display:flex;gap:10px;margin-top:18px}
+  .btn-primario{
+    flex:1;
+    background:var(--verde-medio);
+    color:#fff;border:none;
+    padding:14px;border-radius:10px;
+    font-size:15px;font-weight:700;cursor:pointer;
+  }
+  .btn-cancelar{
+    flex:1;
+    background:#fff;border:1.5px solid var(--borde);color:#666;
+    padding:14px;border-radius:10px;
+    font-size:15px;font-weight:700;cursor:pointer;
+  }
+
+  /* ==== Pantalla de clave ==== */
+  .check-fila{display:flex;align-items:center;gap:8px;padding:6px 0}
+  .check-fila input{width:auto;padding:0}
+  .check-fila label{margin:0;font-size:14px;font-weight:500;color:#222}
+
+  #pantalla-clave{
+    position:fixed;inset:0;background:var(--gris-fondo);
+    display:flex;align-items:center;justify-content:center;
+    z-index:200;padding:20px;
+  }
+  .clave-card{
+    background:#fff;border-radius:16px;padding:28px 24px;
+    max-width:340px;width:100%;text-align:center;
+    box-shadow:0 4px 20px rgba(0,0,0,.1);
+  }
+  .clave-card h2{color:var(--verde-oscuro);font-size:18px;margin-bottom:6px}
+  .clave-card p{color:#777;font-size:13px;margin-bottom:16px}
+  .clave-card input{text-align:center;letter-spacing:4px;font-size:20px}
+  .clave-error{color:var(--rojo);font-size:12px;margin-top:8px;display:none}
+  .clave-error.visible{display:block}
+
+  #toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--verde-oscuro);color:#fff;
+    padding:10px 20px;border-radius:20px;font-size:13px;
+    opacity:0;pointer-events:none;transition:opacity .3s;
+    z-index:300;
+  }
+  #toast.visible{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="pantalla-clave">
+  <div class="clave-card">
+    <h2>🌲 Configuración</h2>
+    <p>Ingresa la clave de acceso</p>
+    <input type="password" id="input-clave" inputmode="numeric" maxlength="6" placeholder="••••">
+    <button class="btn-primario" style="margin-top:14px" onclick="validarClave()">Ingresar</button>
+    <div class="clave-error" id="clave-error">Clave incorrecta</div>
+  </div>
+</div>
+
+<div id="app-contenido" style="display:none">
+
+<header>
+  <a href="index.html" class="back">←</a>
+  <div>
+    <h1>Configuración</h1>
+    <p>Fundos, líneas, jefes y equipos</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn activo" data-tab="fundos" onclick="cambiarTab('fundos')">Fundos</button>
+  <button class="tab-btn" data-tab="lineas" onclick="cambiarTab('lineas')">Líneas</button>
+  <button class="tab-btn" data-tab="jefes" onclick="cambiarTab('jefes')">Jefes</button>
+  <button class="tab-btn" data-tab="calibradores" onclick="cambiarTab('calibradores')">Calibradores</button>
+  <button class="tab-btn" data-tab="operadores" onclick="cambiarTab('operadores')">Operadores</button>
+  <button class="tab-btn" data-tab="equipos" onclick="cambiarTab('equipos')">Equipos</button>
+</div>
+
+<main>
+
+  <!-- ===== PANEL FUNDOS ===== -->
+  <div class="panel activo" id="panel-fundos">
+    <div id="lista-fundos"></div>
+    <button class="btn-agregar" onclick="abrirModalFundo()">+ Agregar fundo</button>
+  </div>
+
+  <!-- ===== PANEL LÍNEAS ===== -->
+  <div class="panel" id="panel-lineas">
+    <div id="lista-lineas"></div>
+    <button class="btn-agregar" onclick="abrirModalLinea()">+ Agregar línea</button>
+  </div>
+
+  <!-- ===== PANEL JEFES ===== -->
+  <div class="panel" id="panel-jefes">
+    <div id="lista-jefes"></div>
+    <button class="btn-agregar" onclick="abrirModalJefe()">+ Agregar jefe de faena</button>
+  </div>
+
+  <!-- ===== PANEL CALIBRADORES ===== -->
+  <div class="panel" id="panel-calibradores">
+    <div id="lista-calibradores"></div>
+    <button class="btn-agregar" onclick="abrirModalCalibrador()">+ Agregar calibrador</button>
+  </div>
+
+  <!-- ===== PANEL OPERADORES ===== -->
+  <div class="panel" id="panel-operadores">
+    <div id="lista-operadores"></div>
+    <button class="btn-agregar" onclick="abrirModalOperador()">+ Agregar operador</button>
+  </div>
+
+  <!-- ===== PANEL EQUIPOS ===== -->
+  <div class="panel" id="panel-equipos">
+    <div id="lista-equipos"></div>
+    <button class="btn-agregar" onclick="abrirModalEquipo()">+ Agregar equipo</button>
+  </div>
+
+</main>
+
+</div>
+
+<!-- ===== MODAL FUNDO ===== -->
+<div class="overlay" id="modal-fundo">
+  <div class="modal">
+    <h3 id="titulo-modal-fundo">Agregar fundo</h3>
+    <input type="hidden" id="fundo-id">
+    <label>Nombre del fundo <span style="color:var(--rojo)">*</span></label>
+    <input type="text" id="fundo-nombre" placeholder="Ej: LOS ALPES HIJ1">
+    <label>Código <span style="color:var(--rojo)">*</span></label>
+    <input type="text" id="fundo-codigo" placeholder="Ej: 729" inputmode="numeric">
+    <div class="modal-acciones">
+      <button class="btn-cancelar" onclick="cerrarModal('modal-fundo')">Cancelar</button>
+      <button class="btn-primario" onclick="guardarFundo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL LÍNEA ===== -->
+<div class="overlay" id="modal-linea">
+  <div class="modal">
+    <h3 id="titulo-modal-linea">Agregar línea</h3>
+    <input type="hidden" id="linea-id">
+    <label>Nombre de la línea <span style="color:var(--rojo)">*</span></label>
+    <input type="text" id="linea-nombre" placeholder="Ej: LÍNEA T1">
+    <label>Fundo(s) asociado(s) <span style="color:var(--rojo)">*</span></label>
+    <div id="linea-fundos-check" style="border:1px solid var(--borde);border-radius:8px;padding:8px 10px;max-height:180px;overflow-y:auto"></div>
+    <div class="modal-acciones">
+      <button class="btn-cancelar" onclick="cerrarModal('modal-linea')">Cancelar</button>
+      <button class="btn-primario" onclick="guardarLinea()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL JEFE ===== -->
+<div class="overlay" id="modal-jefe">
+  <div class="modal">
+    <h3 id="titulo-modal-jefe">Agregar jefe de faena</h3>
+    <input type="hidden" id="jefe-id">
+    <label>Nombre completo <span style="color:var(--rojo)">*</span></label>
+    <input type="text" id="jefe-nombre" placeholder="Ej: GABRIEL CAYUMAN">
+    <div class="modal-acciones">
+      <button class="btn-cancelar" onclick="cerrarModal('modal-jefe')">Cancelar</button>
+      <button class="btn-primario" onclick="guardarJefe()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CALIBRADOR ===== -->
+<div class="overlay" id="modal-calibrador">
+  <div class="modal">
+    <h3 id="titulo-modal-calibrador">Agregar calibrador</h3>
+    <input type="hidden" id="calibrador-id">
+    <label>Nombre completo <span style="color:var(--rojo)">*</span></label>
+    <input type="text" id="calibrador-nombre" placeholder="Ej: JUAN PÉREZ">
+    <label>RUT</label>
+    <input type="text" id="calibrador-rut" placeholder="Ej: 22.284.895-4">
+    <label>Fecha de acreditación</label>
+    <input type="date" id="calibrador-acreditacion">
+    <label>Vencimiento de acreditación</label>
+    <input type="date" id="calibrador-vencimiento">
+    <div class="modal-acciones">
+      <button class="btn-cancelar" onclick="cerrarModal('modal-calibrador')">Cancelar</button>
+      <button class="btn-primario" onclick="guardarCalibrador()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL OPERADOR ===== -->
+<div class="overlay" id="modal-operador">
+  <div class="modal">
+    <h3 id="titulo-modal-operador">Agregar operador</h3>
+    <input type="hidden" id="operador-id">
+    <label>Nombre completo <span style="color:var(--rojo)">*</span></label>
+    <input type="text" id="operador-nombre" placeholder="Ej: FLAVIO ACUÑA">
+    <label>Función(es) <span style="color:var(--rojo)">*</span></label>
+    <div style="border:1px solid var(--borde);border-radius:8px;padding:8px 10px">
+      <div class="check-fila"><input type="checkbox" id="fn-trozado" value="OP TROZADO"><label for="fn-trozado">Op. Trozado</label></div>
+      <div class="check-fila"><input type="checkbox" id="fn-clasificado" value="OP CLASIFICADO"><label for="fn-clasificado">Op. Clasificado</label></div>
+      <div class="check-fila"><input type="checkbox" id="fn-volteo" value="VOLTEO"><label for="fn-volteo">Volteo</label></div>
+      <div class="check-fila"><input type="checkbox" id="fn-madereo-skidder" value="MADEREO SKIDDER"><label for="fn-madereo-skidder">Madereo (Skidder)</label></div>
+      <div class="check-fila"><input type="checkbox" id="fn-madereo-torre" value="MADEREO TORRE"><label for="fn-madereo-torre">Madereo (Torre)</label></div>
+    </div>
+    <div class="modal-acciones">
+      <button class="btn-cancelar" onclick="cerrarModal('modal-operador')">Cancelar</button>
+      <button class="btn-primario" onclick="guardarOperador()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL EQUIPO ===== -->
+<div class="overlay" id="modal-equipo">
+  <div class="modal">
+    <h3 id="titulo-modal-equipo">Agregar equipo</h3>
+    <input type="hidden" id="equipo-id">
+    <label>Nombre del equipo <span style="color:var(--rojo)">*</span></label>
+    <input type="text" id="equipo-nombre" placeholder="Ej: ALPINE-1">
+    <label>Tipo de equipo <span style="color:var(--rojo)">*</span></label>
+    <select id="equipo-tipo" onchange="actualizarVisibilidadOperadores(); renderCheckOperadoresEnEquipo();">
+      <option value="">Selecciona...</option>
+      <option value="TORRE">TORRE</option>
+      <option value="SKIDDER">SKIDDER</option>
+      <option value="PROCESADOR">PROCESADOR</option>
+      <option value="SHOVEL">SHOVEL</option>
+      <option value="HUINCHE DE ASISTENCIA">HUINCHE DE ASISTENCIA</option>
+      <option value="GARRA ORDENADORA">GARRA ORDENADORA</option>
+    </select>
+    <label>Rol del equipo <span style="color:var(--rojo)">*</span></label>
+    <select id="equipo-rol" onchange="actualizarVisibilidadOperadores()">
+      <option value="PRINCIPAL">Principal</option>
+      <option value="APOYO">Apoyo</option>
+    </select>
+    <div id="bloque-operadores-equipo">
+      <label>Operadores anexados</label>
+      <div id="op-check-lista" style="border:1px solid var(--borde);border-radius:8px;padding:8px 10px;max-height:220px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-acciones">
+      <button class="btn-cancelar" onclick="cerrarModal('modal-equipo')">Cancelar</button>
+      <button class="btn-primario" onclick="guardarEquipo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+/* ============================================================
+   FIREBASE — CONFIGURACIÓN
+   ⚠️ FABIÁN: pega aquí el mismo bloque firebaseConfig que usan
+   inicio-faena.html, produccion-diaria.html y productividad-jefe.html
+   (proyecto reporte-inicio-faena-forestal). Solo reemplaza los valores.
+   ============================================================ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  initializeFirestore, persistentLocalCache,
+  collection, addDoc, updateDoc, deleteDoc, doc,
+  query, orderBy, getDocs, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+  authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
+  projectId: "reporte-inicio-faena-forestal",
+  storageBucket: "reporte-inicio-faena-forestal.appspot.com",
+  messagingSenderId: "962534414054",
+  appId: "1:962534414054:web:fa43371d31413fc0524d27"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+
+const COL_FUNDOS = "config_fundos";
+const COL_LINEAS = "config_lineas";
+const COL_JEFES = "config_jefes_faena";
+const COL_CALIBRADORES = "config_calibradores";
+const COL_OPERADORES = "config_operadores";
+const COL_EQUIPOS = "config_equipos";
+
+const CLAVE_ACCESO = "1771";
+
+/* ============================================================
+   ESTADO EN MEMORIA
+   ============================================================ */
+let fundos = [];
+let lineas = [];
+let jefes = [];
+let calibradores = [];
+let operadores = [];
+let equipos = [];
+
+/* ============================================================
+   CONTROL DE ACCESO
+   ============================================================ */
+window.validarClave = function(){
+  const valor = document.getElementById('input-clave').value.trim();
+  if (valor === CLAVE_ACCESO){
+    document.getElementById('pantalla-clave').style.display = 'none';
+    document.getElementById('app-contenido').style.display = 'block';
+    iniciarEscuchas();
+  } else {
+    document.getElementById('clave-error').classList.add('visible');
+  }
+};
+document.getElementById('input-clave').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') window.validarClave();
+});
+
+/* ============================================================
+   TABS
+   ============================================================ */
+window.cambiarTab = function(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('activo'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('activo'));
+  document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('activo');
+  document.getElementById(`panel-${tab}`).classList.add('activo');
+};
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  setTimeout(()=>t.classList.remove('visible'), 2200);
+}
+
+/* ============================================================
+   ESCUCHAS EN TIEMPO REAL
+   ============================================================ */
+function iniciarEscuchas(){
+  onSnapshot(query(collection(db, COL_FUNDOS), orderBy('nombre')), snap=>{
+    fundos = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderFundos();
+    renderSelectFundoEnLinea();
+  });
+  onSnapshot(query(collection(db, COL_LINEAS), orderBy('nombre')), snap=>{
+    lineas = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderLineas();
+  });
+  onSnapshot(query(collection(db, COL_JEFES), orderBy('nombre')), snap=>{
+    jefes = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderJefes();
+  });
+  onSnapshot(query(collection(db, COL_CALIBRADORES), orderBy('nombre')), snap=>{
+    calibradores = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderCalibradores();
+  });
+  onSnapshot(query(collection(db, COL_OPERADORES), orderBy('nombre')), snap=>{
+    operadores = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderOperadores();
+  });
+  onSnapshot(query(collection(db, COL_EQUIPOS), orderBy('nombre')), snap=>{
+    equipos = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderEquipos();
+  });
+}
+
+/* ============================================================
+   RENDER — FUNDOS
+   ============================================================ */
+function renderFundos(){
+  const cont = document.getElementById('lista-fundos');
+  if(fundos.length === 0){
+    cont.innerHTML = '<div class="vacio">Sin fundos registrados</div>';
+    return;
+  }
+  cont.innerHTML = fundos.map(f => `
+    <div class="item-card">
+      <div class="item-info">
+        <div class="item-titulo">${f.nombre}</div>
+        <div class="item-sub">Código ${f.codigo}</div>
+      </div>
+      <div class="item-acciones">
+        <button class="icon-editar" onclick="editarFundo('${f.id}')">✏️</button>
+        <button class="icon-eliminar" onclick="eliminarFundo('${f.id}','${f.nombre.replace(/'/g,"\\'")}')">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.abrirModalFundo = function(){
+  document.getElementById('titulo-modal-fundo').textContent = 'Agregar fundo';
+  document.getElementById('fundo-id').value = '';
+  document.getElementById('fundo-nombre').value = '';
+  document.getElementById('fundo-codigo').value = '';
+  document.getElementById('modal-fundo').classList.add('activo');
+};
+
+window.editarFundo = function(id){
+  const f = fundos.find(x=>x.id===id);
+  if(!f) return;
+  document.getElementById('titulo-modal-fundo').textContent = 'Editar fundo';
+  document.getElementById('fundo-id').value = id;
+  document.getElementById('fundo-nombre').value = f.nombre;
+  document.getElementById('fundo-codigo').value = f.codigo;
+  document.getElementById('modal-fundo').classList.add('activo');
+};
+
+window.guardarFundo = async function(){
+  const id = document.getElementById('fundo-id').value;
+  const nombre = document.getElementById('fundo-nombre').value.trim().toUpperCase();
+  const codigo = document.getElementById('fundo-codigo').value.trim();
+  if(!nombre || !codigo){ toast('Completa nombre y código'); return; }
+  try{
+    if(id){
+      await updateDoc(doc(db, COL_FUNDOS, id), { nombre, codigo });
+      toast('Fundo actualizado');
+    } else {
+      await addDoc(collection(db, COL_FUNDOS), { nombre, codigo });
+      toast('Fundo agregado');
+    }
+    cerrarModal('modal-fundo');
+  } catch(e){
+    toast('Error al guardar: ' + e.message);
+  }
+};
+
+window.eliminarFundo = async function(id, nombre){
+  if(!confirm(`¿Eliminar el fundo "${nombre}"?`)) return;
+  try{
+    await deleteDoc(doc(db, COL_FUNDOS, id));
+    toast('Fundo eliminado');
+  } catch(e){
+    toast('Error al eliminar: ' + e.message);
+  }
+};
+
+/* ============================================================
+   RENDER — LÍNEAS
+   ============================================================ */
+function renderLineas(){
+  const cont = document.getElementById('lista-lineas');
+  if(lineas.length === 0){
+    cont.innerHTML = '<div class="vacio">Sin líneas registradas</div>';
+    return;
+  }
+  cont.innerHTML = lineas.map(l => {
+    const listaFundos = obtenerFundosDeLinea(l).join(', ');
+    return `
+    <div class="item-card">
+      <div class="item-info">
+        <div class="item-titulo">${l.nombre}</div>
+        <div class="item-sub">${listaFundos}</div>
+      </div>
+      <div class="item-acciones">
+        <button class="icon-editar" onclick="editarLinea('${l.id}')">✏️</button>
+        <button class="icon-eliminar" onclick="eliminarLinea('${l.id}','${l.nombre.replace(/'/g,"\\'")}')">🗑</button>
+      </div>
+    </div>
+  `;}).join('');
+}
+
+function obtenerFundosDeLinea(l){
+  if(Array.isArray(l.fundos)) return l.fundos;
+  if(l.fundo) return [l.fundo];
+  return [];
+}
+
+function renderSelectFundoEnLinea(){
+  const cont = document.getElementById('linea-fundos-check');
+  if(!cont) return;
+  const seleccionados = Array.from(cont.querySelectorAll('input[type=checkbox]:checked')).map(i=>i.value);
+  cont.innerHTML = fundos.map((f,i) => `
+    <div class="check-fila">
+      <input type="checkbox" id="chk-fundo-${i}" value="${f.nombre}" ${seleccionados.includes(f.nombre) ? 'checked' : ''}>
+      <label for="chk-fundo-${i}">${f.nombre}</label>
+    </div>
+  `).join('') || '<div style="font-size:13px;color:#999">Primero agrega fundos en la pestaña Fundos</div>';
+}
+
+window.abrirModalLinea = function(){
+  document.getElementById('titulo-modal-linea').textContent = 'Agregar línea';
+  document.getElementById('linea-id').value = '';
+  document.getElementById('linea-nombre').value = '';
+  renderSelectFundoEnLinea();
+  document.querySelectorAll('#linea-fundos-check input[type=checkbox]').forEach(c=>c.checked=false);
+  document.getElementById('modal-linea').classList.add('activo');
+};
+
+window.editarLinea = function(id){
+  const l = lineas.find(x=>x.id===id);
+  if(!l) return;
+  document.getElementById('titulo-modal-linea').textContent = 'Editar línea';
+  document.getElementById('linea-id').value = id;
+  document.getElementById('linea-nombre').value = l.nombre;
+  renderSelectFundoEnLinea();
+  const fundosLinea = obtenerFundosDeLinea(l);
+  document.querySelectorAll('#linea-fundos-check input[type=checkbox]').forEach(c=>{
+    c.checked = fundosLinea.includes(c.value);
+  });
+  document.getElementById('modal-linea').classList.add('activo');
+};
+
+window.guardarLinea = async function(){
+  const id = document.getElementById('linea-id').value;
+  const nombre = document.getElementById('linea-nombre').value.trim().toUpperCase();
+  const fundosSeleccionados = Array.from(
+    document.querySelectorAll('#linea-fundos-check input[type=checkbox]:checked')
+  ).map(c => c.value);
+  if(!nombre || fundosSeleccionados.length === 0){ toast('Completa nombre y al menos un fundo'); return; }
+  try{
+    if(id){
+      await updateDoc(doc(db, COL_LINEAS, id), { nombre, fundos: fundosSeleccionados });
+      toast('Línea actualizada');
+    } else {
+      await addDoc(collection(db, COL_LINEAS), { nombre, fundos: fundosSeleccionados });
+      toast('Línea agregada');
+    }
+    cerrarModal('modal-linea');
+  } catch(e){
+    toast('Error al guardar: ' + e.message);
+  }
+};
+
+window.eliminarLinea = async function(id, nombre){
+  if(!confirm(`¿Eliminar la línea "${nombre}"?`)) return;
+  try{
+    await deleteDoc(doc(db, COL_LINEAS, id));
+    toast('Línea eliminada');
+  } catch(e){
+    toast('Error al eliminar: ' + e.message);
+  }
+};
+
+/* ============================================================
+   RENDER — JEFES DE FAENA
+   ============================================================ */
+function renderJefes(){
+  const cont = document.getElementById('lista-jefes');
+  if(jefes.length === 0){
+    cont.innerHTML = '<div class="vacio">Sin jefes de faena registrados</div>';
+    return;
+  }
+  cont.innerHTML = jefes.map(j => `
+    <div class="item-card">
+      <div class="item-info">
+        <div class="item-titulo">${j.nombre}</div>
+      </div>
+      <div class="item-acciones">
+        <button class="icon-editar" onclick="editarJefe('${j.id}')">✏️</button>
+        <button class="icon-eliminar" onclick="eliminarJefe('${j.id}','${j.nombre.replace(/'/g,"\\'")}')">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.abrirModalJefe = function(){
+  document.getElementById('titulo-modal-jefe').textContent = 'Agregar jefe de faena';
+  document.getElementById('jefe-id').value = '';
+  document.getElementById('jefe-nombre').value = '';
+  document.getElementById('modal-jefe').classList.add('activo');
+};
+
+window.editarJefe = function(id){
+  const j = jefes.find(x=>x.id===id);
+  if(!j) return;
+  document.getElementById('titulo-modal-jefe').textContent = 'Editar jefe de faena';
+  document.getElementById('jefe-id').value = id;
+  document.getElementById('jefe-nombre').value = j.nombre;
+  document.getElementById('modal-jefe').classList.add('activo');
+};
+
+window.guardarJefe = async function(){
+  const id = document.getElementById('jefe-id').value;
+  const nombre = document.getElementById('jefe-nombre').value.trim().toUpperCase();
+  if(!nombre){ toast('Ingresa el nombre'); return; }
+  try{
+    if(id){
+      await updateDoc(doc(db, COL_JEFES, id), { nombre });
+      toast('Jefe actualizado');
+    } else {
+      await addDoc(collection(db, COL_JEFES), { nombre });
+      toast('Jefe agregado');
+    }
+    cerrarModal('modal-jefe');
+  } catch(e){
+    toast('Error al guardar: ' + e.message);
+  }
+};
+
+window.eliminarJefe = async function(id, nombre){
+  if(!confirm(`¿Eliminar a "${nombre}"?`)) return;
+  try{
+    await deleteDoc(doc(db, COL_JEFES, id));
+    toast('Jefe eliminado');
+  } catch(e){
+    toast('Error al eliminar: ' + e.message);
+  }
+};
+
+/* ============================================================
+   RENDER — CALIBRADORES
+   ============================================================ */
+function calcularEstadoVencimiento(fechaStr){
+  if(!fechaStr) return null;
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+  const venc = new Date(fechaStr + 'T00:00:00');
+  const dias = Math.round((venc - hoy) / 86400000);
+  let color, texto, nivel;
+  if(dias < 0){ color='var(--rojo)'; nivel='rojo'; texto=`Vencida hace ${Math.abs(dias)} día(s)`; }
+  else if(dias <= 30){ color='var(--rojo)'; nivel='rojo'; texto=`Vence en ${dias} día(s)`; }
+  else if(dias <= 40){ color='var(--ambar)'; nivel='amarillo'; texto=`Vence en ${dias} día(s)`; }
+  else { color='var(--verde-medio)'; nivel='verde'; texto=`Vence en ${dias} día(s)`; }
+  const fechaFormateada = venc.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  return { color, nivel, texto, fechaFormateada, dias };
+}
+
+function renderCalibradores(){
+  const cont = document.getElementById('lista-calibradores');
+  if(calibradores.length === 0){
+    cont.innerHTML = '<div class="vacio">Sin calibradores registrados</div>';
+    return;
+  }
+  cont.innerHTML = calibradores.map(c => {
+    const estado = calcularEstadoVencimiento(c.vencimiento);
+    const subInfo = estado
+      ? `<span style="color:${estado.color};font-weight:600">${estado.fechaFormateada} · ${estado.texto}</span>`
+      : '<span style="color:#999">Sin fecha de acreditación registrada</span>';
+    const rutTexto = c.rut ? `${c.rut} · ` : '';
+    return `
+    <div class="item-card">
+      <div class="item-info">
+        <div class="item-titulo">${c.nombre}</div>
+        <div class="item-sub">${rutTexto}${subInfo}</div>
+      </div>
+      <div class="item-acciones">
+        <button class="icon-editar" onclick="editarCalibrador('${c.id}')">✏️</button>
+        <button class="icon-eliminar" onclick="eliminarCalibrador('${c.id}','${c.nombre.replace(/'/g,"\\'")}')">🗑</button>
+      </div>
+    </div>
+  `;}).join('');
+}
+
+window.abrirModalCalibrador = function(){
+  document.getElementById('titulo-modal-calibrador').textContent = 'Agregar calibrador';
+  document.getElementById('calibrador-id').value = '';
+  document.getElementById('calibrador-nombre').value = '';
+  document.getElementById('calibrador-rut').value = '';
+  document.getElementById('calibrador-acreditacion').value = '';
+  document.getElementById('calibrador-vencimiento').value = '';
+  document.getElementById('modal-calibrador').classList.add('activo');
+};
+
+window.editarCalibrador = function(id){
+  const c = calibradores.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('titulo-modal-calibrador').textContent = 'Editar calibrador';
+  document.getElementById('calibrador-id').value = id;
+  document.getElementById('calibrador-nombre').value = c.nombre;
+  document.getElementById('calibrador-rut').value = c.rut || '';
+  document.getElementById('calibrador-acreditacion').value = c.fechaAcreditacion || '';
+  document.getElementById('calibrador-vencimiento').value = c.vencimiento || '';
+  document.getElementById('modal-calibrador').classList.add('activo');
+};
+
+window.guardarCalibrador = async function(){
+  const id = document.getElementById('calibrador-id').value;
+  const nombre = document.getElementById('calibrador-nombre').value.trim().toUpperCase();
+  const rut = document.getElementById('calibrador-rut').value.trim() || null;
+  const fechaAcreditacion = document.getElementById('calibrador-acreditacion').value || null;
+  const vencimiento = document.getElementById('calibrador-vencimiento').value || null;
+  if(!nombre){ toast('Ingresa el nombre'); return; }
+  try{
+    if(id){
+      await updateDoc(doc(db, COL_CALIBRADORES, id), { nombre, rut, fechaAcreditacion, vencimiento });
+      toast('Calibrador actualizado');
+    } else {
+      await addDoc(collection(db, COL_CALIBRADORES), { nombre, rut, fechaAcreditacion, vencimiento });
+      toast('Calibrador agregado');
+    }
+    cerrarModal('modal-calibrador');
+  } catch(e){
+    toast('Error al guardar: ' + e.message);
+  }
+};
+
+window.eliminarCalibrador = async function(id, nombre){
+  if(!confirm(`¿Eliminar a "${nombre}"?`)) return;
+  try{
+    await deleteDoc(doc(db, COL_CALIBRADORES, id));
+    toast('Calibrador eliminado');
+  } catch(e){
+    toast('Error al eliminar: ' + e.message);
+  }
+};
+
+/* ============================================================
+   RENDER — OPERADORES
+   ============================================================ */
+const ETIQUETAS_FUNCION = {
+  'OP TROZADO':'Op. Trozado',
+  'OP CLASIFICADO':'Op. Clasificado',
+  'VOLTEO':'Volteo',
+  'MADEREO SKIDDER':'Madereo (Skidder)',
+  'MADEREO TORRE':'Madereo (Torre)'
+};
+
+function renderOperadores(){
+  const cont = document.getElementById('lista-operadores');
+  if(operadores.length === 0){
+    cont.innerHTML = '<div class="vacio">Sin operadores registrados</div>';
+    return;
+  }
+  cont.innerHTML = operadores.map(o => {
+    const funciones = (o.funciones||[]).map(f => ETIQUETAS_FUNCION[f] || f).join(', ');
+    return `
+    <div class="item-card">
+      <div class="item-info">
+        <div class="item-titulo">${o.nombre}</div>
+        <div class="item-sub">${funciones || 'Sin función asignada'}</div>
+      </div>
+      <div class="item-acciones">
+        <button class="icon-editar" onclick="editarOperador('${o.id}')">✏️</button>
+        <button class="icon-eliminar" onclick="eliminarOperador('${o.id}','${o.nombre.replace(/'/g,"\\'")}')">🗑</button>
+      </div>
+    </div>
+  `;}).join('');
+}
+
+const IDS_CHECK_FUNCION = ['fn-trozado','fn-clasificado','fn-volteo','fn-madereo-skidder','fn-madereo-torre'];
+
+window.abrirModalOperador = function(){
+  document.getElementById('titulo-modal-operador').textContent = 'Agregar operador';
+  document.getElementById('operador-id').value = '';
+  document.getElementById('operador-nombre').value = '';
+  IDS_CHECK_FUNCION.forEach(id => document.getElementById(id).checked = false);
+  document.getElementById('modal-operador').classList.add('activo');
+};
+
+window.editarOperador = function(id){
+  const o = operadores.find(x=>x.id===id);
+  if(!o) return;
+  document.getElementById('titulo-modal-operador').textContent = 'Editar operador';
+  document.getElementById('operador-id').value = id;
+  document.getElementById('operador-nombre').value = o.nombre;
+  const funciones = o.funciones || [];
+  IDS_CHECK_FUNCION.forEach(id => {
+    const chk = document.getElementById(id);
+    chk.checked = funciones.includes(chk.value);
+  });
+  document.getElementById('modal-operador').classList.add('activo');
+};
+
+window.guardarOperador = async function(){
+  const id = document.getElementById('operador-id').value;
+  const nombre = document.getElementById('operador-nombre').value.trim().toUpperCase();
+  const funciones = IDS_CHECK_FUNCION
+    .map(id => document.getElementById(id))
+    .filter(chk => chk.checked)
+    .map(chk => chk.value);
+  if(!nombre){ toast('Ingresa el nombre'); return; }
+  if(funciones.length === 0){ toast('Selecciona al menos una función'); return; }
+  try{
+    if(id){
+      await updateDoc(doc(db, COL_OPERADORES, id), { nombre, funciones });
+      toast('Operador actualizado');
+    } else {
+      await addDoc(collection(db, COL_OPERADORES), { nombre, funciones });
+      toast('Operador agregado');
+    }
+    cerrarModal('modal-operador');
+  } catch(e){
+    toast('Error al guardar: ' + e.message);
+  }
+};
+
+window.eliminarOperador = async function(id, nombre){
+  if(!confirm(`¿Eliminar a "${nombre}"?`)) return;
+  try{
+    await deleteDoc(doc(db, COL_OPERADORES, id));
+    toast('Operador eliminado');
+  } catch(e){
+    toast('Error al eliminar: ' + e.message);
+  }
+};
+
+/* ============================================================
+   RENDER — EQUIPOS
+   ============================================================ */
+function renderEquipos(){
+  const cont = document.getElementById('lista-equipos');
+  if(equipos.length === 0){
+    cont.innerHTML = '<div class="vacio">Sin equipos registrados</div>';
+    return;
+  }
+  cont.innerHTML = equipos.map(e => {
+    const rol = e.rol || 'PRINCIPAL';
+    const etiquetaRol = rol === 'APOYO' ? 'Apoyo' : 'Principal';
+    const subOperadores = TIPOS_SIN_OPERADOR.includes(e.tipo) ? '' : ` · ${(e.operadores||[]).length} operador(es)`;
+    return `
+    <div class="item-card">
+      <div class="item-info">
+        <div class="item-titulo">${e.nombre} <span style="font-size:10px;font-weight:700;color:${rol==='APOYO'?'var(--ambar)':'var(--verde-medio)'};text-transform:uppercase">· ${etiquetaRol}</span></div>
+        <div class="item-sub">${e.tipo}${subOperadores}</div>
+      </div>
+      <div class="item-acciones">
+        <button class="icon-editar" onclick="editarEquipo('${e.id}')">✏️</button>
+        <button class="icon-eliminar" onclick="eliminarEquipo('${e.id}','${e.nombre.replace(/'/g,"\\'")}')">🗑</button>
+      </div>
+    </div>
+  `;}).join('');
+}
+
+const TIPOS_APOYO = ['HUINCHE DE ASISTENCIA','GARRA ORDENADORA'];
+const TIPOS_SIN_OPERADOR = ['HUINCHE DE ASISTENCIA'];
+
+const FUNCION_POR_TIPO_EQUIPO = {
+  'PROCESADOR': 'OP TROZADO',
+  'GARRA ORDENADORA': 'OP CLASIFICADO',
+  'SHOVEL': 'VOLTEO',
+  'SKIDDER': 'MADEREO SKIDDER',
+  'TORRE': 'MADEREO TORRE'
+};
+
+function renderCheckOperadoresEnEquipo(seleccionados=[]){
+  const cont = document.getElementById('op-check-lista');
+  const tipo = document.getElementById('equipo-tipo').value;
+  const funcionEsperada = FUNCION_POR_TIPO_EQUIPO[tipo];
+  const lista = funcionEsperada
+    ? operadores.filter(o => (o.funciones||[]).includes(funcionEsperada))
+    : operadores;
+
+  if(operadores.length === 0){
+    cont.innerHTML = '<div style="font-size:13px;color:#999">Primero agrega operadores en la pestaña Operadores</div>';
+    return;
+  }
+  if(lista.length === 0){
+    cont.innerHTML = `<div style="font-size:13px;color:#999">Ningún operador tiene la función "${ETIQUETAS_FUNCION[funcionEsperada]||funcionEsperada}" asignada aún</div>`;
+    return;
+  }
+  cont.innerHTML =
+    `<button type="button" class="btn-agregar-op" style="margin:0 0 8px" onclick="marcarTodosOperadores(true)">✓ Seleccionar todos</button>
+     <button type="button" class="btn-agregar-op" style="margin:0 0 8px" onclick="marcarTodosOperadores(false)">✕ Quitar selección</button>` +
+    lista.map((o,i) => `
+    <div class="check-fila">
+      <input type="checkbox" id="chk-op-${i}" value="${o.nombre}" ${seleccionados.includes(o.nombre) ? 'checked' : ''}>
+      <label for="chk-op-${i}">${o.nombre}</label>
+    </div>
+  `).join('') + `
+    <div class="check-fila">
+      <input type="checkbox" id="chk-op-otro" value="OTRO" ${seleccionados.includes('OTRO') ? 'checked' : ''}>
+      <label for="chk-op-otro">OTRO</label>
+    </div>
+  `;
+}
+
+window.marcarTodosOperadores = function(valor){
+  document.querySelectorAll('#op-check-lista input[type=checkbox]').forEach(c => c.checked = valor);
+};
+
+window.actualizarVisibilidadOperadores = function(){
+  const rol = document.getElementById('equipo-rol').value;
+  const tipo = document.getElementById('equipo-tipo').value;
+  const esApoyo = rol === 'APOYO' || TIPOS_APOYO.includes(tipo);
+  if(esApoyo) document.getElementById('equipo-rol').value = 'APOYO';
+  const ocultarOperadores = esApoyo && TIPOS_SIN_OPERADOR.includes(tipo);
+  document.getElementById('bloque-operadores-equipo').style.display = ocultarOperadores ? 'none' : 'block';
+};
+
+window.abrirModalEquipo = function(){
+  document.getElementById('titulo-modal-equipo').textContent = 'Agregar equipo';
+  document.getElementById('equipo-id').value = '';
+  document.getElementById('equipo-nombre').value = '';
+  document.getElementById('equipo-tipo').value = '';
+  document.getElementById('equipo-rol').value = 'PRINCIPAL';
+  renderCheckOperadoresEnEquipo();
+  actualizarVisibilidadOperadores();
+  document.getElementById('modal-equipo').classList.add('activo');
+};
+
+window.editarEquipo = function(id){
+  const e = equipos.find(x=>x.id===id);
+  if(!e) return;
+  document.getElementById('titulo-modal-equipo').textContent = 'Editar equipo';
+  document.getElementById('equipo-id').value = id;
+  document.getElementById('equipo-nombre').value = e.nombre;
+  document.getElementById('equipo-tipo').value = e.tipo;
+  const TIPOS_APOYO_LEGADO = ['FALCON','TIMBERMAX','TRACTIONLÍNE','GARRA'];
+  const rolInferido = e.rol || ((TIPOS_APOYO.includes(e.tipo) || TIPOS_APOYO_LEGADO.includes(e.tipo)) ? 'APOYO' : 'PRINCIPAL');
+  document.getElementById('equipo-rol').value = rolInferido;
+  renderCheckOperadoresEnEquipo(e.operadores || []);
+  actualizarVisibilidadOperadores();
+  document.getElementById('modal-equipo').classList.add('activo');
+};
+
+window.guardarEquipo = async function(){
+  const id = document.getElementById('equipo-id').value;
+  const nombre = document.getElementById('equipo-nombre').value.trim().toUpperCase();
+  const tipo = document.getElementById('equipo-tipo').value;
+  const rol = document.getElementById('equipo-rol').value;
+  const sinOperador = TIPOS_SIN_OPERADOR.includes(tipo);
+  const operadoresSel = sinOperador ? [] : Array.from(
+    document.querySelectorAll('#op-check-lista input[type=checkbox]:checked')
+  ).map(c => c.value);
+  if(!nombre || !tipo){ toast('Completa nombre y tipo'); return; }
+  if(!sinOperador && operadoresSel.length === 0){ toast('Selecciona al menos un operador'); return; }
+  try{
+    if(id){
+      await updateDoc(doc(db, COL_EQUIPOS, id), { nombre, tipo, rol, operadores: operadoresSel });
+      toast('Equipo actualizado');
+    } else {
+      await addDoc(collection(db, COL_EQUIPOS), { nombre, tipo, rol, operadores: operadoresSel });
+      toast('Equipo agregado');
+    }
+    cerrarModal('modal-equipo');
+  } catch(e){
+    toast('Error al guardar: ' + e.message);
+  }
+};
+
+window.eliminarEquipo = async function(id, nombre){
+  if(!confirm(`¿Eliminar el equipo "${nombre}"?`)) return;
+  try{
+    await deleteDoc(doc(db, COL_EQUIPOS, id));
+    toast('Equipo eliminado');
+  } catch(e){
+    toast('Error al eliminar: ' + e.message);
+  }
+};
+
+/* ============================================================
+   MODALES — CERRAR
+   ============================================================ */
+window.cerrarModal = function(idModal){
+  document.getElementById(idModal).classList.remove('activo');
+};
+
+</script>
+
+<script>
+/* ============================================================
+   ACTUALIZACIÓN AUTOMÁTICA DE LA APP — mismo mecanismo en todos los módulos
+   ============================================================ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+      reg.addEventListener('updatefound', () => {
+        const nuevoWorker = reg.installing;
+        nuevoWorker.addEventListener('statechange', () => {
+          if (nuevoWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            nuevoWorker.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+      reg.update();
+    }).catch(() => {});
+
+    let yaRecargo = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (yaRecargo) return;
+      yaRecargo = true;
+      window.location.reload();
+    });
+  });
+}
+</script>
+</body>
+</html>
