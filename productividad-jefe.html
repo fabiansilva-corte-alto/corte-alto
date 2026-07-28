@@ -722,14 +722,13 @@ window.confirmarSeguridad = function (continuar) {
   if (continuar) { segConfirmado = true; agregarEquipo(); }
 };
 
-/* Actualiza el totalizador MIXTO en tiempo real sin rerenderizar la card */
+/* Actualiza el totalizador MIXTO en tiempo real leyendo del DOM */
 window.actualizarTotalMixto = function (id) {
-  const eq = equipos.find(e => e.id === id);
-  if (!eq) return;
   const el = document.getElementById("total-mixto-" + id);
   if (!el) return;
-  const ciclos  = (parseInt(eq.ciclosBereuter) || 0) + (parseInt(eq.ciclosWyssen)  || 0);
-  const arboles = (parseInt(eq.arbolesBereuter)|| 0) + (parseInt(eq.arbolesWyssen) || 0);
+  const v = (campo) => parseInt(document.getElementById("in-" + id + "-" + campo)?.value) || 0;
+  const ciclos  = v("ciclosBereuter")  + v("ciclosWyssen");
+  const arboles = v("arbolesBereuter") + v("arbolesWyssen");
   el.innerHTML = `Total: <b>${ciclos} ciclos</b> · <b>${arboles} árboles</b>`;
 };
 
