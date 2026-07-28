@@ -722,13 +722,14 @@ window.confirmarSeguridad = function (continuar) {
   if (continuar) { segConfirmado = true; agregarEquipo(); }
 };
 
-/* Actualiza el totalizador MIXTO en tiempo real leyendo del DOM */
+/* Actualiza el totalizador MIXTO recibiendo los valores directamente */
 window.actualizarTotalMixto = function (id) {
+  const eq = equipos.find(e => e.id === id);
+  if (!eq) return;
   const el = document.getElementById("total-mixto-" + id);
   if (!el) return;
-  const v = (campo) => parseInt(document.getElementById("in-" + id + "-" + campo)?.value) || 0;
-  const ciclos  = v("ciclosBereuter")  + v("ciclosWyssen");
-  const arboles = v("arbolesBereuter") + v("arbolesWyssen");
+  const ciclos  = (parseInt(eq.ciclosBereuter)  || 0) + (parseInt(eq.ciclosWyssen)  || 0);
+  const arboles = (parseInt(eq.arbolesBereuter) || 0) + (parseInt(eq.arbolesWyssen) || 0);
   el.innerHTML = `Total: <b>${ciclos} ciclos</b> · <b>${arboles} árboles</b>`;
 };
 
@@ -1006,13 +1007,13 @@ function camposPorTipo(eq) {
           <div style="flex:1">
             <label>N° Ciclos <span class="req">*</span></label>
             <input type="text" id="in-${eq.id}-ciclosBereuter" inputmode="numeric" value="${esc(eq.ciclosBereuter)}"
-              oninput="setCampo('${eq.id}','ciclosBereuter',this.value,false);actualizarTotalMixto('${eq.id}')">
+              oninput="setCampo('${eq.id}','ciclosBereuter',this.value,false);setTimeout(()=>actualizarTotalMixto('${eq.id}'),0)">
             <div class="msg-error" id="err-${eq.id}-ciclosBereuter">Campo obligatorio</div>
           </div>
           <div style="flex:1">
             <label>Cant. Árboles <span class="req">*</span></label>
             <input type="text" id="in-${eq.id}-arbolesBereuter" inputmode="numeric" value="${esc(eq.arbolesBereuter)}"
-              oninput="setCampo('${eq.id}','arbolesBereuter',this.value,false);actualizarTotalMixto('${eq.id}')">
+              oninput="setCampo('${eq.id}','arbolesBereuter',this.value,false);setTimeout(()=>actualizarTotalMixto('${eq.id}'),0)">
             <div class="msg-error" id="err-${eq.id}-arbolesBereuter">Campo obligatorio</div>
           </div>
         </div>
@@ -1023,13 +1024,13 @@ function camposPorTipo(eq) {
           <div style="flex:1">
             <label>N° Ciclos <span class="req">*</span></label>
             <input type="text" id="in-${eq.id}-ciclosWyssen" inputmode="numeric" value="${esc(eq.ciclosWyssen)}"
-              oninput="setCampo('${eq.id}','ciclosWyssen',this.value,false);actualizarTotalMixto('${eq.id}')">
+              oninput="setCampo('${eq.id}','ciclosWyssen',this.value,false);setTimeout(()=>actualizarTotalMixto('${eq.id}'),0)">
             <div class="msg-error" id="err-${eq.id}-ciclosWyssen">Campo obligatorio</div>
           </div>
           <div style="flex:1">
             <label>Cant. Árboles <span class="req">*</span></label>
             <input type="text" id="in-${eq.id}-arbolesWyssen" inputmode="numeric" value="${esc(eq.arbolesWyssen)}"
-              oninput="setCampo('${eq.id}','arbolesWyssen',this.value,false);actualizarTotalMixto('${eq.id}')">
+              oninput="setCampo('${eq.id}','arbolesWyssen',this.value,false);setTimeout(()=>actualizarTotalMixto('${eq.id}'),0)">
             <div class="msg-error" id="err-${eq.id}-arbolesWyssen">Campo obligatorio</div>
           </div>
         </div>
