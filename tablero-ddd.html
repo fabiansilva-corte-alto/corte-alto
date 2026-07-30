@@ -257,7 +257,18 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   .bodega-grid{grid-template-columns:1fr}
   #filtros{gap:6px}
   .seg-grid{flex-wrap:wrap}
-}
+}/* ==== TABLA ESTILO EXCEL (rediseño) ==== */
+.tabla-ddd-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--line,#2a3a2a)}
+table.tabla-ddd{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}
+table.tabla-ddd th,table.tabla-ddd td{border:1px solid var(--line,#2a3a2a);padding:5px 8px;text-align:center}
+table.tabla-ddd thead th{background:#16241a;position:sticky;top:0;z-index:2;font-size:11px}
+table.tabla-ddd td.lbl,table.tabla-ddd th.lbl{text-align:left;position:sticky;left:0;background:#12201a;z-index:1;min-width:180px;font-weight:600}
+table.tabla-ddd th.lbl{z-index:3}
+table.tabla-ddd tr.seccion td{background:#1c2e20;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.04em;text-align:left}
+table.tabla-ddd td.resumen,table.tabla-ddd th.resumen{background:#20351f;font-weight:700}
+table.tabla-ddd td.alerta-rojo{color:#ff6b6b;font-weight:700}
+table.tabla-ddd td.alerta-amarillo{color:#ffd166;font-weight:700}
+table.tabla-ddd td.alerta-verde{color:#7ee787}
 </style>
 </head>
 <body>
@@ -324,107 +335,15 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     </div>
   </div>
 
-  <!-- GRID PRINCIPAL -->
+  <!-- TABLA ESTILO EXCEL -->
   <div id="grid-main" style="display:none">
-
-    <!-- PRODUCCIÓN -->
-    <div class="card" id="bloque-prod">
-      <div class="card-title">Producción del período</div>
-      <div class="prod-grid">
-        <div class="prod-kpi">
-          <div class="kpi-lbl">Volumen Real</div>
-          <div class="kpi-val grande" id="v-real">—<span class="kpi-unit">m³</span></div>
-        </div>
-        <div class="prod-kpi">
-          <div class="kpi-lbl">Volumen Meta</div>
-          <div class="kpi-val grande" id="v-meta">—<span class="kpi-unit">m³</span></div>
-        </div>
-        <div class="prod-kpi">
-          <div class="kpi-lbl">Diferencia Real − Meta</div>
-          <div class="kpi-val" id="v-dif">—<span class="kpi-unit">m³</span></div>
-        </div>
-        <div class="prod-kpi">
-          <div class="kpi-lbl">% Cumplimiento</div>
-          <div class="kpi-val" id="v-pct">—<span class="kpi-unit">%</span></div>
-          <div class="barra-cumplimiento"><div class="fill" id="barra-fill" style="width:0%"></div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- OEE -->
-    <div class="card" id="bloque-oee">
-      <div class="card-title" id="oee-titulo">Procesador — OEE</div>
-
-      <div class="oee-grid">
-        <div class="oee-item">
-          <div class="o-lbl">OEE</div>
-          <div class="o-val" id="v-oee">—</div>
-        </div>
-        <div class="oee-item">
-          <div class="o-lbl">F.D.</div>
-          <div class="o-val" id="v-fd">—</div>
-        </div>
-        <div class="oee-item">
-          <div class="o-lbl">F.E.</div>
-          <div class="o-val" id="v-fe">—</div>
-        </div>
-      </div>
-
-      <div class="oee-tpob">
-        <div class="tpob-pill">
-          <span class="t-lbl">TPOB</span>
-          <span class="t-val" id="v-tpob">—</span>
-        </div>
-        <div class="tpob-pill">
-          <span class="t-lbl">TPOC</span>
-          <span class="t-val" id="v-tpoc">—</span>
-        </div>
-      </div>
-
-      <div class="sec-sep">Causales de pérdida (TPOB)</div>
-      <table class="tabla-causales" id="tbl-causales">
-        <thead><tr><th>Motivo</th><th>Hrs</th></tr></thead>
-        <tbody id="body-causales"><tr><td colspan="2" style="color:var(--text3);font-style:italic">Sin datos</td></tr></tbody>
-      </table>
-
-      <div class="sec-sep">Aprovechamiento por rodal</div>
-      <table class="tabla-aprov" id="tbl-aprov">
-        <thead>
-          <tr>
-            <th>Rodal</th>
-            <th>Clear</th>
-            <th>Ind.</th>
-            <th>Pulpa</th>
-            <th>Sin.</th>
-          </tr>
-        </thead>
-        <tbody id="body-aprov"><tr><td colspan="5" style="color:var(--text3);font-style:italic">Sin datos</td></tr></tbody>
+    <div class="tabla-ddd-wrap">
+      <table class="tabla-ddd" id="tbl-ddd">
+        <thead id="thead-ddd"></thead>
+        <tbody id="tbody-ddd"></tbody>
       </table>
     </div>
-
   </div><!-- /grid-main -->
-
-  <!-- BODEGA (full width) -->
-  <div class="card" id="bloque-bodega" style="display:none">
-    <div class="card-title">Bodega Faena — Stock al cierre de semana</div>
-    <div class="bodega-grid">
-      <div class="bodega-item">
-        <label>Madera Aserrable</label>
-        <input type="number" id="bod-aserrable" placeholder="0" min="0" inputmode="decimal">
-        <span class="bodega-unit">cargas</span>
-      </div>
-      <div class="bodega-item">
-        <label>Madera Pulpable</label>
-        <input type="number" id="bod-pulpable" placeholder="0" min="0" inputmode="decimal">
-        <span class="bodega-unit">cargas</span>
-      </div>
-      <div class="bodega-item">
-        <label>Madera Manchada</label>
-        <input type="number" id="bod-manchada" placeholder="0" min="0" inputmode="decimal">
-        <span class="bodega-unit">cargas</span>
-      </div>
-    </div>
-  </div>
 
 </div><!-- /dashboard -->
 
@@ -544,10 +463,13 @@ window.cargarDatos=async function(){
     ));
     const docsProd=snapProd.docs.map(d=>d.data());
 
-    // Volumen real total
-    const volReal=docsProd.reduce((s,d)=>s+(d.totalGlobal||0),0);
+    // Volumen real por día
+    const volRealPorDia={};
+    docsProd.forEach(d=>{
+      volRealPorDia[d.fecha]=(volRealPorDia[d.fecha]||0)+(d.totalGlobal||0);
+    });
 
-    // Aprovechamiento por rodal (etRodales)
+    // Aprovechamiento por rodal (etRodales) — igual que antes, agregado del rango
     const rodalMap={};
     docsProd.forEach(d=>{
       (d.etRodales||[]).forEach(r=>{
@@ -560,7 +482,7 @@ window.cargarDatos=async function(){
       });
     });
 
-    // ── 2. Productividad jefe (seguridad + OEE) ──
+    // ── 2. Productividad jefe (seguridad + OEE) — por día ──
     const snapJefe=await getDocs(query(
       collection(db,COL_JEFE),
       where('fecha','>=',desde),
@@ -569,79 +491,83 @@ window.cargarDatos=async function(){
     ));
     const docsJefe=snapJefe.docs.map(d=>d.data());
 
-    // Seguridad (suma del período)
-    let seg={accidenteCTP:0,accidenteSTP:0,cuasiAccidente:0,incidenteMedioAmb:0};
-    docsJefe.forEach(d=>{
-      const s=d.seguridad||{};
-      seg.accidenteCTP+=(s.accidenteCTP||0);
-      seg.accidenteSTP+=(s.accidenteSTP||0);
-      seg.cuasiAccidente+=(s.cuasiAccidente||0);
-      seg.incidenteMedioAmb+=(s.incidenteMedioAmb||0);
-    });
+    const segPorDia={};
+    const oeePorDia={},fdPorDia={},fePorDia={},tobPorDia={},tocPorDia={};
+    const causalesPorDia={}; // { motivo: { fecha: horas } }
 
-    // OEE / TPOB del procesador seleccionado
-    let oeeVals=[],fdVals=[],feVals=[],tobVals=[],tocVals=[];
-    const causalMap={};
     docsJefe.forEach(d=>{
+      const f=d.fecha;
+      const s=d.seguridad||{};
+      segPorDia[f]=segPorDia[f]||{accidenteCTP:0,accidenteSTP:0,cuasiAccidente:0,incidenteMedioAmb:0};
+      segPorDia[f].accidenteCTP+=(s.accidenteCTP||0);
+      segPorDia[f].accidenteSTP+=(s.accidenteSTP||0);
+      segPorDia[f].cuasiAccidente+=(s.cuasiAccidente||0);
+      segPorDia[f].incidenteMedioAmb+=(s.incidenteMedioAmb||0);
+
       (d.equipos||[]).forEach(eq=>{
         if(procesador && eq.equipo!==procesador)return;
         if(eq.tipo!=='PROCESADOR')return;
-        if(eq.fd!=null)fdVals.push(eq.fd);
-        if(eq.fe!=null)feVals.push(eq.fe);
-        if(eq.oee!=null)oeeVals.push(eq.oee);
-        if(eq.tob!=null)tobVals.push(eq.tob);
-        if(eq.toc!=null)tocVals.push(eq.toc);
+        if(eq.fd!=null){fdPorDia[f]=fdPorDia[f]||[];fdPorDia[f].push(eq.fd);}
+        if(eq.fe!=null){fePorDia[f]=fePorDia[f]||[];fePorDia[f].push(eq.fe);}
+        if(eq.oee!=null){oeePorDia[f]=oeePorDia[f]||[];oeePorDia[f].push(eq.oee);}
+        if(eq.tob!=null){tobPorDia[f]=(tobPorDia[f]||0)+eq.tob;}
+        if(eq.toc!=null){tocPorDia[f]=(tocPorDia[f]||0)+eq.toc;}
         (eq.detenciones||[]).forEach(det=>{
           const k=det.motivo||'(sin motivo)';
-          causalMap[k]=(causalMap[k]||0)+(det.horas||0);
+          causalesPorDia[k]=causalesPorDia[k]||{};
+          causalesPorDia[k][f]=(causalesPorDia[k][f]||0)+(det.horas||0);
         });
       });
     });
+    const avg=arr=>(arr&&arr.length)?arr.reduce((a,b)=>a+b,0)/arr.length:null;
 
-    const avg=arr=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:null;
-    const sum=arr=>arr.reduce((a,b)=>a+b,0);
-    const oeeAvg=avg(oeeVals),fdAvg=avg(fdVals),feAvg=avg(feVals);
-    const tobSum=sum(tobVals),tocSum=sum(tocVals);
-
-    // ── 3. Meta diaria ──
-    // Puede cruzar meses → agrupar por mes/año
+    // ── 3. Meta diaria (config_volumen_meta) — por día ──
     const mesesSet={};
     dias.forEach(f=>{
       const [y,m,d]=f.split('-');
-      const k=`${y}-${m}`;if(!mesesSet[k])mesesSet[k]={anio:+y,mes:+m,dias:[]};
-      mesesSet[k].dias.push(+d);
+      const k=`${y}-${m}`;if(!mesesSet[k])mesesSet[k]={anio:+y,mes:+m};
     });
-    let volMeta=0;
+    const metaPorDia={};
     for(const k of Object.keys(mesesSet)){
-      const{anio,mes,dias:dArr}=mesesSet[k];
+      const{anio,mes}=mesesSet[k];
       const idDoc=idMeta(linea,mes,anio);
       try{
         const snap=await getDoc(doc(db,COL_META,idDoc));
         if(snap.exists()){
           const vals=snap.data().valores||[];
-          dArr.forEach(dia=>{
-            const v=vals[dia-1];if(v!=null&&!isNaN(v))volMeta+=Number(v);
+          vals.forEach((v,i)=>{
+            const dia=i+1;
+            const fStr=`${anio}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+            if(dias.includes(fStr) && v!=null && !isNaN(v)) metaPorDia[fStr]=Number(v);
           });
         }
       }catch(e){}
     }
 
-    // ── 4. Funos únicos del período ──
+    // ── 4. Fundos únicos del período ──
     const fundosSet=new Set(docsProd.map(d=>d.fundo).filter(Boolean));
     const fundoStr=[...fundosSet].join(', ')||'—';
 
+    // ── 5. Stock de bodega: preguntar al usuario ──
+    const stock=pedirStockBodega();
+    if(!stock){ // canceló
+      spin(false);$id('btn-cargar').disabled=false;
+      return;
+    }
+
     // ── RENDER ──
     renderHeader(linea,fundoStr,desde,hasta);
-    renderSeguridad(seg);
-    renderProduccion(volReal,volMeta);
-    renderOEE(procesador,oeeAvg,fdAvg,feAvg,tobSum,tocSum,causalMap);
-    renderAprovechamiento(rodalMap);
+    renderTablaDdd({
+      dias,procesador,
+      segPorDia,volRealPorDia,metaPorDia,
+      oeePorDia,fdPorDia,fePorDia,tobPorDia,tocPorDia,
+      causalesPorDia,rodalMap,stock
+    });
 
     // Mostrar bloques
     $id('estado-vacio').style.display='none';
     $id('bloque-header').style.display='';
     $id('grid-main').style.display='';
-    $id('bloque-bodega').style.display='';
 
     toast(`✅ ${dias.length} días cargados`);
 
@@ -653,6 +579,20 @@ window.cargarDatos=async function(){
   }
 };
 
+function pedirStockBodega(){
+  const aserrable=prompt('Stock de cierre — Madera Aserrable (cargas):','0');
+  if(aserrable===null)return null;
+  const pulpable=prompt('Stock de cierre — Madera Pulpable (cargas):','0');
+  if(pulpable===null)return null;
+  const manchada=prompt('Stock de cierre — Madera Manchada (cargas):','0');
+  if(manchada===null)return null;
+  return{
+    aserrable:Number(aserrable)||0,
+    pulpable:Number(pulpable)||0,
+    manchada:Number(manchada)||0
+  };
+}
+
 function renderHeader(linea,fundo,desde,hasta){
   $id('hdr-titulo').textContent=`Línea ${linea}`;
   $id('hdr-fundo').textContent=fundo;
@@ -660,84 +600,141 @@ function renderHeader(linea,fundo,desde,hasta){
   $id('hdr-periodo').textContent=`${fmt2(desde)} — ${fmt2(hasta)}`;
 }
 
-function renderSeguridad(seg){
-  const setV=(id,val,alertaSi)=>{
-    $id(id).textContent=val;
-    $id(id).closest('.seg-item').classList.toggle('alerta',alertaSi);
-  };
-  setV('v-ctp',seg.accidenteCTP,seg.accidenteCTP>0);
-  setV('v-stp',seg.accidenteSTP,seg.accidenteSTP>0);
-  setV('v-cuasi',seg.cuasiAccidente,false);
-  setV('v-ma',seg.incidenteMedioAmb,seg.incidenteMedioAmb>0);
+function fmtDiaCorto(f){
+  const [,, d]=f.split('-');
+  return String(Number(d));
 }
 
-function renderProduccion(real,meta){
-  $id('v-real').innerHTML=`${fmt(real,1)}<span class="kpi-unit">m³</span>`;
-  $id('v-meta').innerHTML=meta>0?`${fmt(meta,1)}<span class="kpi-unit">m³</span>`:`<span style="color:var(--text3)">Sin meta</span>`;
-  if(meta>0){
-    const dif=real-meta;
-    const pctVal=real/meta;
-    const cls=dif>=0?'pos':'neg';
-    $id('v-dif').innerHTML=`<span class="${cls}">${dif>=0?'+':''}${fmt(dif,1)}</span><span class="kpi-unit">m³</span>`;
-    $id('v-pct').innerHTML=`<span class="${cls}">${fmt(pctVal*100,1)}</span><span class="kpi-unit">%</span>`;
-    const fillPct=Math.min(Math.max(pctVal*100,0),150);
-    const fillEl=$id('barra-fill');
-    fillEl.style.width=Math.min(fillPct,100)+'%';
-    fillEl.className='fill '+(pctVal>=0.98&&pctVal<=1.02?'ok':dif>=0?'pos':'neg');
+function claseAlertaVsMeta(dif,pct){
+  if(pct==null)return '';
+  if(pct>=0.98&&pct<=1.02)return 'alerta-verde';
+  return dif>=0?'alerta-verde':'alerta-rojo';
+}
+
+function renderTablaDdd(ctx){
+  const{dias,procesador,segPorDia,volRealPorDia,metaPorDia,
+        oeePorDia,fdPorDia,fePorDia,tobPorDia,tocPorDia,
+        causalesPorDia,rodalMap,stock}=ctx;
+
+  const avg=arr=>(arr&&arr.length)?arr.reduce((a,b)=>a+b,0)/arr.length:null;
+  const sum=obj=>Object.values(obj).reduce((a,b)=>a+(b||0),0);
+
+  // ── Encabezado: columna label + un día por columna + Resumen ──
+  const diasCortos=dias.map(fmtDiaCorto);
+  const rangoLabel=`${fmtDiaCorto(dias[0])} al ${fmtDiaCorto(dias[dias.length-1])}`;
+  let thead=`<tr><th class="lbl">KPI</th>${diasCortos.map(d=>`<th>${d}</th>`).join('')}<th class="resumen">${rangoLabel}</th></tr>`;
+  $id('thead-ddd').innerHTML=thead;
+
+  const filas=[];
+
+  // ── SEGURIDAD ──
+  filas.push(seccionFila('SEGURIDAD'));
+  const segCampos=[
+    ['accidenteCTP','Accidentes CTP'],
+    ['accidenteSTP','Accidentes STP'],
+    ['cuasiAccidente','Casi Accidentes'],
+    ['incidenteMedioAmb','Incidentes Medio Ambientales']
+  ];
+  segCampos.forEach(([campo,lbl])=>{
+    const vals=dias.map(f=>(segPorDia[f]||{})[campo]??0);
+    const total=vals.reduce((a,b)=>a+b,0);
+    filas.push(filaSimple(lbl,vals,total,v=>v>0?'alerta-rojo':''));
+  });
+
+  // ── PRODUCCIÓN ──
+  filas.push(seccionFila('PRODUCCIÓN'));
+  const volRealVals=dias.map(f=>volRealPorDia[f]??null);
+  const volMetaVals=dias.map(f=>metaPorDia[f]??null);
+  const volRealTot=volRealVals.reduce((a,b)=>a+(b||0),0);
+  const volMetaTot=volMetaVals.reduce((a,b)=>a+(b||0),0);
+  const cumplVals=dias.map((f,i)=>{
+    const m=volMetaVals[i],r=volRealVals[i];
+    return(m&&m>0)?(r||0)/m*100:null;
+  });
+  const cumplTot=(volMetaTot>0)?(volRealTot/volMetaTot*100):null;
+  filas.push(filaSimple('Cumplimiento de programa (%)',cumplVals,cumplTot,v=>{
+    if(v==null)return '';
+    return(v>=98&&v<=102)?'alerta-verde':(v<98?'alerta-rojo':'alerta-amarillo');
+  },1));
+  filas.push(filaSimple('Volumen según oferta (m³)',volMetaVals,volMetaTot||null));
+  filas.push(filaSimple('Volumen real (m³)',volRealVals,volRealTot,null,1));
+  const difVals=dias.map((f,i)=>(volMetaVals[i]!=null)?((volRealVals[i]||0)-volMetaVals[i]):null);
+  const difTot=(volMetaTot>0)?(volRealTot-volMetaTot):null;
+  filas.push(filaSimple('Diferencia m³ Meta vs Real',difVals,difTot,v=>v==null?'':(v>=0?'alerta-verde':'alerta-rojo'),1));
+
+  // ── PROCESADOR / INDICADORES ──
+  filas.push(seccionFila(`PROCESADOR${procesador?' — '+procesador:''} — INDICADORES`));
+  const oeeVals=dias.map(f=>avg(oeePorDia[f]));
+  const fdVals=dias.map(f=>avg(fdPorDia[f]));
+  const feVals=dias.map(f=>avg(fePorDia[f]));
+  const oeeTodos=Object.values(oeePorDia).flat();
+  const fdTodos=Object.values(fdPorDia).flat();
+  const feTodos=Object.values(fePorDia).flat();
+  filas.push(filaSimple('OEE (%)',oeeVals.map(v=>v!=null?v*100:null),avg(oeeTodos)!=null?avg(oeeTodos)*100:null,null,1));
+  filas.push(filaSimple('Factor de Disponibilidad FD (%)',fdVals.map(v=>v!=null?v*100:null),avg(fdTodos)!=null?avg(fdTodos)*100:null,null,1));
+  filas.push(filaSimple('Factor de Eficiencia FE (%)',feVals.map(v=>v!=null?v*100:null),avg(feTodos)!=null?avg(feTodos)*100:null,null,1));
+  const tobVals=dias.map(f=>tobPorDia[f]??null);
+  const tocVals=dias.map(f=>tocPorDia[f]??null);
+  filas.push(filaSimple('TPOB (Horas)',tobVals,tobVals.reduce((a,b)=>a+(b||0),0),null,2));
+  filas.push(filaSimple('TPOC (Horas)',tocVals,tocVals.reduce((a,b)=>a+(b||0),0),null,2));
+
+  // ── CAUSALES DE PÉRDIDA ──
+  filas.push(seccionFila('CAUSALES DE PÉRDIDAS (Horas)'));
+  const motivos=Object.keys(causalesPorDia).sort((a,b)=>{
+    const totA=sum(causalesPorDia[a]),totB=sum(causalesPorDia[b]);
+    return totB-totA;
+  });
+  if(motivos.length===0){
+    filas.push(`<tr><td class="lbl">Sin causales registradas</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">—</td></tr>`);
   }else{
-    $id('v-dif').textContent='—';$id('v-pct').textContent='—';
+    motivos.forEach(m=>{
+      const vals=dias.map(f=>causalesPorDia[m][f]??null);
+      const total=vals.reduce((a,b)=>a+(b||0),0);
+      filas.push(filaSimple(m,vals,total,null,2));
+    });
   }
-}
 
-function renderOEE(procesador,oee,fd,fe,tob,toc,causalMap){
-  $id('oee-titulo').textContent=procesador?`${procesador} — OEE`:'Procesador — OEE (todos)';
-  const setOEE=(id,val)=>{
-    const el=$id(id);
-    if(val==null){el.textContent='—';el.className='o-val';return;}
-    el.textContent=fmt(val*100,1)+'%';
-    el.className='o-val '+colorOEE(val);
-  };
-  setOEE('v-oee',oee);setOEE('v-fd',fd);setOEE('v-fe',fe);
-  $id('v-tpob').textContent=fmt(tob,2)+' h';
-  $id('v-tpoc').textContent=fmt(toc,2)+' h';
-
-  // Causales
-  const body=$id('body-causales');
-  const causales=Object.entries(causalMap).sort((a,b)=>b[1]-a[1]);
-  if(!causales.length){
-    body.innerHTML='<tr><td colspan="2" style="color:var(--text3);font-style:italic">Sin datos</td></tr>';
-  }else{
-    body.innerHTML=causales.map(([m,h])=>`
-      <tr><td>${m}</td><td>${fmt(h,2)}</td></tr>
-    `).join('');
-  }
-}
-
-function renderAprovechamiento(rodalMap){
-  const body=$id('body-aprov');
+  // ── APROVECHAMIENTO SEGÚN ESQUEMA DE TROZADO ──
+  filas.push(seccionFila('APROVECHAMIENTO SEGÚN ESQUEMA DE TROZADO (%)'));
   const rodales=Object.keys(rodalMap);
-  if(!rodales.length){
-    body.innerHTML='<tr><td colspan="5" style="color:var(--text3);font-style:italic">Sin datos</td></tr>';
-    return;
+  if(rodales.length===0){
+    filas.push(`<tr><td class="lbl">Sin datos de rodales</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">—</td></tr>`);
+  }else{
+    rodales.forEach(rodal=>{
+      const r=rodalMap[rodal];
+      filas.push(`<tr><td class="lbl">RODAL: ${rodal}</td>${dias.map(()=>'<td></td>').join('')}<td class="resumen"></td></tr>`);
+      [['Clear','clear'],['Industrial','industrial'],['Pulpa','pulpa'],['Siniestrado','siniestrado']].forEach(([lbl,key])=>{
+        const arr=r[key];
+        const promedio=arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null;
+        // No tenemos el detalle por día exacto de este agregado; mostramos solo el resumen del rango
+        filas.push(`<tr><td class="lbl" style="padding-left:20px">${lbl}</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">${promedio!=null?promedio+'%':'—'}</td></tr>`);
+      });
+    });
   }
-  const avgArr=arr=>arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null;
-  const cel=(val,meta)=>{
-    if(val==null)return '<td>—</td>';
-    const p=val+'%';
-    if(meta!=null&&Math.abs(val-meta)<=3)return `<td>${p}</td>`;
-    if(meta!=null&&val>meta)return `<td class="tag-sobre">${p}</td>`;
-    if(meta!=null&&val<meta)return `<td class="tag-bajo">${p}</td>`;
-    return `<td>${p}</td>`;
-  };
-  body.innerHTML=rodales.map(rodal=>{
-    const r=rodalMap[rodal];
-    const cl=avgArr(r.clear);const ind=avgArr(r.industrial);
-    const pul=avgArr(r.pulpa);const sin=avgArr(r.siniestrado);
-    return `<tr>
-      <td>${rodal}</td>
-      ${cel(cl)}${cel(ind)}${cel(pul)}${cel(sin)}
-    </tr>`;
+
+  // ── BODEGA FAENA ──
+  filas.push(seccionFila('BODEGA FAENA — STOCK (Cargas)'));
+  filas.push(`<tr><td class="lbl">Stock Madera Aserrable</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">${stock.aserrable}</td></tr>`);
+  filas.push(`<tr><td class="lbl">Stock Madera Pulpable</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">${stock.pulpable}</td></tr>`);
+  filas.push(`<tr><td class="lbl">Stock Madera Manchada</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">${stock.manchada}</td></tr>`);
+
+  $id('tbody-ddd').innerHTML=filas.join('');
+}
+
+function seccionFila(titulo){
+  return `<tr class="seccion"><td class="lbl" colspan="1">${titulo}</td></tr>`;
+}
+
+// decimales: 0 = entero, 1 = 1 decimal, 2 = 2 decimales
+function filaSimple(lbl,vals,total,claseFn,decimales){
+  decimales=decimales===undefined?0:decimales;
+  const fmtV=v=>v==null?'—':fmt(v,decimales);
+  const celdas=vals.map(v=>{
+    const cls=claseFn?claseFn(v):'';
+    return `<td class="${cls}">${fmtV(v)}</td>`;
   }).join('');
+  const clsTotal=claseFn?claseFn(total):'';
+  return `<tr><td class="lbl">${lbl}</td>${celdas}<td class="resumen ${clsTotal}">${fmtV(total)}</td></tr>`;
 }
 
 init();
