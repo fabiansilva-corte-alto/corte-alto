@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <link rel="icon" type="image/png" href="logo.png">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --verde-oscuro:#1a3a1a;
@@ -302,46 +302,6 @@
   #toast.visible{opacity:1}
 
   /* ==== Reporte para imagen (oculto) ==== */
-  #reporte-img{
-    position:fixed;left:-9999px;top:0;
-    width:820px;background:#fff;padding:30px;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    font-size:15px;
-  }
-  .rep-header{
-    background:linear-gradient(135deg,var(--verde-oscuro),var(--verde-medio));
-    color:#fff;border-radius:12px;padding:20px 24px;margin-bottom:18px;
-  }
-  .rep-header h1{font-size:22px;margin-bottom:4px}
-  .rep-header .rep-sub{font-size:14px;opacity:.9}
-  .rep-datos{
-    display:flex;flex-wrap:wrap;gap:8px 28px;
-    background:var(--verde-claro);border-radius:10px;
-    padding:14px 18px;margin-bottom:18px;font-size:15px;
-  }
-  .rep-datos b{color:var(--verde-oscuro)}
-  .rep-equipo{
-    border:1px solid var(--borde);border-radius:10px;
-    padding:16px 18px;margin-bottom:14px;
-  }
-  .rep-equipo.dia{background:var(--dia-bg)}
-  .rep-equipo.noche{background:var(--noche-bg)}
-  .rep-eq-titulo{
-    font-size:17px;font-weight:800;color:var(--verde-oscuro);
-    margin-bottom:10px;display:flex;justify-content:space-between;
-  }
-  .rep-grid{
-    display:grid;grid-template-columns:repeat(4,1fr);
-    gap:8px 16px;font-size:14px;margin-bottom:10px;
-  }
-  .rep-grid .celda b{display:block;font-size:12px;color:#555;font-weight:600}
-  .rep-det{font-size:13.5px;margin-top:8px}
-  .rep-det table{width:100%;border-collapse:collapse;margin-top:5px}
-  .rep-det td{border-top:1px solid rgba(0,0,0,.08);padding:4px 7px;font-size:13px}
-  .rep-det td:last-child{text-align:right;white-space:nowrap}
-  .rep-obs{font-size:13px;margin-top:8px;font-style:italic;color:#444}
-  .rep-footer{text-align:center;font-size:12px;color:#888;margin-top:16px}
-
   @media(min-width:480px){
     .fila-3{display:flex;gap:10px}
     .fila-3>div{flex:1}
@@ -510,7 +470,6 @@
 <div id="toast"></div>
 
 <!-- ================= REPORTE PARA IMAGEN ================= -->
-<div id="reporte-img"></div>
 
 <script type="module">
 /* ============================================================
@@ -1893,138 +1852,287 @@ window.editarReporte = function (id) {
 };
 
 /* ============================================================
-   IMAGEN COMPARTIBLE
+   PDF COMPARTIBLE
    ============================================================ */
 window.compartirReporte = async function (id) {
   const r = historialCache.find(x => x.id === id);
   if (!r) return;
-  mostrarToast("🖼 Generando imagen…");
-
-  const cont = document.getElementById("reporte-img");
-  cont.innerHTML = htmlReporteImagen(r);
+  mostrarToast("📄 Generando PDF…");
 
   try {
-    const canvas = await html2canvas(cont, { scale: 3, backgroundColor: "#ffffff" });
-    const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
-    const file = new File([blob], `productividad_${r.fecha}_${r.linea}.png`, { type: "image/png" });
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const PW = 182, ML = 14, MT = 12; // ancho útil, márgenes
+    let y = MT;
+
+    const VD = "#1a3a1a", VM = "#2d5a2d", VC = "#e8f0e8";
+    const AM = "#E8A817", NA = "#E8641F", RO = "#c0392b";
+    const AM_B = "#fff8e1", AM_BD = "#e6c200";
+    const GF = "#f4f6f4", GL = "#dddddd";
+
+    const hex2rgb = h => {
+      const v = parseInt(h.replace("#",""), 16);
+      return [(v>>16)&255, (v>>8)&255, v&255];
+    };
+    const setFill   = c => { const [r,g,b] = hex2rgb(c); doc.setFillColor(r,g,b); };
+    const setStroke = c => { const [r,g,b] = hex2rgb(c); doc.setDrawColor(r,g,b); };
+    const setFont   = (sz, st="normal") => doc.setFont("helvetica", st).setFontSize(sz);
+    const setTxt    = c => { const [r,g,b] = hex2rgb(c); doc.setTextColor(r,g,b); };
+
+    /* Línea izquierda de color para cada equipo */
+    const TIPO_COLOR = { "TORRE": NA, "SKIDDER": AM, "PROCESADOR": AM, "SHOVEL": AM };
+
+    /* ── ENCABEZADO ── */
+    setFill(VD); doc.roundedRect(ML, y, PW, 18, 2, 2, "F");
+    try {
+      doc.addImage(LOGO_B64, "PNG", ML+2, y+1, 14, 14);
+    } catch(e) {}
+    setFont(13,"bold"); setTxt("#ffffff");
+    doc.text("Reporte de Productividad - Jefe de Faena", ML+19, y+7);
+    setFont(8,"normal"); setTxt("#ccddcc");
+    doc.text(`Forestal Corte Alto Ltda. - Version V${r.version||1}`, ML+19, y+13);
+    y += 22;
+
+    /* ── DATOS GENERALES ── */
+    setFill(VC); doc.roundedRect(ML, y, PW, 12, 1.5, 1.5, "F");
+    const cols = [28,55,35,PW-118];
+    const hdrs = ["Fecha","Fundo","Linea","Jefe de Faena"];
+    const vals = [formatoFecha(r.fecha), `${r.fundo} (${r.codigoFundo||""})`, r.linea, r.jefe];
+    let cx = ML;
+    hdrs.forEach((h,i)=>{
+      setFont(6,"bold"); setTxt("#555555"); doc.text(h, cx+2, y+4);
+      setFont(8,"normal"); setTxt("#000000"); doc.text(String(vals[i]||""), cx+2, y+10, {maxWidth: cols[i]-3});
+      cx += cols[i];
+    });
+    y += 15;
+
+    /* ── SEGURIDAD ── */
+    const seg = r.seguridad || {};
+    setFill(AM_B); setStroke(AM_BD);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(ML, y, PW, 16, 1.5, 1.5, "FD");
+    setFont(7,"bold"); setTxt("#7a6400"); doc.text("Seguridad y Medio Ambiente", ML+3, y+5);
+    const segKeys = ["accidenteCTP","accidenteSTP","cuasiAccidente","incidenteMedioAmb"];
+    const segLbls = ["Accidente CTP","Accidente STP","Cuasi Accidente","Inc. Medio Amb."];
+    const scw = PW/4;
+    segKeys.forEach((k,i)=>{
+      const v = seg[k]||0;
+      const sx = ML + i*scw;
+      setFont(6,"bold"); setTxt("#555555"); doc.text(segLbls[i], sx+2, y+10);
+      setFont(12,"bold"); setTxt(v===0?"#aaaaaa":RO); doc.text(String(v), sx+scw/2, y+16, {align:"center"});
+    });
+    y += 20;
+
+    /* ── EQUIPOS ── */
+    const checkPage = (need=30) => {
+      if (y + need > 282) { doc.addPage(); y = MT; }
+    };
+
+    (r.equipos||[]).forEach(eq => {
+      checkPage(40);
+      const tipColor = TIPO_COLOR[eq.tipo] || AM;
+      const esDia = eq.turno === "DÍA";
+      const bgTurno = esDia ? "#fff3c4" : "#dde3ee";
+      const txtTurno = esDia ? "#7a6400" : "#2c3e66";
+
+      /* Borde izquierdo de color */
+      const [tr,tg,tb] = hex2rgb(tipColor);
+      doc.setDrawColor(tr,tg,tb); doc.setLineWidth(1.2);
+      const eqStartY = y;
+
+      /* Cabecera del equipo */
+      setFill(VD); doc.rect(ML+1.5, y, PW-1.5, 8, "F");
+      setFont(9,"bold"); setTxt("#ffffff");
+      doc.text(`${eq.equipo} - ${eq.tipo}`, ML+4, y+5.5);
+      setFill(bgTurno); doc.rect(ML+PW-22, y, 22, 8, "F");
+      setFont(8,"bold"); setTxt(txtTurno);
+      doc.text(eq.turno||"", ML+PW-11, y+5.5, {align:"center"});
+      y += 10;
+
+      /* Fila de datos base */
+      const filaBase = [
+        ["Operador", eq.operador||""],
+        ["Horometro", `${eq.horometroInicial} -> ${eq.horometroFinal}`],
+        ["Hrs trabajo", fmtComa(eq.horasTrabajo||0)],
+      ];
+      if (eq.tpProgramado !== undefined) filaBase.push(["TP (h)", fmtComa(eq.tpProgramado)]);
+      if (eq.operativo === "NO") filaBase.push(["Estado","NO OPERATIVO"]);
+
+      const cw4 = PW/filaBase.length;
+      let fc = ML+1.5;
+      filaBase.forEach(([lbl,val])=>{
+        setFont(6,"bold"); setTxt("#555555"); doc.text(lbl, fc+2, y+3.5);
+        setFont(8,"normal"); setTxt("#000000"); doc.text(String(val||""), fc+2, y+8.5, {maxWidth:cw4-4});
+        fc += cw4;
+      });
+      y += 12;
+
+      /* Campos específicos por tipo */
+      const camposExtra = [];
+      if (eq.tipo==="TORRE") {
+        camposExtra.push([["Cambio linea", eq.cambioLinea||""],["Carro", eq.tipoCarro||""],["",""],["",""]]);
+        if (eq.tipoCarro==="MIXTO") {
+          camposExtra.push([
+            ["BEREUTER Ciclos", eq.ciclosBereuter||0],["BEREUTER Arb.", eq.arbolesBereuter||0],
+            ["WYSSEN Ciclos", eq.ciclosWyssen||0],["WYSSEN Arb.", eq.arbolesWyssen||0]
+          ]);
+          camposExtra.push([["Total MIXTO", `${(eq.ciclosBereuter||0)+(eq.ciclosWyssen||0)} cic / ${(eq.arbolesBereuter||0)+(eq.arbolesWyssen||0)} arb`],["",""],["",""],["",""]]);
+        } else {
+          camposExtra.push([["N Ciclos", eq.ciclos||0],["Arboles", eq.arboles||0],["",""],["",""]]);
+        }
+      }
+      if (eq.tipo==="SKIDDER")    camposExtra.push([["N Ciclos",eq.ciclos||0],["Arboles",eq.arboles||0],["Huinche asistencia",eq.huincheAsistencia||""],["",""]]);
+      if (eq.tipo==="PROCESADOR") {
+        const rodTxt = (eq.rodales||[]).map(r2=>`${r2.rodal}: ${r2.arboles}`).join(" / ")||"-";
+        camposExtra.push([["Arb. por rodal", rodTxt],["",""],["",""],["",""]]);
+      }
+      if (eq.tipo==="SHOVEL") {
+        camposExtra.push([["Shoveleo",eq.shoveleo||""],["Arb. shoveleo",eq.shoveleo==="SÍ"?eq.arbolesShoveleo||0:"—"],["",""],["",""]]);
+        const volTxt = (eq.volteos||[]).map(v=>`${v.rodal}: ${v.arboles} (${v.destino})`).join(" / ")||"-";
+        camposExtra.push([["Volteos por rodal", volTxt],["",""],["",""],["",""]]);
+      }
+
+      camposExtra.forEach(fila=>{
+        checkPage(14);
+        const cwe = PW/4; let fce = ML+1.5;
+        fila.forEach(([lbl,val])=>{
+          if(lbl){ setFont(6,"bold"); setTxt("#555555"); doc.text(String(lbl), fce+2, y+3.5); }
+          if(val!==undefined && val!==""){ setFont(8,"normal"); setTxt("#000000"); doc.text(String(val), fce+2, y+8.5, {maxWidth:cwe-4}); }
+          fce += cwe;
+        });
+        y += 11;
+      });
+
+      /* OEE (solo si no es SHOVEL) */
+      if (eq.tipo !== "SHOVEL" && eq.tpProgramado !== undefined) {
+        checkPage(14);
+        setFill(VC); doc.rect(ML+1.5, y, PW-1.5, 12, "F");
+        const oeeItems = [
+          ["TP", fmtComa(eq.tpProgramado)],
+          ["TOB", fmtComa(eq.tob||0)],
+          ["TOC", fmtComa(eq.toc||0)],
+          ["FD", eq.fd!==undefined?Math.round(eq.fd*100)+"%":"—"],
+          ["FE", eq.fe!==undefined?Math.round(eq.fe*100)+"%":"—"],
+          ["OEE", eq.oee!==undefined?Math.round(eq.oee*100)+"%":"—"],
+        ];
+        const ow = (PW-1.5)/6; let ox = ML+1.5;
+        oeeItems.forEach(([lbl,val],i)=>{
+          setFont(6,"bold"); setTxt("#555555"); doc.text(lbl, ox+ow/2, y+4, {align:"center"});
+          const isOEE = i===5;
+          setFont(isOEE?11:9,"bold"); setTxt(isOEE?VM:"#000000");
+          doc.text(String(val), ox+ow/2, y+10, {align:"center"});
+          ox += ow;
+        });
+        y += 14;
+      }
+
+      /* Detenciones */
+      if ((eq.detenciones||[]).length) {
+        checkPage(12);
+        const conResp = eq.tipo !== "SHOVEL";
+        const tot = fmtComa(eq.totalDetencionesHrs||0);
+        setFont(7,"bold"); setTxt(RO);
+        doc.text(`Detenciones (${tot} hrs)`, ML+3, y+4);
+        y += 7;
+
+        const dCols = conResp ? [12,null,14,12] : [12,null,12];
+        const dHdrs = conResp ? ["Cod","Motivo","Resp.","Hrs"] : ["Cod","Motivo","Hrs"];
+        const usableW = PW-1.5;
+        const fixedW = dCols.filter(Number).reduce((a,b)=>a+b,0);
+        const flexW  = usableW - fixedW;
+        const finalCols = dCols.map(c => c===null ? flexW : c);
+
+        /* Cabecera tabla */
+        setFill(VC); doc.rect(ML+1.5, y, usableW, 6, "F");
+        let dx = ML+1.5;
+        dHdrs.forEach((h,i)=>{ setFont(6,"bold"); setTxt("#1a3a1a"); doc.text(h, dx+1.5, y+4); dx+=finalCols[i]; });
+        y += 7;
+
+        eq.detenciones.forEach((d,di)=>{
+          checkPage(8);
+          if(di%2===0){ setFill("#ffffff"); } else { setFill(GF); }
+          doc.rect(ML+1.5, y, usableW, 6, "F");
+          let ddx = ML+1.5;
+          setFont(7,"normal"); setTxt("#000000");
+          if(conResp){
+            [String(d.codigo||""), d.motivo||"", d.resp||"", fmtComa(d.horas||0)].forEach((v,i)=>{
+              doc.text(v, ddx+1.5, y+4.5, {maxWidth:finalCols[i]-2}); ddx+=finalCols[i];
+            });
+          } else {
+            [String(d.codigo||""), d.motivo||"", fmtComa(d.horas||0)].forEach((v,i)=>{
+              doc.text(v, ddx+1.5, y+4.5, {maxWidth:finalCols[i]-2}); ddx+=finalCols[i];
+            });
+          }
+          y += 7;
+        });
+      }
+
+      /* Rodales PROCESADOR */
+      if ((eq.rodales||[]).length) {
+        checkPage(10);
+        setFont(7,"bold"); setTxt(VD); doc.text("Arboles trozados por rodal:", ML+3, y+4); y+=7;
+        eq.rodales.forEach((rd,ri)=>{
+          checkPage(7);
+          if(ri%2===0){setFill("#ffffff");}else{setFill(GF);}
+          doc.rect(ML+1.5,y,PW-1.5,5.5,"F");
+          setFont(7,"normal"); setTxt("#000000");
+          doc.text(`Rodal ${rd.rodal}: ${rd.arboles} arb.`, ML+3, y+4);
+          y+=6;
+        });
+      }
+
+      /* Volteos SHOVEL */
+      if ((eq.volteos||[]).length) {
+        checkPage(10);
+        setFont(7,"bold"); setTxt(VD); doc.text("Arboles volteados por rodal:", ML+3, y+4); y+=7;
+        eq.volteos.forEach((v,vi)=>{
+          checkPage(7);
+          if(vi%2===0){setFill("#ffffff");}else{setFill(GF);}
+          doc.rect(ML+1.5,y,PW-1.5,5.5,"F");
+          setFont(7,"normal"); setTxt("#000000");
+          doc.text(`Rodal ${v.rodal}: ${v.arboles} arb. -> ${v.destino}`, ML+3, y+4);
+          y+=6;
+        });
+      }
+
+      /* Borde izquierdo de color (dibujado al final para cubrir toda la altura) */
+      doc.setDrawColor(tr,tg,tb); doc.setLineWidth(1.2);
+      doc.line(ML, eqStartY, ML, y);
+      y += 5;
+    });
+
+    /* ── FOOTER ── */
+    checkPage(10);
+    setFill(VC); doc.rect(ML, y, PW, 0.3, "F");
+    y += 4;
+    setFont(7,"normal"); setTxt("#888888");
+    doc.text(`Generado por Corte Alto PWA  -  ${new Date().toLocaleString("es-CL")}`, ML+PW/2, y, {align:"center"});
+
+    /* ── COMPARTIR O DESCARGAR ── */
+    const nombre = `Productividad_${r.fecha}_${r.linea.replace(/\s/g,"_")}_V${r.version||1}.pdf`;
+    const pdfBlob = doc.output("blob");
+    const file = new File([pdfBlob], nombre, { type: "application/pdf" });
 
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
         files: [file],
         title: "Reporte de Productividad",
-        text: `Productividad ${formatoFecha(r.fecha)} — ${r.fundo} ${r.linea} V${r.version || 1}`
+        text: `Productividad ${formatoFecha(r.fecha)} — ${r.fundo} ${r.linea} V${r.version||1}`
       });
     } else {
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = file.name;
+      a.href = URL.createObjectURL(pdfBlob);
+      a.download = nombre;
       a.click();
-      mostrarToast("💾 Imagen descargada");
+      mostrarToast("💾 PDF descargado");
     }
   } catch (err) {
     if (err.name !== "AbortError") {
       console.error(err);
-      mostrarToast("⚠️ No se pudo generar la imagen");
+      mostrarToast("⚠️ No se pudo generar el PDF");
     }
-  } finally {
-    cont.innerHTML = "";
   }
 };
-
-function htmlReporteImagen(r) {
-  const filasEquipos = (r.equipos || []).map(e => {
-    const clase = e.turno === "DÍA" ? "dia" : "noche";
-    const emoji = e.turno === "DÍA" ? "☀️" : "🌙";
-
-    const celdas = [
-      ["Operador", e.operador],
-      ["Horómetro", `${e.horometroInicial} → ${e.horometroFinal}`],
-      ["Hrs trabajo", fmtComa(e.horasTrabajo)],
-    ];
-    if (e.tpProgramado !== undefined) celdas.push(["TP (h)", fmtComa(e.tpProgramado)]);
-    if (e.tob !== undefined) celdas.push(["TOB (h)", fmtComa(e.tob)]);
-    if (e.toc !== undefined) celdas.push(["TOC (h)", fmtComa(e.toc)]);
-    if (e.oee !== undefined) celdas.push(["OEE", Math.round(e.oee * 100) + "%"]);
-    if (e.fd !== undefined) celdas.push(["FD", Math.round(e.fd * 100) + "%"]);
-    if (e.fe !== undefined) celdas.push(["FE", Math.round(e.fe * 100) + "%"]);
-    if (e.operativo === "NO") celdas.push(["Estado", "⛔ NO OPERATIVO"]);
-    if (e.tipoCarro === "MIXTO") {
-      celdas.push(["Ciclos B.", e.ciclosBereuter ?? 0]);
-      celdas.push(["Árb. B.", e.arbolesBereuter ?? 0]);
-      celdas.push(["Ciclos W.", e.ciclosWyssen ?? 0]);
-      celdas.push(["Árb. W.", e.arbolesWyssen ?? 0]);
-    }
-    if (e.ciclos !== undefined) celdas.push(["Ciclos", e.ciclos]);
-    if (e.arboles !== undefined) celdas.push(["Árboles", e.arboles]);
-    if (e.tipoCarro) celdas.push(["Carro", e.tipoCarro]);
-    if (e.cambioLinea) celdas.push(["Cambio línea", e.cambioLinea === "SÍ"
-      ? `SÍ (${fmtComa(e.horasCambioLinea || 0)} h)` : "NO"]);
-    if (e.lineaSoportes) celdas.push(["Soportes", e.lineaSoportes]);
-    if (e.preInstalado) celdas.push(["Pre-instalado", e.preInstalado]);
-    if (e.huincheAsistencia) celdas.push(["Huinche asist.", e.huincheAsistencia]);
-    if (e.shoveleo) celdas.push(["Shoveleo", e.shoveleo === "SÍ"
-      ? `SÍ (${e.arbolesShoveleo || 0} árb.)` : "NO"]);
-    if (e.arbolesVolteados !== undefined) celdas.push(["Árb. volteados", e.arbolesVolteados]);
-
-    const rodalesHtml = e.rodales?.length
-      ? `<div class="rep-det"><b>Árboles trozados por rodal:</b> ${e.rodales.map(x => `${x.rodal}: ${x.arboles}`).join(" · ")}</div>`
-      : "";
-
-    const volteosHtml = e.volteos?.length
-      ? `<div class="rep-det"><b>Árboles volteados por rodal:</b> ${e.volteos.map(v => `${v.rodal}: ${v.arboles} → ${v.destino}`).join(" · ")}</div>`
-      : "";
-
-    const detHtml = e.detenciones?.length
-      ? `<div class="rep-det"><b>Detenciones (${fmtComa(e.totalDetencionesHrs || 0)} hrs):</b>
-          <table>${e.detenciones.map(d => `<tr><td>${esc(d.motivo)}</td><td>${esc(d.resp || "—")}</td><td>${fmtComa(d.horas)} h</td></tr>`).join("")}</table>
-        </div>`
-      : `<div class="rep-det">Sin detenciones registradas</div>`;
-
-    const obsHtml = e.observaciones ? `<div class="rep-obs">Obs: ${esc(e.observaciones)}</div>` : "";
-
-    return `
-      <div class="rep-equipo ${clase}">
-        <div class="rep-eq-titulo">
-          <span>${iconoTipo(e.tipo, 22)} ${esc(e.equipo)} — ${esc(e.tipo)}</span>
-          <span>${emoji} ${e.turno}</span>
-        </div>
-        <div class="rep-grid">
-          ${celdas.map(c => `<div class="celda"><b>${c[0]}</b>${esc(String(c[1]))}</div>`).join("")}
-        </div>
-        ${rodalesHtml}
-        ${volteosHtml}
-        ${detHtml}
-        ${obsHtml}
-      </div>`;
-  }).join("");
-
-  return `
-    <div class="rep-header">
-      <div style="display:flex;align-items:center;gap:16px">
-        <img src="${LOGO_B64}" style="height:64px;width:auto;filter:brightness(0) invert(1)">
-        <div>
-          <h1>🌲 Reporte de Productividad — Jefe de Faena</h1>
-          <div class="rep-sub">Forestal Corte Alto Ltda. · Versión V${r.version || 1}</div>
-        </div>
-      </div>
-    </div>
-    <div class="rep-datos">
-      <span><b>Fecha:</b> ${formatoFecha(r.fecha)}</span>
-      <span><b>Fundo:</b> ${esc(r.fundo)} (${esc(r.codigoFundo)})</span>
-      <span><b>Línea:</b> ${esc(r.linea)}</span>
-      <span><b>Jefe de Faena:</b> ${esc(r.jefe)}</span>
-    </div>
-    <div style="background:#fff8e1;border:1px solid #e6c200;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap">
-      <span style="font-size:13px;font-weight:700;color:#7a6400;width:100%;margin-bottom:4px">🦺 Seguridad y Medio Ambiente</span>
-      ${SEG_CAMPOS.map(c => {
-        const v = (r.seguridad || {})[c.key] || 0;
-        const color = v === 0 ? "#888" : "#c0392b";
-        return `<span style="font-size:13px"><b style="color:${color}">${v}</b> ${esc(c.label)}</span>`;
-      }).join(" &nbsp;·&nbsp; ")}
-    </div>
-    ${filasEquipos}
-    <div class="rep-footer">Generado por Corte Alto PWA · ${new Date().toLocaleString("es-CL")}</div>`;
-}
 
 /* ============================================================
    UTILIDADES
