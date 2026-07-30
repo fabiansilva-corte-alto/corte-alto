@@ -34,7 +34,7 @@
   --radius:10px;
   --radius-sm:6px;
 }
-html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px}
+html,body{height:100%;width:100%;font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;overflow-x:hidden}
 
 /* ── BARRA FILTROS ── */
 #filtros{
@@ -80,7 +80,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 #btn-cargar:disabled{opacity:.4;cursor:default}
 
 /* ── CONTENIDO PRINCIPAL ── */
-#dashboard{padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+#dashboard{width:100%;padding:10px 12px;display:flex;flex-direction:column;gap:10px}
 
 /* ── ESTADO INICIAL ── */
 #estado-vacio{
@@ -260,7 +260,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   #filtros{gap:6px}
   .seg-grid{flex-wrap:wrap}
 }/* ==== TABLA ESTILO EXCEL (rediseño v2, más clara, tamaño reunión) ==== */
-.tabla-ddd-wrap{overflow-x:auto;border-radius:10px;border:1px solid #b7c9a8;max-height:calc(100vh - 190px);overflow-y:auto}
+.tabla-ddd-wrap{width:100%;overflow-x:auto;border-radius:10px;border:1px solid #b7c9a8;max-height:calc(100vh - 190px);overflow-y:auto}
 table.tabla-ddd{border-collapse:collapse;width:100%;font-size:16px;white-space:nowrap;background:#fff;color:#1a1a1a}
 table.tabla-ddd th,table.tabla-ddd td{border:1px solid #cfd8c2;padding:9px 14px;text-align:center}
 table.tabla-ddd thead th{background:#ffe066;color:#1a1a1a;position:sticky;top:0;z-index:3;font-size:15px}
