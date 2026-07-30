@@ -1075,13 +1075,18 @@ function htmlDetenciones(eq) {
       <input type="text" id="in-${eq.id}-det-${i}-motivoOtro" placeholder="Especifique el motivo" value="${esc(d.motivoOtro || "")}"
         oninput="setDetencion('${eq.id}',${i},'motivoOtro',this.value)">
     </div>` : ""}
+    ${String(d.codigo) === "14" ? `
+    <div class="sub-item">
+      <input type="text" id="in-${eq.id}-det-${i}-motivoFalla" placeholder="Describa el motivo de la falla" value="${esc(d.motivoFalla || "")}"
+        oninput="setDetencion('${eq.id}',${i},'motivoFalla',this.value)">
+    </div>` : ""}
   `).join("");
 }
 
 window.agregarDetencion = function (id) {
   const eq = equipos.find(e => e.id === id);
   if (!eq.tipo) { mostrarToast("⚠️ Primero seleccione el tipo de equipo"); return; }
-  eq.detenciones.push({ codigo: "", resp: "", horas: "", motivoOtro: "" });
+  eq.detenciones.push({ codigo: "", resp: "", horas: "", motivoOtro: "", motivoFalla: "" });
   refrescarSubListas(eq);
   guardarBorrador();
 };
@@ -1374,6 +1379,7 @@ function validar() {
       if (eq.tipo !== "SHOVEL") marca(`in-${eq.id}-det-${i}-resp`, null, !d.resp);
       marca(`in-${eq.id}-det-${i}-horas`, null, !esNum(d.horas));
       if (String(d.codigo) === "99") marca(`in-${eq.id}-det-${i}-motivoOtro`, null, !String(d.motivoOtro || "").trim());
+      if (String(d.codigo) === "14") marca(`in-${eq.id}-det-${i}-motivoFalla`, null, !String(d.motivoFalla || "").trim());
     });
 
     if (eq.operativo === "NO") {
@@ -1479,7 +1485,9 @@ function armarDocumento() {
               codigo: parseInt(d.codigo),
               motivo: String(d.codigo) === "99"
                 ? `(99) OTRO: ${(d.motivoOtro || "").trim()}`
-                : etiquetaDet(d.codigo, desc),
+                : String(d.codigo) === "14"
+                  ? `(14) FALLA EQUIPO: ${(d.motivoFalla || "").trim()}`
+                  : etiquetaDet(d.codigo, desc),
               horas: parseDec(d.horas) || 0
             };
             if (conResp) det.resp = d.resp || "";
@@ -1834,7 +1842,9 @@ window.editarReporte = function (id) {
         resp: d.resp || "",
         horas: d.horas !== undefined ? fmtComa(d.horas) : "",
         motivoOtro: String(d.codigo) === "99" && d.motivo
-          ? d.motivo.replace(/^\(99\)\s*OTRO:\s*/, "") : ""
+          ? d.motivo.replace(/^\(99\)\s*OTRO:\s*/, "") : "",
+        motivoFalla: String(d.codigo) === "14" && d.motivo
+          ? d.motivo.replace(/^\(14\)\s*FALLA EQUIPO:\s*/, "") : ""
       })),
       rodales: (e.rodales || []).map(r2 => ({ rodal: r2.rodal, arboles: String(r2.arboles) })),
       volteos: (e.volteos || []).map(v => ({
