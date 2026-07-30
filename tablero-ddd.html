@@ -116,8 +116,8 @@ html,body{height:100%;width:100%;font-family:var(--font);background:var(--bg);co
 .seg-item .seg-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;text-align:center;line-height:1.2}
 .seg-item.alerta .seg-lbl{color:var(--red)}
 
-/* ── GRID PRINCIPAL (2 columnas) ── */
-#grid-main{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* ── GRID PRINCIPAL (tabla full width) ── */
+#grid-main{display:block;width:100%}
 
 /* ── CARDS ── */
 .card{
@@ -260,21 +260,87 @@ html,body{height:100%;width:100%;font-family:var(--font);background:var(--bg);co
   #filtros{gap:6px}
   .seg-grid{flex-wrap:wrap}
 }/* ==== TABLA ESTILO EXCEL (rediseño v2, más clara, tamaño reunión) ==== */
-.tabla-ddd-wrap{width:100%;overflow-x:auto;border-radius:10px;border:1px solid #b7c9a8;max-height:calc(100vh - 190px);overflow-y:auto}
-table.tabla-ddd{border-collapse:collapse;width:100%;font-size:16px;white-space:nowrap;background:#fff;color:#1a1a1a}
+/* ── TABLA EXCEL WRAP ── */
+.tabla-ddd-wrap{
+  width:100%;
+  overflow-x:auto;
+  overflow-y:auto;
+  border-radius:10px;
+  border:1px solid #b7c9a8;
+  max-height:calc(100vh - 120px);
+  -webkit-overflow-scrolling:touch;
+}
+table.tabla-ddd{
+  border-collapse:collapse;
+  width:100%;
+  min-width:600px;
+  font-size:16px;
+  white-space:nowrap;
+  background:#fff;
+  color:#1a1a1a;
+  table-layout:auto;
+}
 table.tabla-ddd th,table.tabla-ddd td{border:1px solid #cfd8c2;padding:9px 14px;text-align:center}
 table.tabla-ddd thead th{background:#ffe066;color:#1a1a1a;position:sticky;top:0;z-index:3;font-size:15px}
-table.tabla-ddd td.lbl,table.tabla-ddd th.lbl{text-align:left;position:sticky;left:0;background:#eef3e6;z-index:1;min-width:300px;font-weight:600;color:#1a1a1a}
+table.tabla-ddd td.lbl,table.tabla-ddd th.lbl{
+  text-align:left;position:sticky;left:0;
+  background:#eef3e6;z-index:1;
+  min-width:240px;max-width:340px;
+  font-weight:600;color:#1a1a1a;
+  white-space:normal;word-break:break-word;
+}
 table.tabla-ddd th.lbl{z-index:4}
-table.tabla-ddd tr.seccion td{background:#c9dfae;font-weight:700;text-transform:uppercase;font-size:13px;letter-spacing:.04em;text-align:left;position:sticky;left:0}
+table.tabla-ddd tr.seccion td{
+  background:#c9dfae;font-weight:700;text-transform:uppercase;
+  font-size:13px;letter-spacing:.04em;text-align:left;
+  position:sticky;left:0;white-space:normal;
+}
 table.tabla-ddd td.resumen,table.tabla-ddd th.resumen{background:#e3edd3;font-weight:700}
 table.tabla-ddd td.azul{color:#1560c4;font-weight:700}
 table.tabla-ddd td.rojo{color:#c0392b;font-weight:700}
 table.tabla-ddd tr.rodal-a td.lbl{background:#d7e8c4}
 table.tabla-ddd tr.rodal-b td.lbl{background:#c3ddb0}
+
+/* ── ORIENTACIÓN LANDSCAPE FORZADA EN MÓVIL ── */
+@media screen and (max-width:768px) and (orientation:portrait){
+  #aviso-rotar{
+    display:flex;
+    position:fixed;inset:0;z-index:9999;
+    background:#0f1f0f;
+    flex-direction:column;
+    align-items:center;justify-content:center;
+    gap:16px;color:#e8f0e8;text-align:center;padding:24px;
+  }
+  #aviso-rotar .icono-rotar{font-size:52px;animation:rotar-anim 1.5s ease-in-out infinite alternate}
+  #aviso-rotar p{font-size:15px;color:#a8c4a8;max-width:260px;line-height:1.5}
+  @keyframes rotar-anim{from{transform:rotate(0deg)}to{transform:rotate(90deg)}}
+}
+@media screen and (max-width:768px) and (orientation:landscape){
+  #aviso-rotar{display:none}
+  .tabla-ddd-wrap{
+    max-height:calc(100vh - 80px);
+    border-radius:6px;
+  }
+  table.tabla-ddd{font-size:13px}
+  table.tabla-ddd th,table.tabla-ddd td{padding:6px 10px}
+  table.tabla-ddd td.lbl,table.tabla-ddd th.lbl{min-width:160px;max-width:220px;font-size:12px}
+  table.tabla-ddd thead th{font-size:12px}
+  #filtros{padding:5px 8px;gap:5px}
+  #filtros select,#filtros input[type=date]{font-size:11px;height:26px;padding:3px 6px}
+  #btn-cargar{font-size:11px;height:26px;padding:3px 10px}
+  #bloque-header{padding:6px 10px}
+  .header-info .titulo{font-size:18px}
+  .header-logo{width:36px;height:36px}
+}
 </style>
 </head>
 <body>
+
+<!-- AVISO ROTAR (solo portrait móvil) -->
+<div id="aviso-rotar" style="display:none">
+  <div class="icono-rotar">📱</div>
+  <p>Girá el celular a <strong>horizontal</strong> para ver el tablero completo</p>
+</div>
 
 <!-- BARRA FILTROS -->
 <div id="filtros">
