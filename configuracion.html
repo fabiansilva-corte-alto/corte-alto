@@ -239,6 +239,7 @@
   <button class="tab-btn" data-tab="calibradores" onclick="cambiarTab('calibradores')">Calibradores</button>
   <button class="tab-btn" data-tab="operadores" onclick="cambiarTab('operadores')">Operadores</button>
   <button class="tab-btn" data-tab="equipos" onclick="cambiarTab('equipos')">Equipos</button>
+  <button class="tab-btn" data-tab="volumen-meta" onclick="cambiarTab('volumen-meta')">Volumen Meta</button>
 </div>
 
 <main>
@@ -277,6 +278,36 @@
   <div class="panel" id="panel-equipos">
     <div id="lista-equipos"></div>
     <button class="btn-agregar" onclick="abrirModalEquipo()">+ Agregar equipo</button>
+  </div>
+
+  <!-- ===== PANEL VOLUMEN META ===== -->
+  <div class="panel" id="panel-volumen-meta">
+    <label>Línea</label>
+    <select id="vm-linea" onchange="cargarVolumenMeta()"></select>
+
+    <label>Mes</label>
+    <select id="vm-mes" onchange="cargarVolumenMeta()">
+      <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+      <option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option>
+      <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+      <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+    </select>
+
+    <label>Año</label>
+    <select id="vm-anio" onchange="cargarVolumenMeta()"></select>
+
+    <label style="margin-top:14px">Pegar rango completo (copiado desde Excel)</label>
+    <textarea id="vm-pegado" rows="3" placeholder="Pega aquí los valores del mes (uno por línea o separados por tab/espacio) y presiona 'Repartir en los días'" style="width:100%;padding:10px;border:1px solid var(--borde);border-radius:8px;font-family:inherit;font-size:13px;resize:vertical"></textarea>
+    <button class="btn-agregar-op" style="margin-top:6px" onclick="repartirPegadoVolumenMeta()">📋 Repartir en los días</button>
+
+    <div id="vm-grilla" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;margin-top:14px"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:12px 14px;background:var(--verde-claro);border-radius:10px">
+      <span style="font-size:13px;font-weight:700;color:var(--verde-oscuro)">Total volumen meta del mes</span>
+      <span id="vm-total" style="font-size:16px;font-weight:800;color:var(--verde-oscuro)">0</span>
+    </div>
+
+    <button class="btn-primario" style="width:100%;margin-top:14px" onclick="guardarVolumenMeta()">Guardar</button>
   </div>
 
 </main>
@@ -417,7 +448,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   initializeFirestore, persistentLocalCache,
   collection, addDoc, updateDoc, deleteDoc, doc,
-  query, orderBy, getDocs, onSnapshot
+  query, orderBy, getDocs, onSnapshot, setDoc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -438,6 +469,7 @@ const COL_JEFES = "config_jefes_faena";
 const COL_CALIBRADORES = "config_calibradores";
 const COL_OPERADORES = "config_operadores";
 const COL_EQUIPOS = "config_equipos";
+const COL_VOLUMEN_META = "config_volumen_meta";
 
 const CLAVE_ACCESO = "1771";
 
@@ -476,6 +508,7 @@ window.cambiarTab = function(tab){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('activo'));
   document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('activo');
   document.getElementById(`panel-${tab}`).classList.add('activo');
+  if(tab === 'volumen-meta' && typeof window.cargarVolumenMeta === 'function') window.cargarVolumenMeta();
 };
 
 /* ============================================================
@@ -1081,6 +1114,120 @@ window.eliminarEquipo = async function(id, nombre){
   } catch(e){
     toast('Error al eliminar: ' + e.message);
   }
+};
+
+/* ============================================================
+   VOLUMEN META DIARIO
+   Documento por línea+mes+año, con un array de valores (uno por
+   día) y el total calculado. ID del doc: LINEA_AAAA-MM
+   ============================================================ */
+function diasDelMes(mes, anio){
+  return new Date(anio, mes + 1, 0).getDate();
+}
+
+function idVolumenMeta(linea, mes, anio){
+  const mesStr = String(mes + 1).padStart(2, '0');
+  return `${linea}_${anio}-${mesStr}`;
+}
+
+function poblarSelectAnioVolumenMeta(){
+  const sel = document.getElementById('vm-anio');
+  const actual = sel.value;
+  const anioHoy = new Date().getFullYear();
+  const anios = [anioHoy - 1, anioHoy, anioHoy + 1];
+  sel.innerHTML = anios.map(a => `<option value="${a}">${a}</option>`).join('');
+  if(actual && anios.includes(Number(actual))) sel.value = actual;
+  else sel.value = String(anioHoy);
+}
+
+function poblarSelectLineaVolumenMeta(){
+  const sel = document.getElementById('vm-linea');
+  const actual = sel.value;
+  const nombres = [...new Set(lineas.map(l => l.nombre))];
+  sel.innerHTML = nombres.length
+    ? nombres.map(n => `<option>${n}</option>`).join('')
+    : '<option value="">Agrega líneas primero</option>';
+  if(actual && nombres.includes(actual)) sel.value = actual;
+}
+
+function renderGrillaVolumenMeta(valores, totalDias){
+  const cont = document.getElementById('vm-grilla');
+  cont.innerHTML = '';
+  for(let d = 1; d <= totalDias; d++){
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <label style="font-size:10px;color:#888;text-align:center;display:block;margin-bottom:2px">Día ${d}</label>
+      <input type="number" step="any" data-dia="${d}" value="${valores[d-1] ?? ''}" style="width:100%;padding:6px 4px;text-align:center;font-size:12px;border:1px solid var(--borde);border-radius:6px" oninput="actualizarTotalVolumenMeta()">
+    `;
+    cont.appendChild(div);
+  }
+}
+
+window.actualizarTotalVolumenMeta = function(){
+  const inputs = document.querySelectorAll('#vm-grilla input');
+  let total = 0;
+  inputs.forEach(inp => { total += Number(inp.value) || 0; });
+  document.getElementById('vm-total').textContent = total.toLocaleString('es-CL', {maximumFractionDigits:2});
+};
+
+window.repartirPegadoVolumenMeta = function(){
+  const texto = document.getElementById('vm-pegado').value;
+  if(!texto.trim()){ toast('Pega primero los valores'); return; }
+  // Separa por salto de línea, tabulación, coma o espacios múltiples
+  const valores = texto.split(/[\n\t,;]+/).map(v => v.trim()).filter(v => v.length > 0).map(v => v.replace(',', '.'));
+  const inputs = document.querySelectorAll('#vm-grilla input');
+  if(valores.length === 0){ toast('No se detectaron valores'); return; }
+  inputs.forEach((inp, i) => {
+    if(valores[i] !== undefined) inp.value = valores[i];
+  });
+  window.actualizarTotalVolumenMeta();
+  const faltantes = inputs.length - valores.length;
+  if(faltantes > 0) toast(`Se repartieron ${valores.length} valores. Faltan ${faltantes} día(s) por completar.`);
+  else if(valores.length > inputs.length) toast(`Se pegaron más valores (${valores.length}) que días tiene el mes (${inputs.length}). Sobran ${valores.length - inputs.length}.`);
+  else toast('Valores repartidos en todos los días');
+};
+
+window.cargarVolumenMeta = async function(){
+  const linea = document.getElementById('vm-linea').value;
+  const mes = Number(document.getElementById('vm-mes').value);
+  const anio = Number(document.getElementById('vm-anio').value);
+  if(!linea) return;
+  const totalDias = diasDelMes(mes, anio);
+  let valores = [];
+  try{
+    const snap = await getDoc(doc(db, COL_VOLUMEN_META, idVolumenMeta(linea, mes, anio)));
+    if(snap.exists()) valores = snap.data().valores || [];
+  }catch(e){ /* sin conexión: se muestra la grilla vacía */ }
+  renderGrillaVolumenMeta(valores, totalDias);
+  document.getElementById('vm-pegado').value = '';
+  window.actualizarTotalVolumenMeta();
+};
+
+window.guardarVolumenMeta = async function(){
+  const linea = document.getElementById('vm-linea').value;
+  const mes = Number(document.getElementById('vm-mes').value);
+  const anio = Number(document.getElementById('vm-anio').value);
+  if(!linea){ toast('Selecciona una línea'); return; }
+  const inputs = document.querySelectorAll('#vm-grilla input');
+  const valores = Array.from(inputs).map(inp => inp.value === '' ? null : Number(inp.value));
+  const total = valores.reduce((s,v) => s + (v || 0), 0);
+  try{
+    await setDoc(doc(db, COL_VOLUMEN_META, idVolumenMeta(linea, mes, anio)), {
+      linea, mes, anio, valores, total
+    });
+    toast('Volumen meta guardado');
+  }catch(e){
+    toast('Error al guardar: ' + e.message);
+  }
+};
+
+// Inicializa selects de año y línea al cargar (línea depende de que 'lineas' ya tenga datos)
+poblarSelectAnioVolumenMeta();
+const _origRenderLineas = renderLineas;
+renderLineas = function(){
+  _origRenderLineas();
+  poblarSelectLineaVolumenMeta();
+  if(document.getElementById('panel-volumen-meta').classList.contains('activo')) window.cargarVolumenMeta();
 };
 
 /* ============================================================
