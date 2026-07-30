@@ -257,18 +257,17 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   .bodega-grid{grid-template-columns:1fr}
   #filtros{gap:6px}
   .seg-grid{flex-wrap:wrap}
-}/* ==== TABLA ESTILO EXCEL (rediseño) ==== */
-.tabla-ddd-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--line,#2a3a2a)}
-table.tabla-ddd{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}
-table.tabla-ddd th,table.tabla-ddd td{border:1px solid var(--line,#2a3a2a);padding:5px 8px;text-align:center}
-table.tabla-ddd thead th{background:#16241a;position:sticky;top:0;z-index:2;font-size:11px}
-table.tabla-ddd td.lbl,table.tabla-ddd th.lbl{text-align:left;position:sticky;left:0;background:#12201a;z-index:1;min-width:180px;font-weight:600}
-table.tabla-ddd th.lbl{z-index:3}
-table.tabla-ddd tr.seccion td{background:#1c2e20;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.04em;text-align:left}
-table.tabla-ddd td.resumen,table.tabla-ddd th.resumen{background:#20351f;font-weight:700}
-table.tabla-ddd td.alerta-rojo{color:#ff6b6b;font-weight:700}
-table.tabla-ddd td.alerta-amarillo{color:#ffd166;font-weight:700}
-table.tabla-ddd td.alerta-verde{color:#7ee787}
+}/* ==== TABLA ESTILO EXCEL (rediseño v2, más clara) ==== */
+.tabla-ddd-wrap{overflow-x:auto;border-radius:10px;border:1px solid #b7c9a8;max-height:78vh;overflow-y:auto}
+table.tabla-ddd{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap;background:#fff;color:#1a1a1a}
+table.tabla-ddd th,table.tabla-ddd td{border:1px solid #cfd8c2;padding:5px 8px;text-align:center}
+table.tabla-ddd thead th{background:#ffe066;color:#1a1a1a;position:sticky;top:0;z-index:3;font-size:11px}
+table.tabla-ddd td.lbl,table.tabla-ddd th.lbl{text-align:left;position:sticky;left:0;background:#eef3e6;z-index:1;min-width:220px;font-weight:600;color:#1a1a1a}
+table.tabla-ddd th.lbl{z-index:4}
+table.tabla-ddd tr.seccion td{background:#c9dfae;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.04em;text-align:left;position:sticky;left:0}
+table.tabla-ddd td.resumen,table.tabla-ddd th.resumen{background:#e3edd3;font-weight:700}
+table.tabla-ddd td.azul{color:#1560c4;font-weight:700}
+table.tabla-ddd td.rojo{color:#c0392b;font-weight:700}
 </style>
 </head>
 <body>
@@ -386,7 +385,10 @@ function spin(on){document.getElementById('spinner').classList.toggle('on',on);}
 function $id(id){return document.getElementById(id);}
 function colorOEE(val){if(val>=0.65)return 'bueno';if(val>=0.45)return 'medio';return 'malo';}
 
-function idMeta(linea,mes,anio){return `${linea}_${mes}_${anio}`;}
+function idMeta(linea,mes,anio){
+  const mesStr=String(mes).padStart(2,'0');
+  return `${linea}_${anio}-${mesStr}`;
+}
 
 function rangoFechas(desde,hasta){
   const dias=[];let d=new Date(desde+'T00:00:00');const h=new Date(hasta+'T00:00:00');
@@ -492,7 +494,7 @@ window.cargarDatos=async function(){
     const docsJefe=snapJefe.docs.map(d=>d.data());
 
     const segPorDia={};
-    const oeePorDia={},fdPorDia={},fePorDia={},tobPorDia={},tocPorDia={};
+    const oeePorDia={},fdPorDia={},fePorDia={},tobPorDia={},tocPorDia={},tpPorDia={};
     const causalesPorDia={}; // { motivo: { fecha: horas } }
 
     docsJefe.forEach(d=>{
@@ -512,6 +514,7 @@ window.cargarDatos=async function(){
         if(eq.oee!=null){oeePorDia[f]=oeePorDia[f]||[];oeePorDia[f].push(eq.oee);}
         if(eq.tob!=null){tobPorDia[f]=(tobPorDia[f]||0)+eq.tob;}
         if(eq.toc!=null){tocPorDia[f]=(tocPorDia[f]||0)+eq.toc;}
+        if(eq.tpProgramado!=null){tpPorDia[f]=(tpPorDia[f]||0)+eq.tpProgramado;}
         (eq.detenciones||[]).forEach(det=>{
           const k=det.motivo||'(sin motivo)';
           causalesPorDia[k]=causalesPorDia[k]||{};
@@ -560,7 +563,7 @@ window.cargarDatos=async function(){
     renderTablaDdd({
       dias,procesador,
       segPorDia,volRealPorDia,metaPorDia,
-      oeePorDia,fdPorDia,fePorDia,tobPorDia,tocPorDia,
+      oeePorDia,fdPorDia,fePorDia,tobPorDia,tocPorDia,tpPorDia,
       causalesPorDia,rodalMap,stock
     });
 
@@ -613,7 +616,7 @@ function claseAlertaVsMeta(dif,pct){
 
 function renderTablaDdd(ctx){
   const{dias,procesador,segPorDia,volRealPorDia,metaPorDia,
-        oeePorDia,fdPorDia,fePorDia,tobPorDia,tocPorDia,
+        oeePorDia,fdPorDia,fePorDia,tobPorDia,tocPorDia,tpPorDia,
         causalesPorDia,rodalMap,stock}=ctx;
 
   const avg=arr=>(arr&&arr.length)?arr.reduce((a,b)=>a+b,0)/arr.length:null;
@@ -654,13 +657,13 @@ function renderTablaDdd(ctx){
   const cumplTot=(volMetaTot>0)?(volRealTot/volMetaTot*100):null;
   filas.push(filaSimple('Cumplimiento de programa (%)',cumplVals,cumplTot,v=>{
     if(v==null)return '';
-    return(v>=98&&v<=102)?'alerta-verde':(v<98?'alerta-rojo':'alerta-amarillo');
-  },1));
-  filas.push(filaSimple('Volumen según oferta (m³)',volMetaVals,volMetaTot||null));
-  filas.push(filaSimple('Volumen real (m³)',volRealVals,volRealTot,null,1));
+    return v>=98?'azul':'rojo';
+  },0));
+  filas.push(filaSimple('Volumen según oferta (m³)',volMetaVals,volMetaTot||null,null,0));
+  filas.push(filaSimple('Volumen real (m³)',volRealVals,volRealTot,null,0));
   const difVals=dias.map((f,i)=>(volMetaVals[i]!=null)?((volRealVals[i]||0)-volMetaVals[i]):null);
   const difTot=(volMetaTot>0)?(volRealTot-volMetaTot):null;
-  filas.push(filaSimple('Diferencia m³ Meta vs Real',difVals,difTot,v=>v==null?'':(v>=0?'alerta-verde':'alerta-rojo'),1));
+  filas.push(filaSimple('Diferencia m³ Meta vs Real',difVals,difTot,v=>v==null?'':(v>=0?'azul':'rojo'),0));
 
   // ── PROCESADOR / INDICADORES ──
   filas.push(seccionFila(`PROCESADOR${procesador?' — '+procesador:''} — INDICADORES`));
@@ -670,20 +673,25 @@ function renderTablaDdd(ctx){
   const oeeTodos=Object.values(oeePorDia).flat();
   const fdTodos=Object.values(fdPorDia).flat();
   const feTodos=Object.values(fePorDia).flat();
-  filas.push(filaSimple('OEE (%)',oeeVals.map(v=>v!=null?v*100:null),avg(oeeTodos)!=null?avg(oeeTodos)*100:null,null,1));
-  filas.push(filaSimple('Factor de Disponibilidad FD (%)',fdVals.map(v=>v!=null?v*100:null),avg(fdTodos)!=null?avg(fdTodos)*100:null,null,1));
-  filas.push(filaSimple('Factor de Eficiencia FE (%)',feVals.map(v=>v!=null?v*100:null),avg(feTodos)!=null?avg(feTodos)*100:null,null,1));
+  const claseMeta=metaPct=>v=>{
+    if(v==null)return '';
+    return v>=metaPct?'azul':'rojo';
+  };
+  filas.push(filaSimple('OEE (%) — meta 66%',oeeVals.map(v=>v!=null?v*100:null),avg(oeeTodos)!=null?avg(oeeTodos)*100:null,claseMeta(66),0));
+  filas.push(filaSimple('Factor de Disponibilidad FD (%) — meta 75%',fdVals.map(v=>v!=null?v*100:null),avg(fdTodos)!=null?avg(fdTodos)*100:null,claseMeta(75),0));
+  filas.push(filaSimple('Factor de Eficiencia FE (%) — meta 88%',feVals.map(v=>v!=null?v*100:null),avg(feTodos)!=null?avg(feTodos)*100:null,claseMeta(88),0));
   const tobVals=dias.map(f=>tobPorDia[f]??null);
   const tocVals=dias.map(f=>tocPorDia[f]??null);
-  filas.push(filaSimple('TPOB (Horas)',tobVals,tobVals.reduce((a,b)=>a+(b||0),0),null,2));
+  const tpVals=dias.map(f=>tpPorDia[f]??null);
+  filas.push(filaSimple('TPOB (Horas) — meta 2,75 h',tobVals,tobVals.reduce((a,b)=>a+(b||0),0),v=>v==null?'':(v<=2.75?'azul':'rojo'),2));
   filas.push(filaSimple('TPOC (Horas)',tocVals,tocVals.reduce((a,b)=>a+(b||0),0),null,2));
+  filas.push(filaSimple('TP Programado (Horas)',tpVals,tpVals.reduce((a,b)=>a+(b||0),0),null,0));
 
-  // ── CAUSALES DE PÉRDIDA ──
-  filas.push(seccionFila('CAUSALES DE PÉRDIDAS (Horas)'));
-  const motivos=Object.keys(causalesPorDia).sort((a,b)=>{
-    const totA=sum(causalesPorDia[a]),totB=sum(causalesPorDia[b]);
-    return totB-totA;
-  });
+  // ── CAUSALES DE PÉRDIDA (Top 10) ──
+  filas.push(seccionFila('CAUSALES DE PÉRDIDAS (Horas) — Top 10'));
+  const motivosTotal=Object.keys(causalesPorDia).map(m=>[m,sum(causalesPorDia[m])]);
+  motivosTotal.sort((a,b)=>b[1]-a[1]);
+  const motivos=motivosTotal.slice(0,10).map(([m])=>m);
   if(motivos.length===0){
     filas.push(`<tr><td class="lbl">Sin causales registradas</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">—</td></tr>`);
   }else{
