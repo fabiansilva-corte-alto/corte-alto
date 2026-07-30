@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Tablero DdD">
+<meta name="theme-color" content="#1a3a1a">
+<title>Tablero DdD — Corte Alto</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1f0f;
+  --bg2:#162516;
+  --card:#1e321e;
+  --card2:#243524;
+  --border:#2e4a2e;
+  --border2:#3a5e3a;
+  --text:#e8f0e8;
+  --text2:#a8c4a8;
+  --text3:#6a8f6a;
+  --green:#6fcf6f;
+  --green-bg:#1a3a1a;
+  --green-bright:#4caf50;
+  --red:#e05555;
+  --red-bg:#3a1010;
+  --amber:#e0a030;
+  --amber-bg:#3a2800;
+  --white:#ffffff;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"SF Mono","Fira Mono","Consolas",monospace;
+  --radius:10px;
+  --radius-sm:6px;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px}
+
+/* ── BARRA FILTROS ── */
+#filtros{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:8px 12px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+}
+#filtros .logo{
+  font-size:11px;font-weight:700;color:var(--green);
+  text-transform:uppercase;letter-spacing:.1em;
+  white-space:nowrap;margin-right:4px;
+}
+#filtros select,#filtros input[type=date]{
+  font-size:12px;font-family:var(--font);
+  padding:5px 8px;
+  border:1px solid var(--border2);border-radius:var(--radius-sm);
+  background:var(--card);color:var(--text);
+  outline:none;cursor:pointer;
+  height:30px;
+}
+#filtros select:focus,#filtros input[type=date]:focus{border-color:var(--green)}
+#filtros .sep{color:var(--text3);font-size:11px;padding:0 2px}
+.btn-semana{
+  font-size:11px;font-weight:600;
+  padding:5px 10px;height:30px;
+  border:1px solid var(--border2);border-radius:var(--radius-sm);
+  background:var(--card2);color:var(--text2);cursor:pointer;
+  white-space:nowrap;
+  transition:background .15s,color .15s;
+}
+.btn-semana:hover{background:var(--border2);color:var(--white)}
+#btn-cargar{
+  font-size:12px;font-weight:700;
+  padding:5px 14px;height:30px;
+  border:none;border-radius:var(--radius-sm);
+  background:var(--green-bright);color:#fff;cursor:pointer;
+  transition:opacity .15s;
+  margin-left:auto;
+}
+#btn-cargar:hover{opacity:.85}
+#btn-cargar:disabled{opacity:.4;cursor:default}
+
+/* ── CONTENIDO PRINCIPAL ── */
+#dashboard{padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+
+/* ── ESTADO INICIAL ── */
+#estado-vacio{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:60vh;gap:12px;color:var(--text3);
+}
+#estado-vacio .icono{font-size:48px;opacity:.4}
+#estado-vacio p{font-size:14px;text-align:center;max-width:280px;line-height:1.5}
+
+/* ── SECCIÓN ENCABEZADO ── */
+#bloque-header{
+  display:flex;align-items:stretch;gap:8px;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 14px;
+}
+.header-info{flex:1}
+.header-info .titulo{font-size:18px;font-weight:700;color:var(--white);line-height:1.1}
+.header-info .subtitulo{font-size:12px;color:var(--text3);margin-top:3px}
+.header-info .periodo{font-size:11px;color:var(--green);font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+
+.seg-grid{display:flex;gap:6px}
+.seg-item{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:6px 12px;border-radius:var(--radius-sm);
+  border:1px solid var(--border2);background:var(--card2);
+  min-width:64px;
+}
+.seg-item.alerta{border-color:var(--red);background:var(--red-bg)}
+.seg-item .seg-val{font-size:22px;font-weight:800;line-height:1;color:var(--white)}
+.seg-item.alerta .seg-val{color:var(--red)}
+.seg-item .seg-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;text-align:center;line-height:1.2}
+.seg-item.alerta .seg-lbl{color:var(--red)}
+
+/* ── GRID PRINCIPAL (2 columnas) ── */
+#grid-main{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── CARDS ── */
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 14px;
+}
+.card-title{
+  font-size:10px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.08em;
+  margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.card-title::before{content:'';display:inline-block;width:3px;height:12px;border-radius:2px;background:currentColor}
+
+/* ── BLOQUE PRODUCCIÓN ── */
+#bloque-prod .card-title::before{background:var(--amber)}
+#bloque-prod .card-title{color:var(--amber)}
+.prod-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prod-kpi{
+  background:var(--card2);border-radius:var(--radius-sm);
+  padding:10px 12px;border:1px solid var(--border2);
+}
+.prod-kpi.destacado{
+  grid-column:1/-1;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;
+}
+.prod-kpi .kpi-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.prod-kpi .kpi-val{font-size:28px;font-weight:800;color:var(--white);line-height:1;font-family:var(--font-mono)}
+.prod-kpi .kpi-val.grande{font-size:36px}
+.prod-kpi .kpi-unit{font-size:11px;color:var(--text3);font-weight:400;margin-left:2px}
+.prod-kpi .kpi-val.pos{color:var(--green)}
+.prod-kpi .kpi-val.neg{color:var(--red)}
+.barra-cumplimiento{height:6px;border-radius:3px;background:var(--border2);margin-top:8px;overflow:hidden}
+.barra-cumplimiento .fill{height:100%;border-radius:3px;transition:width .4s}
+.fill.pos{background:var(--green)}
+.fill.neg{background:var(--red)}
+.fill.ok{background:var(--amber)}
+
+/* ── BLOQUE OEE ── */
+#bloque-oee .card-title::before{background:var(--green)}
+#bloque-oee .card-title{color:var(--green)}
+.oee-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.oee-item{
+  background:var(--card2);border-radius:var(--radius-sm);
+  padding:8px;text-align:center;border:1px solid var(--border2);
+}
+.oee-item .o-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+.oee-item .o-val{font-size:22px;font-weight:800;line-height:1.1;font-family:var(--font-mono)}
+.oee-item .o-val.bueno{color:var(--green)}
+.oee-item .o-val.malo{color:var(--red)}
+.oee-item .o-val.medio{color:var(--amber)}
+.oee-tpob{display:flex;gap:6px;margin-bottom:10px}
+.tpob-pill{
+  flex:1;background:var(--card2);border-radius:var(--radius-sm);
+  padding:7px 10px;border:1px solid var(--border2);
+  display:flex;flex-direction:column;align-items:center;
+}
+.tpob-pill .t-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+.tpob-pill .t-val{font-size:18px;font-weight:700;color:var(--amber);font-family:var(--font-mono)}
+
+/* tabla causales */
+.tabla-causales{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px}
+.tabla-causales th{
+  font-size:9px;color:var(--text3);text-transform:uppercase;
+  letter-spacing:.06em;padding:4px 6px;text-align:left;
+  border-bottom:1px solid var(--border2);
+}
+.tabla-causales td{padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text2)}
+.tabla-causales td:last-child{text-align:right;font-family:var(--font-mono);font-weight:600;color:var(--amber)}
+.tabla-causales tr:last-child td{border-bottom:none}
+
+/* tabla aprovechamiento */
+.tabla-aprov{width:100%;border-collapse:collapse;font-size:11px}
+.tabla-aprov th{
+  font-size:9px;color:var(--text3);text-transform:uppercase;
+  letter-spacing:.06em;padding:4px 6px;text-align:right;
+  border-bottom:1px solid var(--border2);
+}
+.tabla-aprov th:first-child{text-align:left}
+.tabla-aprov td{padding:4px 6px;border-bottom:1px solid var(--border);font-family:var(--font-mono);text-align:right;font-size:12px}
+.tabla-aprov td:first-child{text-align:left;color:var(--text2);font-family:var(--font);font-size:11px}
+.tabla-aprov tr:last-child td{border-bottom:none}
+.tag-sobre{color:var(--green);font-weight:700}
+.tag-bajo{color:var(--red);font-weight:700}
+
+/* ── BLOQUE BODEGA ── */
+#bloque-bodega .card-title::before{background:#6ab0f0}
+#bloque-bodega .card-title{color:#6ab0f0}
+.bodega-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bodega-item{
+  background:var(--card2);border-radius:var(--radius-sm);
+  padding:8px 10px;border:1px solid var(--border2);
+  display:flex;flex-direction:column;gap:4px;
+}
+.bodega-item label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+.bodega-item input{
+  font-size:24px;font-weight:800;font-family:var(--font-mono);
+  color:var(--white);background:transparent;border:none;outline:none;
+  width:100%;padding:0;
+  border-bottom:1px solid var(--border2);
+}
+.bodega-item input::placeholder{color:var(--border2);font-size:20px}
+.bodega-unit{font-size:10px;color:var(--text3)}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);
+  background:var(--card2);border:1px solid var(--border2);color:var(--text);
+  padding:8px 18px;border-radius:20px;font-size:13px;
+  transition:transform .25s;z-index:999;pointer-events:none;
+}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── SPINNER ── */
+#spinner{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  align-items:center;justify-content:center;z-index:500;
+}
+#spinner.on{display:flex}
+.spin-ring{
+  width:40px;height:40px;border-radius:50%;
+  border:3px solid var(--border2);border-top-color:var(--green-bright);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SECCIÓN TÍTULO interno ── */
+.sec-sep{
+  font-size:9px;color:var(--text3);text-transform:uppercase;
+  letter-spacing:.08em;margin:8px 0 4px;padding-bottom:4px;
+  border-bottom:1px solid var(--border);
+}
+
+/* ── RESPONSIVE MÓVIL ── */
+@media(max-width:700px){
+  #grid-main{grid-template-columns:1fr}
+  .prod-grid{grid-template-columns:1fr 1fr}
+  .oee-grid{grid-template-columns:1fr 1fr 1fr}
+  .bodega-grid{grid-template-columns:1fr}
+  #filtros{gap:6px}
+  .seg-grid{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<!-- BARRA FILTROS -->
+<div id="filtros">
+  <span class="logo">📊 DdD</span>
+
+  <select id="sel-linea" onchange="onLineaChange()">
+    <option value="">Línea…</option>
+  </select>
+
+  <select id="sel-procesador">
+    <option value="">Procesador…</option>
+  </select>
+
+  <span class="sep">Desde</span>
+  <input type="date" id="fecha-desde">
+  <span class="sep">hasta</span>
+  <input type="date" id="fecha-hasta">
+
+  <button class="btn-semana" onclick="setSemana(0)">Esta semana</button>
+  <button class="btn-semana" onclick="setSemana(-1)">Sem. anterior</button>
+
+  <button id="btn-cargar" onclick="cargarDatos()">Cargar ▶</button>
+</div>
+
+<!-- SPINNER -->
+<div id="spinner"><div class="spin-ring"></div></div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+
+  <!-- ESTADO VACÍO -->
+  <div id="estado-vacio">
+    <div class="icono">🌲</div>
+    <p>Selecciona línea, procesador y rango de fechas, luego presiona <strong>Cargar</strong>.</p>
+  </div>
+
+  <!-- HEADER SEGURIDAD -->
+  <div id="bloque-header" style="display:none">
+    <div class="header-info">
+      <div class="titulo" id="hdr-titulo">—</div>
+      <div class="subtitulo" id="hdr-fundo">—</div>
+      <div class="periodo" id="hdr-periodo">—</div>
+    </div>
+    <div class="seg-grid" id="seg-grid">
+      <div class="seg-item" id="seg-ctp">
+        <span class="seg-val" id="v-ctp">0</span>
+        <span class="seg-lbl">Acc.<br>CTP</span>
+      </div>
+      <div class="seg-item" id="seg-stp">
+        <span class="seg-val" id="v-stp">0</span>
+        <span class="seg-lbl">Acc.<br>STP</span>
+      </div>
+      <div class="seg-item" id="seg-cuasi">
+        <span class="seg-val" id="v-cuasi">0</span>
+        <span class="seg-lbl">Casi<br>Acc.</span>
+      </div>
+      <div class="seg-item" id="seg-ma">
+        <span class="seg-val" id="v-ma">0</span>
+        <span class="seg-lbl">Inc.<br>M.A.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRID PRINCIPAL -->
+  <div id="grid-main" style="display:none">
+
+    <!-- PRODUCCIÓN -->
+    <div class="card" id="bloque-prod">
+      <div class="card-title">Producción del período</div>
+      <div class="prod-grid">
+        <div class="prod-kpi">
+          <div class="kpi-lbl">Volumen Real</div>
+          <div class="kpi-val grande" id="v-real">—<span class="kpi-unit">m³</span></div>
+        </div>
+        <div class="prod-kpi">
+          <div class="kpi-lbl">Volumen Meta</div>
+          <div class="kpi-val grande" id="v-meta">—<span class="kpi-unit">m³</span></div>
+        </div>
+        <div class="prod-kpi">
+          <div class="kpi-lbl">Diferencia Real − Meta</div>
+          <div class="kpi-val" id="v-dif">—<span class="kpi-unit">m³</span></div>
+        </div>
+        <div class="prod-kpi">
+          <div class="kpi-lbl">% Cumplimiento</div>
+          <div class="kpi-val" id="v-pct">—<span class="kpi-unit">%</span></div>
+          <div class="barra-cumplimiento"><div class="fill" id="barra-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OEE -->
+    <div class="card" id="bloque-oee">
+      <div class="card-title" id="oee-titulo">Procesador — OEE</div>
+
+      <div class="oee-grid">
+        <div class="oee-item">
+          <div class="o-lbl">OEE</div>
+          <div class="o-val" id="v-oee">—</div>
+        </div>
+        <div class="oee-item">
+          <div class="o-lbl">F.D.</div>
+          <div class="o-val" id="v-fd">—</div>
+        </div>
+        <div class="oee-item">
+          <div class="o-lbl">F.E.</div>
+          <div class="o-val" id="v-fe">—</div>
+        </div>
+      </div>
+
+      <div class="oee-tpob">
+        <div class="tpob-pill">
+          <span class="t-lbl">TPOB</span>
+          <span class="t-val" id="v-tpob">—</span>
+        </div>
+        <div class="tpob-pill">
+          <span class="t-lbl">TPOC</span>
+          <span class="t-val" id="v-tpoc">—</span>
+        </div>
+      </div>
+
+      <div class="sec-sep">Causales de pérdida (TPOB)</div>
+      <table class="tabla-causales" id="tbl-causales">
+        <thead><tr><th>Motivo</th><th>Hrs</th></tr></thead>
+        <tbody id="body-causales"><tr><td colspan="2" style="color:var(--text3);font-style:italic">Sin datos</td></tr></tbody>
+      </table>
+
+      <div class="sec-sep">Aprovechamiento por rodal</div>
+      <table class="tabla-aprov" id="tbl-aprov">
+        <thead>
+          <tr>
+            <th>Rodal</th>
+            <th>Clear</th>
+            <th>Ind.</th>
+            <th>Pulpa</th>
+            <th>Sin.</th>
+          </tr>
+        </thead>
+        <tbody id="body-aprov"><tr><td colspan="5" style="color:var(--text3);font-style:italic">Sin datos</td></tr></tbody>
+      </table>
+    </div>
+
+  </div><!-- /grid-main -->
+
+  <!-- BODEGA (full width) -->
+  <div class="card" id="bloque-bodega" style="display:none">
+    <div class="card-title">Bodega Faena — Stock al cierre de semana</div>
+    <div class="bodega-grid">
+      <div class="bodega-item">
+        <label>Madera Aserrable</label>
+        <input type="number" id="bod-aserrable" placeholder="0" min="0" inputmode="decimal">
+        <span class="bodega-unit">cargas</span>
+      </div>
+      <div class="bodega-item">
+        <label>Madera Pulpable</label>
+        <input type="number" id="bod-pulpable" placeholder="0" min="0" inputmode="decimal">
+        <span class="bodega-unit">cargas</span>
+      </div>
+      <div class="bodega-item">
+        <label>Madera Manchada</label>
+        <input type="number" id="bod-manchada" placeholder="0" min="0" inputmode="decimal">
+        <span class="bodega-unit">cargas</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /dashboard -->
+
+<div id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore, collection, getDocs, query, where, orderBy, doc, getDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+  authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
+  projectId: "reporte-inicio-faena-forestal",
+  storageBucket: "reporte-inicio-faena-forestal.firebasestorage.app",
+  messagingSenderId: "962534414054",
+  appId: "1:962534414054:web:fa43371d31413fc0524d27"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// ── Colecciones ──
+const COL_PROD     = "reportes_produccion";
+const COL_JEFE     = "productividad_jefe";
+const COL_META     = "config_volumen_meta";
+const COL_LINEAS   = "config_lineas";
+const COL_EQUIPOS  = "config_equipos";
+
+// ── Estado ──
+let lineas   = [];
+let equipos  = [];
+
+// ── Utils ──
+function fmt(n,dec=0){if(n==null||isNaN(n))return '—';return Number(n).toLocaleString('es-CL',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
+function pct(n){if(n==null||isNaN(n))return '—';return fmt(n*100,1)+'%';}
+function toast(msg,ms=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),ms);}
+function spin(on){document.getElementById('spinner').classList.toggle('on',on);}
+function $id(id){return document.getElementById(id);}
+function colorOEE(val){if(val>=0.65)return 'bueno';if(val>=0.45)return 'medio';return 'malo';}
+
+function idMeta(linea,mes,anio){return `${linea}_${mes}_${anio}`;}
+
+function rangoFechas(desde,hasta){
+  const dias=[];let d=new Date(desde+'T00:00:00');const h=new Date(hasta+'T00:00:00');
+  while(d<=h){dias.push(d.toISOString().split('T')[0]);d=new Date(d.getTime()+86400000);}
+  return dias;
+}
+
+// ── Semana lunes→domingo ──
+function calcSemana(offsetSemanas){
+  const hoy=new Date();
+  const dow=hoy.getDay();
+  const diffLun=dow===0?-6:1-dow;
+  const lun=new Date(hoy);lun.setDate(hoy.getDate()+diffLun+offsetSemanas*7);
+  const dom=new Date(lun);dom.setDate(lun.getDate()+6);
+  return[lun.toISOString().split('T')[0],dom.toISOString().split('T')[0]];
+}
+window.setSemana=function(offset){
+  const[d,h]=calcSemana(offset);
+  $id('fecha-desde').value=d;$id('fecha-hasta').value=h;
+};
+
+// ── Cargar listas al inicio ──
+async function init(){
+  // Líneas
+  try{
+    const snap=await getDocs(query(collection(db,COL_LINEAS),orderBy('nombre')));
+    lineas=snap.docs.map(d=>({id:d.id,...d.data()}));
+    const sel=$id('sel-linea');
+    lineas.forEach(l=>{const o=document.createElement('option');o.value=l.nombre;o.textContent=l.nombre;sel.appendChild(o);});
+  }catch(e){toast('Sin conexión — no se cargaron líneas');}
+
+  // Equipos procesadores
+  try{
+    const snap=await getDocs(query(collection(db,COL_EQUIPOS),orderBy('nombre')));
+    equipos=snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){}
+
+  // Fecha por defecto: esta semana
+  setSemana(0);
+}
+
+window.onLineaChange=function(){
+  const linea=$id('sel-linea').value;
+  const sel=$id('sel-procesador');
+  sel.innerHTML='<option value="">Procesador…</option>';
+  if(!linea)return;
+  equipos
+    .filter(e=>e.tipo==='PROCESADOR')
+    .forEach(e=>{const o=document.createElement('option');o.value=e.nombre;o.textContent=e.nombre;sel.appendChild(o);});
+};
+
+// ── CARGA PRINCIPAL ──
+window.cargarDatos=async function(){
+  const linea=$id('sel-linea').value;
+  const procesador=$id('sel-procesador').value;
+  const desde=$id('fecha-desde').value;
+  const hasta=$id('fecha-hasta').value;
+
+  if(!linea){toast('Selecciona una línea');return;}
+  if(!desde||!hasta){toast('Elige el rango de fechas');return;}
+  if(desde>hasta){toast('La fecha "desde" debe ser anterior a "hasta"');return;}
+
+  spin(true);$id('btn-cargar').disabled=true;
+
+  try{
+    const dias=rangoFechas(desde,hasta);
+
+    // ── 1. Producción diaria ──
+    const snapProd=await getDocs(query(
+      collection(db,COL_PROD),
+      where('fecha','>=',desde),
+      where('fecha','<=',hasta),
+      where('linea','==',linea)
+    ));
+    const docsProd=snapProd.docs.map(d=>d.data());
+
+    // Volumen real total
+    const volReal=docsProd.reduce((s,d)=>s+(d.totalGlobal||0),0);
+
+    // Aprovechamiento por rodal (etRodales)
+    const rodalMap={};
+    docsProd.forEach(d=>{
+      (d.etRodales||[]).forEach(r=>{
+        if(!r.numero)return;
+        if(!rodalMap[r.numero])rodalMap[r.numero]={clear:[],industrial:[],pulpa:[],siniestrado:[]};
+        if(r.clear!=null)rodalMap[r.numero].clear.push(r.clear);
+        if(r.industrial!=null)rodalMap[r.numero].industrial.push(r.industrial);
+        if(r.pulpa!=null)rodalMap[r.numero].pulpa.push(r.pulpa);
+        if(r.siniestrado!=null)rodalMap[r.numero].siniestrado.push(r.siniestrado);
+      });
+    });
+
+    // ── 2. Productividad jefe (seguridad + OEE) ──
+    const snapJefe=await getDocs(query(
+      collection(db,COL_JEFE),
+      where('fecha','>=',desde),
+      where('fecha','<=',hasta),
+      where('linea','==',linea)
+    ));
+    const docsJefe=snapJefe.docs.map(d=>d.data());
+
+    // Seguridad (suma del período)
+    let seg={accidenteCTP:0,accidenteSTP:0,cuasiAccidente:0,incidenteMedioAmb:0};
+    docsJefe.forEach(d=>{
+      const s=d.seguridad||{};
+      seg.accidenteCTP+=(s.accidenteCTP||0);
+      seg.accidenteSTP+=(s.accidenteSTP||0);
+      seg.cuasiAccidente+=(s.cuasiAccidente||0);
+      seg.incidenteMedioAmb+=(s.incidenteMedioAmb||0);
+    });
+
+    // OEE / TPOB del procesador seleccionado
+    let oeeVals=[],fdVals=[],feVals=[],tobVals=[],tocVals=[];
+    const causalMap={};
+    docsJefe.forEach(d=>{
+      (d.equipos||[]).forEach(eq=>{
+        if(procesador && eq.equipo!==procesador)return;
+        if(eq.tipo!=='PROCESADOR')return;
+        if(eq.fd!=null)fdVals.push(eq.fd);
+        if(eq.fe!=null)feVals.push(eq.fe);
+        if(eq.oee!=null)oeeVals.push(eq.oee);
+        if(eq.tob!=null)tobVals.push(eq.tob);
+        if(eq.toc!=null)tocVals.push(eq.toc);
+        (eq.detenciones||[]).forEach(det=>{
+          const k=det.motivo||'(sin motivo)';
+          causalMap[k]=(causalMap[k]||0)+(det.horas||0);
+        });
+      });
+    });
+
+    const avg=arr=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:null;
+    const sum=arr=>arr.reduce((a,b)=>a+b,0);
+    const oeeAvg=avg(oeeVals),fdAvg=avg(fdVals),feAvg=avg(feVals);
+    const tobSum=sum(tobVals),tocSum=sum(tocVals);
+
+    // ── 3. Meta diaria ──
+    // Puede cruzar meses → agrupar por mes/año
+    const mesesSet={};
+    dias.forEach(f=>{
+      const [y,m,d]=f.split('-');
+      const k=`${y}-${m}`;if(!mesesSet[k])mesesSet[k]={anio:+y,mes:+m,dias:[]};
+      mesesSet[k].dias.push(+d);
+    });
+    let volMeta=0;
+    for(const k of Object.keys(mesesSet)){
+      const{anio,mes,dias:dArr}=mesesSet[k];
+      const idDoc=idMeta(linea,mes,anio);
+      try{
+        const snap=await getDoc(doc(db,COL_META,idDoc));
+        if(snap.exists()){
+          const vals=snap.data().valores||[];
+          dArr.forEach(dia=>{
+            const v=vals[dia-1];if(v!=null&&!isNaN(v))volMeta+=Number(v);
+          });
+        }
+      }catch(e){}
+    }
+
+    // ── 4. Funos únicos del período ──
+    const fundosSet=new Set(docsProd.map(d=>d.fundo).filter(Boolean));
+    const fundoStr=[...fundosSet].join(', ')||'—';
+
+    // ── RENDER ──
+    renderHeader(linea,fundoStr,desde,hasta);
+    renderSeguridad(seg);
+    renderProduccion(volReal,volMeta);
+    renderOEE(procesador,oeeAvg,fdAvg,feAvg,tobSum,tocSum,causalMap);
+    renderAprovechamiento(rodalMap);
+
+    // Mostrar bloques
+    $id('estado-vacio').style.display='none';
+    $id('bloque-header').style.display='';
+    $id('grid-main').style.display='';
+    $id('bloque-bodega').style.display='';
+
+    toast(`✅ ${dias.length} días cargados`);
+
+  }catch(e){
+    console.error(e);
+    toast('⚠️ Error al cargar datos: '+e.message,4000);
+  }finally{
+    spin(false);$id('btn-cargar').disabled=false;
+  }
+};
+
+function renderHeader(linea,fundo,desde,hasta){
+  $id('hdr-titulo').textContent=`Línea ${linea}`;
+  $id('hdr-fundo').textContent=fundo;
+  const fmt2=f=>f.split('-').reverse().join('/');
+  $id('hdr-periodo').textContent=`${fmt2(desde)} — ${fmt2(hasta)}`;
+}
+
+function renderSeguridad(seg){
+  const setV=(id,val,alertaSi)=>{
+    $id(id).textContent=val;
+    $id(id).closest('.seg-item').classList.toggle('alerta',alertaSi);
+  };
+  setV('v-ctp',seg.accidenteCTP,seg.accidenteCTP>0);
+  setV('v-stp',seg.accidenteSTP,seg.accidenteSTP>0);
+  setV('v-cuasi',seg.cuasiAccidente,false);
+  setV('v-ma',seg.incidenteMedioAmb,seg.incidenteMedioAmb>0);
+}
+
+function renderProduccion(real,meta){
+  $id('v-real').innerHTML=`${fmt(real,1)}<span class="kpi-unit">m³</span>`;
+  $id('v-meta').innerHTML=meta>0?`${fmt(meta,1)}<span class="kpi-unit">m³</span>`:`<span style="color:var(--text3)">Sin meta</span>`;
+  if(meta>0){
+    const dif=real-meta;
+    const pctVal=real/meta;
+    const cls=dif>=0?'pos':'neg';
+    $id('v-dif').innerHTML=`<span class="${cls}">${dif>=0?'+':''}${fmt(dif,1)}</span><span class="kpi-unit">m³</span>`;
+    $id('v-pct').innerHTML=`<span class="${cls}">${fmt(pctVal*100,1)}</span><span class="kpi-unit">%</span>`;
+    const fillPct=Math.min(Math.max(pctVal*100,0),150);
+    const fillEl=$id('barra-fill');
+    fillEl.style.width=Math.min(fillPct,100)+'%';
+    fillEl.className='fill '+(pctVal>=0.98&&pctVal<=1.02?'ok':dif>=0?'pos':'neg');
+  }else{
+    $id('v-dif').textContent='—';$id('v-pct').textContent='—';
+  }
+}
+
+function renderOEE(procesador,oee,fd,fe,tob,toc,causalMap){
+  $id('oee-titulo').textContent=procesador?`${procesador} — OEE`:'Procesador — OEE (todos)';
+  const setOEE=(id,val)=>{
+    const el=$id(id);
+    if(val==null){el.textContent='—';el.className='o-val';return;}
+    el.textContent=fmt(val*100,1)+'%';
+    el.className='o-val '+colorOEE(val);
+  };
+  setOEE('v-oee',oee);setOEE('v-fd',fd);setOEE('v-fe',fe);
+  $id('v-tpob').textContent=fmt(tob,2)+' h';
+  $id('v-tpoc').textContent=fmt(toc,2)+' h';
+
+  // Causales
+  const body=$id('body-causales');
+  const causales=Object.entries(causalMap).sort((a,b)=>b[1]-a[1]);
+  if(!causales.length){
+    body.innerHTML='<tr><td colspan="2" style="color:var(--text3);font-style:italic">Sin datos</td></tr>';
+  }else{
+    body.innerHTML=causales.map(([m,h])=>`
+      <tr><td>${m}</td><td>${fmt(h,2)}</td></tr>
+    `).join('');
+  }
+}
+
+function renderAprovechamiento(rodalMap){
+  const body=$id('body-aprov');
+  const rodales=Object.keys(rodalMap);
+  if(!rodales.length){
+    body.innerHTML='<tr><td colspan="5" style="color:var(--text3);font-style:italic">Sin datos</td></tr>';
+    return;
+  }
+  const avgArr=arr=>arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null;
+  const cel=(val,meta)=>{
+    if(val==null)return '<td>—</td>';
+    const p=val+'%';
+    if(meta!=null&&Math.abs(val-meta)<=3)return `<td>${p}</td>`;
+    if(meta!=null&&val>meta)return `<td class="tag-sobre">${p}</td>`;
+    if(meta!=null&&val<meta)return `<td class="tag-bajo">${p}</td>`;
+    return `<td>${p}</td>`;
+  };
+  body.innerHTML=rodales.map(rodal=>{
+    const r=rodalMap[rodal];
+    const cl=avgArr(r.clear);const ind=avgArr(r.industrial);
+    const pul=avgArr(r.pulpa);const sin=avgArr(r.siniestrado);
+    return `<tr>
+      <td>${rodal}</td>
+      ${cel(cl)}${cel(ind)}${cel(pul)}${cel(sin)}
+    </tr>`;
+  }).join('');
+}
+
+init();
+</script>
+
+<!-- SERVICE WORKER -->
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    reg.addEventListener('updatefound',()=>{
+      const nw=reg.installing;
+      nw.addEventListener('statechange',()=>{
+        if(nw.state==='installed'&&navigator.serviceWorker.controller){
+          nw.postMessage({type:'SKIP_WAITING'});
+          navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload());
+        }
+      });
+    });
+  });
+}
+</script>
+</body>
+</html>
