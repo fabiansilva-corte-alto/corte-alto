@@ -1024,7 +1024,7 @@ window.generarImagen=async function(){
     const fecha=d.fecha||'reporte';const fundo=(d.fundo||'faena').replace(/\s+/g,'-').toLowerCase();
     const blob2=await new Promise(res=>canvas.toBlob(res,'image/png',1.0));
     const shareFile=new File([blob2],`reporte-${fundo}-${fecha}-V${d.version||1}.png`,{type:'image/png'});
-    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[shareFile]})){
+    if(navigator.share){
       try{await navigator.share({files:[shareFile],title:'Reporte Inicio Jornada - Corte Alto'});showToast('✅ Reporte compartido');}
       catch(e){if(e.name!=='AbortError'){const u=URL.createObjectURL(blob2);const a=document.createElement('a');a.href=u;a.download=shareFile.name;a.click();showToast('✅ Imagen descargada');}}
     }else{
@@ -1161,7 +1161,7 @@ window.generarImagenCierre=async function(btnEl){
     const fecha=r.fecha||'cierre';const fundo=(r.fundo||'faena').replace(/\s+/g,'-').toLowerCase();
     const blob2=await new Promise(res=>canvas.toBlob(res,'image/png',1.0));
     const shareFile=new File([blob2],`cierre-${fundo}-${fecha}.png`,{type:'image/png'});
-    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[shareFile]})){
+    if(navigator.share){
       try{await navigator.share({files:[shareFile],title:'Reporte Cierre Jornada - Corte Alto'});showToast('✅ Cierre compartido');}
       catch(e){if(e.name!=='AbortError'){const u=URL.createObjectURL(blob2);const a=document.createElement('a');a.href=u;a.download=shareFile.name;a.click();showToast('✅ Imagen descargada');}}
     }else{
