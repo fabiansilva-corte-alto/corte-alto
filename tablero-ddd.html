@@ -523,16 +523,20 @@ window.cargarDatos=async function(){
       volRealPorDia[d.fecha]=(volRealPorDia[d.fecha]||0)+(d.totalGlobal||0);
     });
 
-    // Aprovechamiento por rodal (etRodales) — igual que antes, agregado del rango
+    // Aprovechamiento por rodal (etRodales) — indexado por fecha para mostrar columnas diarias
     const rodalMap={};
     docsProd.forEach(d=>{
+      const fecha=d.fecha;
       (d.etRodales||[]).forEach(r=>{
         if(!r.numero)return;
-        if(!rodalMap[r.numero])rodalMap[r.numero]={clear:[],industrial:[],pulpa:[],siniestrado:[]};
-        if(r.clear!=null)rodalMap[r.numero].clear.push(r.clear);
-        if(r.industrial!=null)rodalMap[r.numero].industrial.push(r.industrial);
-        if(r.pulpa!=null)rodalMap[r.numero].pulpa.push(r.pulpa);
-        if(r.siniestrado!=null)rodalMap[r.numero].siniestrado.push(r.siniestrado);
+        if(!rodalMap[r.numero])rodalMap[r.numero]={};
+        // Guardar el valor de ese rodal para esa fecha exacta
+        rodalMap[r.numero][fecha]={
+          clear:   r.clear   !=null?r.clear   :null,
+          industrial:r.industrial!=null?r.industrial:null,
+          pulpa:   r.pulpa   !=null?r.pulpa   :null,
+          siniestrado:r.siniestrado!=null?r.siniestrado:null
+        };
       });
     });
 
@@ -761,14 +765,20 @@ function renderTablaDdd(ctx){
     filas.push(`<tr><td class="lbl">Sin datos de rodales</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">—</td></tr>`);
   }else{
     rodales.forEach((rodal,idxRodal)=>{
-      const r=rodalMap[rodal];
+      const r=rodalMap[rodal]; // r = { fecha: {clear,industrial,pulpa,siniestrado}, ... }
       const clsBloque=idxRodal%2===0?'rodal-a':'rodal-b';
       filas.push(`<tr class="${clsBloque}"><td class="lbl">RODAL: ${rodal}</td>${dias.map(()=>'<td></td>').join('')}<td class="resumen"></td></tr>`);
       [['Clear','clear'],['Industrial','industrial'],['Pulpa','pulpa'],['Siniestrado','siniestrado']].forEach(([lbl,key])=>{
-        const arr=r[key];
-        const promedio=arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null;
-        // No tenemos el detalle por día exacto de este agregado; mostramos solo el resumen del rango
-        filas.push(`<tr class="${clsBloque}"><td class="lbl" style="padding-left:20px">${lbl}</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">${promedio!=null?promedio+'%':'—'}</td></tr>`);
+        // Valor por cada día
+        const valsPorDia=dias.map(fecha=>{
+          const entrada=r[fecha];
+          return entrada!=null&&entrada[key]!=null?entrada[key]:null;
+        });
+        // Promedio resumen: solo los días con dato
+        const conDato=valsPorDia.filter(v=>v!=null);
+        const promedio=conDato.length?Math.round(conDato.reduce((a,b)=>a+b,0)/conDato.length):null;
+        const celdas=valsPorDia.map(v=>`<td>${v!=null?v+'%':'—'}</td>`).join('');
+        filas.push(`<tr class="${clsBloque}"><td class="lbl" style="padding-left:20px">${lbl}</td>${celdas}<td class="resumen">${promedio!=null?promedio+'%':'—'}</td></tr>`);
       });
     });
   }
