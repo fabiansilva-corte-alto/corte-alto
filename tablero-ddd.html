@@ -283,13 +283,13 @@ table.tabla-ddd{
 table.tabla-ddd th,table.tabla-ddd td{border:1px solid #cfd8c2;padding:9px 14px;text-align:center}
 table.tabla-ddd thead th{background:#ffe066;color:#1a1a1a;position:sticky;top:0;z-index:3;font-size:15px}
 table.tabla-ddd td.lbl,table.tabla-ddd th.lbl{
-  text-align:left;position:sticky;left:0;
+  text-align:left;
   background:#eef3e6;z-index:1;
-  min-width:240px;max-width:340px;
+  min-width:200px;max-width:320px;
   font-weight:600;color:#1a1a1a;
   white-space:normal;word-break:break-word;
 }
-table.tabla-ddd th.lbl{z-index:4}
+table.tabla-ddd th.lbl{z-index:4;position:sticky;top:0}
 table.tabla-ddd tr.seccion td{
   background:#c9dfae;font-weight:700;text-transform:uppercase;
   font-size:13px;letter-spacing:.04em;text-align:left;
@@ -300,6 +300,27 @@ table.tabla-ddd td.azul{color:#1560c4;font-weight:700}
 table.tabla-ddd td.rojo{color:#c0392b;font-weight:700}
 table.tabla-ddd tr.rodal-a td.lbl{background:#d7e8c4}
 table.tabla-ddd tr.rodal-b td.lbl{background:#c3ddb0}
+/* ── COLUMNA GRUPO LATERAL ── */
+table.tabla-ddd td.grupo{
+  writing-mode:vertical-rl;transform:rotate(180deg);
+  text-align:center;vertical-align:middle;
+  font-weight:800;font-size:12px;letter-spacing:.07em;text-transform:uppercase;
+  white-space:nowrap;padding:8px 5px;border:1px solid #b7c9a8;
+  min-width:28px;max-width:34px;
+}
+table.tabla-ddd td.grupo.g-seg   {background:#3d6b20;color:#ffe066}
+table.tabla-ddd td.grupo.g-prod  {background:#4a7a28;color:#ffe066}
+table.tabla-ddd td.grupo.g-proc  {background:#2d5c18;color:#ffe066}
+table.tabla-ddd td.grupo.g-sub   {background:#b0cc90;color:#2d5c18;font-size:10px;font-weight:700}
+table.tabla-ddd td.grupo.g-aprov {background:#5a8a30;color:#ffe066}
+table.tabla-ddd td.grupo.g-bod   {background:#7a6a1a;color:#ffe066}
+table.tabla-ddd td.lbl-sub{
+  text-align:left;background:#eef3e6;
+  min-width:220px;max-width:320px;
+  font-weight:400;color:#1a1a1a;
+  white-space:normal;word-break:break-word;
+  padding-left:20px;font-size:14px;
+}
 
 /* ── ORIENTACIÓN LANDSCAPE FORZADA EN MÓVIL ── */
 @media screen and (max-width:768px) and (orientation:portrait){
@@ -675,119 +696,188 @@ function renderTablaDdd(ctx){
         oeePorDia,fdPorDia,fePorDia,tobPorDia,tocPorDia,tpPorDia,
         causalesPorDia,rodalMap,stock}=ctx;
 
-  const avg=arr=>(arr&&arr.length)?arr.reduce((a,b)=>a+b,0)/arr.length:null;
-  const sum=obj=>Object.values(obj).reduce((a,b)=>a+(b||0),0);
+  const avg=arr=>(arr&&arr.length)?arr.filter(v=>v!=null).reduce((a,b)=>a+b,0)/arr.filter(v=>v!=null).length:null;
+  const sumObj=obj=>Object.values(obj).reduce((a,b)=>a+(b||0),0);
+  const nd=dias.length; // cantidad de días del rango
 
-  // ── Encabezado: columna label + un día por columna + Resumen ──
+  // ── Encabezado ──
   const diasCortos=dias.map(fmtDiaCorto);
   const rangoLabel=`${fmtDiaCorto(dias[0])} al ${fmtDiaCorto(dias[dias.length-1])}`;
-  let thead=`<tr><th class="lbl">KPI</th>${diasCortos.map(d=>`<th>${d}</th>`).join('')}<th class="resumen">${rangoLabel}</th></tr>`;
-  $id('thead-ddd').innerHTML=thead;
+  // 3 columnas fijas: grupo | subgrupo | KPI
+  $id('thead-ddd').innerHTML=`<tr>
+    <th class="lbl" style="min-width:28px;max-width:34px"></th>
+    <th class="lbl" style="min-width:28px;max-width:34px"></th>
+    <th class="lbl">KPI</th>
+    ${diasCortos.map(d=>`<th>${d}</th>`).join('')}
+    <th class="resumen">${rangoLabel}</th>
+  </tr>`;
 
+  // Helper: celda vacía de grupo (cuando la fila no es la primera del grupo)
+  const GV=''; // sin celda — manejado con rowspan
+  const claseMeta=metaPct=>v=>{ if(v==null)return ''; return v>=metaPct?'azul':'rojo'; };
   const filas=[];
 
-  // ── SEGURIDAD ──
-  filas.push(seccionFila('SEGURIDAD'));
+  // ─────────────────────────────────────────────
+  // BLOQUE SEGURIDAD (4 filas)
+  // ─────────────────────────────────────────────
   const segCampos=[
     ['accidenteCTP','Accidentes CTP'],
     ['accidenteSTP','Accidentes STP'],
     ['cuasiAccidente','Casi Accidentes'],
     ['incidenteMedioAmb','Incidentes Medio Ambientales']
   ];
-  segCampos.forEach(([campo,lbl])=>{
+  segCampos.forEach(([campo,lbl],i)=>{
     const vals=dias.map(f=>(segPorDia[f]||{})[campo]??0);
     const total=vals.reduce((a,b)=>a+b,0);
-    filas.push(filaSimple(lbl,vals,total,v=>v>0?'alerta-rojo':''));
+    const celdas=vals.map(v=>{const c=v>0?'rojo':'';return `<td class="${c}">${fmt(v,0)}</td>`;}).join('');
+    const totalCls=total>0?'rojo':'';
+    const grupoCell=i===0?`<td class="grupo g-seg" rowspan="${segCampos.length}">Seguridad y Med. Ambiente</td>`:'';
+    const subCell=i===0?`<td class="grupo g-sub" rowspan="${segCampos.length}">Seguridad</td>`:'';
+    filas.push(`<tr>${grupoCell}${subCell}<td class="lbl">${lbl}</td>${celdas}<td class="resumen ${totalCls}">${fmt(total,0)}</td></tr>`);
   });
 
-  // ── PRODUCCIÓN ──
-  filas.push(seccionFila('PRODUCCIÓN'));
+  // ─────────────────────────────────────────────
+  // BLOQUE PRODUCCIÓN (4 filas)
+  // ─────────────────────────────────────────────
   const volRealVals=dias.map(f=>volRealPorDia[f]??null);
   const volMetaVals=dias.map(f=>metaPorDia[f]??null);
   const volRealTot=volRealVals.reduce((a,b)=>a+(b||0),0);
   const volMetaTot=volMetaVals.reduce((a,b)=>a+(b||0),0);
-  const cumplVals=dias.map((f,i)=>{
-    const m=volMetaVals[i],r=volRealVals[i];
-    return(m&&m>0)?(r||0)/m*100:null;
-  });
+  const cumplVals=dias.map((f,i)=>{const m=volMetaVals[i],r=volRealVals[i];return(m&&m>0)?(r||0)/m*100:null;});
   const cumplTot=(volMetaTot>0)?(volRealTot/volMetaTot*100):null;
-  filas.push(filaSimple('Cumplimiento de programa (%)',cumplVals,cumplTot,v=>{
-    if(v==null)return '';
-    return v>=98?'azul':'rojo';
-  },0,'%'));
-  filas.push(filaSimple('Volumen según oferta (m³)',volMetaVals,volMetaTot||null,null,0));
-  filas.push(filaSimple('Volumen real (m³)',volRealVals,volRealTot,null,0));
-  const difVals=dias.map((f,i)=>(volMetaVals[i]!=null)?((volRealVals[i]||0)-volMetaVals[i]):null);
-  const difTot=(volMetaTot>0)?(volRealTot-volMetaTot):null;
-  filas.push(filaSimple('Diferencia m³ Meta vs Real',difVals,difTot,v=>v==null?'':(v>=0?'azul':'rojo'),0));
+  const difVals=dias.map((f,i)=>volMetaVals[i]!=null?(volRealVals[i]||0)-volMetaVals[i]:null);
+  const difTot=(volMetaTot>0)?volRealTot-volMetaTot:null;
+  const prodFilas=[
+    {lbl:'Cumplimiento de programa (%)', vals:cumplVals, total:cumplTot,
+      fn:v=>v==null?'':(v>=98?'azul':'rojo'), dec:1, suf:'%'},
+    {lbl:'Volumen según oferta (m³)',    vals:volMetaVals, total:volMetaTot||null, fn:null, dec:0},
+    {lbl:'Volumen real (m³)',            vals:volRealVals, total:volRealTot,       fn:null, dec:0},
+    {lbl:'Diferencia m³ Meta vs Real',   vals:difVals,     total:difTot,
+      fn:v=>v==null?'':(v>=0?'azul':'rojo'), dec:0}
+  ];
+  prodFilas.forEach(({lbl,vals,total,fn,dec,suf},i)=>{
+    const s=suf||'';
+    const celdas=vals.map(v=>{const c=fn?fn(v):'';return `<td class="${c}">${v!=null?fmt(v,dec)+s:'—'}</td>`;}).join('');
+    const tc=fn?fn(total):'';
+    const grupoCell=i===0?`<td class="grupo g-prod" rowspan="${prodFilas.length}">Producción</td>`:'';
+    const subCell=i===0?`<td class="grupo g-sub" rowspan="${prodFilas.length}">Programa</td>`:'';
+    filas.push(`<tr>${grupoCell}${subCell}<td class="lbl">${lbl}</td>${celdas}<td class="resumen ${tc}">${total!=null?fmt(total,dec)+s:'—'}</td></tr>`);
+  });
 
-  // ── PROCESADOR / INDICADORES ──
-  filas.push(seccionFila(`PROCESADOR${procesador?' — '+procesador:''} — INDICADORES`));
-  const oeeVals=dias.map(f=>avg(oeePorDia[f]));
-  const fdVals=dias.map(f=>avg(fdPorDia[f]));
-  const feVals=dias.map(f=>avg(fePorDia[f]));
-  const oeeTodos=Object.values(oeePorDia).flat();
-  const fdTodos=Object.values(fdPorDia).flat();
-  const feTodos=Object.values(fePorDia).flat();
-  const claseMeta=metaPct=>v=>{
-    if(v==null)return '';
-    return v>=metaPct?'azul':'rojo';
-  };
-  filas.push(filaSimple('OEE (%) — meta 66%',oeeVals.map(v=>v!=null?v*100:null),avg(oeeTodos)!=null?avg(oeeTodos)*100:null,claseMeta(66),0,'%'));
-  filas.push(filaSimple('Factor de Disponibilidad FD (%) — meta 75%',fdVals.map(v=>v!=null?v*100:null),avg(fdTodos)!=null?avg(fdTodos)*100:null,claseMeta(75),0,'%'));
-  filas.push(filaSimple('Factor de Eficiencia FE (%) — meta 88%',feVals.map(v=>v!=null?v*100:null),avg(feTodos)!=null?avg(feTodos)*100:null,claseMeta(88),0,'%'));
+  // ─────────────────────────────────────────────
+  // BLOQUE PROCESADOR
+  // ─────────────────────────────────────────────
+  const oeeVals=dias.map(f=>avg(oeePorDia[f]||[]));
+  const fdVals= dias.map(f=>avg(fdPorDia[f]||[]));
+  const feVals= dias.map(f=>avg(fePorDia[f]||[]));
+  const oeeTodos=Object.values(oeePorDia).flat().filter(v=>v!=null);
+  const fdTodos= Object.values(fdPorDia).flat().filter(v=>v!=null);
+  const feTodos= Object.values(fePorDia).flat().filter(v=>v!=null);
   const tobVals=dias.map(f=>tobPorDia[f]??null);
   const tocVals=dias.map(f=>tocPorDia[f]??null);
-  const tpVals=dias.map(f=>tpPorDia[f]??null);
-  filas.push(filaSimple('TPOB (Horas) — meta 2,75 h',tobVals,tobVals.reduce((a,b)=>a+(b||0),0),v=>v==null?'':(v<=2.75?'azul':'rojo'),2));
-  filas.push(filaSimple('TPOC (Horas)',tocVals,tocVals.reduce((a,b)=>a+(b||0),0),null,2));
-  filas.push(filaSimple('TP Programado (Horas)',tpVals,tpVals.reduce((a,b)=>a+(b||0),0),null,0));
+  const tpVals= dias.map(f=>tpPorDia[f]??null);
+  const tobTot=tobVals.reduce((a,b)=>a+(b||0),0);
+  const tocTot=tocVals.reduce((a,b)=>a+(b||0),0);
+  const tpTot= tpVals.reduce((a,b)=>a+(b||0),0);
+  const metaTOB_periodo=2.75*nd; // meta proporcional al rango
 
-  // ── CAUSALES DE PÉRDIDA (Top 10) ──
-  filas.push(seccionFila('CAUSALES DE PÉRDIDAS (Horas) — Top 10'));
-  const motivosTotal=Object.keys(causalesPorDia).map(m=>[m,sum(causalesPorDia[m])]);
+  // Causales Top 10
+  const motivosTotal=Object.keys(causalesPorDia).map(m=>[m,sumObj(causalesPorDia[m])]);
   motivosTotal.sort((a,b)=>b[1]-a[1]);
   const motivos=motivosTotal.slice(0,10).map(([m])=>m);
+
+  // Total filas del bloque procesador = 5 indicadores + causales
+  const nIndicadores=5;
+  const nCausales=Math.max(motivos.length,1);
+  const nProc=nIndicadores+nCausales;
+
+  const procNombre=procesador||'Procesador';
+
+  // Indicadores (5 filas)
+  const indicFilas=[
+    {lbl:'OEE (%)',                      vals:oeeVals.map(v=>v!=null?v*100:null), total:avg(oeeTodos)!=null?avg(oeeTodos)*100:null, fn:claseMeta(66), dec:0, suf:'%'},
+    {lbl:'Factor de Disponibilidad (FD)',vals:fdVals.map(v=>v!=null?v*100:null),  total:avg(fdTodos)!=null?avg(fdTodos)*100:null,   fn:claseMeta(75), dec:0, suf:'%'},
+    {lbl:'Factor de Eficiencia (FE)',    vals:feVals.map(v=>v!=null?v*100:null),  total:avg(feTodos)!=null?avg(feTodos)*100:null,   fn:claseMeta(88), dec:0, suf:'%'},
+    {lbl:'TPOB (Horas)',                 vals:tobVals, total:tobTot,
+      fn:v=>v==null?'':(v<=2.75?'azul':'rojo'),
+      fnTotal:t=>t<=metaTOB_periodo?'azul':'rojo',
+      dec:2},
+    {lbl:'TPOC (Horas)',                 vals:tocVals, total:tocTot, fn:null, dec:2}
+  ];
+
+  indicFilas.forEach(({lbl,vals,total,fn,fnTotal,dec,suf},i)=>{
+    const s=suf||'';
+    const celdas=vals.map(v=>{const c=fn?fn(v):'';return `<td class="${c}">${v!=null?fmt(v,dec)+s:'—'}</td>`;}).join('');
+    const tc=fnTotal?fnTotal(total):(fn?fn(total):'');
+    const grupoCell=i===0?`<td class="grupo g-proc" rowspan="${nProc}">${procNombre}</td>`:'';
+    const subCell=i===0?`<td class="grupo g-sub" rowspan="${nIndicadores}">Indicadores</td>`:'';
+    filas.push(`<tr>${grupoCell}${subCell}<td class="lbl">${lbl}</td>${celdas}<td class="resumen ${tc}">${total!=null?fmt(total,dec)+s:'—'}</td></tr>`);
+  });
+
+  // Causales (filas variables, subgrupo con rowspan)
   if(motivos.length===0){
-    filas.push(`<tr><td class="lbl">Sin causales registradas</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">—</td></tr>`);
+    filas.push(`<tr><td class="grupo g-sub">T. Perdidos Obvios</td><td class="lbl">Sin causales registradas</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">—</td></tr>`);
   }else{
-    motivos.forEach(m=>{
+    motivos.forEach((m,i)=>{
       const vals=dias.map(f=>causalesPorDia[m][f]??null);
       const total=vals.reduce((a,b)=>a+(b||0),0);
-      filas.push(filaSimple(m,vals,total,null,2));
+      const celdas=vals.map(v=>`<td>${v!=null?fmt(v,2):'—'}</td>`).join('');
+      const subCell=i===0?`<td class="grupo g-sub" rowspan="${nCausales}">T. Perdidos Obvios</td>`:'';
+      filas.push(`<tr>${subCell}<td class="lbl">${m}</td>${celdas}<td class="resumen">${fmt(total,2)}</td></tr>`);
     });
   }
 
-  // ── APROVECHAMIENTO SEGÚN ESQUEMA DE TROZADO ──
-  filas.push(seccionFila('APROVECHAMIENTO SEGÚN ESQUEMA DE TROZADO (%)'));
+  // ─────────────────────────────────────────────
+  // BLOQUE APROVECHAMIENTO
+  // ─────────────────────────────────────────────
   const rodales=Object.keys(rodalMap);
+  const tiposAprov=[['Clear','clear'],['Industrial','industrial'],['Pulpa','pulpa'],['Siniestrado','siniestrado']];
+  const nAprov=rodales.length===0?1:rodales.length*(1+tiposAprov.length); // fila cabecera rodal + 4 tipos
+
   if(rodales.length===0){
-    filas.push(`<tr><td class="lbl">Sin datos de rodales</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">—</td></tr>`);
+    filas.push(`<tr>
+      <td class="grupo g-aprov">Aprov. Trozado</td>
+      <td class="grupo g-sub">Productos</td>
+      <td class="lbl">Sin datos de rodales</td>
+      ${dias.map(()=>'<td>—</td>').join('')}
+      <td class="resumen">—</td>
+    </tr>`);
   }else{
+    let primeraFilaAprov=true;
+    let filasAprovAcum=0;
     rodales.forEach((rodal,idxRodal)=>{
-      const r=rodalMap[rodal]; // r = { fecha: {clear,industrial,pulpa,siniestrado}, ... }
-      const clsBloque=idxRodal%2===0?'rodal-a':'rodal-b';
-      filas.push(`<tr class="${clsBloque}"><td class="lbl">RODAL: ${rodal}</td>${dias.map(()=>'<td></td>').join('')}<td class="resumen"></td></tr>`);
-      [['Clear','clear'],['Industrial','industrial'],['Pulpa','pulpa'],['Siniestrado','siniestrado']].forEach(([lbl,key])=>{
-        // Valor por cada día
-        const valsPorDia=dias.map(fecha=>{
-          const entrada=r[fecha];
-          return entrada!=null&&entrada[key]!=null?entrada[key]:null;
-        });
-        // Promedio resumen: solo los días con dato
+      const r=rodalMap[rodal];
+      const clsB=idxRodal%2===0?'rodal-a':'rodal-b';
+      const nFilasEsteRodal=1+tiposAprov.length; // cabecera + 4 tipos
+      // Fila cabecera rodal
+      const grupoCell=primeraFilaAprov?`<td class="grupo g-aprov" rowspan="${nAprov}">Aprov. Trozado</td>`:'';
+      const subCell=`<td class="grupo g-sub" rowspan="${nFilasEsteRodal}">Rodal ${rodal}</td>`;
+      filas.push(`<tr class="${clsB}">${grupoCell}${subCell}<td class="lbl" style="font-weight:700">RODAL: ${rodal}</td>${dias.map(()=>'<td></td>').join('')}<td class="resumen"></td></tr>`);
+      primeraFilaAprov=false;
+      // Filas tipos
+      tiposAprov.forEach(([lbl,key])=>{
+        const valsPorDia=dias.map(f=>{const e=r[f];return e!=null&&e[key]!=null?e[key]:null;});
         const conDato=valsPorDia.filter(v=>v!=null);
         const promedio=conDato.length?Math.round(conDato.reduce((a,b)=>a+b,0)/conDato.length):null;
         const celdas=valsPorDia.map(v=>`<td>${v!=null?v+'%':'—'}</td>`).join('');
-        filas.push(`<tr class="${clsBloque}"><td class="lbl" style="padding-left:20px">${lbl}</td>${celdas}<td class="resumen">${promedio!=null?promedio+'%':'—'}</td></tr>`);
+        filas.push(`<tr class="${clsB}"><td class="lbl" style="padding-left:22px">${lbl}</td>${celdas}<td class="resumen">${promedio!=null?promedio+'%':'—'}</td></tr>`);
       });
     });
   }
 
-  // ── BODEGA FAENA ──
-  filas.push(seccionFila('BODEGA FAENA — STOCK (Cargas)'));
-  filas.push(`<tr><td class="lbl">Stock Madera Aserrable</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">${stock.aserrable}</td></tr>`);
-  filas.push(`<tr><td class="lbl">Stock Madera Pulpable</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">${stock.pulpable}</td></tr>`);
-  filas.push(`<tr><td class="lbl">Stock Madera Manchada</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">${stock.manchada}</td></tr>`);
+  // ─────────────────────────────────────────────
+  // BLOQUE BODEGA FAENA (3 filas)
+  // ─────────────────────────────────────────────
+  const bodFilas=[
+    {lbl:'Stock Madera Aserrable', val:stock.aserrable},
+    {lbl:'Stock Madera Pulpable',  val:stock.pulpable},
+    {lbl:'Stock Madera Manchada',  val:stock.manchada}
+  ];
+  bodFilas.forEach(({lbl,val},i)=>{
+    const grupoCell=i===0?`<td class="grupo g-bod" rowspan="${bodFilas.length}">Bodega Faena</td>`:'';
+    const subCell=i===0?`<td class="grupo g-sub" rowspan="${bodFilas.length}">Stock</td>`:'';
+    filas.push(`<tr>${grupoCell}${subCell}<td class="lbl">${lbl}</td>${dias.map(()=>'<td>—</td>').join('')}<td class="resumen">${val}</td></tr>`);
+  });
 
   $id('tbody-ddd').innerHTML=filas.join('');
 }
