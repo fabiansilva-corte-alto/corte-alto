@@ -321,6 +321,16 @@ table.tabla-ddd td.lbl-sub{
   white-space:normal;word-break:break-word;
   padding-left:20px;font-size:14px;
 }
+/* Meta entre paréntesis */
+span.meta-lbl{font-size:12px;color:#2d6a10;font-weight:700;margin-left:3px}
+/* Divisor entre bloques principales */
+table.tabla-ddd tr.div-bloque td{
+  border-top:3px solid #3d6b20 !important;
+  padding:0 !important;
+  height:0 !important;
+  line-height:0 !important;
+  font-size:0 !important;
+}
 
 /* ── ORIENTACIÓN LANDSCAPE FORZADA EN MÓVIL ── */
 @media screen and (max-width:768px) and (orientation:portrait){
@@ -591,7 +601,8 @@ window.cargarDatos=async function(){
         if(eq.oee!=null){oeePorDia[f]=oeePorDia[f]||[];oeePorDia[f].push(eq.oee);}
         if(eq.tob!=null){tobPorDia[f]=(tobPorDia[f]||0)+eq.tob;}
         if(eq.toc!=null){tocPorDia[f]=(tocPorDia[f]||0)+eq.toc;}
-        if(eq.tpProgramado!=null){tpPorDia[f]=(tpPorDia[f]||0)+eq.tpProgramado;}
+        const tpVal=eq.tp??eq.tpProgramado??null;
+        if(tpVal!=null){tpPorDia[f]=(tpPorDia[f]||0)+tpVal;}
         (eq.detenciones||[]).forEach(det=>{
           const k=det.motivo||'(sin motivo)';
           causalesPorDia[k]=causalesPorDia[k]||{};
@@ -749,12 +760,14 @@ function renderTablaDdd(ctx){
   const difTot=(volMetaTot>0)?volRealTot-volMetaTot:null;
   const prodFilas=[
     {lbl:'Cumplimiento de programa (%)', vals:cumplVals, total:cumplTot,
-      fn:v=>v==null?'':(v>=98?'azul':'rojo'), dec:1, suf:'%'},
+      fn:v=>v==null?'':(v>=98?'azul':'rojo'), dec:0, suf:'%'},
     {lbl:'Volumen según oferta (m³)',    vals:volMetaVals, total:volMetaTot||null, fn:null, dec:0},
     {lbl:'Volumen real (m³)',            vals:volRealVals, total:volRealTot,       fn:null, dec:0},
     {lbl:'Diferencia m³ Meta vs Real',   vals:difVals,     total:difTot,
       fn:v=>v==null?'':(v>=0?'azul':'rojo'), dec:0}
   ];
+  // Divisor antes de Producción
+  filas.push(`<tr class="div-bloque"><td colspan="${3+dias.length+1}"></td></tr>`);
   prodFilas.forEach(({lbl,vals,total,fn,dec,suf},i)=>{
     const s=suf||'';
     const celdas=vals.map(v=>{const c=fn?fn(v):'';return `<td class="${c}">${v!=null?fmt(v,dec)+s:'—'}</td>`;}).join('');
@@ -787,7 +800,7 @@ function renderTablaDdd(ctx){
   const motivos=motivosTotal.slice(0,10).map(([m])=>m);
 
   // Total filas del bloque procesador = 5 indicadores + causales
-  const nIndicadores=5;
+  const nIndicadores=6;
   const nCausales=Math.max(motivos.length,1);
   const nProc=nIndicadores+nCausales;
 
@@ -795,16 +808,19 @@ function renderTablaDdd(ctx){
 
   // Indicadores (5 filas)
   const indicFilas=[
-    {lbl:'OEE (%)',                      vals:oeeVals.map(v=>v!=null?v*100:null), total:avg(oeeTodos)!=null?avg(oeeTodos)*100:null, fn:claseMeta(66), dec:0, suf:'%'},
-    {lbl:'Factor de Disponibilidad (FD)',vals:fdVals.map(v=>v!=null?v*100:null),  total:avg(fdTodos)!=null?avg(fdTodos)*100:null,   fn:claseMeta(75), dec:0, suf:'%'},
-    {lbl:'Factor de Eficiencia (FE)',    vals:feVals.map(v=>v!=null?v*100:null),  total:avg(feTodos)!=null?avg(feTodos)*100:null,   fn:claseMeta(88), dec:0, suf:'%'},
-    {lbl:'TPOB (Horas)',                 vals:tobVals, total:tobTot,
+    {lbl:'OEE (%) <span class="meta-lbl">(meta 66%)</span>',                      vals:oeeVals.map(v=>v!=null?v*100:null), total:avg(oeeTodos)!=null?avg(oeeTodos)*100:null, fn:claseMeta(66), dec:0, suf:'%'},
+    {lbl:'Factor de Disponibilidad (FD) <span class="meta-lbl">(meta 75%)</span>',vals:fdVals.map(v=>v!=null?v*100:null),  total:avg(fdTodos)!=null?avg(fdTodos)*100:null,   fn:claseMeta(75), dec:0, suf:'%'},
+    {lbl:'Factor de Eficiencia (FE) <span class="meta-lbl">(meta 88%)</span>',    vals:feVals.map(v=>v!=null?v*100:null),  total:avg(feTodos)!=null?avg(feTodos)*100:null,   fn:claseMeta(88), dec:0, suf:'%'},
+    {lbl:'TPOB (Horas) <span class="meta-lbl">(meta 2,75 h/día)</span>',          vals:tobVals, total:tobTot,
       fn:v=>v==null?'':(v<=2.75?'azul':'rojo'),
       fnTotal:t=>t<=metaTOB_periodo?'azul':'rojo',
       dec:2},
-    {lbl:'TPOC (Horas)',                 vals:tocVals, total:tocTot, fn:null, dec:2}
+    {lbl:'TPOC (Horas)',                 vals:tocVals, total:tocTot, fn:null, dec:2},
+    {lbl:'TP (Horas)',                   vals:tpVals,  total:tpTot,  fn:null, dec:2}
   ];
 
+  // Divisor antes de Procesador
+  filas.push(`<tr class="div-bloque"><td colspan="${3+dias.length+1}"></td></tr>`);
   indicFilas.forEach(({lbl,vals,total,fn,fnTotal,dec,suf},i)=>{
     const s=suf||'';
     const celdas=vals.map(v=>{const c=fn?fn(v):'';return `<td class="${c}">${v!=null?fmt(v,dec)+s:'—'}</td>`;}).join('');
@@ -834,6 +850,8 @@ function renderTablaDdd(ctx){
   const tiposAprov=[['Clear','clear'],['Industrial','industrial'],['Pulpa','pulpa'],['Siniestrado','siniestrado']];
   const nAprov=rodales.length===0?1:rodales.length*(1+tiposAprov.length); // fila cabecera rodal + 4 tipos
 
+  // Divisor antes de Aprovechamiento
+  filas.push(`<tr class="div-bloque"><td colspan="${3+dias.length+1}"></td></tr>`);
   if(rodales.length===0){
     filas.push(`<tr>
       <td class="grupo g-aprov">Aprov. Trozado</td>
@@ -859,8 +877,21 @@ function renderTablaDdd(ctx){
         const valsPorDia=dias.map(f=>{const e=r[f];return e!=null&&e[key]!=null?e[key]:null;});
         const conDato=valsPorDia.filter(v=>v!=null);
         const promedio=conDato.length?Math.round(conDato.reduce((a,b)=>a+b,0)/conDato.length):null;
+        // Meta = valor más frecuente (moda) entre los días reportados
+        const metaVal=conDato.length?conDato.reduce((a,b,_,arr)=>
+          arr.filter(v=>v===a).length>=arr.filter(v=>v===b).length?a:b, conDato[0]):null;
+        // Etiqueta con meta entre paréntesis
+        const metaStr=metaVal!=null?` <span class="meta-lbl">(ET: ${metaVal}%)</span>`:'';
         const celdas=valsPorDia.map(v=>`<td>${v!=null?v+'%':'—'}</td>`).join('');
-        filas.push(`<tr class="${clsB}"><td class="lbl" style="padding-left:22px">${lbl}</td>${celdas}<td class="resumen">${promedio!=null?promedio+'%':'—'}</td></tr>`);
+        // Resumen: color por criterio ±3% respecto a meta
+        let resumenCls='',resumenTxt='—';
+        if(promedio!=null){
+          resumenTxt=promedio+'%';
+          if(metaVal!=null){
+            resumenCls=Math.abs(promedio-metaVal)<=3?'azul':'rojo';
+          }
+        }
+        filas.push(`<tr class="${clsB}"><td class="lbl" style="padding-left:22px">${lbl}${metaStr}</td>${celdas}<td class="resumen ${resumenCls}">${resumenTxt}</td></tr>`);
       });
     });
   }
@@ -873,6 +904,8 @@ function renderTablaDdd(ctx){
     {lbl:'Stock Madera Pulpable',  val:stock.pulpable},
     {lbl:'Stock Madera Manchada',  val:stock.manchada}
   ];
+  // Divisor antes de Bodega
+  filas.push(`<tr class="div-bloque"><td colspan="${3+dias.length+1}"></td></tr>`);
   bodFilas.forEach(({lbl,val},i)=>{
     const grupoCell=i===0?`<td class="grupo g-bod" rowspan="${bodFilas.length}">Bodega Faena</td>`:'';
     const subCell=i===0?`<td class="grupo g-sub" rowspan="${bodFilas.length}">Stock</td>`:'';
