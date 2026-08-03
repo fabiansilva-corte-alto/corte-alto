@@ -59,8 +59,32 @@ html,body{height:100%;width:100%;font-family:var(--font);background:var(--bg);co
 }
 #filtros select:focus,#filtros input[type=date]:focus{border-color:var(--green)}
 #filtros .sep{color:var(--text3);font-size:11px;padding:0 2px}
-.btn-semana{
-  font-size:11px;font-weight:600;
+/* ── MULTI-SELECT FUNDO ── */
+.fundo-wrap{position:relative}
+.btn-fundo-toggle{
+  font-size:12px;font-family:var(--font);
+  padding:5px 10px;height:30px;
+  border:1px solid var(--border2);border-radius:var(--radius-sm);
+  background:var(--card);color:var(--text);cursor:pointer;
+  white-space:nowrap;min-width:120px;text-align:left;
+}
+.btn-fundo-toggle #fundo-count{
+  font-size:11px;color:var(--green);font-weight:700;margin:0 4px;
+}
+.fundo-menu{
+  position:absolute;top:34px;left:0;z-index:200;
+  background:var(--card2);border:1px solid var(--border2);
+  border-radius:var(--radius-sm);padding:6px 0;
+  min-width:200px;max-height:240px;overflow-y:auto;
+  box-shadow:0 4px 12px rgba(0,0,0,.4);
+}
+.fundo-menu label{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 12px;cursor:pointer;font-size:13px;color:var(--text);
+}
+.fundo-menu label:hover{background:var(--border)}
+.fundo-menu input[type=checkbox]{accent-color:var(--green-bright);width:14px;height:14px}
+.btn-semana{  font-size:11px;font-weight:600;
   padding:5px 10px;height:30px;
   border:1px solid var(--border2);border-radius:var(--radius-sm);
   background:var(--card2);color:var(--text2);cursor:pointer;
@@ -381,6 +405,13 @@ table.tabla-ddd tr.div-bloque td{
     <option value="">Línea…</option>
   </select>
 
+  <div class="fundo-wrap" id="fundo-wrap" style="display:none">
+    <button class="btn-fundo-toggle" id="btn-fundo-toggle" onclick="toggleFundoMenu()" type="button">
+      Fundo… <span id="fundo-count"></span>▾
+    </button>
+    <div class="fundo-menu" id="fundo-menu" style="display:none"></div>
+  </div>
+
   <select id="sel-procesador">
     <option value="">Procesador…</option>
   </select>
@@ -455,11 +486,12 @@ const COL_JEFE     = "productividad_jefe";
 const COL_META     = "config_volumen_meta";
 const COL_LINEAS   = "config_lineas";
 const COL_EQUIPOS  = "config_equipos";
+const COL_FUNDOS   = "config_fundos";
 
 // ── Estado ──
 let lineas   = [];
 let equipos  = [];
-
+let fundos   = [];
 // ── Utils ──
 function fmt(n,dec=0){if(n==null||isNaN(n))return '—';return Number(n).toLocaleString('es-CL',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
 function pct(n){if(n==null||isNaN(n))return '—';return fmt(n*100,1)+'%';}
@@ -509,19 +541,69 @@ async function init(){
     equipos=snap.docs.map(d=>({id:d.id,...d.data()}));
   }catch(e){}
 
+  // Fundos
+  try{
+    const snap=await getDocs(query(collection(db,COL_FUNDOS),orderBy('nombre')));
+    fundos=snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){}
+
   // Fecha por defecto: esta semana
   setSemana(0);
 }
 
 window.onLineaChange=function(){
   const linea=$id('sel-linea').value;
+  // Reset procesador
   const sel=$id('sel-procesador');
   sel.innerHTML='<option value="">Procesador…</option>';
+  // Reset fundos
+  const wrap=$id('fundo-wrap');
+  const menu=$id('fundo-menu');
+  menu.innerHTML='';
+  $id('fundo-count').textContent='';
+  wrap.style.display='none';
   if(!linea)return;
+  // Poblar procesadores
   equipos
     .filter(e=>e.tipo==='PROCESADOR')
     .forEach(e=>{const o=document.createElement('option');o.value=e.nombre;o.textContent=e.nombre;sel.appendChild(o);});
+  // Poblar fundos (todos, sin filtro por línea ya que config_fundos no tiene linea)
+  fundos.forEach(f=>{
+    const lbl=document.createElement('label');
+    const chk=document.createElement('input');
+    chk.type='checkbox';chk.value=f.nombre;
+    chk.onchange=actualizarContadorFundos;
+    lbl.appendChild(chk);
+    lbl.appendChild(document.createTextNode(' '+f.nombre));
+    menu.appendChild(lbl);
+  });
+  wrap.style.display='';
 };
+
+window.toggleFundoMenu=function(){
+  const menu=$id('fundo-menu');
+  menu.style.display=menu.style.display==='none'?'':'none';
+};
+
+// Cerrar menú fundo al hacer click fuera
+document.addEventListener('click',function(e){
+  const wrap=$id('fundo-wrap');
+  if(wrap&&!wrap.contains(e.target))$id('fundo-menu').style.display='none';
+});
+
+function actualizarContadorFundos(){
+  const sel=fundosSeleccionados();
+  $id('fundo-count').textContent=sel.length?`(${sel.length})`:'';
+  $id('btn-fundo-toggle').textContent=
+    sel.length===1?sel[0]+' ▾':
+    sel.length>1?`${sel.length} fundos ▾`:
+    'Fundo… ▾';
+}
+
+function fundosSeleccionados(){
+  return [...$id('fundo-menu').querySelectorAll('input[type=checkbox]:checked')]
+    .map(c=>c.value);
+}
 
 // ── CARGA PRINCIPAL ──
 window.cargarDatos=async function(){
@@ -529,8 +611,10 @@ window.cargarDatos=async function(){
   const procesador=$id('sel-procesador').value;
   const desde=$id('fecha-desde').value;
   const hasta=$id('fecha-hasta').value;
+  const fundosSel=fundosSeleccionados();
 
   if(!linea){toast('Selecciona una línea');return;}
+  if(!fundosSel.length){toast('Selecciona al menos un fundo');return;}
   if(!desde||!hasta){toast('Elige el rango de fechas');return;}
   if(desde>hasta){toast('La fecha "desde" debe ser anterior a "hasta"');return;}
 
@@ -546,7 +630,11 @@ window.cargarDatos=async function(){
       where('fecha','<=',hasta),
       where('linea','==',linea)
     ));
-    const docsProd=snapProd.docs.map(d=>d.data());
+    // Filtrar por fundo(s) seleccionados en cliente
+    const docsProd=snapProd.docs.map(d=>d.data())
+      .filter(d=>fundosSel.includes(d.fundo));
+    console.log('[DdD] fundosSel:', fundosSel);
+    console.log('[DdD] docsProd después de filtro fundo:', docsProd.length, docsProd.map(d=>d.fundo+'|'+d.fecha));
 
     // Volumen real por día
     const volRealPorDia={};
@@ -578,7 +666,9 @@ window.cargarDatos=async function(){
       where('fecha','<=',hasta),
       where('linea','==',linea)
     ));
-    const docsJefe=snapJefe.docs.map(d=>d.data());
+    // Filtrar por fundo(s) seleccionados en cliente
+    const docsJefe=snapJefe.docs.map(d=>d.data())
+      .filter(d=>fundosSel.includes(d.fundo));
 
     const segPorDia={};
     const oeePorDia={},fdPorDia={},fePorDia={},tobPorDia={},tocPorDia={},tpPorDia={};
@@ -637,7 +727,7 @@ window.cargarDatos=async function(){
 
     // ── 4. Fundos únicos del período ──
     const fundosSet=new Set(docsProd.map(d=>d.fundo).filter(Boolean));
-    const fundoStr=[...fundosSet].join(', ')||'—';
+    const fundoStr=fundosSel.join(', ')||'—';
 
     // ── 5. Stock de bodega: preguntar al usuario ──
     const stock=pedirStockBodega();
