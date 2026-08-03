@@ -24,6 +24,7 @@ const ARCHIVOS_CACHE = [
   './control.html',
   './configuracion.html',
   './tablero-ddd.html',
+  './dashboard.html',
   './manifest.json',
   './logo.png'
 ];

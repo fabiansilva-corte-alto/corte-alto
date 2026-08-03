@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dashboard">
+<meta name="theme-color" content="#1a1a1a">
+<title>Dashboard — Corte Alto</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f5;--card:#fff;--border:#e0e0e0;--border2:#d0d0d0;
+  --text:#1a1a1a;--text2:#555;--text3:#888;
+  --green:#3B6D11;--green-bg:#EAF3DE;
+  --red:#A32D2D;--red-bg:#FCEBEB;
+  --amber:#854F0B;--amber-bg:#FAEEDA;
+  --blue:#1D5FAD;--blue-bg:#E8F0FB;
+  --purple:#3C3489;--purple-bg:#EEEDFE;
+  --radius:12px;--radius-sm:8px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;min-height:100vh}
+.app{max-width:720px;margin:0 auto;padding:1rem}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding:.75rem 1rem;background:var(--card);border-radius:var(--radius);border:1px solid var(--border)}
+.header-left{display:flex;align-items:center;gap:8px}
+.back-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2);display:flex;align-items:center;padding:4px}
+.header-title{font-size:16px;font-weight:600}
+.header-sub{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+
+/* SECCIÓN */
+.section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1rem}
+.section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.875rem;display:flex;align-items:center;gap:6px}
+
+/* FILTROS */
+.filters-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.filter-field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px}
+.filter-label{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--text);outline:none}
+.btn-consultar{background:var(--text);color:#fff;border:none;padding:9px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;align-self:flex-end}
+.btn-consultar:disabled{opacity:.5;cursor:wait}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:.75rem}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem}
+.kpi-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.kpi-value{font-size:24px;font-weight:800;line-height:1}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.kpi-bar{height:4px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px}
+.kpi-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+
+/* TARJETA EQUIPOS VOLUMEN */
+.vol-eq-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem;margin-bottom:.75rem}
+.vol-eq-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.vol-eq-item{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;display:flex;flex-direction:column;gap:2px;min-width:110px}
+.vol-eq-name{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase}
+.vol-eq-val{font-size:16px;font-weight:800;color:var(--green)}
+.vol-eq-unit{font-size:10px;color:var(--text3)}
+
+/* TARJETA RODALES */
+.rodal-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem;margin-bottom:.75rem}
+.rodal-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.rodal-item{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;min-width:130px}
+.rodal-fundo{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+.rodal-num{font-size:12px;font-weight:700;color:var(--text2)}
+.rodal-vol{font-size:15px;font-weight:800;color:var(--blue)}
+.rodal-unit{font-size:10px;color:var(--text3)}
+
+/* GRÁFICO */
+.chart-wrap{position:relative;width:100%;height:220px}
+
+/* OEE NÚMEROS */
+.oee-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem}
+.oee-num-card{border-radius:var(--radius-sm);padding:.75rem;text-align:center;border:2px solid transparent}
+.oee-num-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.7;margin-bottom:4px}
+.oee-num-val{font-size:38px;font-weight:900;line-height:1}
+.oee-num-meta{font-size:10px;margin-top:4px;opacity:.65}
+.oee-ok{background:var(--green-bg);border-color:#C2DDA6;color:var(--green)}
+.oee-bad{background:var(--red-bg);border-color:#F0C9C9;color:var(--red)}
+.oee-na{background:#f5f5f5;border-color:var(--border);color:var(--text3)}
+
+/* CAUSALES */
+.causal-list{display:flex;flex-direction:column;gap:6px}
+.causal-row{display:flex;align-items:center;gap:8px}
+.causal-rank{font-size:11px;font-weight:800;color:var(--text3);width:16px;flex-shrink:0;text-align:center}
+.causal-bar-wrap{flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden}
+.causal-bar-fill{height:100%;background:var(--red);border-radius:3px}
+.causal-name{font-size:11px;color:var(--text2);flex:2;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.causal-horas{font-size:11px;font-weight:700;color:var(--text);flex-shrink:0}
+
+/* TABLA RENDIMIENTO */
+.rend-table{width:100%;border-collapse:collapse;font-size:12px}
+.rend-table th{font-size:9px;font-weight:700;padding:5px 7px;text-align:center;background:#f5f5f5;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid var(--border)}
+.rend-table th:first-child{text-align:left}
+.rend-table td{padding:6px 7px;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle}
+.rend-table td:first-child{text-align:left;font-weight:700}
+.rend-table tr:last-child td{border-bottom:none}
+.rend-group{font-size:9px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.05em;padding:4px 7px}
+.rend-alpine{background:#1D5FAD}
+.rend-skidder{background:#854F0B}
+.rend-proc{background:#3B6D11}
+.rend-shovel{background:#3C3489}
+.rend-val{display:inline-block;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:700;background:#f0f0f0;color:var(--text2)}
+.rend-na{color:var(--text3);font-size:11px}
+
+/* EMPTY / LOADER */
+.empty-state{text-align:center;padding:2rem 1rem;color:var(--text3);font-size:13px}
+.spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-block{display:flex;align-items:center;justify-content:center;gap:8px;padding:1.5rem;color:var(--text3);font-size:13px}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:90%;text-align:center}
+.toast.show{opacity:1}
+
+/* OEE FILTRO EQUIPO */
+.oee-equipo-row{display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap}
+.oee-equipo-row label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.oee-equipo-row select{flex:1;min-width:160px}
+
+@media(max-width:520px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .kpi-value{font-size:20px}
+  .oee-num-val{font-size:28px}
+  .filters-row{flex-direction:column}
+  .btn-consultar{width:100%;justify-content:center}
+  .rend-table{font-size:11px}
+}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <button class="back-btn" onclick="window.location.href='index.html'"><i class="ti ti-arrow-left"></i></button>
+      <div>
+        <div class="header-sub">Corte Alto · Sistema de gestión</div>
+        <div class="header-title">📊 Dashboard de gestión</div>
+      </div>
+    </div>
+    <img src="logo.png" alt="Corte Alto" style="height:46px;width:auto;object-fit:contain">
+  </div>
+
+  <!-- ═══ BLOQUE 1: FILTRO GENERAL ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-filter"></i> Filtro general</div>
+    <div class="filters-row">
+      <div class="filter-field" style="max-width:160px">
+        <div class="filter-label"><i class="ti ti-calendar"></i> Desde</div>
+        <input type="date" id="f-desde">
+      </div>
+      <div class="filter-field" style="max-width:160px">
+        <div class="filter-label"><i class="ti ti-calendar"></i> Hasta</div>
+        <input type="date" id="f-hasta">
+      </div>
+      <div class="filter-field">
+        <div class="filter-label"><i class="ti ti-git-branch"></i> Línea</div>
+        <select id="f-linea">
+          <option value="">Todas las líneas</option>
+        </select>
+      </div>
+      <button class="btn-consultar" onclick="consultar()" id="btn-consultar">
+        <i class="ti ti-search"></i> Consultar
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ BLOQUE 2: PRODUCCIÓN ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-stack-3"></i> Producción</div>
+
+    <!-- KPI cards: Volumen Producido · Volumen Meta · Cumplimiento -->
+    <div class="kpi-grid" id="kpi-prod">
+      <div class="kpi-card"><div class="loading-block"><div class="spinner"></div></div></div>
+      <div class="kpi-card"><div class="loading-block"><div class="spinner"></div></div></div>
+      <div class="kpi-card"><div class="loading-block"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- Volumen por equipo -->
+    <div class="vol-eq-card" id="vol-eq-card">
+      <div class="kpi-label"><i class="ti ti-engine"></i> Volumen por equipo</div>
+      <div class="loading-block"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Volumen por rodal -->
+    <div class="rodal-card" id="rodal-card">
+      <div class="kpi-label"><i class="ti ti-trees"></i> Volumen por rodal</div>
+      <div class="loading-block"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Gráfico producción diaria -->
+    <div class="section-title" style="margin-top:.5rem"><i class="ti ti-chart-bar"></i> Producción diaria vs. meta</div>
+    <div class="chart-wrap" id="chart-wrap">
+      <canvas id="chart-prod"></canvas>
+    </div>
+    <div id="chart-empty" class="empty-state" style="display:none">
+      <i class="ti ti-chart-bar-off" style="font-size:26px;display:block;margin-bottom:.5rem"></i>
+      Sin datos de producción para el período
+    </div>
+  </div>
+
+  <!-- ═══ BLOQUE 3: PRODUCTIVIDAD OEE ═══ -->
+  <div class="section" id="seccion-oee">
+    <div class="section-title"><i class="ti ti-settings-2"></i> Productividad OEE</div>
+
+    <!-- Selector equipo procesador -->
+    <div class="oee-equipo-row">
+      <label><i class="ti ti-engine"></i> Equipo</label>
+      <select id="f-proc" onchange="renderOEE()">
+        <option value="">— Seleccionar procesador —</option>
+      </select>
+    </div>
+
+    <!-- Números OEE -->
+    <div class="oee-nums" id="oee-nums">
+      <div class="oee-num-card oee-na"><div class="oee-num-label">OEE</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 66%</div></div>
+      <div class="oee-num-card oee-na"><div class="oee-num-label">FD</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 75%</div></div>
+      <div class="oee-num-card oee-na"><div class="oee-num-label">FE</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 88%</div></div>
+    </div>
+
+    <!-- Mini stats TP/TOB/TOC -->
+    <div id="oee-mini" style="display:none;background:#f8f8f8;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:1rem"></div>
+
+    <!-- Top 5 causales -->
+    <div class="section-title" style="margin-top:.25rem"><i class="ti ti-clock-pause"></i> Top 5 causales de pérdida (TPOB)</div>
+    <div id="causal-wrap">
+      <div class="empty-state">Selecciona un procesador para ver causales</div>
+    </div>
+  </div>
+
+  <!-- ═══ BLOQUE 4: RENDIMIENTO POR EQUIPO ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-table"></i> Rendimiento por equipo</div>
+    <div id="rend-wrap">
+      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, getDocs, query, where, orderBy, doc, getDoc }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const fb = {
+  apiKey:"AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+  authDomain:"reporte-inicio-faena-forestal.firebaseapp.com",
+  projectId:"reporte-inicio-faena-forestal",
+  storageBucket:"reporte-inicio-faena-forestal.firebasestorage.app",
+  messagingSenderId:"962534414054",
+  appId:"1:962534414054:web:fa43371d31413fc0524d27"
+};
+const db = getFirestore(initializeApp(fb));
+
+// ── UTILS ──────────────────────────────────────────────────────────────────
+const showToast = msg => {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+};
+const fmt2 = n => (isNaN(n)||n==null) ? '—' : Number(n).toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt0 = n => (isNaN(n)||n==null) ? '—' : Math.round(n).toLocaleString('es-CL');
+const pct0 = n => (isNaN(n)||n==null) ? '—' : Math.round(n)+'%';
+const avg  = arr => arr.length ? arr.reduce((s,v)=>s+v,0)/arr.length : NaN;
+const toISO = d => d.toISOString().split('T')[0];
+const loaderHTML = '<div class="loading-block"><div class="spinner"></div></div>';
+
+// ── FECHAS POR DEFECTO ────────────────────────────────────────────────────
+const hoy = new Date();
+const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+document.getElementById('f-desde').value = toISO(primerDia);
+document.getElementById('f-hasta').value = toISO(hoy);
+
+// ── CARGAR LÍNEAS ─────────────────────────────────────────────────────────
+(async () => {
+  try {
+    const snap = await getDocs(query(collection(db,'config_lineas'), orderBy('nombre')));
+    const sel = document.getElementById('f-linea');
+    snap.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d.data().nombre; o.textContent = d.data().nombre;
+      sel.appendChild(o);
+    });
+  } catch(e) {}
+})();
+
+// ── ESTADO GLOBAL ─────────────────────────────────────────────────────────
+let G = { prod:[], jefe:[], meta:{}, inicio:[], desde:'', hasta:'' };
+let chartInst = null;
+
+// ── CONSULTAR ─────────────────────────────────────────────────────────────
+window.consultar = async function() {
+  const desde = document.getElementById('f-desde').value;
+  const hasta  = document.getElementById('f-hasta').value;
+  const linea  = document.getElementById('f-linea').value;
+  if(!desde||!hasta){ showToast('⚠️ Selecciona fechas'); return; }
+  if(desde>hasta){ showToast('⚠️ Fecha Desde > Hasta'); return; }
+
+  document.getElementById('btn-consultar').disabled = true;
+  mostrarLoaders();
+
+  try {
+    // Producción
+    let snap = await getDocs(query(collection(db,'reportes_produccion'),
+      where('fecha','>=',desde), where('fecha','<=',hasta), orderBy('fecha')));
+    let prod = []; snap.forEach(d => prod.push(d.data()));
+    if(linea) prod = prod.filter(d => (d.linea||d.codLinea||'') === linea);
+
+    // Productividad jefe
+    snap = await getDocs(query(collection(db,'productividad_jefe'),
+      where('fecha','>=',desde), where('fecha','<=',hasta), orderBy('fecha')));
+    let jefe = []; snap.forEach(d => jefe.push(d.data()));
+    if(linea) jefe = jefe.filter(d => (d.linea||'') === linea);
+
+    // Meta volumen
+    const meta = await cargarMeta(desde, hasta, linea, prod);
+
+    // Inicio jornada
+    snap = await getDocs(query(collection(db,'reportes_v3'),
+      where('fecha','>=',desde), where('fecha','<=',hasta)));
+    let inicio = []; snap.forEach(d => inicio.push(d.data()));
+    if(linea) inicio = inicio.filter(d => (d.linea||'') === linea);
+
+    G = { prod, jefe, meta, inicio, desde, hasta };
+
+    // Poblar selector procesadores (solo los que reportaron en el rango/línea)
+    poblarProcesadores(jefe);
+
+    renderProduccion();
+    renderOEE();
+    renderRendimiento();
+
+  } catch(e) {
+    showToast('❌ Error: '+e.message);
+    console.error(e);
+  }
+  document.getElementById('btn-consultar').disabled = false;
+};
+
+// ── META ──────────────────────────────────────────────────────────────────
+async function cargarMeta(desde, hasta, linea, prod) {
+  const meta = {};
+  const meses = new Set();
+  let cur = new Date(desde+'T12:00:00');
+  const fin = new Date(hasta+'T12:00:00');
+  while(cur<=fin){ meses.add(toISO(cur).slice(0,7)); cur.setDate(cur.getDate()+1); }
+  const lineas = linea ? [linea] : [...new Set(prod.map(d=>d.linea).filter(Boolean))];
+  for(const lin of lineas) {
+    for(const mes of meses) {
+      const [a,m] = mes.split('-');
+      try {
+        const snap = await getDoc(doc(db,'config_volumen_meta',`${lin}_${mes}`));
+        if(snap.exists()) {
+          (snap.data().valores||[]).forEach((v,i)=>{
+            const f=`${a}-${m}-${String(i+1).padStart(2,'0')}`;
+            if(f>=desde&&f<=hasta) meta[f]=(meta[f]||0)+(parseFloat(v)||0);
+          });
+        }
+      } catch(e){}
+    }
+  }
+  return meta;
+}
+
+// ── LOADERS ───────────────────────────────────────────────────────────────
+function mostrarLoaders() {
+  ['kpi-prod'].forEach(id => {
+    document.getElementById(id).querySelectorAll('.kpi-card')
+      .forEach(c => c.innerHTML = loaderHTML);
+  });
+  document.getElementById('vol-eq-card').innerHTML =
+    '<div class="kpi-label"><i class="ti ti-engine"></i> Volumen por equipo</div>'+loaderHTML;
+  document.getElementById('rodal-card').innerHTML =
+    '<div class="kpi-label"><i class="ti ti-trees"></i> Volumen por rodal</div>'+loaderHTML;
+  document.getElementById('rend-wrap').innerHTML = loaderHTML;
+  document.getElementById('chart-wrap').style.display = 'none';
+  document.getElementById('chart-empty').style.display = 'none';
+}
+
+// ── POBLAR SELECTOR PROCESADORES ──────────────────────────────────────────
+function poblarProcesadores(jefe) {
+  const procesadores = new Set();
+  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
+    if((eq.tipo||'').toUpperCase()==='PROCESADOR' && eq.equipo)
+      procesadores.add(eq.equipo);
+  }));
+  const sel = document.getElementById('f-proc');
+  sel.innerHTML = '<option value="">— Seleccionar procesador —</option>';
+  [...procesadores].sort().forEach(nombre => {
+    const o = document.createElement('option');
+    o.value = nombre; o.textContent = nombre;
+    sel.appendChild(o);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUE 2: PRODUCCIÓN
+// ══════════════════════════════════════════════════════════════════════════
+function renderProduccion() {
+  const { prod, meta, inicio, desde, hasta } = G;
+
+  // ── KPI cards ──
+  const volReal = prod.reduce((s,d)=>s+(parseFloat(d.totalGlobal)||0),0);
+  const metaTotal = Object.values(meta).reduce((s,v)=>s+v,0);
+  const cumpl = metaTotal>0 ? (volReal/metaTotal)*100 : NaN;
+
+  const colorCumpl = isNaN(cumpl)?'var(--text3)':cumpl>=90?'var(--green)':cumpl>=70?'var(--amber)':'var(--red)';
+  const barColor   = isNaN(cumpl)?'var(--border)':cumpl>=90?'var(--green)':cumpl>=70?'#D97706':'var(--red)';
+
+  document.getElementById('kpi-prod').innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="ti ti-stack-3"></i> Volumen producido</div>
+      <div class="kpi-value" style="color:var(--text)">${fmt0(volReal)} <span style="font-size:14px;font-weight:600">m³</span></div>
+      <div class="kpi-sub">${prod.length} reportes en el período</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(isNaN(cumpl)?0:cumpl,100)}%;background:${barColor}"></div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="ti ti-target"></i> Volumen meta</div>
+      <div class="kpi-value" style="color:var(--text2)">${fmt0(metaTotal)} <span style="font-size:14px;font-weight:600">m³</span></div>
+      <div class="kpi-sub">${metaTotal>0?'Meta acumulada del período':'Sin meta cargada'}</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:100%;background:#e0e0e0"></div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="ti ti-percentage"></i> Cumplimiento de meta</div>
+      <div class="kpi-value" style="color:${colorCumpl}">${pct0(cumpl)}</div>
+      <div class="kpi-sub">${fmt0(volReal)} / ${fmt0(metaTotal)} m³</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(isNaN(cumpl)?0:cumpl,100)}%;background:${barColor}"></div></div>
+    </div>`;
+
+  // ── Volumen por equipo (madereo) y por procesador ──
+  const volEqM = {}, volEqP = {};
+  prod.forEach(d => (d.cartolas||[]).forEach(c => {
+    let v = 0; (c.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
+    if(c.equipo)     volEqM[c.equipo]     = (volEqM[c.equipo]||0) + v;
+    if(c.procesador) volEqP[c.procesador] = (volEqP[c.procesador]||0) + v;
+  }));
+  // Mostrar ambos agrupados: madereo + procesadores
+  const eqItems = [
+    ...Object.entries(volEqM).map(([k,v])=>([k,v,'madereo'])),
+    ...Object.entries(volEqP).map(([k,v])=>([k,v,'proc']))
+  ].sort((a,b)=>b[1]-a[1]);
+  const eqHTML = eqItems.length
+    ? eqItems.map(([eq,v,tipo])=>`
+        <div class="vol-eq-item">
+          <div class="vol-eq-name">${eq}</div>
+          <div style="font-size:9px;color:${tipo==='proc'?'var(--green)':'var(--blue)'};font-weight:700;margin-bottom:2px">${tipo==='proc'?'PROCESADOR':'MADEREO'}</div>
+          <div class="vol-eq-val">${fmt2(v)}</div>
+          <div class="vol-eq-unit">m³</div>
+        </div>`).join('')
+    : '<div style="font-size:12px;color:var(--text3)">Sin datos de cartolas</div>';
+  document.getElementById('vol-eq-card').innerHTML =
+    `<div class="kpi-label"><i class="ti ti-engine"></i> Volumen por equipo</div>
+     <div class="vol-eq-grid">${eqHTML}</div>`;
+
+  // ── Volumen por rodal (desde cartolas[], misma fuente que control de producción) ──
+  const rodalMap = {}; // "fundo__rodal" -> {fundo, numero, vol}
+  prod.forEach(d => {
+    (d.cartolas||[]).forEach(c => {
+      if(!c.rodal) return;
+      const fundo = d.fundo || c.fundo || '—';
+      const key = `${fundo}__${c.rodal}`;
+      if(!rodalMap[key]) rodalMap[key] = { fundo, numero: c.rodal, vol: 0 };
+      let v = 0;
+      (c.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
+      rodalMap[key].vol += v;
+    });
+  });
+  const rodales = Object.values(rodalMap).sort((a,b)=>b.vol-a.vol);
+  const rodalHTML = rodales.length
+    ? rodales.map(r=>`
+        <div class="rodal-item">
+          <div class="rodal-fundo">${r.fundo}</div>
+          <div class="rodal-num">Rodal ${r.numero}</div>
+          <div class="rodal-vol">${fmt2(r.vol)}</div>
+          <div class="rodal-unit">m³</div>
+        </div>`).join('')
+    : '<div style="font-size:12px;color:var(--text3)">Sin datos de rodales</div>';
+  document.getElementById('rodal-card').innerHTML =
+    `<div class="kpi-label"><i class="ti ti-trees"></i> Volumen por rodal</div>
+     <div class="rodal-list">${rodalHTML}</div>`;
+
+  // ── Gráfico ──
+  renderGrafico(prod, meta, desde, hasta);
+}
+
+// ── GRÁFICO ───────────────────────────────────────────────────────────────
+function renderGrafico(prod, meta, desde, hasta) {
+  const prodPorFecha = {};
+  prod.forEach(d => {
+    prodPorFecha[d.fecha] = (prodPorFecha[d.fecha]||0) + (parseFloat(d.totalGlobal)||0);
+  });
+  const labels=[], reales=[], metas=[];
+  let cur = new Date(desde+'T12:00:00');
+  const fin = new Date(hasta+'T12:00:00');
+  while(cur<=fin) {
+    const f = toISO(cur);
+    labels.push(`${String(cur.getDate()).padStart(2,'0')}/${String(cur.getMonth()+1).padStart(2,'0')}`);
+    reales.push(parseFloat(((prodPorFecha[f]||0)).toFixed(2)));
+    metas.push(parseFloat(((meta[f]||0)).toFixed(2)));
+    cur.setDate(cur.getDate()+1);
+  }
+  const hayDatos = reales.some(v=>v>0)||metas.some(v=>v>0);
+  document.getElementById('chart-wrap').style.display = hayDatos?'block':'none';
+  document.getElementById('chart-empty').style.display = hayDatos?'none':'block';
+  if(!hayDatos) return;
+  if(chartInst) chartInst.destroy();
+  const ctx = document.getElementById('chart-prod').getContext('2d');
+  chartInst = new Chart(ctx, {
+    data:{
+      labels,
+      datasets:[
+        {type:'bar',label:'Real (m³)',data:reales,
+         backgroundColor:reales.map((v,i)=>
+           metas[i]>0?(v>=metas[i]?'rgba(59,109,17,.75)':'rgba(163,45,45,.7)'):'rgba(100,100,100,.45)'
+         ),borderRadius:3,order:2},
+        {type:'line',label:'Meta (m³)',data:metas,
+         borderColor:'#854F0B',backgroundColor:'transparent',
+         borderWidth:2,borderDash:[5,3],pointRadius:2,
+         pointBackgroundColor:'#854F0B',tension:.2,order:1}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:11},boxWidth:14,padding:12}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt2(c.parsed.y)} m³`}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:15}},
+        y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10},callback:v=>fmt0(v)}}
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUE 3: OEE
+// ══════════════════════════════════════════════════════════════════════════
+window.renderOEE = function() {
+  const equipoSel = document.getElementById('f-proc').value;
+  const { jefe } = G;
+
+  // parsePct: acepta "33%", "33", 33 → número
+  const parsePct = v => {
+    if(v==null) return NaN;
+    const n = parseFloat(String(v).replace('%',''));
+    return isNaN(n) ? NaN : n;
+  };
+
+  const oees=[],fds=[],fes=[],tps=[],tobs=[],tocs=[];
+  // causalesMap: { codigo: { nombre, horas_eess, horas_formin } }
+  const causalesMap = {};
+
+  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
+    if((eq.tipo||'').toUpperCase()!=='PROCESADOR') return;
+    if(equipoSel && (eq.equipo||'')!==equipoSel) return;
+
+    // FIX 1: parsear correctamente OEE/FD/FE
+    // Calcular desde TP/TOB/TOC si los campos oee/fd/fe fallan
+    const tpRaw  = parseFloat(eq.tpProgramado||eq.tp)||0;
+    const tobRaw = parseFloat(eq.tob)||0;
+    const tocRaw = parseFloat(eq.toc)||0;
+
+    // OEE/FD/FE se guardan como decimales en Firestore (0.3345 = 33.45%)
+    // Si el valor es <= 1 se asume decimal y se multiplica x100
+    const toPercent = v => {
+      const n = parsePct(v);
+      if(isNaN(n)) return NaN;
+      return n <= 1 ? n * 100 : n;
+    };
+    let oeeV = toPercent(eq.oee);
+    let fdV  = toPercent(eq.fd);
+    let feV  = toPercent(eq.fe);
+
+    // Fallback: recalcular desde TP/TOB/TOC si los campos vienen vacíos
+    if((isNaN(oeeV)||oeeV===0) && tpRaw>0) {
+      fdV  = ((tpRaw - tobRaw) / tpRaw) * 100;
+      feV  = (tpRaw - tobRaw) > 0 ? ((tpRaw - tobRaw - tocRaw) / (tpRaw - tobRaw)) * 100 : 0;
+      oeeV = (fdV/100) * (feV/100) * 100;
+    }
+
+    if(oeeV>0) oees.push(oeeV);
+    if(fdV>0)  fds.push(fdV);
+    if(feV>0)  fes.push(feV);
+
+    const tobV = parseFloat(eq.tob)||0;
+    const tocV = parseFloat(eq.toc)||0;
+    const tpV  = parseFloat(eq.tpProgramado||eq.tp)||0;
+    tobs.push(tobV);
+    tocs.push(tocV);
+    if(tpV>0) tps.push(tpV);
+
+    // FIX 3: causales con nombre completo y responsable separado
+    (eq.detenciones||[]).forEach(det => {
+      const cod    = String(det.codigo||det.motivo||'—').trim();
+      const nombre = String(det.motivo||det.codigo||'—').trim();
+      const resp   = String(det.resp||det.responsable||'EESS').toUpperCase();
+      const h      = parseFloat(det.horas)||0;
+      if(!causalesMap[cod]) causalesMap[cod] = { nombre, horas_eess:0, horas_formin:0 };
+      // usar el nombre más descriptivo si ya existe
+      if(nombre.length > causalesMap[cod].nombre.length)
+        causalesMap[cod].nombre = nombre;
+      if(resp==='FORMIN') causalesMap[cod].horas_formin += h;
+      else                causalesMap[cod].horas_eess   += h;
+    });
+  }));
+
+  if(!equipoSel) {
+    document.getElementById('oee-nums').innerHTML = `
+      <div class="oee-num-card oee-na"><div class="oee-num-label">OEE</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 66%</div></div>
+      <div class="oee-num-card oee-na"><div class="oee-num-label">FD</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 75%</div></div>
+      <div class="oee-num-card oee-na"><div class="oee-num-label">FE</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 88%</div></div>`;
+    document.getElementById('oee-mini').style.display='none';
+    document.getElementById('causal-wrap').innerHTML =
+      '<div class="empty-state">Selecciona un procesador para ver causales</div>';
+    return;
+  }
+
+  const oeeV=avg(oees), fdV=avg(fds), feV=avg(fes);
+
+  const makeCard = (label,val,meta) => {
+    const cls = isNaN(val)?'oee-na':val>=meta?'oee-ok':'oee-bad';
+    return `<div class="oee-num-card ${cls}">
+      <div class="oee-num-label">${label}</div>
+      <div class="oee-num-val">${pct0(val)}</div>
+      <div class="oee-num-meta">meta ${meta}%</div>
+    </div>`;
+  };
+  document.getElementById('oee-nums').innerHTML =
+    makeCard('OEE',oeeV,66)+makeCard('FD',fdV,75)+makeCard('FE',feV,88);
+
+  // FIX 2: mostrar total + promedio para TP/TOB/TOC
+  const sum  = arr => arr.reduce((s,v)=>s+v,0);
+  const miniEl = document.getElementById('oee-mini');
+  miniEl.style.display='block';
+  miniEl.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px;color:var(--text2)">
+      <div>
+        <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">TP</div>
+        <div>Total: <strong>${fmt2(sum(tps))} h</strong></div>
+        <div style="color:var(--text3)">Prom: ${fmt2(avg(tps))} h</div>
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">TOB</div>
+        <div>Total: <strong>${fmt2(sum(tobs))} h</strong></div>
+        <div style="color:var(--text3)">Prom: ${fmt2(avg(tobs))} h</div>
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">TOC</div>
+        <div>Total: <strong>${fmt2(sum(tocs))} h</strong></div>
+        <div style="color:var(--text3)">Prom: ${fmt2(avg(tocs))} h</div>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:6px">${oees.length} registros en el período</div>`;
+
+  // FIX 3: Top 5 causales con nombre completo y color por responsable
+  // ordenar por horas totales (eess + formin)
+  const top5 = Object.entries(causalesMap)
+    .map(([cod,v])=>({ cod, nombre:v.nombre, total:v.horas_eess+v.horas_formin,
+                       horas_eess:v.horas_eess, horas_formin:v.horas_formin }))
+    .sort((a,b)=>b.total-a.total).slice(0,5);
+  const maxH = top5.length ? top5[0].total : 1;
+
+  if(!top5.length) {
+    document.getElementById('causal-wrap').innerHTML =
+      '<div class="empty-state">Sin detenciones registradas</div>';
+    return;
+  }
+
+  // Color: FORMIN=verde, EESS=azul
+  const fmtResp = (label,h) => h>0
+    ? `<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;
+        background:${label==='FORMIN'?'var(--green-bg)':'var(--blue-bg)'};
+        color:${label==='FORMIN'?'var(--green)':'var(--blue)'}">
+        ${label} ${fmt2(h)}h</span>`
+    : '';
+
+  document.getElementById('causal-wrap').innerHTML = `
+    <div class="causal-list">
+      ${top5.map((c,i)=>`
+        <div class="causal-row" style="align-items:flex-start;gap:8px;padding:4px 0">
+          <div class="causal-rank" style="padding-top:2px">${i+1}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;
+                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.nombre}">
+              ${c.nombre}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <div class="causal-bar-wrap" style="flex:1;min-width:80px">
+                <div class="causal-bar-fill" style="width:${(c.total/maxH)*100}%"></div>
+              </div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                ${fmtResp('EESS',c.horas_eess)}
+                ${fmtResp('FORMIN',c.horas_formin)}
+              </div>
+            </div>
+          </div>
+          <div class="causal-horas" style="padding-top:2px">${fmt2(c.total)} h</div>
+        </div>`).join('')}
+    </div>`;
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUE 4: RENDIMIENTO POR EQUIPO
+// ══════════════════════════════════════════════════════════════════════════
+function renderRendimiento() {
+  const { jefe, prod } = G;
+
+  const toP = v => { const n=parseFloat(String(v||'').replace('%','')); return isNaN(n)?NaN:(n<=1?n*100:n); };
+
+  // Acumular por equipo con campos correctos de Firestore
+  const eqs = {};
+  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
+    const tipo   = (eq.tipo||'').toUpperCase();
+    const nombre = eq.equipo||'—';
+    const key    = `${tipo}__${nombre}`;
+    if(!eqs[key]) eqs[key]={tipo,nombre,ciclos:0,arboles:0,horas:0,oees:[],fds:[],fes:[]};
+    const e = eqs[key];
+
+    // Horas: siempre desde horasTrabajo (campo real guardado en Firestore)
+    e.horas += parseFloat(eq.horasTrabajo)||0;
+
+    if(tipo==='TORRE'||tipo==='ALPINE') {
+      // Ciclos y árboles a nivel de equipo (por carro)
+      e.ciclos  += parseInt(eq.ciclos)||0;
+      e.arboles += parseInt(eq.arboles)||0;
+    } else if(tipo==='SKIDDER') {
+      // Ciclos y árboles a nivel de equipo
+      e.ciclos  += parseInt(eq.ciclos)||0;
+      e.arboles += parseInt(eq.arboles)||0;
+    } else if(tipo==='PROCESADOR') {
+      // Árboles desde rodales[]
+      (eq.rodales||[]).forEach(r=>{ e.arboles+=parseInt(r.arboles)||0; });
+      // OEE/FD/FE
+      const oV=toP(eq.oee),fV=toP(eq.fd),feV=toP(eq.fe);
+      if(oV>0) e.oees.push(oV);
+      if(fV>0) e.fds.push(fV);
+      if(feV>0) e.fes.push(feV);
+    } else if(tipo==='SHOVEL') {
+      // Árboles desde volteos[]
+      (eq.volteos||[]).forEach(v=>{ e.arboles+=parseInt(v.arboles)||0; });
+    }
+  }));
+
+  // Volumen por equipo de madereo (eq. madereo: Alpine, Skidder) desde c.equipo
+  const volEqMadereo = {};
+  // Volumen por procesador (trozado) desde c.procesador
+  const volEqProc = {};
+  prod.forEach(d=>(d.cartolas||[]).forEach(c=>{
+    let v=0;(c.productos||[]).forEach(p=>v+=parseFloat(p.vol)||0);
+    // Madereo: campo equipo (Alpine-3, SK625N3, etc.)
+    if(c.equipo) volEqMadereo[c.equipo]=(volEqMadereo[c.equipo]||0)+v;
+    // Procesador: campo procesador (PROC5, KOM2, etc.)
+    if(c.procesador) volEqProc[c.procesador]=(volEqProc[c.procesador]||0)+v;
+  }));
+  // Volumen total del período (fallback si no hay campo procesador en datos viejos)
+  const volTotalProd = Object.values(volEqMadereo).reduce((s,v)=>s+v,0);
+
+  const grupos = {
+    ALPINE:    { label:'Alpine / Torre',   cls:'rend-alpine',  items:[] },
+    SKIDDER:   { label:'Skidder',          cls:'rend-skidder', items:[] },
+    PROCESADOR:{ label:'Procesador',       cls:'rend-proc',    items:[] },
+    SHOVEL:    { label:'Shovel',           cls:'rend-shovel',  items:[] },
+  };
+  Object.values(eqs).forEach(e=>{
+    if(e.tipo==='TORRE'||e.tipo==='ALPINE') grupos.ALPINE.items.push(e);
+    else if(e.tipo==='SKIDDER')             grupos.SKIDDER.items.push(e);
+    else if(e.tipo==='PROCESADOR')          grupos.PROCESADOR.items.push(e);
+    else if(e.tipo==='SHOVEL')              grupos.SHOVEL.items.push(e);
+  });
+
+  const vv = n => `<span class="rend-val">${n}</span>`;
+  const na = () => `<span class="rend-na">—</span>`;
+
+  let html = '';
+  let hayDatos = false;
+
+  // Alpine / Torre / Skidder
+  ['ALPINE','SKIDDER'].forEach(gk => {
+    const g = grupos[gk];
+    if(!g.items.length) return;
+    hayDatos=true;
+    html += `<tr><td colspan="7" class="rend-group ${g.cls}">${g.label}</td></tr>
+      <tr style="background:#fafafa">
+        <th>Equipo</th><th>Árb/Ciclo</th><th>M³/Ciclo</th><th>VMA</th><th>Árb/Hr</th><th>M³/Hr</th><th>Ciclo/Hr</th>
+      </tr>`;
+    g.items.sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(e=>{
+      // Volumen desde cartolas campo equipo (eq. madereo)
+      const vol = volEqMadereo[e.nombre]||0;
+      const arbCiclo = e.ciclos>0 ? e.arboles/e.ciclos : NaN;
+      const m3Ciclo  = e.ciclos>0&&vol>0 ? vol/e.ciclos : NaN;
+      // VMA = m³/árbol (volumen por árbol)
+      const vma      = e.arboles>0&&vol>0 ? vol/e.arboles : NaN;
+      const arbH     = e.horas>0 ? e.arboles/e.horas : NaN;
+      const m3H      = e.horas>0&&vol>0 ? vol/e.horas : NaN;
+      const cicH     = e.horas>0&&e.ciclos>0 ? e.ciclos/e.horas : NaN;
+      html += `<tr>
+        <td>${e.nombre}</td>
+        <td>${isNaN(arbCiclo)?na():vv(fmt2(arbCiclo))}</td>
+        <td>${isNaN(m3Ciclo)?na():vv(fmt2(m3Ciclo))}</td>
+        <td>${isNaN(vma)?na():vv(fmt2(vma))}</td>
+        <td>${isNaN(arbH)?na():vv(fmt2(arbH))}</td>
+        <td>${isNaN(m3H)?na():vv(fmt2(m3H))}</td>
+        <td>${isNaN(cicH)?na():vv(fmt2(cicH))}</td>
+      </tr>`;
+    });
+  });
+
+  // Procesador — sin OEE/FD/FE (están en Bloque 3)
+  if(grupos.PROCESADOR.items.length) {
+    hayDatos=true;
+    html += `<tr><td colspan="4" class="rend-group rend-proc">Procesador</td></tr>
+      <tr style="background:#fafafa">
+        <th>Equipo</th><th>VMA (m³/árb)</th><th>Árb/Hr</th><th>M³/Hr</th>
+      </tr>`;
+    grupos.PROCESADOR.items.sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(e=>{
+      // Volumen desde cartolas campo procesador (trozado)
+      const vol = volEqProc[e.nombre]||0;
+      // VMA procesador = m³/árbol
+      const vma  = e.arboles>0&&vol>0 ? vol/e.arboles : NaN;
+      const arbH = e.horas>0 ? e.arboles/e.horas : NaN;
+      const m3H  = e.horas>0&&vol>0 ? vol/e.horas : NaN;
+      html += `<tr>
+        <td>${e.nombre}</td>
+        <td>${isNaN(vma)?na():vv(fmt2(vma))}</td>
+        <td>${isNaN(arbH)?na():vv(fmt2(arbH))}</td>
+        <td>${isNaN(m3H)?na():vv(fmt2(m3H))}</td>
+      </tr>`;
+    });
+  }
+
+  // Shovel
+  if(grupos.SHOVEL.items.length) {
+    hayDatos=true;
+    html += `<tr><td colspan="4" class="rend-group rend-shovel">Shovel</td></tr>
+      <tr style="background:#fafafa"><th>Equipo</th><th>Árb/Hr</th><th colspan="2"></th></tr>`;
+    grupos.SHOVEL.items.sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(e=>{
+      const arbH = e.horas>0 ? e.arboles/e.horas : NaN;
+      html += `<tr><td>${e.nombre}</td><td>${isNaN(arbH)?na():vv(fmt2(arbH))}</td><td colspan="2"></td></tr>`;
+    });
+  }
+
+  if(!hayDatos) {
+    document.getElementById('rend-wrap').innerHTML =
+      '<div class="empty-state"><i class="ti ti-engine-off" style="font-size:26px;display:block;margin-bottom:.5rem"></i>Sin datos de equipos para el período</div>';
+    return;
+  }
+  document.getElementById('rend-wrap').innerHTML =
+    `<div style="overflow-x:auto"><table class="rend-table"><tbody>${html}</tbody></table></div>
+     <div style="font-size:10px;color:var(--text3);margin-top:8px">
+       * VMA = m³/árbol · Horas desde horómetros · Vol madereo desde campo equipo · Vol procesador desde campo procesador en cartola
+     </div>`;
+}
+
+// ── INICIO ────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => consultar());
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').then(reg=>{
+      if(reg.waiting)reg.waiting.postMessage('SKIP_WAITING');
+      reg.addEventListener('updatefound',()=>{
+        const nw=reg.installing;
+        nw.addEventListener('statechange',()=>{
+          if(nw.state==='installed'&&navigator.serviceWorker.controller)
+            nw.postMessage('SKIP_WAITING');
+        });
+      });
+      reg.update();
+    }).catch(()=>{});
+    let recargado=false;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(recargado)return;recargado=true;window.location.reload();
+    });
+  });
+}
+</script>
+</body>
+</html>
