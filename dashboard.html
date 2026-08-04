@@ -109,6 +109,16 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 .rend-val{display:inline-block;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:700;background:#f0f0f0;color:var(--text2)}
 .rend-na{color:var(--text3);font-size:11px}
 
+/* PIE CHARTS */
+.pie-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.pie-card{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;display:flex;flex-direction:column;align-items:center}
+.pie-card-title{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:.5rem;display:flex;align-items:center;justify-content:center;gap:5px;text-align:center}
+.pie-canvas-wrap{width:110px;height:110px}
+.pie-legend{display:flex;flex-direction:row;flex-wrap:wrap;gap:4px 8px;margin-top:8px;width:100%;justify-content:center}
+.pie-legend .leg-row{display:flex;align-items:center;gap:4px}
+.pie-legend .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pie-legend .leg-name{font-size:10px;color:var(--text2);white-space:nowrap}
+
 /* EMPTY / LOADER */
 .empty-state{text-align:center;padding:2rem 1rem;color:var(--text3);font-size:13px}
 .spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 6px}
@@ -237,6 +247,14 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
     </div>
   </div>
 
+  <!-- ═══ BLOQUE 5: UTILIZACIÓN DE EQUIPOS ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-chart-pie"></i> Utilización de equipos</div>
+    <div id="util-wrap">
+      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+
   <!-- ═══ BLOQUE 4: RENDIMIENTO POR EQUIPO ═══ -->
   <div class="section">
     <div class="section-title"><i class="ti ti-table"></i> Rendimiento por equipo</div>
@@ -338,6 +356,7 @@ window.consultar = async function() {
 
     renderProduccion();
     renderOEE();
+    renderUtilizacion(jefe);
     renderRendimiento();
 
   } catch(e) {
@@ -860,6 +879,122 @@ function renderRendimiento() {
      <div style="font-size:10px;color:var(--text3);margin-top:8px">
        * VMA = m³/árbol · Horas desde horómetros · Vol madereo desde campo equipo · Vol procesador desde campo procesador en cartola
      </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUE 5: UTILIZACIÓN DE EQUIPOS (pie charts)
+// ══════════════════════════════════════════════════════════════════════════
+let pieTorre = null, pieSkid = null;
+
+function renderUtilizacion(jefe) {
+  // ── Torre: conteo por tipoCarro ──
+  const carro = {};
+  // ── Skidder: conteo por huincheAsistencia ──
+  const huinche = {};
+
+  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
+    const tipo = (eq.tipo||'').toUpperCase();
+    if(tipo === 'TORRE' || tipo === 'ALPINE') {
+      const k = (eq.tipoCarro||'').replace('CARRO ','').trim() || 'Sin dato';
+      carro[k] = (carro[k]||0) + 1;
+    }
+    if(tipo === 'SKIDDER') {
+      const h = (eq.huincheAsistencia||'Sin dato').trim();
+      huinche[h] = (huinche[h]||0) + 1;
+    }
+  }));
+
+  // Orden fijo carro
+  const CARRO_ORDEN  = ['BEREUTER','WYSSEN','MIXTO'];
+  const CARRO_COLORS = ['#D97706','#1D5FAD','#7C5C3A'];
+  // Orden fijo huinche
+  const HUI_ORDEN    = ['NO','SÍ','MIXTO'];
+  const HUI_LABELS   = ['Sin asistencia','Con asistencia','Mixto'];
+  const HUI_COLORS   = ['#3B6D11','#D97706','#A3C97A'];
+
+  const buildData = (map, orden) =>
+    orden.map(k => Object.entries(map).find(([key]) =>
+      key.toUpperCase()===k.toUpperCase())?.[1] || 0);
+
+  const dataCarro  = buildData(carro, CARRO_ORDEN);
+  const dataHuinche= buildData(huinche, HUI_ORDEN);
+
+  const totalCarro  = dataCarro.reduce((s,v)=>s+v,0);
+  const totalHuinche= dataHuinche.reduce((s,v)=>s+v,0);
+
+  const makePie = (canvasId, labels, data, colors, dias) => {
+    const ctx = document.getElementById(canvasId);
+    if(!ctx) return null;
+    return new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels,
+        datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: c => {
+                const d = dias[c.dataIndex];
+                const total = dias.reduce((s,v)=>s+v,0);
+                const pct = total>0 ? Math.round((d/total)*100) : 0;
+                return ` ${c.label}: ${pct}% · ${d} día${d!==1?'s':''}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  };
+
+  // Destruir charts anteriores si existen
+  if(pieTorre) { pieTorre.destroy(); pieTorre=null; }
+  if(pieSkid)  { pieSkid.destroy();  pieSkid=null; }
+
+  // Sin datos
+  const sinDatos = '<div class="empty-state" style="padding:1rem;font-size:12px">Sin datos</div>';
+
+  if(totalCarro===0 && totalHuinche===0) {
+    document.getElementById('util-wrap').innerHTML = sinDatos;
+    return;
+  }
+
+  document.getElementById('util-wrap').innerHTML = `
+    <div class="pie-row">
+      <!-- Torre -->
+      <div class="pie-card" id="pie-card-torre">
+        <div class="pie-card-title">🏔 Torre / Alpine</div>
+        ${totalCarro>0
+          ? `<div class="pie-canvas-wrap"><canvas id="pie-torre"></canvas></div>
+             <div class="pie-legend">
+               <div class="leg-row"><div class="leg-dot" style="background:#D97706"></div><div class="leg-name">Bereuter</div></div>
+               <div class="leg-row"><div class="leg-dot" style="background:#1D5FAD"></div><div class="leg-name">Wyssen</div></div>
+               <div class="leg-row"><div class="leg-dot" style="background:#7C5C3A"></div><div class="leg-name">Mixto</div></div>
+             </div>`
+          : sinDatos}
+      </div>
+      <!-- Skidder -->
+      <div class="pie-card" id="pie-card-skid">
+        <div class="pie-card-title">🚜 Skidder</div>
+        ${totalHuinche>0
+          ? `<div class="pie-canvas-wrap"><canvas id="pie-skid"></canvas></div>
+             <div class="pie-legend">
+               <div class="leg-row"><div class="leg-dot" style="background:#3B6D11"></div><div class="leg-name">Sin asistencia</div></div>
+               <div class="leg-row"><div class="leg-dot" style="background:#D97706"></div><div class="leg-name">Con asistencia</div></div>
+               <div class="leg-row"><div class="leg-dot" style="background:#A3C97A"></div><div class="leg-name">Mixto</div></div>
+             </div>`
+          : sinDatos}
+      </div>
+    </div>`;
+
+  if(totalCarro>0)
+    pieTorre = makePie('pie-torre', CARRO_ORDEN, dataCarro, CARRO_COLORS, dataCarro);
+  if(totalHuinche>0)
+    pieSkid = makePie('pie-skid', HUI_LABELS, dataHuinche, HUI_COLORS, dataHuinche);
 }
 
 // ── INICIO ────────────────────────────────────────────────────────────────
