@@ -109,6 +109,27 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 .rend-val{display:inline-block;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:700;background:#f0f0f0;color:var(--text2)}
 .rend-na{color:var(--text3);font-size:11px}
 
+/* CAMBIO DE LÍNEA */
+.cl-header{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem}
+.cl-stat{border-radius:var(--radius-sm);padding:.75rem;display:flex;align-items:center;gap:10px}
+.cl-stat.blue{background:var(--blue-bg);border:1px solid #C0D5F0}
+.cl-stat.amber{background:var(--amber-bg);border:1px solid #E8C98A}
+.cl-icon{font-size:22px;line-height:1}
+.cl-val{font-size:20px;font-weight:900;line-height:1}
+.cl-val.blue{color:var(--blue)}
+.cl-val.amber{color:var(--amber)}
+.cl-label{font-size:10px;color:var(--text3);margin-top:2px}
+.cl-sub{font-size:10px;font-weight:600;color:var(--text2);margin-top:2px}
+.cl-cond-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;padding-top:10px;border-top:1px solid var(--border)}
+.cl-cond{margin-bottom:14px}
+.cl-cond-label{font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px}
+.seg-bar{height:22px;border-radius:6px;overflow:hidden;display:flex;width:100%;margin-bottom:5px}
+.seg{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;min-width:0;overflow:hidden}
+.seg span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 5px}
+.seg-legend{display:flex;gap:8px;flex-wrap:wrap}
+.seg-leg{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)}
+.seg-dot{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+
 /* PIE CHARTS */
 .pie-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
 .pie-card{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;display:flex;flex-direction:column;align-items:center}
@@ -255,6 +276,14 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
     </div>
   </div>
 
+  <!-- ═══ BLOQUE 6: CAMBIOS DE LÍNEA ═══ -->
+  <div class="section" id="seccion-cambio-linea">
+    <div class="section-title"><i class="ti ti-refresh"></i> Cambios de línea — Torre / Alpine</div>
+    <div id="cambio-wrap">
+      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+
   <!-- ═══ BLOQUE 4: RENDIMIENTO POR EQUIPO ═══ -->
   <div class="section">
     <div class="section-title"><i class="ti ti-table"></i> Rendimiento por equipo</div>
@@ -357,6 +386,7 @@ window.consultar = async function() {
     renderProduccion();
     renderOEE();
     renderUtilizacion(jefe);
+    renderCambioLinea(jefe);
     renderRendimiento();
 
   } catch(e) {
@@ -995,6 +1025,116 @@ function renderUtilizacion(jefe) {
     pieTorre = makePie('pie-torre', CARRO_ORDEN, dataCarro, CARRO_COLORS, dataCarro);
   if(totalHuinche>0)
     pieSkid = makePie('pie-skid', HUI_LABELS, dataHuinche, HUI_COLORS, dataHuinche);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUE 6: CAMBIOS DE LÍNEA
+// ══════════════════════════════════════════════════════════════════════════
+function renderCambioLinea(jefe) {
+  let totalCambios = 0, totalHoras = 0;
+  const cuerda   = { 'SÍ':0, 'NO':0, 'INCOMPLETA':0 };
+  const soportes = { 'SÍ':0, 'NO':0 };
+  const preInst  = { 'SÍ':0, 'NO':0 };
+
+  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
+    const tipo = (eq.tipo||'').toUpperCase();
+    if(tipo !== 'TORRE' && tipo !== 'ALPINE') return;
+    if((eq.cambioLinea||'').toUpperCase() !== 'SÍ') return;
+
+    totalCambios++;
+    totalHoras += parseFloat(eq.horasCambioLinea)||0;
+
+    const ct = (eq.cuerdaTirada||'').toUpperCase();
+    if(ct === 'SÍ') cuerda['SÍ']++;
+    else if(ct === 'NO') cuerda['NO']++;
+    else if(ct === 'INCOMPLETA') cuerda['INCOMPLETA']++;
+
+    const ls = (eq.lineaSoportes||'').toUpperCase();
+    if(ls === 'SÍ') { soportes['SÍ']++; }
+    else if(ls === 'NO') { soportes['NO']++; }
+
+    if(ls === 'SÍ') {
+      const pi = (eq.preInstalado||'').toUpperCase();
+      if(pi === 'SÍ') preInst['SÍ']++;
+      else if(pi === 'NO') preInst['NO']++;
+    }
+  }));
+
+  if(totalCambios === 0) {
+    document.getElementById('cambio-wrap').innerHTML =
+      '<div class="empty-state"><i class="ti ti-refresh-off" style="font-size:26px;display:block;margin-bottom:.5rem"></i>Sin cambios de línea en el período</div>';
+    return;
+  }
+
+  const promHoras = totalHoras / totalCambios;
+
+  // Función barra segmentada
+  const segBar = (data, colors) => {
+    const total = Object.values(data).reduce((s,v)=>s+v,0);
+    if(total === 0) return '<div style="font-size:12px;color:var(--text3)">Sin datos</div>';
+    const segs = Object.entries(data)
+      .filter(([,v])=>v>0)
+      .map(([k,v],i)=>`
+        <div class="seg" style="width:${(v/total*100).toFixed(1)}%;background:${colors[i]}">
+          <span>${k.length>5?k.slice(0,4)+'…':k} · ${v}</span>
+        </div>`).join('');
+    const legs = Object.entries(data)
+      .filter(([,v])=>v>0)
+      .map(([k,v],i)=>`
+        <div class="seg-leg">
+          <div class="seg-dot" style="background:${colors[i]}"></div>
+          ${k} (${v} cambio${v!==1?'s':''})
+        </div>`).join('');
+    return `<div class="seg-bar">${segs}</div><div class="seg-legend">${legs}</div>`;
+  };
+
+  const totalConSop = soportes['SÍ'];
+
+  document.getElementById('cambio-wrap').innerHTML = `
+    <!-- Stats principales -->
+    <div class="cl-header">
+      <div class="cl-stat blue">
+        <div class="cl-icon">🔄</div>
+        <div>
+          <div class="cl-val blue">${totalCambios}</div>
+          <div class="cl-label">Cambios de línea</div>
+          <div class="cl-sub">en el período</div>
+        </div>
+      </div>
+      <div class="cl-stat amber">
+        <div class="cl-icon">⏱</div>
+        <div>
+          <div class="cl-val amber">${fmt2(totalHoras)} h</div>
+          <div class="cl-label">Horas acumuladas</div>
+          <div class="cl-sub">prom: ${fmt2(promHoras)} h/cambio</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Condiciones -->
+    <div class="cl-cond-title">Condición al momento del cambio</div>
+
+    <div class="cl-cond">
+      <div class="cl-cond-label">🪢 Cuerda tirada</div>
+      ${segBar(cuerda, ['#3B6D11','#A32D2D','#854F0B'])}
+    </div>
+
+    <div class="cl-cond">
+      <div class="cl-cond-label">🏗 Tenía soportes</div>
+      ${segBar(soportes, ['#1D5FAD','#A32D2D'])}
+    </div>
+
+    <div class="cl-cond">
+      <div class="cl-cond-label">
+        ⚡ Preinstalado
+        <span style="font-size:10px;font-weight:400;color:var(--text3)">
+          (de ${totalConSop} cambio${totalConSop!==1?'s':''} con soportes)
+        </span>
+      </div>
+      ${totalConSop > 0
+        ? segBar(preInst, ['#3B6D11','#A32D2D'])
+        : '<div style="font-size:12px;color:var(--text3)">Sin cambios con soportes</div>'}
+    </div>`;
 }
 
 // ── INICIO ────────────────────────────────────────────────────────────────
