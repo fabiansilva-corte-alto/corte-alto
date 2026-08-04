@@ -627,8 +627,12 @@ const DETENCIONES_POR_TIPO = {
     [26,"CAMBIO DE CADENA O ESPADA"],[27,"MEDICIÓN DE LARGO DE TROZOS"],
     [99,"OTRO"]],
   "SHOVEL": [...DET_BASE,
-    [24,"TRASLADO DENTRO FAENA"],[25,"DETENIDO POR FALTA DE MADEREO"],
-    [26,"CAMBIO DE CADENA O ESPADA"],[27,"MEDICIÓN DE LARGO DE TROZOS"],
+    [24,"TRASLADO DENTRO FAENA"],
+    [26,"CAMBIO DE CADENA O ESPADA"],
+    [100,"Problema señal asistido"],
+    [200,"Traslado y/o Instalación asistencia"],
+    [300,"Recorrido por perfil antes de volteo"],
+    [400,"Revisión cable y/o aperos"],
     [99,"OTRO"]]
 };
 function etiquetaDet(cod, desc) { return `(${cod}) ${desc}`; }
