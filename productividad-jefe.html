@@ -839,6 +839,7 @@ window.agregarEquipo = function (datos) {
     horasCambioLinea: datos?.horasCambioLinea ?? "",
     lineaSoportes: datos?.lineaSoportes || "",
     preInstalado: datos?.preInstalado || "",
+    cuerdaTirada: datos?.cuerdaTirada || "",
     shoveleo: datos?.shoveleo || "",
     arbolesShoveleo: datos?.arbolesShoveleo ?? "",
     volteos: datos?.volteos ? JSON.parse(JSON.stringify(datos.volteos)) : [],
@@ -1036,8 +1037,9 @@ function camposPorTipo(eq) {
       <input type="text" id="in-${eq.id}-horasCambioLinea" inputmode="decimal" value="${esc(eq.horasCambioLinea)}" placeholder="Ej: 2,5"
         oninput="this.value=this.value.replace(/\\./g,',');setCampo('${eq.id}','horasCambioLinea',this.value,false)">
       <div class="msg-error" id="err-${eq.id}-horasCambioLinea">Ingrese las horas del cambio de línea</div>
+      ${selSiNo("cuerdaTirada", "¿Línea tenía cuerda tirada?", ["SÍ", "NO", "INCOMPLETA"])}
       ${selSiNo("lineaSoportes", "¿La línea tenía soportes?", ["SÍ", "NO"])}
-      ${eq.lineaSoportes === "SÍ" ? selSiNo("preInstalado", "¿El pre-instalado estaba hecho?", ["SÍ", "NO", "INCOMPLETO"]) : ""}`;
+      ${eq.lineaSoportes === "SÍ" ? selSiNo("preInstalado", "¿El o los soportes estaban pre-instalados?", ["SÍ", "NO", "INCOMPLETO"]) : ""}`;
     }
     html += `<label>¿Qué carro está operando? <span class="req">*</span></label>
       <select id="in-${eq.id}-tipoCarro" onchange="setCampo('${eq.id}','tipoCarro',this.value)">
@@ -1291,7 +1293,7 @@ function refrescarSubListas(eq) {
 }
 
 /* ---- setCampo genérico ---- */
-const CAMPOS_RERENDER = ["tipo", "equipo", "operador", "operativo", "cambioLinea", "lineaSoportes", "shoveleo", "tipoCarro"];
+const CAMPOS_RERENDER = ["tipo", "equipo", "operador", "operativo", "cambioLinea", "cuerdaTirada", "lineaSoportes", "shoveleo", "tipoCarro"];
 window.setCampo = function (id, campo, valor, rerender = true) {
   const eq = equipos.find(e => e.id === id);
   eq[campo] = valor;
@@ -1478,6 +1480,7 @@ function validar() {
       m("cambioLinea", !eq.cambioLinea);
       if (eq.cambioLinea === "SÍ") {
         m("horasCambioLinea", !esNum(eq.horasCambioLinea));
+        m("cuerdaTirada", !eq.cuerdaTirada);
         m("lineaSoportes", !eq.lineaSoportes);
         if (eq.lineaSoportes === "SÍ") m("preInstalado", !eq.preInstalado);
       }
@@ -1595,6 +1598,7 @@ function armarDocumento() {
         base.cambioLinea = eq.cambioLinea;
         if (eq.cambioLinea === "SÍ") {
           base.horasCambioLinea = parseDec(eq.horasCambioLinea) || 0;
+          base.cuerdaTirada = eq.cuerdaTirada;
           base.lineaSoportes = eq.lineaSoportes;
           if (eq.lineaSoportes === "SÍ") base.preInstalado = eq.preInstalado;
         }
@@ -1905,8 +1909,9 @@ window.verReporte = function (id) {
       campos.push({ l:"Cambio línea", v:e.cambioLinea||"—" });
       if (e.cambioLinea === "SÍ") {
         campos.push({ l:"Hrs cambio", v:fmtComa(e.horasCambioLinea||0) });
+        campos.push({ l:"Cuerda tirada", v:e.cuerdaTirada||"—" });
         campos.push({ l:"Soportes", v:e.lineaSoportes||"—" });
-        if (e.lineaSoportes === "SÍ") campos.push({ l:"Pre-instalado", v:e.preInstalado||"—" });
+        if (e.lineaSoportes === "SÍ") campos.push({ l:"Soportes pre-inst.", v:e.preInstalado||"—" });
       }
       campos.push({ l:"Carro", v:e.tipoCarro||"—" });
       if (e.tipoCarro === "MIXTO") {
@@ -2066,6 +2071,7 @@ window.editarReporte = function (id) {
       ciclosWyssen: e.ciclosWyssen !== undefined ? String(e.ciclosWyssen) : "",
       arbolesWyssen: e.arbolesWyssen !== undefined ? String(e.arbolesWyssen) : "",
       horasCambioLinea: e.horasCambioLinea !== undefined ? fmtComa(e.horasCambioLinea) : "",
+      cuerdaTirada: e.cuerdaTirada || "",
       asistencia: e.huincheAsistencia ?? e.asistencia ?? "",
       operador: esOtroOp ? "OTRO" : (e.operador || ""),
       operadorOtro: esOtroOp ? e.operador : "",
