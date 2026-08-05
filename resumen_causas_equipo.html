@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>Resumen Causas de Pérdida — Corte Alto</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --azul-oscuro: #1e3a5f;
+    --azul-medio: #2563a8;
+    --azul-claro: #dbeafe;
+    --amarillo: #fef9c3;
+    --verde: #166534;
+    --verde-claro: #dcfce7;
+    --rojo: #991b1b;
+    --rojo-claro: #fee2e2;
+    --gris: #f1f5f9;
+    --borde: #cbd5e1;
+    --texto: #1e293b;
+    --formin: #7c3aed;
+    --formin-bg: #ede9fe;
+    --eess: #0369a1;
+    --eess-bg: #e0f2fe;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: var(--texto); min-height: 100vh; }
+
+  .header { background: #1a3a1a; color: white; padding: 12px 24px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+  .header-logo { font-size: 22px; }
+  .header h1 { font-size: 15px; font-weight: 700; line-height: 1.2; }
+  .header p { font-size: 11px; opacity: .75; margin-top: 2px; }
+  .btn-volver { color: #a8c4a8; text-decoration: none; font-size: 13px; font-weight: 600; padding: 5px 12px; border: 1px solid #4a7a4a; border-radius: 6px; transition: background .2s; white-space: nowrap; }
+  .btn-volver:hover { background: #2a5a2a; color: white; }
+
+  .upload-section { max-width: 860px; margin: 32px auto; padding: 0 24px; }
+  .drop-zone { border: 2.5px dashed var(--azul-medio); border-radius: 16px; background: white; padding: 48px 24px; text-align: center; cursor: pointer; transition: all .2s; }
+  .drop-zone:hover, .drop-zone.drag-over { background: var(--azul-claro); border-color: var(--azul-oscuro); }
+  .drop-zone .icon { font-size: 48px; margin-bottom: 12px; }
+  .drop-zone h2 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+  .drop-zone p { color: #64748b; font-size: 13px; }
+  .drop-zone .btn-select { display: inline-block; margin-top: 20px; background: var(--azul-medio); color: white; border: none; border-radius: 8px; padding: 10px 24px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; }
+  .drop-zone .btn-select:hover { background: var(--azul-oscuro); }
+  #file-input { display: none; }
+  .file-info { margin-top: 12px; padding: 10px 16px; background: var(--verde-claro); border-radius: 8px; font-size: 13px; color: var(--verde); font-weight: 600; display: none; }
+
+  .status { max-width: 860px; margin: 12px auto; padding: 0 24px; }
+  .status-bar { background: white; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #475569; border: 1px solid var(--borde); display: none; }
+  .status-bar.error { background: var(--rojo-claro); color: var(--rojo); border-color: #fca5a5; }
+
+  .filtros-panel { max-width: 100%; margin: 0 auto 20px; padding: 0 24px; display: none; }
+  .filtros-card { background: white; border-radius: 12px; border: 1px solid var(--borde); padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+  .filtro-group { display: flex; flex-direction: column; gap: 4px; }
+  .filtro-group label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+  .filtro-group select, .filtro-group input[type="date"] { border: 1.5px solid var(--borde); border-radius: 7px; padding: 7px 10px; font-size: 13px; color: var(--texto); background: white; min-width: 180px; }
+  .filtro-group select:focus, .filtro-group input:focus { outline: none; border-color: var(--azul-medio); }
+  .btn-aplicar { background: var(--azul-medio); color: white; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .2s; align-self: flex-end; }
+  .btn-aplicar:hover { background: var(--azul-oscuro); }
+
+  .resultados { max-width: 100%; margin: 0 auto; padding: 0 24px 40px; display: none; }
+  .resumen-titulo { background: var(--azul-oscuro); color: white; text-align: center; font-size: 15px; font-weight: 800; letter-spacing: .04em; padding: 12px 20px; border-radius: 10px 10px 0 0; text-transform: uppercase; }
+
+  .resumen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--borde); border-top: none; border-radius: 0 0 10px 10px; overflow: hidden; background: white; }
+  /* solo desktop — sin adaptación móvil */
+
+  .panel-izquierdo { border-right: 1px solid var(--borde); }
+
+  /* ── DETALLE CAUSAS ── */
+  .detalle-header { background: var(--azul-oscuro); color: white; padding: 8px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+  .causas-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .causas-table th { background: #1e3a5f22; padding: 6px 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #475569; border-bottom: 1px solid var(--borde); }
+  .causas-table th:last-child, .causas-table td:last-child { text-align: right; }
+  .causas-table td { padding: 5px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+  .causas-table tr:last-child td { border-bottom: none; }
+  .causas-table tr:hover td { background: #f8fafc; }
+
+  .badge-formin { display: inline-block; background: var(--formin-bg); color: var(--formin); border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
+  .badge-eess { display: inline-block; background: var(--eess-bg); color: var(--eess); border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
+  .codigo-cell { font-family: monospace; font-size: 11px; color: #64748b; }
+  .horas-cell { text-align: right; font-weight: 600; }
+  .horas-positivo { color: #dc2626; }
+  .pct-cell { text-align: right; color: #64748b; font-size: 11px; }
+  .totales-row td { background: #f1f5f9; font-weight: 700; border-top: 2px solid var(--borde); }
+
+  /* ── PANEL DERECHO ── */
+  .panel-derecho { padding: 14px; }
+
+  /* KPIs 2x2 */
+  .kpis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .kpi-card { background: #f8fafc; border: 1px solid var(--borde); border-radius: 8px; padding: 10px 12px; }
+  .kpi-card .kpi-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; }
+  .kpi-card .kpi-value { font-size: 18px; font-weight: 800; color: var(--azul-oscuro); }
+  .kpi-card .kpi-sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+
+  /* Barra distribución */
+  .barra-wrapper { margin-bottom: 14px; }
+  .barra-label { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-bottom: 4px; }
+  .barra-track { height: 10px; background: #e2e8f0; border-radius: 99px; overflow: hidden; display: flex; }
+  .barra-efect { background: #16a34a; transition: width .4s; }
+  .barra-toc { background: #7c3aed; transition: width .4s; }
+  .barra-tob { background: #dc2626; transition: width .4s; }
+  .barra-legend { display: flex; gap: 12px; margin-top: 6px; }
+  .barra-legend span { font-size: 10px; color: #64748b; display: flex; align-items: center; gap: 4px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  /* Chart barras */
+  .mini-resumen-titulo { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+  .causas-chart { margin-top: 4px; }
+  .causal-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 11px; }
+  .causal-bar-label { width: 160px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #475569; }
+  .causal-bar-track { flex: 1; background: #e2e8f0; border-radius: 4px; height: 8px; overflow: hidden; }
+  .causal-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+  .causal-bar-val { width: 44px; text-align: right; font-weight: 600; color: var(--texto); }
+
+  /* Mini tabla ≤/>1.5h */
+  .mini-tabla { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
+  .mini-tabla th { background: #f1f5f9; padding: 5px 8px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; }
+  .mini-tabla td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  .mini-tabla td:nth-child(3), .mini-tabla td:nth-child(4) { text-align: right; }
+  .mini-tabla th:nth-child(3), .mini-tabla th:nth-child(4) { text-align: right; }
+  .alerta { color: #dc2626; font-weight: 700; }
+  .causal-nombre { font-size: 10px; color: #94a3b8; display: block; line-height: 1.3; }
+
+  .footer-info { padding: 10px 14px; background: #f8fafc; border-top: 1px solid var(--borde); font-size: 11px; color: #94a3b8; }
+  .footer-info span { font-weight: 700; color: #64748b; }
+  .nota-formin-eess { background: #f8fafc; border-top: 1px solid var(--borde); padding: 8px 14px; font-size: 10.5px; color: #94a3b8; font-style: italic; }
+
+  /* ── FILA KPIs horizontal ── */
+  .kpis-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 12px;
+    background: white;
+    border: 1px solid var(--borde);
+    border-top: none;
+  }
+  @media (max-width: 800px) { .kpis-row { grid-template-columns: repeat(2,1fr); } }
+
+  /* ── FILA MEDIA: barra dist + responsabilidad ── */
+  .fila-media {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--borde);
+    border-top: none;
+    background: white;
+  }
+  @media (max-width: 700px) { .fila-media { grid-template-columns: 1fr; } }
+  .fila-media .barra-wrapper { padding: 12px 14px; border-right: 1px solid var(--borde); }
+  .resp-panel { padding: 12px 14px; }
+
+  /* Barra Formin / EESS */
+  .resp-barras { margin-top: 8px; }
+  .resp-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+  .resp-bar-label { width: 60px; flex-shrink: 0; font-weight: 700; font-size: 11px; }
+  .resp-bar-track { flex: 1; background: #e2e8f0; border-radius: 4px; height: 14px; overflow: hidden; position: relative; }
+  .resp-bar-fill-formin { height: 100%; background: var(--formin); border-radius: 4px; transition: width .4s; }
+  .resp-bar-fill-eess   { height: 100%; background: var(--eess);   border-radius: 4px; transition: width .4s; }
+  .resp-bar-val { width: 80px; text-align: right; font-weight: 600; font-size: 12px; }
+  .resp-divider { border: none; border-top: 1px solid var(--borde); margin: 8px 0; }
+  .resp-total-row { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-top: 4px; }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html" class="btn-volver" title="Volver al menú">← Volver</a>
+  <div class="header-logo">🌲</div>
+  <div>
+    <h1>Resumen Causas de Pérdida por Equipo</h1>
+    <p>Forestal Corte Alto — Portal Mininco (BAJADA M³) · Solo uso en computador</p>
+  </div>
+</div>
+
+<div class="upload-section">
+  <div class="drop-zone" id="drop-zone">
+    <div class="icon">📂</div>
+    <h2>Arrastra aquí el archivo BAJADA M³</h2>
+    <p>El archivo descargado del portal Mininco<br>(ej: <code>BAJADA_M3_78264940_07-2026_..._F_Corte_Alto.xls</code>)</p>
+    <button class="btn-select" onclick="document.getElementById('file-input').click()">Seleccionar archivo</button>
+    <input type="file" id="file-input" accept=".xls,.xlsx">
+  </div>
+  <div class="file-info" id="file-info"></div>
+</div>
+<div class="status"><div class="status-bar" id="status-bar"></div></div>
+
+<div class="filtros-panel" id="filtros-panel">
+  <div class="filtros-card">
+    <div class="filtro-group">
+      <label>Equipo</label>
+      <select id="sel-equipo"></select>
+    </div>
+    <div class="filtro-group">
+      <label>Desde</label>
+      <input type="date" id="sel-desde">
+    </div>
+    <div class="filtro-group">
+      <label>Hasta</label>
+      <input type="date" id="sel-hasta">
+    </div>
+    <button class="btn-aplicar" onclick="calcularYMostrar()">▶ Calcular</button>
+  </div>
+</div>
+
+<div class="resultados" id="resultados">
+  <div class="resumen-titulo">Resumen de Causas de Pérdida por Equipo</div>
+
+  <!-- FILA 1: KPIs -->
+  <div class="kpis-row" id="kpis-grid"></div>
+
+  <!-- FILA 2: Barra distribución + Responsabilidad TOB -->
+  <div class="fila-media">
+    <div class="barra-wrapper">
+      <div class="mini-resumen-titulo">Distribución de horas</div>
+      <div class="barra-track" id="barra-dist"></div>
+      <div class="barra-legend">
+        <span><span class="dot" style="background:#16a34a"></span>Efectivas</span>
+        <span><span class="dot" style="background:#7c3aed"></span>TOC</span>
+        <span><span class="dot" style="background:#dc2626"></span>TOB</span>
+      </div>
+    </div>
+    <div class="resp-panel">
+      <div class="mini-resumen-titulo">Responsabilidad de TOB</div>
+      <div class="resp-barras" id="resp-barras"></div>
+    </div>
+  </div>
+
+  <!-- FILA 3: Tabla causas | Chart + mini-tabla -->
+  <div class="resumen-grid">
+    <div class="panel-izquierdo">
+      <div class="detalle-header">Detalle de Causas</div>
+      <table class="causas-table">
+        <thead>
+          <tr>
+            <th>Resp.</th>
+            <th>Cód.</th>
+            <th>Causal de Pérdida</th>
+            <th>Horas</th>
+            <th>% Total</th>
+          </tr>
+        </thead>
+        <tbody id="causas-tbody"></tbody>
+      </table>
+      <div class="nota-formin-eess">* FORMIN y EESS son el desglose del Total Perdido. No se suman al total.</div>
+    </div>
+
+    <div class="panel-derecho">
+      <div class="mini-resumen-titulo">Top causas por horas (agrupado por nombre)</div>
+      <div class="causas-chart" id="causas-chart"></div>
+
+      <div class="mini-resumen-titulo" style="margin-top:16px;">Causal ≤1.5h vs &gt;1.5h ⚠</div>
+      <table class="mini-tabla" id="mini-tabla"></table>
+    </div>
+  </div>
+
+  <div class="footer-info" id="footer-info"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIGURACIÓN DE COLUMNAS POR TIPO DE HOJA
+// ═══════════════════════════════════════════════
+const SHEET_CONFIG = {
+  'Torre(1)': {
+    col_fecha: 1, col_equipo: 13, col_prog: 35, col_hop: 38, col_toc: 48, col_tob: 49,
+    F: { F4: 53, F5: 54 },
+    E: { E1:76,E2:77,E3:78,E4:79,E5:80,E6:81,E7:82,E8:83,E9:84,E10:85,E11:86,
+         E12:87,E13:88,E14:89,E15:90,E16:91,E17:92,E18:93,E19:94,E20:95,E21:96,
+         E23:98,E26:99,E99:100 },
+    equipo_labels: { 1:'Alpine-3', 4:'Alpine-1', 7:'Alpine-2' },
+    tipo: 'Torre(1)'
+  },
+  'Procesador_Torre_Skidder(90)': {
+    col_fecha: 1, col_equipo: 13, col_prog: 29, col_hop: 32, col_toc: 37, col_tob: 38,
+    F: { F4: 42, F5: 43 },
+    E: { E1:62,E2:63,E3:64,E4:65,E5:66,E6:67,E7:68,E8:69,E9:70,E10:71,E11:72,
+         E12:73,E13:74,E14:75,E15:76,E16:77,E17:78,E24:79,E25:80,E26:81,E27:82,E99:83 },
+    equipo_labels: { 3:'Proc L3', 15:'Proc L1', 16:'Proc L2' },
+    tipo: 'Procesador_Torre_Skidder(90)'
+  },
+  'Skidder_Torre(93)': {
+    col_fecha: 1, col_equipo: 13, col_prog: 32, col_hop: 35, col_toc: 49, col_tob: 50,
+    F: { F4: 54, F5: 55 },
+    E: { E1:73,E2:74,E3:75,E4:76,E5:77,E6:78,E7:79,E8:80,E9:81,E10:82,E11:83,
+         E12:84,E13:85,E14:86,E15:87,E16:88,E17:89,E23:90,E24:91,E31:92,E99:93 },
+    equipo_labels: { 2:'SK625N3', 14:'SK625N1', 15:'SK625N2' },
+    tipo: 'Skidder_Torre(93)'
+  }
+};
+
+// Códigos y nombres de causales
+const CAUSALES = {
+  F4: { resp:'FORMIN', nombre:'CLIMA Y/O INCENDIO DETIENE OPERACIÓN' },
+  F5: { resp:'FORMIN', nombre:'ATOCHAMIENTO EN CANCHA' },
+  E1: { resp:'EESS',   nombre:'MONITOREO Y/O PARALIZACIÓN FORMIN' },
+  E2: { resp:'EESS',   nombre:'DETENIDO POR PASO DE VEHÍCULOS' },
+  E3: { resp:'EESS',   nombre:'DETENIDO POR CARGUÍO DE CAMIONES' },
+  E4: { resp:'EESS',   nombre:'CLIMA Y/O INCENDIO DETIENE OPERACIÓN' },
+  E5: { resp:'EESS',   nombre:'ATOCHAMIENTO EN CANCHA' },
+  E6: { resp:'EESS',   nombre:'ATRASO INICIO O SALIDA TEMPRANA DE FAENA' },
+  E7: { resp:'EESS',   nombre:'CONTROL A FAENA' },
+  E8: { resp:'EESS',   nombre:'FALTA DE PERSONAL' },
+  E9: { resp:'EESS',   nombre:'CHARLA, CAPACITACIONES O REUNIONES' },
+  E10:{ resp:'EESS',   nombre:'PUESTA EN MARCHA' },
+  E11:{ resp:'EESS',   nombre:'BAÑO OPERADOR' },
+  E12:{ resp:'EESS',   nombre:'MANTENCIÓN PROGRAMADA' },
+  E13:{ resp:'EESS',   nombre:'CARGA COMBUSTIBLE O ACEITE' },
+  E14:{ resp:'EESS',   nombre:'FALLA EQUIPO' },
+  E15:{ resp:'EESS',   nombre:'TRASLADO DE FUNDO' },
+  E16:{ resp:'EESS',   nombre:'DETENIDO POR FALTA DE VOLTEO' },
+  E17:{ resp:'EESS',   nombre:'DETENIDO POR FALTA DE ORDENAMIENTO' },
+  E18:{ resp:'EESS',   nombre:'REVISIÓN DE INSTALACIÓN' },
+  E19:{ resp:'EESS',   nombre:'FALLA DE CARRO' },
+  E20:{ resp:'EESS',   nombre:'ARREGLAR EL SOPORTE INTERMEDIO' },
+  E21:{ resp:'EESS',   nombre:'ARREGLAR ANCLAJE DE COLA' },
+  E23:{ resp:'EESS',   nombre:'FALLA Y COLCHADO DE CABLE' },
+  E24:{ resp:'EESS',   nombre:'TRASLADO DENTRO FAENA' },
+  E25:{ resp:'EESS',   nombre:'DETENIDO POR FALTA DE MADEREO' },
+  E26:{ resp:'EESS',   nombre:'CAMBIO DE CADENA O ESPADA' },
+  E27:{ resp:'EESS',   nombre:'MEDICIÓN DE LARGO DE TROZOS' },
+  E31:{ resp:'EESS',   nombre:'HABILITACIÓN DE HUELLAS DE MADEREO Y/O CANCHA' },
+  E99:{ resp:'EESS',   nombre:'OTROS' }
+};
+
+// ═══════════════════════════════════════════════
+// CALCULAR HRS PROGRAMADAS SEGÚN REGLA DE DÍA
+// Lunes=1 Martes=2 ... Jueves=4 ... Domingo=0
+// Todos los días = 11h, excepto Jueves = 10h
+// ═══════════════════════════════════════════════
+function hrsProgramadasPorFecha(fechaStr) {
+  const d = new Date(fechaStr + 'T12:00:00');
+  const dow = d.getDay(); // 0=Dom,1=Lun,...,4=Jue
+  return dow === 4 ? 10 : 11;
+}
+
+// ═══════════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════════
+let datosGlobales = {};
+let equiposDisponibles = [];
+let fechasDisponibles = [];
+
+// ═══════════════════════════════════════════════
+// DRAG & DROP + FILE INPUT
+// ═══════════════════════════════════════════════
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if (f) procesarArchivo(f); });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) procesarArchivo(e.target.files[0]); });
+
+function mostrarStatus(msg, error=false) {
+  const sb = document.getElementById('status-bar');
+  sb.textContent = msg; sb.style.display = 'block';
+  sb.className = 'status-bar' + (error ? ' error' : '');
+}
+
+// ═══════════════════════════════════════════════
+// PROCESAR ARCHIVO
+// ═══════════════════════════════════════════════
+function procesarArchivo(file) {
+  document.getElementById('file-info').textContent = `✓ Archivo: ${file.name}`;
+  document.getElementById('file-info').style.display = 'block';
+  mostrarStatus('⏳ Leyendo archivo...');
+  document.getElementById('filtros-panel').style.display = 'none';
+  document.getElementById('resultados').style.display = 'none';
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type:'binary', cellDates:true });
+      extraerDatos(wb);
+    } catch(err) { mostrarStatus('❌ Error al leer el archivo: ' + err.message, true); }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function toDateStr(d) {
+  if (!d) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+// Parseo robusto de fechas: soporta Date object, número serial Excel,
+// string yyyy-mm-dd, string m/d/yyyy (formato .xls con raw:false)
+function parsearFecha(val) {
+  if (!val && val !== 0) return null;
+  // Date object
+  if (val instanceof Date) {
+    return isNaN(val.getTime()) ? null : toDateStr(val);
+  }
+  // Número serial Excel (raw:true)
+  if (typeof val === 'number') {
+    if (val > 40000 && val < 60000) {
+      const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+      return isNaN(d.getTime()) ? null : toDateStr(d);
+    }
+    return null;
+  }
+  if (typeof val === 'string' && val.trim() !== '') {
+    const s = val.trim();
+    // yyyy-mm-dd
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
+    // m/d/yyyy o mm/dd/yyyy (xls con raw:false)
+    const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (mdy) return `${mdy[3]}-${mdy[1].padStart(2,'0')}-${mdy[2].padStart(2,'0')}`;
+    // d-m-yyyy
+    const dmy = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/);
+    if (dmy) return `${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+    // número serial como string
+    const serial = parseFloat(s);
+    if (!isNaN(serial) && serial > 40000 && serial < 60000) {
+      const d = new Date(Math.round((serial - 25569) * 86400 * 1000));
+      return isNaN(d.getTime()) ? null : toDateStr(d);
+    }
+  }
+  return null;
+}
+
+function extraerDatos(wb) {
+  datosGlobales = {};
+  let totalFilas = 0;
+  const hojas = ['Torre(1)','Procesador_Torre_Skidder(90)','Skidder_Torre(93)'];
+
+  for (const sheetName of hojas) {
+    const ws = wb.Sheets[sheetName];
+    if (!ws) { console.warn('Hoja no encontrada:', sheetName); continue; }
+    const cfg = SHEET_CONFIG[sheetName];
+    // raw:true para recibir valores crudos (seriales de fecha como número)
+    const data = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
+
+    for (let i = 4; i < data.length; i++) {
+      const row = data[i];
+      if (!row || row[cfg.col_fecha] === '' || row[cfg.col_fecha] == null) continue;
+      const fecha = parsearFecha(row[cfg.col_fecha]);
+      if (!fecha) continue;
+      const equipoNum = parseInt(row[cfg.col_equipo]) || 0;
+      const equipoNombre = cfg.equipo_labels[equipoNum] || `Equipo ${equipoNum}`;
+      const label = `${sheetName} | ${equipoNombre}`;
+      const n = v => { const x = parseFloat(String(v).replace(',','.')); return isNaN(x) ? 0 : x; };
+
+      const reg = { fecha, toc: n(row[cfg.col_toc]), tob: n(row[cfg.col_tob]) };
+      for (const [code, colIdx] of Object.entries(cfg.F)) reg[code] = n(row[colIdx]);
+      for (const [code, colIdx] of Object.entries(cfg.E)) reg[code] = n(row[colIdx]);
+
+      if (!datosGlobales[label]) datosGlobales[label] = [];
+      datosGlobales[label].push(reg);
+      totalFilas++;
+    }
+  }
+
+  if (totalFilas === 0) { mostrarStatus('⚠️ No se encontraron datos. ¿Es un archivo BAJADA M³ válido?', true); return; }
+
+  equiposDisponibles = Object.keys(datosGlobales).sort();
+  const todasFechas = new Set();
+  for (const rows of Object.values(datosGlobales)) for (const r of rows) todasFechas.add(r.fecha);
+  fechasDisponibles = [...todasFechas].filter(f=>f).sort();
+
+  const sel = document.getElementById('sel-equipo');
+  sel.innerHTML = '';
+  for (const eq of equiposDisponibles) {
+    const opt = document.createElement('option');
+    opt.value = eq; opt.textContent = eq;
+    sel.appendChild(opt);
+  }
+  if (fechasDisponibles.length > 0) {
+    document.getElementById('sel-desde').value = fechasDisponibles[0];
+    document.getElementById('sel-hasta').value = fechasDisponibles[fechasDisponibles.length-1];
+  }
+  mostrarStatus(`✓ Datos cargados: ${equiposDisponibles.length} equipos, ${totalFilas} registros diarios.`);
+  document.getElementById('filtros-panel').style.display = 'block';
+  calcularYMostrar();
+}
+
+// ═══════════════════════════════════════════════
+// CALCULAR Y MOSTRAR
+// ═══════════════════════════════════════════════
+function calcularYMostrar() {
+  const equipo = document.getElementById('sel-equipo').value;
+  const desde  = document.getElementById('sel-desde').value;
+  const hasta  = document.getElementById('sel-hasta').value;
+  if (!equipo || !datosGlobales[equipo]) { mostrarStatus('Selecciona un equipo válido.', true); return; }
+
+  const filas = datosGlobales[equipo].filter(r => r.fecha >= desde && r.fecha <= hasta);
+  if (filas.length === 0) { mostrarStatus('Sin datos para el rango seleccionado.', true); document.getElementById('resultados').style.display='none'; return; }
+
+  // ── Hrs programadas: 11h todos los días, 10h los jueves
+  const prog = filas.reduce((acc, r) => acc + hrsProgramadasPorFecha(r.fecha), 0);
+
+  const sum = key => filas.reduce((acc, r) => acc + (r[key] || 0), 0);
+  const toc = sum('toc');
+  const tob = sum('tob');
+  // ── Hrs efectivas = prog - TOB - TOC
+  const efect = Math.max(0, prog - toc - tob);
+  const totalPerdido = toc + tob;
+
+  // Causales
+  const causasResultado = {};
+  for (const code of Object.keys(CAUSALES)) causasResultado[code] = sum(code);
+
+  renderCausasTable(causasResultado, totalPerdido, prog, toc, tob);
+  renderKPIs(prog, efect, toc, tob);
+  renderBarraDist(prog, efect, toc, tob);
+  renderRespTOB(causasResultado, totalPerdido);
+  renderCausasChart(causasResultado);
+  renderMiniTabla(causasResultado);
+  renderFooter(equipo, filas.length, desde, hasta);
+
+  document.getElementById('resultados').style.display = 'block';
+  document.getElementById('resultados').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function fmt(n) { return n === 0 ? '0,00' : n.toFixed(2).replace('.',','); }
+function pct(n, total) { if (!total) return '0,0%'; return (n/total*100).toFixed(1)+'%'; }
+
+// ── 3. Tabla de causas: solo mostrar causales con horas > 0
+function renderCausasTable(causas, totalPerdido, prog, toc, tob) {
+  const tbody = document.getElementById('causas-tbody');
+  tbody.innerHTML = '';
+  const orden = ['F4','F5','E1','E2','E3','E4','E5','E6','E7','E8','E9','E10','E11',
+    'E12','E13','E14','E15','E16','E17','E18','E19','E20','E21','E23','E24','E25','E26','E27','E31','E99'];
+
+  for (const code of orden) {
+    const def = CAUSALES[code];
+    if (!def) continue;
+    const horas = causas[code] || 0;
+    // CAMBIO 3: solo mostrar si tiene horas informadas
+    if (horas === 0) continue;
+    const badge = def.resp === 'FORMIN'
+      ? `<span class="badge-formin">FORMIN</span>`
+      : `<span class="badge-eess">EESS</span>`;
+    tbody.innerHTML += `
+      <tr>
+        <td>${badge}</td>
+        <td class="codigo-cell">${code}</td>
+        <td>${def.nombre}</td>
+        <td class="horas-cell"><span class="horas-positivo">${fmt(horas)}</span></td>
+        <td class="pct-cell">${pct(horas, totalPerdido)}</td>
+      </tr>`;
+  }
+
+}
+
+// ── 2. KPIs: fila horizontal de 5 tarjetas
+function renderKPIs(prog, efect, toc, tob) {
+  const perdido = toc + tob;
+  const efPct   = prog ? (efect/prog*100).toFixed(1) : '0.0';
+  const tocPct  = prog ? (toc/prog*100).toFixed(1)   : '0.0';
+  const tobPct  = prog ? (tob/prog*100).toFixed(1)   : '0.0';
+  const perdPct = prog ? (perdido/prog*100).toFixed(1) : '0.0';
+  document.getElementById('kpis-grid').innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">Hrs Programadas</div>
+      <div class="kpi-value">${fmt(prog)}</div>
+      <div class="kpi-sub">11h/día · 10h los jueves</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Hrs Efectivas</div>
+      <div class="kpi-value" style="color:#16a34a">${fmt(efect)}</div>
+      <div class="kpi-sub">${efPct}% de prog.</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">TOC — T. Ocultos</div>
+      <div class="kpi-value" style="color:#7c3aed">${fmt(toc)}</div>
+      <div class="kpi-sub">${tocPct}% de prog.</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">TOB — T. Obvios</div>
+      <div class="kpi-value" style="color:#dc2626">${fmt(tob)}</div>
+      <div class="kpi-sub">${tobPct}% de prog.</div>
+    </div>
+    <div class="kpi-card" style="background:#fff7ed;border-color:#fed7aa;">
+      <div class="kpi-label" style="color:#9a3412">Total Hrs Perdidas</div>
+      <div class="kpi-value" style="color:#c2410c">${fmt(perdido)}</div>
+      <div class="kpi-sub">${perdPct}% de prog.</div>
+    </div>`;
+}
+
+// ── Responsabilidad TOB: FORMIN (F*) vs EESS (E*)
+function renderRespTOB(causas, totalPerdido) {
+  let hrsFormin = 0, hrsEESS = 0;
+  for (const [code, val] of Object.entries(causas)) {
+    if (!val || val === 0) continue;
+    if (code.startsWith('F')) hrsFormin += val;
+    else if (code.startsWith('E')) hrsEESS += val;
+  }
+  const total = hrsFormin + hrsEESS;
+  const pFormin = total ? (hrsFormin / total * 100) : 0;
+  const pEESS   = total ? (hrsEESS   / total * 100) : 0;
+
+  document.getElementById('resp-barras').innerHTML = `
+    <div class="resp-bar-row">
+      <div class="resp-bar-label" style="color:var(--formin)">FORMIN</div>
+      <div class="resp-bar-track">
+        <div class="resp-bar-fill-formin" style="width:${pFormin.toFixed(1)}%"></div>
+      </div>
+      <div class="resp-bar-val" style="color:var(--formin)">${fmt(hrsFormin)} h &nbsp; <span style="color:#94a3b8;font-weight:400">${pFormin.toFixed(1)}%</span></div>
+    </div>
+    <div class="resp-bar-row">
+      <div class="resp-bar-label" style="color:var(--eess)">EESS</div>
+      <div class="resp-bar-track">
+        <div class="resp-bar-fill-eess" style="width:${pEESS.toFixed(1)}%"></div>
+      </div>
+      <div class="resp-bar-val" style="color:var(--eess)">${fmt(hrsEESS)} h &nbsp; <span style="color:#94a3b8;font-weight:400">${pEESS.toFixed(1)}%</span></div>
+    </div>
+    <hr class="resp-divider">
+    <div class="resp-total-row">
+      <span>Total horas pérdida informadas</span>
+      <span style="font-weight:700;color:var(--texto)">${fmt(total)} h</span>
+    </div>`;
+}
+
+function renderBarraDist(prog, efect, toc, tob) {
+  if (!prog) return;
+  const eP  = (efect/prog*100).toFixed(1);
+  const toP = (toc/prog*100).toFixed(1);
+  const tbP = (tob/prog*100).toFixed(1);
+  document.getElementById('barra-dist').innerHTML = `
+    <div class="barra-efect" style="width:${eP}%"  title="Efectivas ${fmt(efect)}h (${eP}%)"></div>
+    <div class="barra-toc"   style="width:${toP}%" title="TOC ${fmt(toc)}h (${toP}%)"></div>
+    <div class="barra-tob"   style="width:${tbP}%" title="TOB ${fmt(tob)}h (${tbP}%)"></div>`;
+}
+
+// ── 4. Gráfico: agrupar causales por NOMBRE (sumar F4+E4, F5+E5, etc.)
+function renderCausasChart(causas) {
+  // Agrupar por nombre de causal
+  const porNombre = {};
+  for (const [code, horas] of Object.entries(causas)) {
+    if (!horas || horas === 0) continue;
+    const def = CAUSALES[code];
+    if (!def) continue;
+    const key = def.nombre;
+    porNombre[key] = (porNombre[key] || 0) + horas;
+  }
+  const items = Object.entries(porNombre).sort((a,b) => b[1]-a[1]).slice(0,10);
+
+  const chart = document.getElementById('causas-chart');
+  if (items.length === 0) {
+    chart.innerHTML = '<p style="font-size:12px;color:#94a3b8">Sin horas perdidas en el período.</p>';
+    return;
+  }
+  const max = items[0][1];
+  chart.innerHTML = '';
+  for (const [nombre, val] of items) {
+    const pctW = (val/max*100).toFixed(1);
+    chart.innerHTML += `
+      <div class="causal-bar-row">
+        <div class="causal-bar-label" title="${nombre}">${nombre}</div>
+        <div class="causal-bar-track">
+          <div class="causal-bar-fill" style="width:${pctW}%;background:#2563a8"></div>
+        </div>
+        <div class="causal-bar-val">${fmt(val)}</div>
+      </div>`;
+  }
+}
+
+// ── 5. Mini-tabla ≤/>1.5h: mostrar nombre completo de la causal
+function renderMiniTabla(causas) {
+  // Todas las causales con horas > 0, ordenadas desc
+  const filas = Object.entries(causas)
+    .filter(([,v]) => v > 0)
+    .map(([code, val]) => ({ code, val, def: CAUSALES[code] }))
+    .sort((a,b) => b.val - a.val);
+
+  if (filas.length === 0) {
+    document.getElementById('mini-tabla').innerHTML = '<tr><td colspan="4" style="font-size:12px;color:#94a3b8;padding:8px">Sin horas perdidas</td></tr>';
+    return;
+  }
+  let html = `<thead><tr><th>Cód.</th><th>Causal de Pérdida</th><th>≤1.5h</th><th>&gt;1.5h ⚠</th></tr></thead><tbody>`;
+  for (const { code, val, def } of filas) {
+    const leq = val <= 1.5 ? val : 0;
+    const gt  = val > 1.5  ? val : 0;
+    const alrt = gt > 0 ? ' class="alerta"' : '';
+    const nombre = def ? def.nombre : code;
+    html += `<tr>
+      <td class="codigo-cell">${code}</td>
+      <td>${nombre}</td>
+      <td style="text-align:right">${leq > 0 ? fmt(leq) : '—'}</td>
+      <td style="text-align:right"${alrt}>${gt > 0 ? fmt(gt) : '—'}</td>
+    </tr>`;
+  }
+  html += '</tbody>';
+  document.getElementById('mini-tabla').innerHTML = html;
+}
+
+function renderFooter(equipo, dias, desde, hasta) {
+  document.getElementById('footer-info').innerHTML =
+    `<span>${equipo}</span> &nbsp;|&nbsp; <span>${desde}</span> al <span>${hasta}</span> &nbsp;|&nbsp; <span>${dias} registros</span>`;
+}
+</script>
+</body>
+</html>
