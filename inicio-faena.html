@@ -185,19 +185,19 @@ textarea{resize:vertical;min-height:60px}
     <div class="section">
       <div class="section-title"><i class="ti ti-map-pin"></i> Identificación</div>
       <div class="grid-2" style="margin-bottom:10px">
-        <div class="field"><label>Nombre del fundo<span class="req">*</span></label><select id="fundo" onchange="onFundoChange()"><option value="">— Seleccionar —</option><option>LOS ALPES HIJ 1</option><option>SANTA ROSA</option><option>EL OLIVILLO</option></select></div>
+        <div class="field"><label>Nombre del fundo<span class="req">*</span></label><select id="fundo" onchange="onFundoChange();verificarPreLlenado()"><option value="">— Seleccionar —</option><option>LOS ALPES HIJ 1</option><option>SANTA ROSA</option><option>EL OLIVILLO</option></select></div>
         <div class="field"><label>Código de fundo</label><input type="text" id="cod-fundo" placeholder="—" readonly></div>
       </div>
       <div class="grid-2" style="margin-bottom:10px">
         <div class="field"><label>Línea<span class="req">*</span></label>
-          <select id="linea"><option value="">— Seleccionar —</option><option>LÍNEA T1</option><option>LÍNEA T2</option><option>LÍNEA T3</option></select>
+          <select id="linea" onchange="verificarPreLlenado()"><option value="">— Seleccionar —</option><option>LÍNEA T1</option><option>LÍNEA T2</option><option>LÍNEA T3</option></select>
         </div>
         <div class="field"><label>Cosecha en</label>
           <select id="cosecha"><option value="">— Seleccionar —</option><option>Tierra</option><option>Ripio</option><option>BioWeed</option></select>
         </div>
       </div>
       <div class="grid-3" style="margin-bottom:10px">
-        <div class="field"><label>Fecha<span class="req">*</span></label><input type="date" id="fecha"></div>
+        <div class="field"><label>Fecha<span class="req">*</span></label><input type="date" id="fecha" onchange="verificarPreLlenado()"></div>
         <div class="field"><label>Supervisor EESS</label>
           <select id="supervisor" onchange="toggleSupOtro()">
             <option value="">— Seleccionar —</option>
@@ -216,6 +216,15 @@ textarea{resize:vertical;min-height:60px}
           <option value="">— Seleccionar —</option>
           <option value="si">Sí</option><option value="no">No</option>
         </select>
+      </div>
+    </div>
+
+    <div id="prellenado-bar" style="display:none;background:#EAF3DE;border:1px solid #C9DDB4;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:12px;font-size:13px">
+      <div style="font-weight:600;color:#27500A;margin-bottom:4px"><i class="ti ti-database-import"></i> Hay datos disponibles del día</div>
+      <div id="prellenado-fuentes" style="font-size:11px;color:#3B6D11;margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="aplicarPreLlenado()"><i class="ti ti-bolt"></i> Pre-llenar formulario</button>
+        <button class="btn-secondary" style="font-size:12px;padding:6px 14px" onclick="document.getElementById('prellenado-bar').style.display='none'">Continuar vacío</button>
       </div>
     </div>
 
@@ -427,6 +436,15 @@ textarea{resize:vertical;min-height:60px}
   </div>
 </div>
 
+<div class="modal-bg" id="modal-sel-proc">
+  <div class="modal-box" style="max-width:320px;margin-top:20vh">
+    <div style="font-size:16px;font-weight:600;margin-bottom:4px">¿Qué procesador usar para OEE?</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Hay más de un procesador registrado. Elige de cuál cargar los indicadores.</div>
+    <div id="modal-sel-proc-lista"></div>
+    <button class="btn-secondary" style="width:100%;margin-top:10px" onclick="document.getElementById('modal-sel-proc').style.display='none'">Cancelar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-confirm">
   <div class="confirm-box">
     <i class="ti ti-device-floppy" style="font-size:36px;color:var(--text2);margin-bottom:.5rem;display:block"></i>
@@ -482,7 +500,7 @@ textarea{resize:vertical;min-height:60px}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, updateDoc, getDocs, deleteDoc, doc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, updateDoc, getDocs, getDoc, deleteDoc, doc, orderBy, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig={apiKey:"AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",authDomain:"reporte-inicio-faena-forestal.firebaseapp.com",projectId:"reporte-inicio-faena-forestal",storageBucket:"reporte-inicio-faena-forestal.firebasestorage.app",messagingSenderId:"962534414054",appId:"1:962534414054:web:fa43371d31413fc0524d27"};
 const db=getFirestore(initializeApp(firebaseConfig));
@@ -589,11 +607,16 @@ async function cargarConfiguracionCentralizada(){
       const apoyo=[];
       const proc=[];
       const torres=[];
+      const TIPOS_APOYO_INF=['HUINCHE DE ASISTENCIA','GARRA ORDENADORA'];
+      const TIPOS_APOYO_LEG=['FALCON','TIMBERMAX','TRACTIONL'];
       snap.forEach(d=>{
         const v=d.data();
         if(!v.nombre)return;
-        const rol=(v.rol||'').toUpperCase();
         const tipo=(v.tipo||'').toUpperCase();
+        // Inferir rol igual que configuracion.html: usar campo rol si existe, si no inferir por tipo
+        const rolRaw=v.rol?v.rol.toUpperCase():'';
+        const esApoyo=rolRaw==='APOYO'||TIPOS_APOYO_INF.includes(tipo)||TIPOS_APOYO_LEG.some(t=>tipo.includes(t));
+        const rol=esApoyo?'APOYO':'PRINCIPAL';
         if(rol==='PRINCIPAL')principal.push(v.nombre);
         if(rol==='APOYO')apoyo.push(v.nombre);
         if(tipo==='PROCESADOR')proc.push(v.nombre);
@@ -814,6 +837,7 @@ async function limpiarFormulario(){
   ['bar-oee','bar-fd','bar-fe'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.width='0%';});
   const tt=document.getElementById('total-tpob');if(tt){tt.textContent='0,00 h';tt.style.color='';}
   document.getElementById('alerta-vol').style.display='none';document.getElementById('aviso-nocuadra').style.display='none';
+  document.getElementById('prellenado-bar').style.display='none';_preDatos=null;
   rodalCount=0;eqCount=0;causCount=0;procCount=0;volAlertaMostrada=false;
   document.getElementById('fundo').value=persist.fundo;document.getElementById('cod-fundo').value=persist.codFundo;document.getElementById('linea').value=persist.linea;document.getElementById('cosecha').value=persist.cosecha;document.getElementById('supervisor').value=persist.supervisor;document.getElementById('supervisor-otro').value=persist.supervisorOtro;document.getElementById('ingeniero').value=persist.ingeniero;
   onFundoChange();
@@ -1085,7 +1109,227 @@ window.generarImagen=async function(){
   btn.disabled=false;btn.innerHTML='<i class="ti ti-share"></i> Compartir reporte';
 }
 
-// ===== CIERRE DE JORNADA =====
+// ===== PRE-LLENADO DESDE OTROS REPORTES =====
+let _preDatos=null,_preTimer=null;
+
+window.verificarPreLlenado=function(){
+  const fundo=document.getElementById('fundo').value;
+  const linea=document.getElementById('linea').value;
+  const fecha=document.getElementById('fecha').value;
+  document.getElementById('prellenado-bar').style.display='none';_preDatos=null;
+  if(!fundo||!linea||!fecha)return;
+  if(_preTimer)clearTimeout(_preTimer);
+  _preTimer=setTimeout(()=>_buscarPreDatos(fundo,linea,fecha),600);
+};
+
+async function _buscarPreDatos(fundo,linea,fecha){
+  const fuentes=[];const datos={};
+  const [anio,mes,dia]=fecha.split('-').map(Number);
+  const mesStr=String(mes).padStart(2,'0');
+
+  // 1. Volumen meta desde config_volumen_meta
+  try{
+    const snap=await getDoc(doc(db,'config_volumen_meta',`${linea}_${anio}-${mesStr}`));
+    if(snap.exists()){const vals=snap.data().valores||[];const meta=vals[dia-1];if(meta!=null&&meta!==''){datos.volMeta=meta;fuentes.push('Volumen meta');}}
+  }catch(e){}
+
+  // 2. Producción diaria desde reportes_produccion
+  try{
+    const snap=await getDocs(query(collection(db,'reportes_produccion'),where('fecha','==',fecha),where('fundo','==',fundo),where('linea','==',linea)));
+    if(!snap.empty){
+      const d=snap.docs[0].data();
+      datos.volReal=d.totalGlobal;
+
+      // Agrupar cartolas por procesador — suma volúmenes
+      const procMap={};
+      (d.cartolas||[]).forEach(c=>{
+        if(!c.procesador)return;
+        if(!procMap[c.procesador])procMap[c.procesador]={equipo:c.procesador,turno:c.turno||'',volumen:0};
+        procMap[c.procesador].volumen+=c.total||0;
+        if(!procMap[c.procesador].turno&&c.turno)procMap[c.procesador].turno=c.turno;
+      });
+      datos.procesadores=Object.values(procMap).map(p=>({...p,volumen:Math.round(p.volumen*1000)/1000}));
+
+      // FIX: %ET desde etRodales (lo que indica el esquema de trozado)
+      // %Real calculado desde volúmenes reales de cartolas por tipo de producto
+      const rodalET={};
+      (d.etRodales||[]).forEach(r=>{
+        if(!rodalET[r.numero])rodalET[r.numero]={clear:r.clear||0,ind:r.industrial||0,pulpa:r.pulpa||0};
+        else{// promediar si hay múltiples entradas del mismo rodal en etRodales
+          rodalET[r.numero].clear=Math.round((rodalET[r.numero].clear+(r.clear||0))/2);
+          rodalET[r.numero].ind=Math.round((rodalET[r.numero].ind+(r.industrial||0))/2);
+          rodalET[r.numero].pulpa=Math.round((rodalET[r.numero].pulpa+(r.pulpa||0))/2);
+        }
+      });
+      // Volúmenes reales por rodal y tipo de producto desde cartolas
+      const rodalVolReal={};
+      (d.cartolas||[]).forEach(c=>{
+        const num=c.rodal;if(!num)return;
+        if(!rodalVolReal[num])rodalVolReal[num]={IND:0,PULPA:0,CLEAR:0,total:0};
+        (c.productos||[]).forEach(p=>{
+          const tipo=(p.tipo||'').toUpperCase();
+          if(tipo==='INDUSTRIAL')rodalVolReal[num].IND+=(p.vol||0);
+          else if(tipo==='PULPA')rodalVolReal[num].PULPA+=(p.vol||0);
+          else if(tipo==='CLEAR')rodalVolReal[num].CLEAR+=(p.vol||0);
+          rodalVolReal[num].total+=(p.vol||0);
+        });
+      });
+      // Combinar: rodales que aparecen en ET o en cartolas
+      const todosRodales=new Set([...Object.keys(rodalET),...Object.keys(rodalVolReal)]);
+      datos.rodales=Array.from(todosRodales).map(num=>{
+        const et=rodalET[num]||{clear:0,ind:0,pulpa:0};
+        const rv=rodalVolReal[num]||{IND:0,PULPA:0,CLEAR:0,total:0};
+        const tot=rv.total||1;
+        return{
+          numero:num,
+          etClear:et.clear,etInd:et.ind,etPulpa:et.pulpa,
+          realClear:Math.round(rv.CLEAR/tot*100),
+          realInd:Math.round(rv.IND/tot*100),
+          realPulpa:Math.round(rv.PULPA/tot*100)
+        };
+      });
+      fuentes.push('Producción diaria');
+    }
+  }catch(e){}
+
+  // 3. Productividad jefe desde productividad_jefe
+  try{
+    const snap=await getDocs(query(collection(db,'productividad_jefe'),where('fecha','==',fecha),where('fundo','==',fundo),where('linea','==',linea)));
+    if(!snap.empty){
+      const d=snap.docs[0].data();
+      const procArboles={};
+      (d.equipos||[]).filter(e=>e.tipo==='PROCESADOR').forEach(e=>{procArboles[e.equipo]=e.arboles||0;});
+      datos.procArboles=procArboles;
+      // FIX 3: guardar todos los procesadores con OEE — se elegirá al aplicar
+      datos.procOEEList=(d.equipos||[]).filter(e=>e.tipo==='PROCESADOR'&&e.tpProgramado!=null);
+      fuentes.push('Productividad jefe');
+    }
+  }catch(e){}
+
+  // 4. Disponibilidad equipos desde último reporte inicio del mismo fundo
+  try{
+    const snap=await getDocs(query(collection(db,COL),where('fundo','==',fundo),orderBy('creadoEn','desc')));
+    if(!snap.empty){const d=snap.docs[0].data();if(d.equipos?.length){datos.equipos=d.equipos;fuentes.push('Equipos (último reporte)');}}
+  }catch(e){}
+
+  if(!fuentes.length)return;
+  _preDatos=datos;
+  document.getElementById('prellenado-fuentes').textContent='Fuentes: '+fuentes.join(' · ');
+  document.getElementById('prellenado-bar').style.display='block';
+}
+
+function _aplicarOEE(proc){
+  const sv=(id,v)=>{if(v!=null&&v!==''){const e=document.getElementById(id);if(e)e.value=v;}};
+  sv('tp-prog',String(proc.tpProgramado||'').replace('.',','));
+  sv('tob-real',String(proc.tob||'').replace('.',','));
+  sv('toc-real',String(proc.toc||'').replace('.',','));
+  if(typeof calcOEE==='function')calcOEE();
+  // Causales — tomar los 3 con más horas TOB usando mismo patrón que addCausalRapido
+  if((proc.detenciones||[]).length){
+    document.getElementById('causales-list').innerHTML='';causCount=0;
+    const sorted=[...proc.detenciones].sort((a,b)=>(b.horas||0)-(a.horas||0)).slice(0,3);
+    sorted.forEach(c=>{
+      causCount++;const id=causCount;
+      const texto=c.motivo||String(c.codigo)||'';
+      const hStr=String(c.horas||'').replace('.',',');
+      const row=document.createElement('div');row.className='causal-row';row.id='caus-'+id;row.dataset.texto=texto;
+      row.innerHTML=`<input type="text" value="${texto}" readonly style="font-size:12px;background:#f8f8f8"><select style="font-size:12px"><option value="EESS">EESS</option><option value="FORMIN">FORMIN</option></select><input type="text" inputmode="decimal" id="caus-h-${id}" placeholder="0,00" value="${hStr}" oninput="soloNumeros(this);onHorasInput(this);calcTOB()"><button class="btn-danger" onclick="removeCausal(${id})"><i class="ti ti-trash"></i></button>`;
+      document.getElementById('causales-list').appendChild(row);
+      const sel=row.querySelector('select');if(sel)sel.value=c.resp||'EESS';
+      // Si es falla equipo (14), llenar el campo de detalle
+      if(String(c.codigo)==='14'||texto.includes('(14)')){
+        const detalle=texto.replace(/^\(14\)\s*FALLA\s*EQUIPO:\s*/i,'').trim();
+        const el=document.getElementById('falla-detalle');if(el&&detalle)el.value=detalle;
+      }
+    });
+    checkDetalles();calcTOB();
+  }
+  document.getElementById('modal-sel-proc').style.display='none';
+}
+
+window.aplicarPreLlenado=async function(){
+  if(!_preDatos)return;
+  const d=_preDatos;
+  document.getElementById('prellenado-bar').style.display='none';
+  if(configListaPromise)await configListaPromise;
+  const sv=(id,v)=>{if(v!=null&&v!==''){const e=document.getElementById(id);if(e)e.value=v;}};
+
+  // Vol meta y real
+  if(d.volMeta!=null)sv('vol-meta',String(d.volMeta).replace('.',','));
+  if(d.volReal!=null){
+    sv('vol-real',String(d.volReal).replace('.',','));
+    const meta=parseFloat(String(d.volMeta||'').replace(',','.'));
+    const real=parseFloat(String(d.volReal||'').replace(',','.'));
+    if(!isNaN(meta)&&!isNaN(real)){const dif=real-meta;const el=document.getElementById('vol-dif');if(el){el.textContent=(dif>=0?'+':'')+dif.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3})+' m³';el.style.color=dif>=0?'var(--green)':'var(--red)';}}
+  }
+
+  // Procesadores
+  if(d.procesadores?.length){
+    document.getElementById('procesadores-list').innerHTML='';procCount=0;
+    d.procesadores.forEach(p=>{
+      addProcesador();const id=procCount;
+      const eqSel=document.getElementById(`proc-eq-${id}`);if(eqSel)eqSel.value=p.equipo||'';
+      document.getElementById(`proc-turno-${id}`).value=p.turno||'';actualizarTurnoLbl(id);
+      const volStr=p.volumen?p.volumen.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}):'0,000';
+      sv(`proc-vol-${id}`,volStr);
+      const arboles=d.procArboles?.[p.equipo]||0;
+      const arbEl=document.getElementById(`proc-arb-${id}`);if(arbEl)arbEl.value=arboles;
+      calcVMA(id);
+    });
+  }
+
+  // FIX 2: Rodales con %ET y %Real separados
+  if(d.rodales?.length){
+    document.getElementById('rodales-list').innerHTML='';rodalCount=0;
+    d.rodales.forEach(r=>{
+      addRodal();const id=rodalCount;
+      sv(`rodal-n-${id}`,r.numero||'');
+      sv(`r${id}-CLEAR-et`,r.etClear??'');sv(`r${id}-CLEAR-real`,r.realClear??'');
+      sv(`r${id}-IND-et`,r.etInd??'');sv(`r${id}-IND-real`,r.realInd??'');
+      sv(`r${id}-PULPA-et`,r.etPulpa??'');sv(`r${id}-PULPA-real`,r.realPulpa??'');
+      ['CLEAR','IND','PULPA'].forEach(p=>calcProd(id,p));
+    });
+  }
+
+  // FIX 3: OEE — si hay más de un procesador, preguntar cuál usar
+  if(d.procOEEList?.length===1){
+    _aplicarOEE(d.procOEEList[0]);
+  }else if(d.procOEEList?.length>1){
+    const lista=document.getElementById('modal-sel-proc-lista');
+    lista.innerHTML=d.procOEEList.map((p,i)=>`
+      <button class="btn-secondary" style="width:100%;margin-bottom:6px;text-align:left;padding:10px 12px" onclick="_aplicarOEE(window._preDatos.procOEEList[${i}])">
+        <div style="font-weight:600">${p.equipo}</div>
+        <div style="font-size:11px;color:var(--text3)">TP: ${p.tpProgramado}h · TOB: ${p.tob}h · OEE: ${p.oee!=null?Math.round(p.oee*100)+'%':'—'}</div>
+      </button>`).join('');
+    document.getElementById('modal-sel-proc').style.display='block';
+  }
+
+  // Disponibilidad equipos
+  if(d.equipos?.length){
+    document.getElementById('equipos-list').innerHTML='';eqCount=0;
+    d.equipos.forEach(e=>{
+      addEquipo();const id=eqCount;
+      const pSel=document.getElementById(`sel-p-${id}`);if(pSel)pSel.value=e.equipo||'';
+      onPrincipalChange(id);
+      if(e.carro){const cSel=document.getElementById(`sel-c-${id}`);if(cSel)cSel.value=e.carro;}
+      const aSel=document.getElementById(`sel-a-${id}`);if(aSel)aSel.value=e.apoyo||'';
+      sv(`eq-cancha-${id}`,e.cancha||'');
+      ['principal','carro','apoyo'].forEach(t=>{
+        const next=e[`estado_${t}`]||'op';states[`${id}-${t}`]=next;
+        const dot=document.querySelector(`#dot-${t}-wrap-${id} .dot`);
+        const lbl=document.querySelector(`#dot-${t}-wrap-${id} .dot-label`);
+        if(dot)dot.className=DOT_CLS[next];
+        if(lbl){lbl.className=LBL_CLS[next];lbl.textContent=DOT_LBL[next];}
+      });
+      checkObs(id);
+      const obsEl=document.getElementById(`eq-obs-txt-${id}-principal`);if(obsEl)obsEl.value=e.obs_principal||'';
+    });
+  }
+
+  if(!d.procOEEList?.length||d.procOEEList.length<=1)showToast('✅ Formulario pre-llenado — revisa y ajusta lo que necesites');
+  guardarBorrador();
+};
+
 let cierreDocId=null;let ceqCount=0;
 window.abrirCierre=function(firebaseId){
   const r=window._hist?.find(x=>x.firebaseId===firebaseId);
