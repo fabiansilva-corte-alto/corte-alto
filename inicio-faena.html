@@ -583,7 +583,7 @@ async function cargarConfiguracionCentralizada(){
 
   // ── EQUIPOS desde config_equipos ──
   try{
-    const snap=await getDocs(query(collection(db,COL_EQUIPOS_CFG),orderBy('nombre')));
+    const snap=await getDocs(collection(db,COL_EQUIPOS_CFG));
     if(!snap.empty){
       const principal=[];
       const apoyo=[];
@@ -599,6 +599,7 @@ async function cargarConfiguracionCentralizada(){
         if(tipo==='PROCESADOR')proc.push(v.nombre);
         if(tipo==='TORRE')torres.push(v.nombre);
       });
+      principal.sort();apoyo.sort();proc.sort();torres.sort();
       if(principal.length){
         EQ_PRINCIPAL_DIN=principal;
         // Actualizar selects de equipo principal ya existentes en el DOM
