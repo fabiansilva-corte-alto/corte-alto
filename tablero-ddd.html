@@ -545,7 +545,15 @@ async function init(){
   try{
     const snap=await getDocs(query(collection(db,COL_FUNDOS),orderBy('nombre')));
     fundos=snap.docs.map(d=>({id:d.id,...d.data()}));
-  }catch(e){}
+    if(!fundos.length){
+      // Fallback: cargar fundos únicos desde reportes_produccion
+      const snapR=await getDocs(query(collection(db,COL_PROD),orderBy('fundo')));
+      const nombresSet=new Set(snapR.docs.map(d=>d.data().fundo).filter(Boolean));
+      fundos=[...nombresSet].sort().map(n=>({nombre:n}));
+    }
+  }catch(e){
+    toast('⚠️ No se pudieron cargar los fundos');
+  }
 
   // Fecha por defecto: esta semana
   setSemana(0);
@@ -633,8 +641,6 @@ window.cargarDatos=async function(){
     // Filtrar por fundo(s) seleccionados en cliente
     const docsProd=snapProd.docs.map(d=>d.data())
       .filter(d=>fundosSel.includes(d.fundo));
-    console.log('[DdD] fundosSel:', fundosSel);
-    console.log('[DdD] docsProd después de filtro fundo:', docsProd.length, docsProd.map(d=>d.fundo+'|'+d.fecha));
 
     // Volumen real por día
     const volRealPorDia={};
