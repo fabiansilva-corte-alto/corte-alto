@@ -870,6 +870,7 @@ window.agregarEquipo = function (datos) {
     lineaSoportes: datos?.lineaSoportes || "",
     preInstalado: datos?.preInstalado || "",
     cuerdaTirada: datos?.cuerdaTirada || "",
+    reportaOEE: datos?.reportaOEE ?? "",
     shoveleo: datos?.shoveleo || "",
     arbolesShoveleo: datos?.arbolesShoveleo ?? "",
     volteos: datos?.volteos ? JSON.parse(JSON.stringify(datos.volteos)) : [],
@@ -960,6 +961,15 @@ function cardEquipo(eq, idx) {
     <div class="msg-error" id="err-${eq.id}-operadorOtro">Ingrese el nombre del operador</div>` : ""}
     <div class="msg-error" id="err-${eq.id}-turno">Seleccione el turno (día/noche)</div>
 
+    ${eq.equipo && eq.tipo === "PROCESADOR" ? `
+    <label>¿Este equipo reporta OEE para el turno? <span class="req">*</span></label>
+    <select id="in-${eq.id}-reportaOEE" onchange="setCampo('${eq.id}','reportaOEE',this.value)">
+      <option value="">— Seleccionar —</option>
+      <option value="SI" ${eq.reportaOEE === "SI" ? "selected" : ""}>SÍ — reporta OEE</option>
+      <option value="NO" ${eq.reportaOEE === "NO" ? "selected" : ""}>NO — solo detenciones</option>
+    </select>
+    <div class="msg-error" id="err-${eq.id}-reportaOEE">Indique si este equipo reporta OEE</div>` : ""}
+
     ${eq.equipo ? `
     <label>¿El equipo estuvo operativo? <span class="req">*</span></label>
     <select id="in-${eq.id}-operativo" onchange="setCampo('${eq.id}','operativo',this.value)">
@@ -991,7 +1001,7 @@ function cardEquipo(eq, idx) {
 
     ${esOperativo ? camposPorTipo(eq) : ""}
 
-    ${eq.tipo !== "SHOVEL" ? `
+    ${eq.tipo !== "SHOVEL" && !(eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO") ? `
     <div class="fila-3" style="display:flex;gap:10px">
       <div style="flex:1">
         <label>TP <span class="req">*</span></label>
@@ -1323,7 +1333,7 @@ function refrescarSubListas(eq) {
 }
 
 /* ---- setCampo genérico ---- */
-const CAMPOS_RERENDER = ["tipo", "equipo", "operador", "operativo", "cambioLinea", "cuerdaTirada", "lineaSoportes", "shoveleo", "tipoCarro"];
+const CAMPOS_RERENDER = ["tipo", "equipo", "operador", "operativo", "cambioLinea", "cuerdaTirada", "lineaSoportes", "shoveleo", "tipoCarro", "reportaOEE"];
 window.setCampo = function (id, campo, valor, rerender = true) {
   const eq = equipos.find(e => e.id === id);
   eq[campo] = valor;
@@ -1390,6 +1400,7 @@ function pctTxt(v) {
 }
 
 function actualizarOEE(eq) {
+  if (eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO") return;
   const tob = document.getElementById("tob-" + eq.id);
   if (!tob) return; // shovel u oculto
   const r = calcOEE(eq);
@@ -1480,7 +1491,8 @@ function validar() {
       const hf = document.getElementById(`in-${eq.id}-horometroFinal`);
       if (hf) hf.classList.remove("campo-error");
     }
-    if (eq.tipo !== "SHOVEL") {
+    if (eq.tipo === "PROCESADOR") m("reportaOEE", !eq.reportaOEE);
+    if (eq.tipo !== "SHOVEL" && !(eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO")) {
       const tp = parseDec(eq.horasPlanificadas);
       m("horasPlanificadas", tp === null || tp <= 0);
       m("toc", parseDec(eq.toc) === null);
@@ -1612,7 +1624,9 @@ function armarDocumento() {
       base.totalDetencionesHrs =
         Math.round(base.detenciones.reduce((s, d) => s + d.horas, 0) * 100) / 100;
 
-      if (eq.tipo !== "SHOVEL") {
+      if (eq.tipo === "PROCESADOR") base.reportaOEE = eq.reportaOEE === "SI";
+
+      if (eq.tipo !== "SHOVEL" && !(eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO")) {
         base.tpProgramado = num(eq.horasPlanificadas);
         base.toc = parseDec(eq.toc) || 0;
         const r = calcOEE(eq);
@@ -2133,6 +2147,7 @@ window.editarReporte = function (id) {
       ciclosWyssen: e.ciclosWyssen !== undefined ? String(e.ciclosWyssen) : "",
       arbolesWyssen: e.arbolesWyssen !== undefined ? String(e.arbolesWyssen) : "",
       horasCambioLinea: e.horasCambioLinea !== undefined ? fmtComa(e.horasCambioLinea) : "",
+      reportaOEE: e.reportaOEE === true ? "SI" : e.reportaOEE === false ? "NO" : "",
       cuerdaTirada: e.cuerdaTirada || "",
       asistencia: e.huincheAsistencia ?? e.asistencia ?? "",
       operador: esOtroOp ? "OTRO" : (e.operador || ""),
