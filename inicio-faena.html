@@ -625,7 +625,8 @@ async function cargarConfiguracionCentralizada(){
     }
   }catch(e){ /* sin conexión a config_equipos: se mantienen los equipos fijos */ }
 }
-document.addEventListener('DOMContentLoaded',cargarConfiguracionCentralizada);
+let configListaPromise=null;
+document.addEventListener('DOMContentLoaded',()=>{configListaPromise=cargarConfiguracionCentralizada();});
 
 let rodalCount=0,eqCount=0,causCount=0,procCount=0;
 let editandoId=null,editandoVersion=0;
@@ -802,7 +803,7 @@ function recolectar(borrador){
   return{fecha:document.getElementById('fecha').value,fundo:document.getElementById('fundo').value,codFundo:document.getElementById('cod-fundo').value,linea:document.getElementById('linea').value,cosecha:document.getElementById('cosecha').value,supervisor:getSupervisor(),ingeniero:document.getElementById('ingeniero').value,checklist:document.getElementById('checklist').value,clima:document.getElementById('clima').value,r24:document.getElementById('r24').value,accesoCarguio:document.getElementById('acceso-carguio').value,mecanico:document.getElementById('mecanico')?.value||'',seguridad:{nTrab:document.getElementById('n-trab').value,temaCharla:document.getElementById('tema-charla').value},volumen:{meta:parseDec(document.getElementById('vol-meta').value)||0,real:parseDec(document.getElementById('vol-real').value)||0},procesadores,aprov:{rodales},equipos,oee:{tp,toc,tob:tobR,fd:fd.toFixed(0),fe:fe.toFixed(0),oee:oee.toFixed(0),causales},fallaDetalle:document.getElementById('falla-detalle').value,otroDetalle:document.getElementById('otro-detalle').value,firma:document.getElementById('firma').value,creadoEn:borrador?undefined:new Date().toISOString()};
 }
 
-function limpiarFormulario(){
+async function limpiarFormulario(){
   const persist={fundo:document.getElementById('fundo').value,codFundo:document.getElementById('cod-fundo').value,linea:document.getElementById('linea').value,cosecha:document.getElementById('cosecha').value,supervisor:document.getElementById('supervisor').value,supervisorOtro:document.getElementById('supervisor-otro').value,ingeniero:document.getElementById('ingeniero').value};
   ['n-trab','tema-charla','vol-meta','vol-real','tp-prog','tob-real','toc-real','falla-detalle','otro-detalle'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   ['checklist','r24','acceso-carguio','mecanico','firma'].forEach(id=>{const e=document.getElementById(id);if(e)e.selectedIndex=0;});document.getElementById('clima').value='';sincClima('clima');
@@ -819,6 +820,7 @@ function limpiarFormulario(){
   document.getElementById('sup-otro-field').classList.toggle('hidden',persist.supervisor!=='otro');
   document.getElementById('fecha').value=new Date().toISOString().split('T')[0];
   editandoId=null;editandoVersion=0;marcarEdicion(false);
+  if(configListaPromise)await configListaPromise;
   addRodal();addEquipo();
   localStorage.removeItem(DRAFT_KEY);
 }
