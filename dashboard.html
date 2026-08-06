@@ -1056,29 +1056,29 @@ function renderUtilizacion(jefe) {
 // BLOQUE 7: VARAS EN PISO
 // ══════════════════════════════════════════════════════════════════════════
 function renderVarasEnPiso(jefe) {
-  const lineas = {};
+  const fundos = {};
   jefe.forEach(d => {
-    const linea = d.linea || 'Sin línea';
-    if(!lineas[linea]) lineas[linea] = { madereados:0, procesados:0 };
-    const L = lineas[linea];
+    const fundo = d.fundo || 'Sin fundo';
+    if(!fundos[fundo]) fundos[fundo] = { madereados:0, procesados:0 };
+    const F = fundos[fundo];
     (d.equipos||[]).forEach(eq => {
       const tipo = (eq.tipo||'').toUpperCase();
       if(tipo==='TORRE'||tipo==='ALPINE'||tipo==='SKIDDER')
-        L.madereados += parseInt(eq.arboles)||0;
+        F.madereados += parseInt(eq.arboles)||0;
       if(tipo==='PROCESADOR')
-        L.procesados += parseInt(eq.arboles)||0;
+        F.procesados += parseInt(eq.arboles)||0;
     });
   });
 
-  const entradas = Object.entries(lineas);
+  const entradas = Object.entries(fundos);
   if(!entradas.length) {
     document.getElementById('varas-wrap').innerHTML =
       '<div class="empty-state"><i class="ti ti-stack-2" style="font-size:26px;display:block;margin-bottom:.5rem"></i>Sin datos para el período</div>';
     return;
   }
 
-  const datos = entradas.map(([linea,v]) => ({
-    linea,
+  const datos = entradas.map(([fundo,v]) => ({
+    fundo,
     madereados: v.madereados,
     procesados:  v.procesados,
     varas:       Math.max(v.madereados - v.procesados, 0)
@@ -1094,7 +1094,7 @@ function renderVarasEnPiso(jefe) {
       ${datos.map((d,i) => `
         <div class="varas-card ${i===0&&d.varas>0?'rojo':'normal'}">
           <div class="varas-linea">
-            <span>${d.linea}</span>
+            <span>${d.fundo}</span>
             ${i===0&&d.varas>0?'<span class="varas-badge-urgente">⚠ MÁS URGENTE</span>':''}
           </div>
           <div class="varas-nums">
@@ -1117,7 +1117,7 @@ function renderVarasEnPiso(jefe) {
         </div>`).join('')}
     </div>
     <div style="font-size:10px;color:var(--text3);margin-top:8px">
-      * La línea con más varas en piso aparece destacada en rojo como más urgente
+      * El fundo con más varas en piso aparece destacado en rojo como más urgente
     </div>`;
 }
 
