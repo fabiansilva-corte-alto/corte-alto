@@ -60,30 +60,41 @@ html,body{height:100%;width:100%;font-family:var(--font);background:var(--bg);co
 #filtros select:focus,#filtros input[type=date]:focus{border-color:var(--green)}
 #filtros .sep{color:var(--text3);font-size:11px;padding:0 2px}
 /* ── MULTI-SELECT FUNDO ── */
-.fundo-wrap{position:relative}
+/* ── DROPDOWN FUNDO ── */
+.fundo-wrap{position:relative;display:none}
+.fundo-wrap.visible{display:block}
 .btn-fundo-toggle{
   font-size:12px;font-family:var(--font);
   padding:5px 10px;height:30px;
   border:1px solid var(--border2);border-radius:var(--radius-sm);
   background:var(--card);color:var(--text);cursor:pointer;
-  white-space:nowrap;min-width:120px;text-align:left;
+  white-space:nowrap;min-width:130px;text-align:left;
+  display:flex;align-items:center;gap:4px;
 }
-.btn-fundo-toggle #fundo-count{
-  font-size:11px;color:var(--green);font-weight:700;margin:0 4px;
+.btn-fundo-toggle:hover{border-color:var(--green)}
+.fundo-badge{
+  font-size:10px;color:var(--white);font-weight:700;
+  background:var(--green-bright);border-radius:8px;
+  padding:1px 6px;margin-left:2px;
 }
 .fundo-menu{
-  position:absolute;top:34px;left:0;z-index:200;
+  position:fixed;z-index:500;
   background:var(--card2);border:1px solid var(--border2);
   border-radius:var(--radius-sm);padding:6px 0;
-  min-width:200px;max-height:240px;overflow-y:auto;
-  box-shadow:0 4px 12px rgba(0,0,0,.4);
+  min-width:200px;max-height:220px;overflow-y:auto;
+  box-shadow:0 6px 20px rgba(0,0,0,.5);
+  display:none;
 }
+.fundo-menu.open{display:block}
 .fundo-menu label{
   display:flex;align-items:center;gap:8px;
-  padding:6px 12px;cursor:pointer;font-size:13px;color:var(--text);
+  padding:7px 14px;cursor:pointer;font-size:13px;color:var(--text);
+  user-select:none;
 }
 .fundo-menu label:hover{background:var(--border)}
-.fundo-menu input[type=checkbox]{accent-color:var(--green-bright);width:14px;height:14px}
+.fundo-menu input[type=checkbox]{
+  accent-color:var(--green-bright);width:15px;height:15px;flex-shrink:0;
+}
 .btn-semana{  font-size:11px;font-weight:600;
   padding:5px 10px;height:30px;
   border:1px solid var(--border2);border-radius:var(--radius-sm);
@@ -405,11 +416,13 @@ table.tabla-ddd tr.div-bloque td{
     <option value="">Línea…</option>
   </select>
 
-  <div class="fundo-wrap" id="fundo-wrap" style="display:none">
-    <button class="btn-fundo-toggle" id="btn-fundo-toggle" onclick="toggleFundoMenu()" type="button">
-      Fundo… <span id="fundo-count"></span>▾
+  <div class="fundo-wrap" id="fundo-wrap">
+    <button class="btn-fundo-toggle" id="btn-fundo-toggle" onclick="toggleFundoMenu(event)" type="button">
+      <span id="fundo-label">Fundo…</span>
+      <span id="fundo-badge" class="fundo-badge" style="display:none"></span>
+      <span>▾</span>
     </button>
-    <div class="fundo-menu" id="fundo-menu" style="display:none"></div>
+    <div class="fundo-menu" id="fundo-menu"></div>
   </div>
 
   <select id="sel-procesador">
@@ -562,50 +575,60 @@ async function init(){
 window.onLineaChange=function(){
   const linea=$id('sel-linea').value;
   // Reset procesador
-  const sel=$id('sel-procesador');
-  sel.innerHTML='<option value="">Procesador…</option>';
-  // Reset fundos
-  const wrap=$id('fundo-wrap');
+  const selProc=$id('sel-procesador');
+  selProc.innerHTML='<option value="">Procesador…</option>';
+  // Reset fundo
   const menu=$id('fundo-menu');
   menu.innerHTML='';
-  $id('fundo-count').textContent='';
-  wrap.style.display='none';
+  menu.classList.remove('open');
+  $id('fundo-label').textContent='Fundo…';
+  $id('fundo-badge').style.display='none';
+  $id('fundo-wrap').classList.remove('visible');
   if(!linea)return;
   // Poblar procesadores
   equipos
     .filter(e=>e.tipo==='PROCESADOR')
-    .forEach(e=>{const o=document.createElement('option');o.value=e.nombre;o.textContent=e.nombre;sel.appendChild(o);});
-  // Poblar fundos (todos, sin filtro por línea ya que config_fundos no tiene linea)
+    .forEach(e=>{const o=document.createElement('option');o.value=e.nombre;o.textContent=e.nombre;selProc.appendChild(o);});
+  // Poblar fundos
   fundos.forEach(f=>{
     const lbl=document.createElement('label');
     const chk=document.createElement('input');
     chk.type='checkbox';chk.value=f.nombre;
-    chk.onchange=actualizarContadorFundos;
+    chk.addEventListener('change',actualizarBadgeFundo);
     lbl.appendChild(chk);
     lbl.appendChild(document.createTextNode(' '+f.nombre));
     menu.appendChild(lbl);
   });
-  wrap.style.display='';
+  $id('fundo-wrap').classList.add('visible');
 };
 
-window.toggleFundoMenu=function(){
+window.toggleFundoMenu=function(e){
+  e.stopPropagation();
   const menu=$id('fundo-menu');
-  menu.style.display=menu.style.display==='none'?'':'none';
+  const btn=$id('btn-fundo-toggle');
+  const rect=btn.getBoundingClientRect();
+  if(menu.classList.contains('open')){
+    menu.classList.remove('open');return;
+  }
+  // Posicionar el menú justo bajo el botón
+  menu.style.top=(rect.bottom+4)+'px';
+  menu.style.left=rect.left+'px';
+  menu.style.minWidth=rect.width+'px';
+  menu.classList.add('open');
 };
 
-// Cerrar menú fundo al hacer click fuera
-document.addEventListener('click',function(e){
-  const wrap=$id('fundo-wrap');
-  if(wrap&&!wrap.contains(e.target))$id('fundo-menu').style.display='none';
+// Cerrar al hacer click fuera
+document.addEventListener('click',function(){
+  $id('fundo-menu').classList.remove('open');
 });
 
-function actualizarContadorFundos(){
+function actualizarBadgeFundo(){
   const sel=fundosSeleccionados();
-  $id('fundo-count').textContent=sel.length?`(${sel.length})`:'';
-  $id('btn-fundo-toggle').textContent=
-    sel.length===1?sel[0]+' ▾':
-    sel.length>1?`${sel.length} fundos ▾`:
-    'Fundo… ▾';
+  const badge=$id('fundo-badge');
+  const lbl=$id('fundo-label');
+  if(sel.length===0){lbl.textContent='Fundo…';badge.style.display='none';}
+  else if(sel.length===1){lbl.textContent=sel[0];badge.style.display='none';}
+  else{lbl.textContent='Fundos';badge.textContent=sel.length;badge.style.display='';}
 }
 
 function fundosSeleccionados(){
