@@ -602,21 +602,22 @@ async function cargarConfiguracionCentralizada(){
       principal.sort();apoyo.sort();proc.sort();torres.sort();
       if(principal.length){
         EQ_PRINCIPAL_DIN=principal;
-        // Actualizar selects de equipo principal ya existentes en el DOM
         document.querySelectorAll('[id^="sel-p-"],[id^="csel-p-"]').forEach(sel=>{
           const actual=sel.value;
+          if(!actual)return;
           sel.innerHTML='<option value="">— Seleccionar —</option>'+
             principal.map(e=>`<option>${e}</option>`).join('');
-          if(actual && principal.includes(actual))sel.value=actual;
+          if(principal.includes(actual))sel.value=actual;
         });
       }
       if(apoyo.length){
         EQ_APOYO_DIN=['SIN APOYO',...apoyo];
         document.querySelectorAll('[id^="sel-a-"],[id^="csel-a-"]').forEach(sel=>{
           const actual=sel.value;
+          if(!actual)return;
           sel.innerHTML='<option value="">— Seleccionar —</option>'+
             EQ_APOYO_DIN.map(e=>`<option>${e}</option>`).join('');
-          if(actual && EQ_APOYO_DIN.includes(actual))sel.value=actual;
+          if(EQ_APOYO_DIN.includes(actual))sel.value=actual;
         });
       }
       if(proc.length) EQ_PROC_DIN=proc;
