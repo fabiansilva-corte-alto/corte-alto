@@ -686,6 +686,7 @@ window.cargarDatos=async function(){
       (d.equipos||[]).forEach(eq=>{
         if(procesador && eq.equipo!==procesador)return;
         if(eq.tipo!=='PROCESADOR')return;
+        if(eq.reportaOEE !== true)return;
         if(eq.fd!=null){fdPorDia[f]=fdPorDia[f]||[];fdPorDia[f].push(eq.fd);}
         if(eq.fe!=null){fePorDia[f]=fePorDia[f]||[];fePorDia[f].push(eq.fe);}
         if(eq.oee!=null){oeePorDia[f]=oeePorDia[f]||[];oeePorDia[f].push(eq.oee);}
