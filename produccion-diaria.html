@@ -490,6 +490,22 @@ function estadoAcreditacionCalibrador(nombreCalibrador){
   return null; // vigente (verde): no se agrega aviso, se mantiene el diseño normal
 }
 document.addEventListener('DOMContentLoaded',cargarConfiguracionCentralizada);
+// iOS Safari desde enlace externo (ej: Notas) a veces no dispara DOMContentLoaded
+// correctamente; usamos también pageshow como respaldo
+window.addEventListener('pageshow', function(e){
+  // Repoblar procesadores si llegaron vacíos (carga diferida en Safari iOS)
+  if(PROCESADORES_DIN.length===0){
+    cargarConfiguracionCentralizada();
+  } else {
+    document.querySelectorAll('[id^="sel-proc-"]').forEach(sel=>{
+      if(sel.options.length<=1){
+        const actual=sel.value;
+        sel.innerHTML='<option value="">— Seleccionar —</option>'+PROCESADORES_DIN.map(p=>`<option>${p}</option>`).join('');
+        if(actual&&PROCESADORES_DIN.includes(actual))sel.value=actual;
+      }
+    });
+  }
+});
 function guardarDraft(){try{const d=collect(true);d._eid=editId;d._ev=editVer;localStorage.setItem(DRAFT,JSON.stringify(d));}catch(e){}}
 function savePersist(){try{const p={};PERSIST_IDS.forEach(id=>{const e=document.getElementById(id);if(e)p[id]=e.value;});localStorage.setItem(PERSIST,JSON.stringify(p));}catch(e){}}
 function loadPersist(){try{const raw=localStorage.getItem(PERSIST);if(!raw)return;const p=JSON.parse(raw);PERSIST_IDS.forEach(id=>{const e=document.getElementById(id);if(e&&p[id])e.value=p[id];});window.syncCodFundo();}catch(e){}}
