@@ -27,6 +27,7 @@
     background:var(--gris-fondo);
     color:#222;
     padding-bottom:90px;
+    overscroll-behavior-y: contain;
   }
   header{
     background:linear-gradient(135deg,var(--verde-oscuro),var(--verde-medio));
@@ -1001,7 +1002,7 @@ function cardEquipo(eq, idx) {
 
     ${esOperativo ? camposPorTipo(eq) : ""}
 
-    ${eq.tipo !== "SHOVEL" && !(eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO") ? `
+    ${eq.tipo === "PROCESADOR" && eq.reportaOEE === "SI" ? `
     <div class="fila-3" style="display:flex;gap:10px">
       <div style="flex:1">
         <label>TP <span class="req">*</span></label>
@@ -1033,12 +1034,17 @@ function cardEquipo(eq, idx) {
         <label>FE</label>
         <input type="text" id="fe-${eq.id}" readonly value="" tabindex="-1">
       </div>
-    </div>` : ""}
+    </div>` : `
+    <div style="display:flex;gap:10px;align-items:center;background:var(--verde-claro);border-radius:8px;padding:8px 12px;margin-top:4px">
+      <span style="font-size:12px;font-weight:600;color:var(--verde-oscuro)">TOB</span>
+      <input type="text" id="tob-${eq.id}" readonly value="${fmtComa(sumaDetenciones(eq))}" tabindex="-1"
+        style="flex:1;background:#fff;border:1px solid var(--borde);border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;color:var(--verde-oscuro)">
+      <span style="font-size:11px;color:#777">hrs detenciones</span>
+    </div>`}
 
     <label>⛔ Detenciones ${eq.operativo === "NO" ? '<span class="req">*</span>' : ""}</label>
     <div class="sub-lista" id="det-${eq.id}">${htmlDetenciones(eq)}</div>
     <button class="btn-agregar-sub" onclick="agregarDetencion('${eq.id}')">＋ Agregar detención</button>
-    ${eq.tipo === "SHOVEL" ? `<div class="total-sub" id="totdet-${eq.id}">${textoTotalDet(eq)}</div>` : ""}
     <div class="msg-error" id="err-${eq.id}-detenciones">Agregue al menos una detención que justifique el equipo no operativo</div>
 
     <label>Observaciones</label>
@@ -1400,11 +1406,11 @@ function pctTxt(v) {
 }
 
 function actualizarOEE(eq) {
-  if (eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO") return;
   const tob = document.getElementById("tob-" + eq.id);
-  if (!tob) return; // shovel u oculto
+  if (tob) tob.value = fmtComa(sumaDetenciones(eq));
+  /* FD, FE, OEE solo para PROCESADOR con reportaOEE=SI */
+  if (!(eq.tipo === "PROCESADOR" && eq.reportaOEE === "SI")) return;
   const r = calcOEE(eq);
-  tob.value = fmtComa(r.tob);
   [["oee", r.oee], ["fd", r.fd], ["fe", r.fe]].forEach(([k, v]) => {
     const el = document.getElementById(k + "-" + eq.id);
     if (!el) return;
@@ -1492,7 +1498,7 @@ function validar() {
       if (hf) hf.classList.remove("campo-error");
     }
     if (eq.tipo === "PROCESADOR") m("reportaOEE", !eq.reportaOEE);
-    if (eq.tipo !== "SHOVEL" && !(eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO")) {
+    if (eq.tipo === "PROCESADOR" && eq.reportaOEE === "SI") {
       const tp = parseDec(eq.horasPlanificadas);
       m("horasPlanificadas", tp === null || tp <= 0);
       m("toc", parseDec(eq.toc) === null);
@@ -1626,11 +1632,13 @@ function armarDocumento() {
 
       if (eq.tipo === "PROCESADOR") base.reportaOEE = eq.reportaOEE === "SI";
 
-      if (eq.tipo !== "SHOVEL" && !(eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO")) {
+      /* TOB siempre — es el total de detenciones para todos los tipos */
+      base.tob = Math.round(base.detenciones.reduce((s, d) => s + d.horas, 0) * 100) / 100;
+
+      if (eq.tipo === "PROCESADOR" && eq.reportaOEE === "SI") {
         base.tpProgramado = num(eq.horasPlanificadas);
         base.toc = parseDec(eq.toc) || 0;
         const r = calcOEE(eq);
-        base.tob = r.tob;
         if (r.fd !== null && isFinite(r.fd)) base.fd = Math.round(r.fd * 10000) / 10000;
         if (r.fe !== null && isFinite(r.fe)) base.fe = Math.round(r.fe * 10000) / 10000;
         if (r.oee !== null && isFinite(r.oee)) base.oee = Math.round(r.oee * 10000) / 10000;
@@ -1737,6 +1745,33 @@ window.cancelarEdicion = function () {
   limpiarFormulario();
   mostrarTab("historial");
 };
+
+/* ============================================================
+   PROTECCIÓN CONTRA REFRESH ACCIDENTAL
+   ============================================================ */
+function hayDatosSinGuardar() {
+  const fundo = document.getElementById("fundo")?.value;
+  const linea = document.getElementById("linea")?.value;
+  return !!(fundo || linea || equipos.length > 0);
+}
+
+/* Bloquear pull-to-refresh en móvil cuando hay datos sin guardar */
+let _startY = 0;
+document.addEventListener("touchstart", e => { _startY = e.touches[0].clientY; }, { passive: true });
+document.addEventListener("touchmove", e => {
+  const dy = e.touches[0].clientY - _startY;
+  if (dy > 0 && window.scrollY === 0 && hayDatosSinGuardar()) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+/* Aviso al cerrar/navegar fuera con datos pendientes */
+window.addEventListener("beforeunload", e => {
+  if (hayDatosSinGuardar()) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
 
 /* ============================================================
    BORRADOR (autoguardado localStorage)
@@ -1864,7 +1899,10 @@ async function cargarConfiguracionCentralizada(){
       });
       if(Object.keys(porTipo).length){
         EQUIPOS_POR_TIPO_DIN=porTipo;
-        TIPOS_EQUIPO_DIN=[...new Set(tiposOrden)];
+        /* Solo mostrar los 4 tipos operacionales — el resto queda en EQUIPOS_POR_TIPO_DIN
+           para uso futuro pero no aparece en el selector del jefe */
+        const TIPOS_VISIBLES = ["TORRE", "SKIDDER", "PROCESADOR", "SHOVEL"];
+        TIPOS_EQUIPO_DIN=[...new Set(tiposOrden)].filter(t => TIPOS_VISIBLES.includes(t));
       }
     }
   }catch(e){ /* sin conexión a config_equipos: se mantienen los equipos fijos */ }
@@ -2011,7 +2049,7 @@ window.verReporte = function (id) {
     ).join("")}</div>`;
 
     /* OEE */
-    const oeeHtml = e.tipo !== "SHOVEL" && e.tpProgramado !== undefined ? `
+    const oeeHtml = e.tipo === "PROCESADOR" && e.tpProgramado !== undefined ? `
       <div class="ver-oee">
         ${[["TP",fmtComa(e.tpProgramado)],["TOB",fmtComa(e.tob||0)],["TOC",fmtComa(e.toc||0)],
            ["FD",e.fd!==undefined?Math.round(e.fd*100)+"%":"—"],
@@ -2330,7 +2368,7 @@ window.compartirReporte = async function (id) {
       });
 
       /* OEE (solo si no es SHOVEL) */
-      if (eq.tipo !== "SHOVEL" && eq.tpProgramado !== undefined) {
+      if (eq.tipo === "PROCESADOR" && eq.tpProgramado !== undefined) {
         checkPage(14);
         setFill(VC); doc.rect(ML+1.5, y, PW-1.5, 12, "F");
         const oeeItems = [
