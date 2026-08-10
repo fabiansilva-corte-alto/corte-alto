@@ -425,6 +425,16 @@ table.tabla-ddd tr.div-bloque td{
     <div class="fundo-menu" id="fundo-menu"></div>
   </div>
 
+  <!-- Equipos madereo (opcional) -->
+  <div class="fundo-wrap" id="madereo-wrap" style="display:none">
+    <button class="btn-fundo-toggle" id="btn-madereo-toggle" onclick="toggleMadereoMenu(event)" type="button">
+      <span id="madereo-label">Eq. Madereo…</span>
+      <span id="madereo-badge" class="fundo-badge" style="display:none"></span>
+      <span>▾</span>
+    </button>
+    <div class="fundo-menu" id="madereo-menu"></div>
+  </div>
+
   <select id="sel-procesador">
     <option value="">Procesador…</option>
   </select>
@@ -502,9 +512,10 @@ const COL_EQUIPOS  = "config_equipos";
 const COL_FUNDOS   = "config_fundos";
 
 // ── Estado ──
-let lineas   = [];
-let equipos  = [];
-let fundos   = [];
+let lineas        = [];
+let equipos       = [];
+let fundos        = [];
+let equiposMadereo= []; // equipos de tipo TORRE o SKIDDER (madereo)
 // ── Utils ──
 function fmt(n,dec=0){if(n==null||isNaN(n))return '—';return Number(n).toLocaleString('es-CL',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
 function pct(n){if(n==null||isNaN(n))return '—';return fmt(n*100,1)+'%';}
@@ -552,7 +563,21 @@ async function init(){
   try{
     const snap=await getDocs(query(collection(db,COL_EQUIPOS),orderBy('nombre')));
     equipos=snap.docs.map(d=>({id:d.id,...d.data()}));
+    // Equipos de madereo = TORRE o SKIDDER
+    equiposMadereo=equipos.filter(e=>e.tipo==='TORRE'||e.tipo==='SKIDDER'||e.tipo==='MADEREO');
   }catch(e){}
+
+  // Si config_equipos no tiene tipos madereo, cargar desde reportes_produccion
+  if(!equiposMadereo.length){
+    try{
+      const snapR=await getDocs(query(collection(db,COL_PROD)));
+      const eqSet=new Set();
+      snapR.docs.forEach(d=>{
+        (d.data().cartolas||[]).forEach(c=>{if(c.equipo)eqSet.add(c.equipo);});
+      });
+      equiposMadereo=[...eqSet].sort().map(n=>({nombre:n}));
+    }catch(e){}
+  }
 
   // Fundos
   try{
@@ -584,6 +609,13 @@ window.onLineaChange=function(){
   $id('fundo-label').textContent='Fundo…';
   $id('fundo-badge').style.display='none';
   $id('fundo-wrap').classList.remove('visible');
+  // Reset madereo
+  const menuM=$id('madereo-menu');
+  menuM.innerHTML='';
+  menuM.classList.remove('open');
+  $id('madereo-label').textContent='Eq. Madereo…';
+  $id('madereo-badge').style.display='none';
+  $id('madereo-wrap').style.display='none';
   if(!linea)return;
   // Poblar procesadores
   equipos
@@ -600,6 +632,19 @@ window.onLineaChange=function(){
     menu.appendChild(lbl);
   });
   $id('fundo-wrap').classList.add('visible');
+  // Poblar equipos madereo
+  if(equiposMadereo.length){
+    equiposMadereo.forEach(e=>{
+      const lbl=document.createElement('label');
+      const chk=document.createElement('input');
+      chk.type='checkbox';chk.value=e.nombre;
+      chk.addEventListener('change',actualizarBadgeMadereo);
+      lbl.appendChild(chk);
+      lbl.appendChild(document.createTextNode(' '+e.nombre));
+      menuM.appendChild(lbl);
+    });
+    $id('madereo-wrap').style.display='';
+  }
 };
 
 window.toggleFundoMenu=function(e){
@@ -620,6 +665,7 @@ window.toggleFundoMenu=function(e){
 // Cerrar al hacer click fuera
 document.addEventListener('click',function(){
   $id('fundo-menu').classList.remove('open');
+  $id('madereo-menu').classList.remove('open');
 });
 
 function actualizarBadgeFundo(){
@@ -636,8 +682,33 @@ function fundosSeleccionados(){
     .map(c=>c.value);
 }
 
-// ── CARGA PRINCIPAL ──
-window.cargarDatos=async function(){
+window.toggleMadereoMenu=function(e){
+  e.stopPropagation();
+  const menu=$id('madereo-menu');
+  const btn=$id('btn-madereo-toggle');
+  const rect=btn.getBoundingClientRect();
+  if(menu.classList.contains('open')){menu.classList.remove('open');return;}
+  menu.style.top=(rect.bottom+4)+'px';
+  menu.style.left=rect.left+'px';
+  menu.style.minWidth=rect.width+'px';
+  menu.classList.add('open');
+};
+
+function actualizarBadgeMadereo(){
+  const sel=madereoSeleccionados();
+  const badge=$id('madereo-badge');
+  const lbl=$id('madereo-label');
+  if(sel.length===0){lbl.textContent='Eq. Madereo…';badge.style.display='none';}
+  else if(sel.length===1){lbl.textContent=sel[0];badge.style.display='none';}
+  else{lbl.textContent='Madereo';badge.textContent=sel.length;badge.style.display='';}
+}
+
+function madereoSeleccionados(){
+  return [...$id('madereo-menu').querySelectorAll('input[type=checkbox]:checked')]
+    .map(c=>c.value);
+}
+
+
   const linea=$id('sel-linea').value;
   const procesador=$id('sel-procesador').value;
   const desde=$id('fecha-desde').value;
@@ -665,10 +736,20 @@ window.cargarDatos=async function(){
     const docsProd=snapProd.docs.map(d=>d.data())
       .filter(d=>fundosSel.includes(d.fundo));
 
-    // Volumen real por día
+    // Volumen real por día — si hay equipos madereo seleccionados, sumar solo sus cartolas
+    const madSel=madereoSeleccionados();
     const volRealPorDia={};
     docsProd.forEach(d=>{
-      volRealPorDia[d.fecha]=(volRealPorDia[d.fecha]||0)+(d.totalGlobal||0);
+      let vol=0;
+      if(madSel.length){
+        // Sumar solo cartolas de los equipos seleccionados
+        (d.cartolas||[]).forEach(c=>{
+          if(madSel.includes(c.equipo)) vol+=(c.total||0);
+        });
+      }else{
+        vol=d.totalGlobal||0;
+      }
+      if(vol>0) volRealPorDia[d.fecha]=(volRealPorDia[d.fecha]||0)+vol;
     });
 
     // Aprovechamiento por rodal (etRodales) — indexado por fecha para mostrar columnas diarias
