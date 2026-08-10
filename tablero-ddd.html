@@ -742,19 +742,46 @@ window.cargarDatos=async function(){
       if(vol>0) volRealPorDia[d.fecha]=(volRealPorDia[d.fecha]||0)+vol;
     });
 
-    // Aprovechamiento por rodal (etRodales) — indexado por fecha para mostrar columnas diarias
+    // Aprovechamiento por rodal — % REAL desde cartolas[].productos[]
+    // Meta ET desde etRodales[] — guardada en _meta
     const rodalMap={};
     docsProd.forEach(d=>{
       const fecha=d.fecha;
+      // % Real: calcular desde volumen por tipo en cartolas
+      const rodalVols={};
+      (d.cartolas||[]).forEach(c=>{
+        const rodal=c.rodal;if(!rodal)return;
+        if(!rodalVols[rodal])rodalVols[rodal]={CLEAR:0,INDUSTRIAL:0,PULPA:0,SINIESTRADO:0,total:0};
+        (c.productos||[]).forEach(p=>{
+          const tipo=(p.tipo||'').toUpperCase();
+          const vol=p.vol||0;
+          if(tipo==='CLEAR')rodalVols[rodal].CLEAR+=vol;
+          else if(tipo==='INDUSTRIAL')rodalVols[rodal].INDUSTRIAL+=vol;
+          else if(tipo==='PULPA')rodalVols[rodal].PULPA+=vol;
+          else if(tipo==='SINIESTRADO')rodalVols[rodal].SINIESTRADO+=vol;
+          rodalVols[rodal].total+=vol;
+        });
+      });
+      Object.entries(rodalVols).forEach(([rodal,v])=>{
+        if(!rodalMap[rodal])rodalMap[rodal]={};
+        const t=v.total||1;
+        rodalMap[rodal][fecha]={
+          clear:      Math.round(v.CLEAR/t*100),
+          industrial: Math.round(v.INDUSTRIAL/t*100),
+          pulpa:      Math.round(v.PULPA/t*100),
+          siniestrado:Math.round(v.SINIESTRADO/t*100)
+        };
+      });
+      // Meta ET desde etRodales — guardada en _meta para mostrar (ET: x%)
       (d.etRodales||[]).forEach(r=>{
         if(!r.numero)return;
         if(!rodalMap[r.numero])rodalMap[r.numero]={};
-        // Guardar el valor de ese rodal para esa fecha exacta
-        rodalMap[r.numero][fecha]={
-          clear:   r.clear   !=null?r.clear   :null,
-          industrial:r.industrial!=null?r.industrial:null,
-          pulpa:   r.pulpa   !=null?r.pulpa   :null,
-          siniestrado:r.siniestrado!=null?r.siniestrado:null
+        if(!rodalMap[r.numero]._meta)rodalMap[r.numero]._meta={};
+        rodalMap[r.numero]._meta[fecha]={
+          clear:r.clear??null,
+          industrial:r.industrial??null,
+          pulpa:r.pulpa??null,
+          siniestrado:r.siniestrado??null
         };
       });
     });
@@ -1068,13 +1095,13 @@ function renderTablaDdd(ctx){
         const valsPorDia=dias.map(f=>{const e=r[f];return e!=null&&e[key]!=null?e[key]:null;});
         const conDato=valsPorDia.filter(v=>v!=null);
         const promedio=conDato.length?Math.round(conDato.reduce((a,b)=>a+b,0)/conDato.length):null;
-        // Meta = valor más frecuente (moda) entre los días reportados
-        const metaVal=conDato.length?conDato.reduce((a,b,_,arr)=>
-          arr.filter(v=>v===a).length>=arr.filter(v=>v===b).length?a:b, conDato[0]):null;
-        // Etiqueta con meta entre paréntesis
+        // Meta ET desde _meta (etRodales ingresado por calibrador)
+        const metasET=dias.map(f=>{const m=r._meta&&r._meta[f];return m&&m[key]!=null?m[key]:null;}).filter(v=>v!=null);
+        const metaVal=metasET.length?metasET.reduce((a,b,_,arr)=>
+          arr.filter(v=>v===a).length>=arr.filter(v=>v===b).length?a:b, metasET[0]):null;
         const metaStr=metaVal!=null?` <span class="meta-lbl">(ET: ${metaVal}%)</span>`:'';
         const celdas=valsPorDia.map(v=>`<td>${v!=null?v+'%':'—'}</td>`).join('');
-        // Resumen: color por criterio ±3% respecto a meta
+        // Resumen: color por criterio ±3% respecto a meta ET
         let resumenCls='',resumenTxt='—';
         if(promedio!=null){
           resumenTxt=promedio+'%';
