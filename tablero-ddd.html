@@ -515,7 +515,9 @@ const COL_FUNDOS   = "config_fundos";
 let lineas        = [];
 let equipos       = [];
 let fundos        = [];
-let equiposMadereo= []; // equipos de tipo TORRE o SKIDDER (madereo)
+// Lista fija de equipos de madereo — igual que produccion-diaria.html
+const equiposMadereo = ['ALPINE-1','ALPINE-2','ALPINE-3','SK625N1','SK625N2','SK625N3','SK635E']
+  .map(n=>({nombre:n}));
 // ── Utils ──
 function fmt(n,dec=0){if(n==null||isNaN(n))return '—';return Number(n).toLocaleString('es-CL',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
 function pct(n){if(n==null||isNaN(n))return '—';return fmt(n*100,1)+'%';}
@@ -563,21 +565,7 @@ async function init(){
   try{
     const snap=await getDocs(query(collection(db,COL_EQUIPOS),orderBy('nombre')));
     equipos=snap.docs.map(d=>({id:d.id,...d.data()}));
-    // Equipos de madereo = TORRE o SKIDDER
-    equiposMadereo=equipos.filter(e=>e.tipo==='TORRE'||e.tipo==='SKIDDER'||e.tipo==='MADEREO');
   }catch(e){}
-
-  // Si config_equipos no tiene tipos madereo, cargar desde reportes_produccion
-  if(!equiposMadereo.length){
-    try{
-      const snapR=await getDocs(query(collection(db,COL_PROD)));
-      const eqSet=new Set();
-      snapR.docs.forEach(d=>{
-        (d.data().cartolas||[]).forEach(c=>{if(c.equipo)eqSet.add(c.equipo);});
-      });
-      equiposMadereo=[...eqSet].sort().map(n=>({nombre:n}));
-    }catch(e){}
-  }
 
   // Fundos
   try{
@@ -643,7 +631,7 @@ window.onLineaChange=function(){
       lbl.appendChild(document.createTextNode(' '+e.nombre));
       menuM.appendChild(lbl);
     });
-    $id('madereo-wrap').style.display='';
+    $id('madereo-wrap').style.display='block';
   }
 };
 
@@ -727,18 +715,19 @@ window.cargarDatos=async function(){
     const dias=rangoFechas(desde,hasta);
 
     // ── 1. Producción diaria ──
+    const madSel=madereoSeleccionados();
+    // Si hay equipos madereo seleccionados, buscar en todas las líneas del fundo
+    // porque equipos prestados pueden reportar bajo otra línea
     const snapProd=await getDocs(query(
       collection(db,COL_PROD),
       where('fecha','>=',desde),
       where('fecha','<=',hasta),
-      where('linea','==',linea)
+      ...(madSel.length ? [] : [where('linea','==',linea)])
     ));
-    // Filtrar por fundo(s) seleccionados en cliente
     const docsProd=snapProd.docs.map(d=>d.data())
       .filter(d=>fundosSel.includes(d.fundo));
 
     // Volumen real por día — si hay equipos madereo seleccionados, sumar solo sus cartolas
-    const madSel=madereoSeleccionados();
     const volRealPorDia={};
     docsProd.forEach(d=>{
       let vol=0;
