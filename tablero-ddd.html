@@ -708,7 +708,8 @@ function madereoSeleccionados(){
     .map(c=>c.value);
 }
 
-
+// ── CARGA PRINCIPAL ──
+window.cargarDatos=async function(){
   const linea=$id('sel-linea').value;
   const procesador=$id('sel-procesador').value;
   const desde=$id('fecha-desde').value;
