@@ -323,6 +323,8 @@
     <input type="text" id="fundo-nombre" placeholder="Ej: LOS ALPES HIJ1">
     <label>Código <span style="color:var(--rojo)">*</span></label>
     <input type="text" id="fundo-codigo" placeholder="Ej: 729" inputmode="numeric">
+    <label>Código de cancha</label>
+    <input type="text" id="fundo-codigo-cancha" placeholder="Ej: 45" inputmode="numeric">
     <div class="modal-acciones">
       <button class="btn-cancelar" onclick="cerrarModal('modal-fundo')">Cancelar</button>
       <button class="btn-primario" onclick="guardarFundo()">Guardar</button>
@@ -565,7 +567,7 @@ function renderFundos(){
     <div class="item-card">
       <div class="item-info">
         <div class="item-titulo">${f.nombre}</div>
-        <div class="item-sub">Código ${f.codigo}</div>
+        <div class="item-sub">Código ${f.codigo}${f.codigoCancha ? ' · Cancha '+f.codigoCancha : ''}</div>
       </div>
       <div class="item-acciones">
         <button class="icon-editar" onclick="editarFundo('${f.id}')">✏️</button>
@@ -580,6 +582,7 @@ window.abrirModalFundo = function(){
   document.getElementById('fundo-id').value = '';
   document.getElementById('fundo-nombre').value = '';
   document.getElementById('fundo-codigo').value = '';
+  document.getElementById('fundo-codigo-cancha').value = '';
   document.getElementById('modal-fundo').classList.add('activo');
 };
 
@@ -590,6 +593,7 @@ window.editarFundo = function(id){
   document.getElementById('fundo-id').value = id;
   document.getElementById('fundo-nombre').value = f.nombre;
   document.getElementById('fundo-codigo').value = f.codigo;
+  document.getElementById('fundo-codigo-cancha').value = f.codigoCancha||'';
   document.getElementById('modal-fundo').classList.add('activo');
 };
 
@@ -597,13 +601,14 @@ window.guardarFundo = async function(){
   const id = document.getElementById('fundo-id').value;
   const nombre = document.getElementById('fundo-nombre').value.trim().toUpperCase();
   const codigo = document.getElementById('fundo-codigo').value.trim();
+  const codigoCancha = document.getElementById('fundo-codigo-cancha').value.trim();
   if(!nombre || !codigo){ toast('Completa nombre y código'); return; }
   try{
     if(id){
-      await updateDoc(doc(db, COL_FUNDOS, id), { nombre, codigo });
+      await updateDoc(doc(db, COL_FUNDOS, id), { nombre, codigo, codigoCancha });
       toast('Fundo actualizado');
     } else {
-      await addDoc(collection(db, COL_FUNDOS), { nombre, codigo });
+      await addDoc(collection(db, COL_FUNDOS), { nombre, codigo, codigoCancha });
       toast('Fundo agregado');
     }
     cerrarModal('modal-fundo');
