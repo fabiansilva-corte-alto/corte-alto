@@ -192,7 +192,7 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
         <div class="header-title">📊 Dashboard de gestión</div>
       </div>
     </div>
-    <img src="logo.png" alt="Corte Alto" style="height:46px;width:auto;object-fit:contain">
+    <img src="logo.png" alt="Corte Alto" style="height:62px;width:auto;object-fit:contain">
   </div>
 
   <!-- ═══ BLOQUE 1: FILTRO GENERAL ═══ -->
@@ -292,7 +292,7 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 
   <!-- ═══ BLOQUE 7: VARAS EN PISO ═══ -->
   <div class="section">
-    <div class="section-title"><i class="ti ti-stack-2"></i> Varas en piso por línea</div>
+    <div class="section-title"><i class="ti ti-stack-2"></i> Varas en piso por fundo</div>
     <div id="varas-wrap">
       <div class="loading-block"><div class="spinner"></div> Cargando...</div>
     </div>
@@ -408,7 +408,7 @@ window.consultar = async function() {
     renderProduccion();
     renderOEE();
     renderUtilizacion(jefe);
-    renderVarasEnPiso(jefe);
+    await renderVarasEnPiso(jefe);
     renderCambioLinea(jefe);
     renderRendimiento();
 
@@ -509,18 +509,15 @@ function renderProduccion() {
       <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(isNaN(cumpl)?0:cumpl,100)}%;background:${barColor}"></div></div>
     </div>`;
 
-  // ── Volumen por equipo (madereo) y por procesador ──
+  // ── Volumen por equipo (solo madereo) y por procesador (para bloque 4) ──
   const volEqM = {}, volEqP = {};
   prod.forEach(d => (d.cartolas||[]).forEach(c => {
     let v = 0; (c.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
     if(c.equipo)     volEqM[c.equipo]     = (volEqM[c.equipo]||0) + v;
     if(c.procesador) volEqP[c.procesador] = (volEqP[c.procesador]||0) + v;
   }));
-  // Mostrar ambos agrupados: madereo + procesadores
-  const eqItems = [
-    ...Object.entries(volEqM).map(([k,v])=>([k,v,'madereo'])),
-    ...Object.entries(volEqP).map(([k,v])=>([k,v,'proc']))
-  ].sort((a,b)=>b[1]-a[1]);
+  // Mostrar solo madereo en tarjeta (procesadores se usan solo en bloque 4)
+  const eqItems = Object.entries(volEqM).map(([k,v])=>([k,v,'madereo'])).sort((a,b)=>b[1]-a[1]);
   const eqHTML = eqItems.length
     ? eqItems.map(([eq,v,tipo])=>`
         <div class="vol-eq-item">
@@ -1055,7 +1052,23 @@ function renderUtilizacion(jefe) {
 // ══════════════════════════════════════════════════════════════════════════
 // BLOQUE 7: VARAS EN PISO
 // ══════════════════════════════════════════════════════════════════════════
-function renderVarasEnPiso(jefe) {
+async function renderVarasEnPiso(jefe) {
+  // Cargar stock inicial desde Firestore config_varas_piso
+  const STOCK_INICIAL = {};
+  try {
+    const snap = await getDocs(collection(db, 'config_varas_piso'));
+    snap.forEach(d => {
+      const data = d.data();
+      if(data.fundo) {
+        // Usar ajusteInicial si existe, sino stockInicial como fallback
+        const val = data.ajusteInicial != null
+          ? parseInt(data.ajusteInicial)||0
+          : parseInt(data.stockInicial)||0;
+        STOCK_INICIAL[data.fundo] = val;
+      }
+    });
+  } catch(e) { /* sin stock, usa 0 */ }
+
   const fundos = {};
   jefe.forEach(d => {
     const fundo = d.fundo || 'Sin fundo';
@@ -1077,12 +1090,12 @@ function renderVarasEnPiso(jefe) {
     return;
   }
 
-  const datos = entradas.map(([fundo,v]) => ({
-    fundo,
-    madereados: v.madereados,
-    procesados:  v.procesados,
-    varas:       Math.max(v.madereados - v.procesados, 0)
-  })).sort((a,b) => b.varas - a.varas);
+  const datos = entradas.map(([fundo,v]) => {
+    const stock = STOCK_INICIAL[fundo] || 0;
+    // Varas en piso = stock inicial + madereados del período - trozados del período
+    const varas = Math.max(stock + v.madereados - v.procesados, 0);
+    return { fundo, stock, madereados: v.madereados, procesados: v.procesados, varas };
+  }).sort((a,b) => b.varas - a.varas);
 
   const maxVaras = datos[0].varas || 1;
 
@@ -1097,7 +1110,11 @@ function renderVarasEnPiso(jefe) {
             <span>${d.fundo}</span>
             ${i===0&&d.varas>0?'<span class="varas-badge-urgente">⚠ MÁS URGENTE</span>':''}
           </div>
-          <div class="varas-nums">
+          <div class="varas-nums" style="grid-template-columns:repeat(4,1fr)">
+            <div class="varas-num">
+              <div class="varas-num-label">Ajuste inicial</div>
+              <div class="varas-num-val" style="color:var(--text3);font-size:16px">${fmt0(d.stock)}</div>
+            </div>
             <div class="varas-num">
               <div class="varas-num-label">Madereados</div>
               <div class="varas-num-val" style="color:var(--blue)">${fmt0(d.madereados)}</div>
@@ -1117,7 +1134,7 @@ function renderVarasEnPiso(jefe) {
         </div>`).join('')}
     </div>
     <div style="font-size:10px;color:var(--text3);margin-top:8px">
-      * El fundo con más varas en piso aparece destacado en rojo como más urgente
+      * Ajuste inicial = varas acumuladas antes del período consultado · En piso = Ajuste + Madereados − Trozados · Fundo más urgente en rojo
     </div>`;
 }
 
