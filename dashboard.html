@@ -1162,12 +1162,11 @@ async function renderVarasEnPiso(jefe) {
     </div>
     <div class="varas-grid">
       ${datos.map((d,i) => `
-        <div class="varas-card ${i===0&&d.varasArb>0?'rojo':'normal'}">
+        <div class="varas-card normal">
           <div class="varas-linea">
             <span>${d.fundo}</span>
             <span style="display:flex;align-items:center;gap:6px">
               ${d.inconsistente?`<span style="background:#FEF3E2;color:#854F0B;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">⚠ INCONSISTENCIA</span>`:''}
-              ${i===0&&d.varasArb>0?'<span class="varas-badge-urgente">⚠ MÁS URGENTE</span>':''}
             </span>
           </div>
 
@@ -1188,7 +1187,7 @@ async function renderVarasEnPiso(jefe) {
             </div>
             <div class="varas-num">
               <div class="varas-num-label">En piso</div>
-              <div class="varas-num-val" style="color:${i===0&&d.varasArb>0?'var(--red)':'var(--amber)'};font-size:18px">${fmt0(d.varasArb)}</div>
+              <div class="varas-num-val" style="color:var(--amber);font-size:18px">${fmt0(d.varasArb)}</div>
             </div>
           </div>
 
@@ -1209,7 +1208,7 @@ async function renderVarasEnPiso(jefe) {
             </div>
             <div class="varas-num">
               <div class="varas-num-label">En piso</div>
-              <div class="varas-num-val" style="color:${i===0&&d.varasArb>0?'var(--red)':'var(--amber)'};font-size:18px">${fmt2(d.varasM3)}</div>
+              <div class="varas-num-val" style="color:var(--amber);font-size:18px">${fmt2(d.varasM3)}</div>
             </div>
           </div>
 
@@ -1221,7 +1220,7 @@ async function renderVarasEnPiso(jefe) {
           </div>`:''}
 
           <div class="varas-bar" style="margin-top:8px">
-            <div class="varas-bar-fill" style="width:${maxVaras>0?(d.varasArb/maxVaras*100).toFixed(1):0}%;background:${i===0&&d.varasArb>0?'var(--red)':'var(--amber)'}"></div>
+            <div class="varas-bar-fill" style="width:${maxVaras>0?(d.varasArb/maxVaras*100).toFixed(1):0}%;background:var(--amber)"></div>
           </div>
         </div>`).join('')}
     </div>
@@ -1335,14 +1334,20 @@ function poblarSelectorEquipo(jefe, tipos, selId) {
   if(actual && [...equipos].includes(actual)) sel.value = actual;
 }
 
-function renderCausalesTipo(jefe, tipos, wrapId, equipoFiltro='') {
+window.renderCausalesTipo = function(jefe, tipos, wrapId, equipoFiltro='') {
   const causalesMap = {};
   let hayDatos = false;
 
   jefe.forEach(d => (d.equipos||[]).forEach(eq => {
     const tipo = (eq.tipo||'').toUpperCase();
-    if(!tipos.includes(tipo)) return;
-    if(equipoFiltro && (eq.equipo||'') !== equipoFiltro) return;
+    const nombre = (eq.equipo||'').trim();
+    // Si hay filtro de equipo, filtrar solo por nombre — el tipo ya fue validado al poblar el selector
+    if(equipoFiltro) {
+      if(nombre !== equipoFiltro) return;
+    } else {
+      // Sin filtro: filtrar por tipo
+      if(!tipos.some(t => tipo === t.toUpperCase())) return;
+    }
     (eq.detenciones||[]).forEach(det => {
       const cod  = String(det.codigo||'—').trim();
       const mot  = String(det.motivo||det.codigo||'—').trim();
