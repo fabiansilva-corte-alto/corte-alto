@@ -1180,7 +1180,7 @@ function camposPorTipo(eq) {
 /* ---- detenciones ---- */
 function htmlDetenciones(eq) {
   const cat = catalogoDet(eq.tipo);
-  const conResp = eq.tipo !== "SHOVEL";
+  const conResp = eq.tipo !== "SHOVEL" && !(eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO");
   if (!eq.tipo && eq.detenciones.length === 0) return "";
   return eq.detenciones.map((d, i) => `
     <div class="sub-item">
@@ -1507,7 +1507,7 @@ function validar() {
     /* filas de detenciones: opcionales si vacías (salvo NO operativo), completas si existen */
     eq.detenciones.forEach((d, i) => {
       marca(`in-${eq.id}-det-${i}-codigo`, null, !d.codigo);
-      if (eq.tipo !== "SHOVEL") marca(`in-${eq.id}-det-${i}-resp`, null, !d.resp);
+      if (eq.tipo !== "SHOVEL" && !(eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO")) marca(`in-${eq.id}-det-${i}-resp`, null, !d.resp);
       marca(`in-${eq.id}-det-${i}-horas`, null, !esNum(d.horas));
       if (String(d.codigo) === "99") marca(`in-${eq.id}-det-${i}-motivoOtro`, null, !String(d.motivoOtro || "").trim());
       if (String(d.codigo) === "14") marca(`in-${eq.id}-det-${i}-motivoFalla`, null, !String(d.motivoFalla || "").trim());
@@ -1599,7 +1599,7 @@ function armarDocumento() {
     jefe: document.getElementById("jefe").value.trim(),
     equipos: equipos.map(eq => {
       const cat = catalogoDet(eq.tipo);
-      const conResp = eq.tipo !== "SHOVEL";
+      const conResp = eq.tipo !== "SHOVEL" && !(eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO");
       const base = {
         tipo: eq.tipo,
         equipo: eq.equipo,
@@ -2072,7 +2072,7 @@ window.verReporte = function (id) {
       </div>` : "";
 
     /* Detenciones */
-    const conResp = e.tipo !== "SHOVEL";
+    const conResp = e.tipo !== "SHOVEL" && !(e.tipo === "PROCESADOR" && e.reportaOEE === false);
     const detHtml = (e.detenciones||[]).length ? `
       <div style="margin-top:8px">
         <div style="font-size:11px;font-weight:700;color:var(--rojo);margin-bottom:4px">
@@ -2393,7 +2393,7 @@ window.compartirReporte = async function (id) {
       /* Detenciones */
       if ((eq.detenciones||[]).length) {
         checkPage(12);
-        const conResp = eq.tipo !== "SHOVEL";
+        const conResp = eq.tipo !== "SHOVEL" && !(eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO");
         const tot = fmtComa(eq.totalDetencionesHrs||0);
         setFont(7,"bold"); setTxt(RO);
         doc.text(`Detenciones (${tot} hrs)`, ML+3, y+4);

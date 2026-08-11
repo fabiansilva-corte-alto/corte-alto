@@ -306,6 +306,34 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
     </div>
   </div>
 
+  <!-- ═══ BLOQUE MADEREO: CAUSALES TORRE/SKIDDER ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-clock-pause"></i> Top 5 causales de pérdida — Madereo (Torre / Skidder)</div>
+    <div class="oee-equipo-row">
+      <label><i class="ti ti-engine"></i> Equipo</label>
+      <select id="f-madereo" onchange="renderCausalesTipo(window._jefeData,['TORRE','ALPINE','SKIDDER'],'causal-madereo-wrap',this.value)">
+        <option value="">Todos los equipos</option>
+      </select>
+    </div>
+    <div id="causal-madereo-wrap">
+      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+
+  <!-- ═══ BLOQUE VOLTEO: CAUSALES SHOVEL ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-clock-pause"></i> Top 5 causales de pérdida — Volteo (Shovel)</div>
+    <div class="oee-equipo-row">
+      <label><i class="ti ti-engine"></i> Equipo</label>
+      <select id="f-volteo" onchange="renderCausalesTipo(window._jefeData,['SHOVEL'],'causal-volteo-wrap',this.value)">
+        <option value="">Todos los equipos</option>
+      </select>
+    </div>
+    <div id="causal-volteo-wrap">
+      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+
   <!-- ═══ BLOQUE 4: RENDIMIENTO POR EQUIPO ═══ -->
   <div class="section">
     <div class="section-title"><i class="ti ti-table"></i> Rendimiento por equipo</div>
@@ -410,6 +438,12 @@ window.consultar = async function() {
     renderUtilizacion(jefe);
     await renderVarasEnPiso(jefe);
     renderCambioLinea(jefe);
+    // Guardar jefe globalmente para usarlo en los selectores
+    window._jefeData = jefe;
+    poblarSelectorEquipo(jefe, ['TORRE','ALPINE','SKIDDER'], 'f-madereo');
+    poblarSelectorEquipo(jefe, ['SHOVEL'], 'f-volteo');
+    renderCausalesTipo(jefe, ['TORRE','ALPINE','SKIDDER'], 'causal-madereo-wrap', '');
+    renderCausalesTipo(jefe, ['SHOVEL'], 'causal-volteo-wrap', '');
     renderRendimiento();
 
   } catch(e) {
@@ -1053,33 +1087,44 @@ function renderUtilizacion(jefe) {
 // BLOQUE 7: VARAS EN PISO
 // ══════════════════════════════════════════════════════════════════════════
 async function renderVarasEnPiso(jefe) {
-  // Cargar stock inicial desde Firestore config_varas_piso
-  const STOCK_INICIAL = {};
+  // Cargar ajuste inicial desde Firestore config_varas_piso
+  const AJUSTE_ARB = {};
   try {
     const snap = await getDocs(collection(db, 'config_varas_piso'));
     snap.forEach(d => {
       const data = d.data();
       if(data.fundo) {
-        // Usar ajusteInicial si existe, sino stockInicial como fallback
         const val = data.ajusteInicial != null
           ? parseInt(data.ajusteInicial)||0
           : parseInt(data.stockInicial)||0;
-        STOCK_INICIAL[data.fundo] = val;
+        AJUSTE_ARB[data.fundo] = val;
       }
     });
-  } catch(e) { /* sin stock, usa 0 */ }
+  } catch(e) {}
 
+  // Acumular por fundo: árboles madereados, árboles procesados, m³ trozados
   const fundos = {};
   jefe.forEach(d => {
     const fundo = d.fundo || 'Sin fundo';
-    if(!fundos[fundo]) fundos[fundo] = { madereados:0, procesados:0 };
+    if(!fundos[fundo]) fundos[fundo] = { madereados:0, arbProc:0, m3Proc:0 };
     const F = fundos[fundo];
     (d.equipos||[]).forEach(eq => {
       const tipo = (eq.tipo||'').toUpperCase();
       if(tipo==='TORRE'||tipo==='ALPINE'||tipo==='SKIDDER')
         F.madereados += parseInt(eq.arboles)||0;
       if(tipo==='PROCESADOR')
-        F.procesados += parseInt(eq.arboles)||0;
+        F.arbProc += parseInt(eq.arboles)||0;
+    });
+  });
+
+  // m³ exactos por fundo desde cartolas (campo procesador)
+  // usamos prod (G.prod) que ya está cargado
+  G.prod.forEach(d => {
+    const fundo = d.fundo || 'Sin fundo';
+    if(!fundos[fundo]) fundos[fundo] = { madereados:0, arbProc:0, m3Proc:0 };
+    (d.cartolas||[]).forEach(c => {
+      let v = 0; (c.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
+      fundos[fundo].m3Proc += v;
     });
   });
 
@@ -1091,13 +1136,25 @@ async function renderVarasEnPiso(jefe) {
   }
 
   const datos = entradas.map(([fundo,v]) => {
-    const stock = STOCK_INICIAL[fundo] || 0;
-    // Varas en piso = stock inicial + madereados del período - trozados del período
-    const varas = Math.max(stock + v.madereados - v.procesados, 0);
-    return { fundo, stock, madereados: v.madereados, procesados: v.procesados, varas };
-  }).sort((a,b) => b.varas - a.varas);
+    const ajusteArb = AJUSTE_ARB[fundo] || 0;
+    // VMA del fundo: m³ procesados / árboles procesados (promedio ponderado)
+    const vma = v.arbProc > 0 ? v.m3Proc / v.arbProc : 0;
+    // Árboles en piso
+    const varasArb = Math.max(ajusteArb + v.madereados - v.arbProc, 0);
+    // M³ en piso: ajuste en m³ + madereados en m³ - trozados m³ exactos
+    const ajusteM3 = ajusteArb * vma;
+    const madereM3 = v.madereados * vma;
+    const varasM3 = Math.max(ajusteM3 + madereM3 - v.m3Proc, 0);
+    // Consistencia: varasArb * vma vs varasM3
+    const esperadoM3 = varasArb * vma;
+    const difM3 = varasM3 - esperadoM3;
+    const margen = vma * 50; // 50 árboles × VMA
+    const inconsistente = Math.abs(difM3) > margen;
+    return { fundo, ajusteArb, madereados:v.madereados, arbProc:v.arbProc,
+             m3Proc:v.m3Proc, vma, varasArb, varasM3, esperadoM3, difM3, margen, inconsistente };
+  }).sort((a,b) => b.varasArb - a.varasArb);
 
-  const maxVaras = datos[0].varas || 1;
+  const maxVaras = datos[0].varasArb || 1;
 
   document.getElementById('varas-wrap').innerHTML = `
     <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">
@@ -1105,36 +1162,72 @@ async function renderVarasEnPiso(jefe) {
     </div>
     <div class="varas-grid">
       ${datos.map((d,i) => `
-        <div class="varas-card ${i===0&&d.varas>0?'rojo':'normal'}">
+        <div class="varas-card ${i===0&&d.varasArb>0?'rojo':'normal'}">
           <div class="varas-linea">
             <span>${d.fundo}</span>
-            ${i===0&&d.varas>0?'<span class="varas-badge-urgente">⚠ MÁS URGENTE</span>':''}
+            <span style="display:flex;align-items:center;gap:6px">
+              ${d.inconsistente?`<span style="background:#FEF3E2;color:#854F0B;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">⚠ INCONSISTENCIA</span>`:''}
+              ${i===0&&d.varasArb>0?'<span class="varas-badge-urgente">⚠ MÁS URGENTE</span>':''}
+            </span>
           </div>
-          <div class="varas-nums" style="grid-template-columns:repeat(4,1fr)">
+
+          <!-- FILA ÁRBOLES -->
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">🌳 En árboles</div>
+          <div class="varas-nums" style="grid-template-columns:repeat(4,1fr);margin-bottom:10px">
             <div class="varas-num">
-              <div class="varas-num-label">Ajuste inicial</div>
-              <div class="varas-num-val" style="color:var(--text3);font-size:16px">${fmt0(d.stock)}</div>
+              <div class="varas-num-label">Ajuste</div>
+              <div class="varas-num-val" style="color:var(--text3);font-size:15px">${fmt0(d.ajusteArb)}</div>
             </div>
             <div class="varas-num">
               <div class="varas-num-label">Madereados</div>
-              <div class="varas-num-val" style="color:var(--blue)">${fmt0(d.madereados)}</div>
+              <div class="varas-num-val" style="color:var(--blue);font-size:18px">${fmt0(d.madereados)}</div>
             </div>
             <div class="varas-num">
               <div class="varas-num-label">Trozados</div>
-              <div class="varas-num-val" style="color:var(--green)">${fmt0(d.procesados)}</div>
+              <div class="varas-num-val" style="color:var(--green);font-size:18px">${fmt0(d.arbProc)}</div>
             </div>
             <div class="varas-num">
               <div class="varas-num-label">En piso</div>
-              <div class="varas-num-val" style="color:${i===0&&d.varas>0?'var(--red)':'var(--amber)'}">${fmt0(d.varas)}</div>
+              <div class="varas-num-val" style="color:${i===0&&d.varasArb>0?'var(--red)':'var(--amber)'};font-size:18px">${fmt0(d.varasArb)}</div>
             </div>
           </div>
-          <div class="varas-bar">
-            <div class="varas-bar-fill" style="width:${maxVaras>0?(d.varas/maxVaras*100).toFixed(1):0}%;background:${i===0&&d.varas>0?'var(--red)':'var(--amber)'}"></div>
+
+          <!-- FILA M³ -->
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">📦 En m³ <span style="font-weight:400;text-transform:none;letter-spacing:0">(VMA: ${fmt2(d.vma)} m³/árb)</span></div>
+          <div class="varas-nums" style="grid-template-columns:repeat(4,1fr);margin-bottom:8px">
+            <div class="varas-num">
+              <div class="varas-num-label">Ajuste</div>
+              <div class="varas-num-val" style="color:var(--text3);font-size:15px">${fmt2(d.ajusteArb*d.vma)}</div>
+            </div>
+            <div class="varas-num">
+              <div class="varas-num-label">Madereados</div>
+              <div class="varas-num-val" style="color:var(--blue);font-size:18px">${fmt2(d.madereados*d.vma)}</div>
+            </div>
+            <div class="varas-num">
+              <div class="varas-num-label">Trozados</div>
+              <div class="varas-num-val" style="color:var(--green);font-size:18px">${fmt2(d.m3Proc)}</div>
+            </div>
+            <div class="varas-num">
+              <div class="varas-num-label">En piso</div>
+              <div class="varas-num-val" style="color:${i===0&&d.varasArb>0?'var(--red)':'var(--amber)'};font-size:18px">${fmt2(d.varasM3)}</div>
+            </div>
+          </div>
+
+          <!-- CONSISTENCIA -->
+          ${d.vma>0?`<div style="background:${d.inconsistente?'#FEF3E2':'#f0f0f0'};border-radius:6px;padding:6px 10px;font-size:11px;color:${d.inconsistente?'var(--amber)':'var(--text3)'}">
+            ${d.inconsistente
+              ? `⚠ Inconsistencia: árboles en piso (${fmt0(d.varasArb)}) × VMA = ${fmt2(d.esperadoM3)} m³, pero m³ calculados = ${fmt2(d.varasM3)} m³ (dif: ${fmt2(Math.abs(d.difM3))} m³, margen ±${fmt2(d.margen)} m³)`
+              : `✓ Consistente: diferencia ${fmt2(Math.abs(d.difM3))} m³ dentro del margen ±${fmt2(d.margen)} m³`}
+          </div>`:''}
+
+          <div class="varas-bar" style="margin-top:8px">
+            <div class="varas-bar-fill" style="width:${maxVaras>0?(d.varasArb/maxVaras*100).toFixed(1):0}%;background:${i===0&&d.varasArb>0?'var(--red)':'var(--amber)'}"></div>
           </div>
         </div>`).join('')}
     </div>
-    <div style="font-size:10px;color:var(--text3);margin-top:8px">
-      * Ajuste inicial = varas acumuladas antes del período consultado · En piso = Ajuste + Madereados − Trozados · Fundo más urgente en rojo
+    <div style="font-size:10px;color:var(--text3);margin-top:8px;line-height:1.5">
+      * Árboles: Ajuste + Madereados − Trozados · M³: árboles × VMA del fundo (promedio ponderado de procesadores) excepto Trozados que es volumen exacto de cartolas<br>
+      * Margen de consistencia = VMA × 50 árboles (a mayor VMA, mayor margen permitido)
     </div>`;
 }
 
@@ -1217,6 +1310,97 @@ function renderCambioLinea(jefe) {
     <div class="cl-cond">
       <div class="cl-cond-label">⚡ Preinstalado <span style="font-size:10px;font-weight:400;color:var(--text3)">(de ${totalConSop} cambio${totalConSop!==1?'s':''} con soportes)</span></div>
       ${totalConSop>0?segBar(preInst,['#3B6D11','#A32D2D']):'<div style="font-size:12px;color:var(--text3)">Sin cambios con soportes</div>'}
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUES CAUSALES POR TIPO DE EQUIPO (Madereo / Volteo)
+// ══════════════════════════════════════════════════════════════════════════
+function poblarSelectorEquipo(jefe, tipos, selId) {
+  const equipos = new Set();
+  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
+    const tipo = (eq.tipo||'').toUpperCase();
+    if(tipos.some(t => tipo === t.toUpperCase()) && eq.equipo)
+      equipos.add(eq.equipo);
+  }));
+  const sel = document.getElementById(selId);
+  if(!sel) return;
+  const actual = sel.value;
+  sel.innerHTML = '<option value="">Todos los equipos</option>';
+  [...equipos].sort().forEach(nombre => {
+    const o = document.createElement('option');
+    o.value = nombre; o.textContent = nombre;
+    sel.appendChild(o);
+  });
+  if(actual && [...equipos].includes(actual)) sel.value = actual;
+}
+
+function renderCausalesTipo(jefe, tipos, wrapId, equipoFiltro='') {
+  const causalesMap = {};
+  let hayDatos = false;
+
+  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
+    const tipo = (eq.tipo||'').toUpperCase();
+    if(!tipos.includes(tipo)) return;
+    if(equipoFiltro && (eq.equipo||'') !== equipoFiltro) return;
+    (eq.detenciones||[]).forEach(det => {
+      const cod  = String(det.codigo||'—').trim();
+      const mot  = String(det.motivo||det.codigo||'—').trim();
+      const resp = String(det.resp||'EESS').toUpperCase().trim();
+      const h    = parseFloat(det.horas)||0;
+      if(!causalesMap[cod]) causalesMap[cod] = { nombre:mot, horas_eess:0, horas_formin:0 };
+      if(mot.length > causalesMap[cod].nombre.length) causalesMap[cod].nombre = mot;
+      if(resp==='FORMIN') causalesMap[cod].horas_formin += h;
+      else                causalesMap[cod].horas_eess   += h;
+      hayDatos = true;
+    });
+  }));
+
+  const wrap = document.getElementById(wrapId);
+
+  if(!hayDatos) {
+    wrap.innerHTML = '<div class="empty-state">Sin detenciones registradas para el período</div>';
+    return;
+  }
+
+  const top5 = Object.entries(causalesMap)
+    .map(([cod,v]) => ({ cod, nombre:v.nombre,
+      total: v.horas_eess + v.horas_formin,
+      horas_eess: v.horas_eess, horas_formin: v.horas_formin }))
+    .sort((a,b) => b.total - a.total)
+    .slice(0,5);
+
+  const maxH = top5[0].total || 1;
+
+  const fmtResp = (label, h) => h > 0
+    ? `<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;
+        background:${label==='FORMIN'?'var(--green-bg)':'var(--blue-bg)'};
+        color:${label==='FORMIN'?'var(--green)':'var(--blue)'}">
+        ${label} ${fmt2(h)}h</span>`
+    : '';
+
+  wrap.innerHTML = `
+    <div class="causal-list">
+      ${top5.map((causal,i) => `
+        <div class="causal-row" style="align-items:flex-start;gap:8px;padding:4px 0">
+          <div class="causal-rank" style="padding-top:2px">${i+1}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;
+                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${causal.nombre}">
+              ${causal.nombre}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <div class="causal-bar-wrap" style="flex:1;min-width:80px">
+                <div class="causal-bar-fill" style="width:${(causal.total/maxH*100).toFixed(0)}%"></div>
+              </div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                ${fmtResp('EESS', causal.horas_eess)}
+                ${fmtResp('FORMIN', causal.horas_formin)}
+              </div>
+            </div>
+          </div>
+          <div class="causal-horas" style="padding-top:2px">${fmt2(causal.total)} h</div>
+        </div>`).join('')}
     </div>`;
 }
 
