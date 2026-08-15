@@ -119,6 +119,27 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 .pie-legend .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .pie-legend .leg-name{font-size:10px;color:var(--text2);white-space:nowrap}
 
+/* TABLA PRODUCCIÓN DIARIA */
+.prod-wrap{overflow-x:auto;margin-top:8px}
+.prod-table{width:100%;border-collapse:collapse;font-size:11px;min-width:400px}
+.prod-table .row-tipo th{padding:4px 7px;font-size:10px;font-weight:800;color:#fff;text-align:center;border:1px solid rgba(255,255,255,.2)}
+.tipo-torre{background:#1D5FAD}.tipo-skidder{background:#854F0B}.tipo-shovel{background:#3C3489}
+.tipo-dia{background:#f5f5f5!important;color:var(--text3)!important}
+.tipo-total{background:#1a1a1a}
+.prod-table .row-op th{padding:3px 7px;font-size:10px;font-weight:600;color:var(--text2);background:#f8f8f8;text-align:center;border:1px solid var(--border);white-space:nowrap}
+.prod-table .row-op th:first-child{text-align:left}
+.prod-table td{padding:4px 7px;border:1px solid var(--border);text-align:right;color:var(--text2);font-size:11px}
+.prod-table td:first-child{text-align:center;font-weight:700;color:var(--text3);background:#fafafa;font-size:11px}
+.prod-table td.val{color:var(--text);font-weight:600}
+.prod-table td.vacio{color:#ddd;text-align:center}
+.prod-table td.total-dia{font-weight:800;color:#fff;background:#1a1a1a;text-align:right}
+.prod-table .row-total td{font-weight:800;padding:6px 8px;border-top:2px solid var(--border2)}
+.prod-table .row-total td:first-child{background:#1a1a1a;color:#fff;text-align:left;font-size:11px}
+.prod-table .row-total .tot-torre{background:var(--blue-bg);color:var(--blue)}
+.prod-table .row-total .tot-sk{background:var(--amber-bg);color:var(--amber)}
+.prod-table .row-total .tot-shovel{background:var(--purple-bg);color:var(--purple)}
+.prod-table .row-total .tot-grand{background:#1a1a1a;color:#fff}
+
 /* VARAS EN PISO */
 .varas-grid{display:flex;flex-direction:column;gap:.75rem}
 .varas-card{border-radius:var(--radius-sm);padding:.875rem 1rem;border:2px solid transparent}
@@ -230,9 +251,9 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
       <div class="kpi-card"><div class="loading-block"><div class="spinner"></div></div></div>
     </div>
 
-    <!-- Volumen por equipo -->
-    <div class="vol-eq-card" id="vol-eq-card">
-      <div class="kpi-label"><i class="ti ti-engine"></i> Volumen por equipo</div>
+    <!-- Tabla producción diaria por equipo/operador -->
+    <div id="vol-eq-card">
+      <div class="kpi-label" style="margin-bottom:0"><i class="ti ti-table"></i> Producción diaria por equipo y operador</div>
       <div class="loading-block"><div class="spinner"></div></div>
     </div>
 
@@ -543,27 +564,154 @@ function renderProduccion() {
       <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(isNaN(cumpl)?0:cumpl,100)}%;background:${barColor}"></div></div>
     </div>`;
 
-  // ── Volumen por equipo (solo madereo) y por procesador (para bloque 4) ──
+  // ── Volumen por equipo/operador (tabla diaria) y por procesador (bloque 4) ──
   const volEqM = {}, volEqP = {};
+  // Estructura: prodDiaria[fecha][equipo][opMadereo] = vol
+  const prodDiaria = {};
   prod.forEach(d => (d.cartolas||[]).forEach(c => {
     let v = 0; (c.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
     if(c.equipo)     volEqM[c.equipo]     = (volEqM[c.equipo]||0) + v;
     if(c.procesador) volEqP[c.procesador] = (volEqP[c.procesador]||0) + v;
+    // Solo equipos madereo con opMadereo
+    if(c.equipo && v > 0) {
+      const op = (c.opMadereo||'Sin op.').trim();
+      if(!prodDiaria[d.fecha]) prodDiaria[d.fecha] = {};
+      if(!prodDiaria[d.fecha][c.equipo]) prodDiaria[d.fecha][c.equipo] = {};
+      prodDiaria[d.fecha][c.equipo][op] = (prodDiaria[d.fecha][c.equipo][op]||0) + v;
+    }
   }));
-  // Mostrar solo madereo en tarjeta (procesadores se usan solo en bloque 4)
-  const eqItems = Object.entries(volEqM).map(([k,v])=>([k,v,'madereo'])).sort((a,b)=>b[1]-a[1]);
-  const eqHTML = eqItems.length
-    ? eqItems.map(([eq,v,tipo])=>`
-        <div class="vol-eq-item">
-          <div class="vol-eq-name">${eq}</div>
-          <div style="font-size:9px;color:${tipo==='proc'?'var(--green)':'var(--blue)'};font-weight:700;margin-bottom:2px">${tipo==='proc'?'PROCESADOR':'MADEREO'}</div>
-          <div class="vol-eq-val">${fmt2(v)}</div>
-          <div class="vol-eq-unit">m³</div>
-        </div>`).join('')
-    : '<div style="font-size:12px;color:var(--text3)">Sin datos de cartolas</div>';
+
+  // Construir tabla: equipos y operadores con producción
+  // Columnas: equipo → operadores únicos con producción
+  const colsEq = {}; // equipo -> Set de operadores
+  Object.values(prodDiaria).forEach(porEq => {
+    Object.entries(porEq).forEach(([eq, porOp]) => {
+      if(!colsEq[eq]) colsEq[eq] = new Set();
+      Object.keys(porOp).forEach(op => colsEq[eq].add(op));
+    });
+  });
+
+  // Ordenar equipos: Torre primero, luego Skidder, luego Shovel
+  const TIPO_EQ = eq => {
+    const n = eq.toUpperCase();
+    if(n.includes('ALPINE')||n.includes('TORRE')) return 0;
+    if(n.includes('SK')||n.includes('SKIDDER')) return 1;
+    if(n.includes('SHOVEL')) return 2;
+    return 3;
+  };
+  const equiposOrden = Object.keys(colsEq).sort((a,b)=>TIPO_EQ(a)-TIPO_EQ(b)||a.localeCompare(b));
+
+  if(!equiposOrden.length) {
+    document.getElementById('vol-eq-card').innerHTML =
+      `<div class="kpi-label"><i class="ti ti-table"></i> Producción diaria por equipo y operador</div>
+       <div class="empty-state" style="padding:1rem;font-size:12px">Sin datos de producción</div>`;
+    return;
+  }
+
+  // Tipo por equipo para colores
+  const tipoClase = eq => {
+    const n = eq.toUpperCase();
+    if(n.includes('ALPINE')||n.includes('TORRE')) return 'tipo-torre';
+    if(n.includes('SK')) return 'tipo-skidder';
+    if(n.includes('SHOVEL')) return 'tipo-shovel';
+    return 'tipo-total';
+  };
+
+  // Abreviar nombre: "Teobaldo Villalobos" → "T. Villalobos"
+  const abrevNombre = nombre => {
+    const p = nombre.trim().split(/\s+/);
+    if(p.length >= 2) return p[0][0].toUpperCase() + '. ' + p.slice(1).join(' ');
+    return nombre;
+  };
+
+  // Columnas totales
+  const totalCols = equiposOrden.reduce((s,eq)=>s+colsEq[eq].size, 0);
+
+  // Precalcular totales por equipo (para mostrar en cabecera)
+  const totalesEq = {};
+  equiposOrden.forEach(eq => { totalesEq[eq] = 0; });
+
+  // Fila tipo equipo (con total del equipo)
+  // Se completa después de calcular totales — por ahora placeholder
+  // Fila operadores
+  let headOp = '<tr class="row-op"><th></th>';
+  equiposOrden.forEach(eq => {
+    const ops = [...colsEq[eq]].sort();
+    ops.forEach(op => { headOp += `<th>${abrevNombre(op)}</th>`; });
+  });
+  headOp += '<th></th></tr>';
+
+  // Filas días — solo días con producción dentro del rango
+  // Generar todos los días del rango
+  const diasRango = [];
+  let cur = new Date(desde+'T12:00:00');
+  const fin2 = new Date(hasta+'T12:00:00');
+  while(cur<=fin2){ diasRango.push(toISO(cur)); cur.setDate(cur.getDate()+1); }
+
+  const totalesOp = {}; // eq -> op -> total
+  const totalDias = {}; // fecha -> total
+  equiposOrden.forEach(eq=>{totalesOp[eq]={};[...colsEq[eq]].forEach(op=>{totalesOp[eq][op]=0;});});
+
+  let rows = '';
+  diasRango.forEach(fecha => {
+    const diaNum = parseInt(fecha.split('-')[2]);
+    const hayProd = prodDiaria[fecha];
+    let totalDia = 0;
+    let rowHTML = `<td>${diaNum}</td>`;
+    equiposOrden.forEach(eq => {
+      const ops = [...colsEq[eq]].sort();
+      ops.forEach(op => {
+        const v = hayProd?.[eq]?.[op] || 0;
+        if(v>0){
+          rowHTML += `<td class="val">${fmt2(v)}</td>`;
+          totalDia += v;
+          totalesOp[eq][op] = (totalesOp[eq][op]||0) + v;
+          totalesEq[eq] = (totalesEq[eq]||0) + v;
+        } else {
+          rowHTML += `<td class="vacio">—</td>`;
+        }
+      });
+    });
+    if(totalDia>0){
+      rowHTML += `<td class="total-dia">${fmt2(totalDia)}</td>`;
+      rows += `<tr>${rowHTML}</tr>`;
+    }
+  });
+
+  // Fila tipo equipo con total (ahora que tenemos los totales)
+  let headTipo = '<tr class="row-tipo"><th class="tipo-dia">DÍA</th>';
+  equiposOrden.forEach(eq => {
+    const ops = [...colsEq[eq]].sort();
+    headTipo += `<th class="${tipoClase(eq)}" colspan="${ops.length}">${eq} · ${fmt2(totalesEq[eq]||0)} m³</th>`;
+  });
+  headTipo += '<th class="tipo-total">TOTAL</th></tr>';
+
+  // Fila total operadores
+  let totalRow = '<tr class="row-total"><td>TOTAL</td>';
+  let grandTotal = 0;
+  equiposOrden.forEach(eq => {
+    const cls = tipoClase(eq).replace('tipo-','tot-');
+    const ops = [...colsEq[eq]].sort();
+    ops.forEach(op => {
+      const v = totalesOp[eq][op]||0;
+      grandTotal += v;
+      totalRow += `<td class="${cls}">${fmt2(v)}</td>`;
+    });
+  });
+  totalRow += `<td class="tot-grand">${fmt2(grandTotal)}</td></tr>`;
+
   document.getElementById('vol-eq-card').innerHTML =
-    `<div class="kpi-label"><i class="ti ti-engine"></i> Volumen por equipo</div>
-     <div class="vol-eq-grid">${eqHTML}</div>`;
+    `<div class="kpi-label" style="margin-bottom:4px"><i class="ti ti-table"></i> Producción diaria por equipo y operador</div>
+     <div class="prod-wrap">
+       <table class="prod-table">
+         <thead>${headTipo}${headOp}</thead>
+         <tbody>${rows||'<tr><td colspan="'+(totalCols+2)+'" style="text-align:center;color:var(--text3);padding:1rem">Sin producción registrada</td></tr>'}</tbody>
+         <tfoot>${totalRow}</tfoot>
+       </table>
+     </div>
+     <div style="font-size:10px;color:var(--text3);margin-top:6px">
+       * Volumen en m³ · Operador = quien madereó esa madera (opMadereo) · Solo equipos con producción en el período
+     </div>`;
 
   // ── Volumen por rodal (desde cartolas[], misma fuente que control de producción) ──
   const rodalMap = {}; // "fundo__rodal" -> {fundo, numero, vol}
