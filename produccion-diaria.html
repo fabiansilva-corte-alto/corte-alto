@@ -56,6 +56,8 @@ input.bad{border-color:var(--red)!important;background:var(--red-bg)!important;c
 .et-total{font-size:12px;font-weight:700;padding:8px 4px;border:1px solid var(--border);border-radius:var(--radius-sm);text-align:center;background:#fff;min-height:36px;display:flex;align-items:center;justify-content:center}
 .et-total.ok{border-color:var(--green);background:var(--green-bg);color:var(--green)}
 .et-total.bad{border-color:var(--red);background:var(--red-bg);color:var(--red)}
+.sc-toggle-btn{background:transparent;border:none;border-radius:6px;font-size:12px;font-weight:500;padding:5px 10px;cursor:pointer;color:var(--text3);transition:background .12s,color .12s}
+.sc-toggle-active{background:#fff;color:var(--text);border:0.5px solid var(--border)!important;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .vol-prod.ms-mode{border-color:#B87700!important;background:#FFF6E5!important;font-weight:600}
 .vol-prod.ms-mode::placeholder{color:#B87700;font-weight:700}
 .rodal-block{border:1px solid var(--border2);border-radius:var(--radius-sm);padding:.75rem;margin-bottom:.6rem}
@@ -234,35 +236,47 @@ input.bad{border-color:var(--red)!important;background:var(--red-bg)!important;c
     </div>
     <div class="section">
       <div class="section-title"><i class="ti ti-truck"></i> Cargas por producto</div>
+      <!-- Toggle modo -->
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
+        <span style="font-size:12px;color:var(--text3);white-space:nowrap">Modo:</span>
+        <div id="sc-toggle" style="display:flex;background:var(--bg2,#f5f5f5);border:0.5px solid var(--border);border-radius:8px;padding:3px;gap:3px">
+          <button id="sc-btn-cargas" class="sc-toggle-btn sc-toggle-active"><i class="ti ti-stack-2" style="margin-right:4px;font-size:13px"></i>Stock de Cargas</button>
+          <button id="sc-btn-volumen" class="sc-toggle-btn"><i class="ti ti-box" style="margin-right:4px;font-size:13px"></i>Volumen m³</button>
+        </div>
+      </div>
       <!-- Encabezado columnas -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 55px 65px 60px 28px;gap:4px;align-items:center;margin-bottom:6px;padding:0 4px">
+      <div id="sc-col-headers" style="display:grid;grid-template-columns:1fr 1fr 55px 65px 60px 60px 28px;gap:4px;align-items:center;margin-bottom:6px;padding:0 4px">
         <span style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase">Tipo</span>
         <span style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase">Producto</span>
         <span style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">Largo</span>
         <span style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">Diám.</span>
-        <span style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">N° Cargas</span>
+        <span id="sc-hdr-cantidad" style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">N° Cargas</span>
+        <span id="sc-hdr-m3" style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">m³ aprox</span>
         <span></span>
       </div>
       <!-- FRESCA -->
-      <div style="border:1.5px solid #c8e6c9;border-radius:10px;padding:8px;margin-bottom:8px;background:#f9fff9">
+      <div style="border:1.5px solid #c8e6c9;border-radius:10px;padding:8px;margin-bottom:8px;background:#f9fff9" id="sc-sec-fresca">
         <div style="font-size:12px;font-weight:700;color:#27500A;margin-bottom:6px">🌿 Madera Fresca</div>
         <div id="sc-filas-fresca"></div>
+        <div id="sc-sub-fresca" style="text-align:right;font-size:12px;color:#27500A;font-weight:600;margin-top:4px;margin-bottom:2px;display:none">Subtotal: <span id="sc-sub-val-fresca">0</span></div>
         <button class="add-btn sc-btn-grupo" data-cal="FRESCA" style="margin-top:4px;font-size:12px;padding:5px 10px"><i class="ti ti-plus"></i> Agregar fila fresca</button>
       </div>
       <!-- ESPORADA -->
-      <div style="border:1.5px solid #ffe082;border-radius:10px;padding:8px;margin-bottom:8px;background:#fffdf5">
+      <div style="border:1.5px solid #ffe082;border-radius:10px;padding:8px;margin-bottom:8px;background:#fffdf5" id="sc-sec-esporada">
         <div style="font-size:12px;font-weight:700;color:#633806;margin-bottom:6px">🍂 Madera Esporada</div>
         <div id="sc-filas-esporada"></div>
+        <div id="sc-sub-esporada" style="text-align:right;font-size:12px;color:#633806;font-weight:600;margin-top:4px;margin-bottom:2px;display:none">Subtotal: <span id="sc-sub-val-esporada">0</span></div>
         <button class="add-btn sc-btn-grupo" data-cal="ESPORADA" style="margin-top:4px;font-size:12px;padding:5px 10px"><i class="ti ti-plus"></i> Agregar fila esporada</button>
       </div>
       <!-- MANCHADA -->
-      <div style="border:1.5px solid #ffccbc;border-radius:10px;padding:8px;margin-bottom:8px;background:#fff8f6">
+      <div style="border:1.5px solid #ffccbc;border-radius:10px;padding:8px;margin-bottom:8px;background:#fff8f6" id="sc-sec-manchada">
         <div style="font-size:12px;font-weight:700;color:#4A1B0C;margin-bottom:6px">⬛ Madera Manchada</div>
         <div id="sc-filas-manchada"></div>
+        <div id="sc-sub-manchada" style="text-align:right;font-size:12px;color:#4A1B0C;font-weight:600;margin-top:4px;margin-bottom:2px;display:none">Subtotal: <span id="sc-sub-val-manchada">0</span></div>
         <button class="add-btn sc-btn-grupo" data-cal="MANCHADA" style="margin-top:4px;font-size:12px;padding:5px 10px"><i class="ti ti-plus"></i> Agregar fila manchada</button>
       </div>
       <div style="text-align:right;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
-        <span style="font-size:13px;color:var(--text3)">Total cargas: </span>
+        <span id="sc-total-lbl" style="font-size:13px;color:var(--text3)">Total cargas: </span>
         <span id="sc-total" style="font-size:18px;font-weight:700;color:var(--green)">0</span>
       </div>
     </div>
@@ -1672,6 +1686,46 @@ loadHist();
 const COL_STOCK='stock_cargas';
 let scFilaId=0;
 // Registrar punto de entrada diferido para showTab
+// ===== TOGGLE MODO =====
+const SC_MODO_KEY='ca_sc_modo_v1';
+window.SC_MODO=localStorage.getItem(SC_MODO_KEY)||'cargas';
+
+function scAplicarModo(modo,limpiar=false){
+  window.SC_MODO=modo;
+  localStorage.setItem(SC_MODO_KEY,modo);
+  const esVol=modo==='volumen';
+  // toggle UI
+  document.getElementById('sc-btn-cargas')?.classList.toggle('sc-toggle-active',!esVol);
+  document.getElementById('sc-btn-volumen')?.classList.toggle('sc-toggle-active',esVol);
+  // encabezados
+  const hdrQ=document.getElementById('sc-hdr-cantidad');
+  const hdrM=document.getElementById('sc-hdr-m3');
+  if(hdrQ)hdrQ.textContent=esVol?'Vol (m³)':'N° Cargas';
+  if(hdrM)hdrM.style.display=esVol?'none':'';
+  // filas existentes
+  document.querySelectorAll('[data-sc-row]').forEach(row=>{
+    row.dataset.scModo=modo;
+    const inp=row.querySelector('.sc-cargas-inp');
+    const m3=row.querySelector('.sc-m3-aprox');
+    if(inp)inp.placeholder=esVol?'0,000':'0';
+    if(m3)m3.style.display=esVol?'none':'';
+    if(limpiar&&inp)inp.value='';
+  });
+  scRecalcTotal();
+}
+
+function scToggleModo(modo){
+  if(modo===window.SC_MODO)return;
+  // verificar si hay datos
+  const hayDatos=[...document.querySelectorAll('.sc-cargas-inp')].some(i=>i.value.trim());
+  if(hayDatos){
+    if(!confirm('¿Cambiar de modo? Los valores de cantidad ingresados se borrarán.'))return;
+    scAplicarModo(modo,true);
+  }else{
+    scAplicarModo(modo,false);
+  }
+}
+
 window._scInit=async function(){await initStock();};
 const SC_DRAFT='ca_sc_draft_v1';
 function scGuardarDraft(){
@@ -1700,12 +1754,17 @@ function scCollect(draft=false){
     });
   });
   const total=Math.round(filas2.reduce((a,f)=>a+f.cargas,0)*10)/10;
-  return{fundo,fecha,filas:filas2,total,obs,creadoEn:new Date().toISOString()};
+  return{fundo,fecha,filas:filas2,total,modo:window.SC_MODO||'cargas',obs,creadoEn:new Date().toISOString()};
 }
 
 function scRegistrarListeners(){
   const scBtnGuardar=document.getElementById('sc-btn-guardar');
   if(scBtnGuardar&&!scBtnGuardar._scBound){scBtnGuardar._scBound=true;scBtnGuardar.addEventListener('click',()=>scGuardar());}
+  // Toggle modo
+  const btnC=document.getElementById('sc-btn-cargas');
+  const btnV=document.getElementById('sc-btn-volumen');
+  if(btnC&&!btnC._scBound){btnC._scBound=true;btnC.addEventListener('click',()=>scToggleModo('cargas'));}
+  if(btnV&&!btnV._scBound){btnV._scBound=true;btnV.addEventListener('click',()=>scToggleModo('volumen'));}
   // Botones de grupo por calidad
   document.querySelectorAll('.sc-btn-grupo').forEach(btn=>{
     if(!btn._scBound){btn._scBound=true;btn.addEventListener('click',()=>{scAgregarFilaGrupo(btn.dataset.cal);scGuardarDraft&&scGuardarDraft();});}
@@ -1785,6 +1844,9 @@ async function scPrecargarDesdeUltimoReporte(){
     let ultimoStock=null;
     snapStock.forEach(d=>{if(!ultimoStock&&d.data().fundo===fundo)ultimoStock=d.data();});
     if(ultimoStock&&ultimoStock.filas&&ultimoStock.filas.length){
+      // aplicar modo del último registro guardado
+      const modoGuardado=ultimoStock.modo||'cargas';
+      scAplicarModo(modoGuardado,false);
       ultimoStock.filas.forEach(f=>{
         scAgregarFila(f.tipo||'',f.producto||'',f.largo||'',f.diam||'',f.calidad||'FRESCA');
         // restaurar cargas del último stock
@@ -1826,15 +1888,19 @@ window.scAgregarFila=function(tipo='',prod='',largo='',diam='',calidad='FRESCA')
   row.id='sc-row-'+id;
   row.dataset.scRow='1';
   row.dataset.scCal=calidad;
+  const scModo=window.SC_MODO||'cargas';
+  row.dataset.scModo=scModo;
   row.style.cssText='background:var(--surface-1);border:0.5px solid var(--border);border-radius:8px;padding:6px 8px;margin-bottom:6px';
   const prodSel=`<select class="sc-prod-sel" style="font-size:12px;padding:5px 3px;width:100%"><option value="${prod}">${prod||'— Prod —'}</option></select>`;
+  const phCargas=scModo==='volumen'?'0,000':'0';
   row.innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr 55px 65px 60px 28px;gap:4px;align-items:center;margin-bottom:5px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 55px 65px 60px 52px 28px;gap:4px;align-items:center;margin-bottom:5px">
       <select class="sc-tipo-sel" style="font-size:12px;padding:5px 3px"><option value="">— Tipo —</option>${tiposOpts}</select>
       ${prodSel}
       <input type="text" inputmode="decimal" value="${largo}" placeholder="0,00" class="sc-largo-inp" style="text-align:center;font-size:12px;width:100%">
       <input type="text" inputmode="text" value="${diam}" placeholder="8-28" class="sc-diam-inp" style="text-align:center;font-size:12px;width:100%">
-      <input type="text" inputmode="decimal" value="" placeholder="0" class="sc-cargas-inp" style="text-align:center;font-size:13px;font-weight:600;width:100%">
+      <input type="text" inputmode="decimal" value="" placeholder="${phCargas}" class="sc-cargas-inp" style="text-align:center;font-size:13px;font-weight:600;width:100%">
+      <span class="sc-m3-aprox" style="text-align:center;font-size:11px;font-weight:600;color:#27500A;${scModo==='volumen'?'display:none':''}">—</span>
       <button class="sc-del-btn" style="background:#fff;color:var(--red);border:1px solid #F7C1C1;border-radius:6px;padding:4px 6px;cursor:pointer"><i class="ti ti-trash"></i></button>
     </div>
     <input type="hidden" class="sc-cal-inp" value="${calidad}">`;
@@ -1863,12 +1929,22 @@ window.scAgregarFila=function(tipo='',prod='',largo='',diam='',calidad='FRESCA')
   });
   // ---- N° Cargas: entero o ,5 (múltiplos de 0,5) ----
   const inp=row.querySelector('.sc-cargas-inp');
+  const m3span=row.querySelector('.sc-m3-aprox');
   inp.addEventListener('input',()=>{
-    let v=inp.value.replace('.',',').replace(/[^0-9,]/g,'');
-    // solo permite ,5 como decimal
-    const p=v.split(',');
-    if(p.length>1){const dec=p[1].slice(0,1);v=p[0]+','+(dec==='5'?'5':'');}
-    inp.value=v;inp.classList.remove('campo-error');scRecalcTotal();
+    const modo=window.SC_MODO||'cargas';
+    if(modo==='volumen'){
+      let v=inp.value.replace('.',',').replace(/[^0-9,]/g,'');
+      const p=v.split(',');if(p.length>1)v=p[0]+','+p[1].slice(0,3);
+      inp.value=v;
+    }else{
+      let v=inp.value.replace('.',',').replace(/[^0-9,]/g,'');
+      const p=v.split(',');if(p.length>1)v=p[0]+','+(p[1].slice(0,1)==='5'?'5':'');
+      inp.value=v;
+      // m³ aprox
+      const n=parseFloat(v.replace(',','.'))||0;
+      if(m3span)m3span.textContent=n?Math.round(n*27)+'m³':'—';
+    }
+    scRecalcTotal();
   });
   inp.addEventListener('blur',()=>{
     // validar que sea múltiplo de 0,5
@@ -1894,12 +1970,35 @@ function scActualizarProdSel(row,tipo,selProd=''){
 }
 
 function scRecalcTotal(){
-  let total=0;
+  const modo=window.SC_MODO||'cargas';
+  const grupos={FRESCA:0,ESPORADA:0,MANCHADA:0};
   document.querySelectorAll('.sc-cargas-inp').forEach(inp=>{
-    total+=parseFloat((inp.value||'0').replace(',','.'))||0;
+    const row=inp.closest('[data-sc-row]');
+    const cal=row?.querySelector('.sc-cal-inp')?.value||'FRESCA';
+    const v=parseFloat((inp.value||'0').replace(',','.'))||0;
+    if(grupos[cal]!==undefined)grupos[cal]+=v;
   });
-  total=Math.round(total*10)/10;
-  document.getElementById('sc-total').textContent=total.toLocaleString('es-CL',{minimumFractionDigits:0,maximumFractionDigits:1});
+  ['FRESCA','ESPORADA','MANCHADA'].forEach(cal=>{
+    const id=cal.toLowerCase();
+    const sub=document.getElementById('sc-sub-'+id);
+    const val=document.getElementById('sc-sub-val-'+id);
+    const sec=document.getElementById('sc-filas-'+id);
+    const tiene=sec&&sec.children.length>0;
+    if(sub)sub.style.display=tiene?'block':'none';
+    if(val){
+      const n=Math.round(grupos[cal]*10)/10;
+      val.textContent=modo==='cargas'
+        ?n.toLocaleString('es-CL',{maximumFractionDigits:1})
+        :n.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3});
+    }
+  });
+  const total=Math.round(Object.values(grupos).reduce((a,b)=>a+b,0)*10)/10;
+  const el=document.getElementById('sc-total');
+  const lbl=document.getElementById('sc-total-lbl');
+  if(lbl)lbl.textContent=modo==='volumen'?'Total m³:':'Total cargas:';
+  if(el)el.textContent=modo==='cargas'
+    ?total.toLocaleString('es-CL',{maximumFractionDigits:1})
+    :total.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3});
 }
 
 function scValida(d){
@@ -1959,11 +2058,22 @@ async function scCompartir(d){
   };
   const grupos={};
   (d.filas||[]).forEach(f=>{const k=f.calidad||'';if(!grupos[k])grupos[k]=[];grupos[k].push(f);});
+  const esVol=d.modo==='volumen';
+  const colCantHdr=esVol?'Vol m³':'Cargas';
   const tablaPorCalidad=CALIDADES_ORD.filter(k=>grupos[k]?.length).map(k=>{
     const est=CALIDAD_ESTILO[k];
-    const fTr=grupos[k].map(f=>`<tr style="border-top:1px solid #e8e8e8"><td style="padding:2px 5px;font-size:11px">${f.tipo||'—'}</td><td style="padding:2px 5px;font-size:11px;text-align:center">${f.producto||'—'}</td><td style="padding:2px 5px;font-size:11px;text-align:center">${f.largo||'—'}</td><td style="padding:2px 5px;font-size:11px;text-align:center">${f.diam||'—'}</td><td style="padding:2px 5px;font-size:12px;font-weight:700;text-align:right;color:${G}">${f.cargas}</td></tr>`).join('');
-    return`<div style="margin-bottom:10px"><div style="background:${est.bg};color:${est.color};font-size:11px;font-weight:700;text-transform:uppercase;padding:4px 8px;border-radius:6px;margin-bottom:4px">${est.titulo}</div><table style="width:100%;border-collapse:collapse"><tr style="background:#ececec"><th style="padding:2px 5px;font-size:10px;text-align:left">Tipo</th><th style="padding:2px 5px;font-size:10px">Prod.</th><th style="padding:2px 5px;font-size:10px">Largo</th><th style="padding:2px 5px;font-size:10px">Diám.</th><th style="padding:2px 5px;font-size:10px;text-align:right">Cargas</th></tr>${fTr}</table></div>`;
-  }).join('');
+    const subtotal=Math.round(grupos[k].reduce((a,f)=>a+(f.cargas||0),0)*10)/10;
+    const subtotalStr=esVol?subtotal.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}):subtotal.toLocaleString('es-CL',{maximumFractionDigits:1});
+    const fTr=grupos[k].map(f=>{
+      const cargas=f.cargas||0;
+      const cargasStr=esVol?cargas.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}):cargas.toLocaleString('es-CL',{maximumFractionDigits:1});
+      const m3Col=esVol?'':`<td style="padding:2px 5px;font-size:11px;text-align:right;color:#888">${Math.round(cargas*27)} m³</td>`;
+      return`<tr style="border-top:1px solid #e8e8e8"><td style="padding:2px 5px;font-size:11px">${f.tipo||'—'}</td><td style="padding:2px 5px;font-size:11px;text-align:center">${f.producto||'—'}</td><td style="padding:2px 5px;font-size:11px;text-align:center">${f.largo||'—'}</td><td style="padding:2px 5px;font-size:11px;text-align:center">${f.diam||'—'}</td><td style="padding:2px 5px;font-size:12px;font-weight:700;text-align:right;color:${G}">${cargasStr}</td>${m3Col}</tr>`;
+    }).join('');
+    const m3HdrCol=esVol?'':`<th style="padding:2px 5px;font-size:10px;text-align:right;color:#888">m³ aprox</th>`;
+    const subRow=`<tr style="background:${est.bg}"><td colspan="${esVol?5:6}" style="padding:3px 5px;font-size:11px;font-weight:700;color:${est.color};text-align:right">Subtotal: ${subtotalStr}${esVol?' m³':' cargas'}</td></tr>`;
+    return`<div style="margin-bottom:10px"><div style="background:${est.bg};color:${est.color};font-size:11px;font-weight:700;text-transform:uppercase;padding:4px 8px;border-radius:6px;margin-bottom:4px">${est.titulo}</div><table style="width:100%;border-collapse:collapse"><tr style="background:#ececec"><th style="padding:2px 5px;font-size:10px;text-align:left">Tipo</th><th style="padding:2px 5px;font-size:10px">Prod.</th><th style="padding:2px 5px;font-size:10px">Largo</th><th style="padding:2px 5px;font-size:10px">Diám.</th><th style="padding:2px 5px;font-size:10px;text-align:right">${colCantHdr}</th>${m3HdrCol}</tr>${fTr}${subRow}</table></div>`;
+  }).join('');;
   const codFundo=(window.FUNDOS_DIN&&window.FUNDOS_DIN[d.fundo])||FUNDOS[d.fundo]||'';
   const codCancha=(window.CANCHA_DIN&&window.CANCHA_DIN[d.fundo])||'';
   const subTitulo=[codFundo?'Cód. '+codFundo:'',codCancha?'Cancha '+codCancha:''].filter(Boolean).join(' · ');
@@ -1982,7 +2092,7 @@ async function scCompartir(d){
     <div style="padding:12px">
       ${tablaPorCalidad||'<p style="color:#888;font-size:12px">Sin filas ingresadas</p>'}
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 14px;background:#EAF3DE;border-radius:9px;border:1.5px solid ${G}">
-        <span style="font-size:13px;font-weight:700;color:#27500A;text-transform:uppercase">Total cargas</span>
+        <span style="font-size:13px;font-weight:700;color:#27500A;text-transform:uppercase">${esVol?'TOTAL m³':'TOTAL CARGAS'}</span>
         <span style="font-size:26px;font-weight:800;color:#27500A">${d.total.toLocaleString('es-CL',{maximumFractionDigits:1})}</span>
       </div>
       ${d.obs?`<div style="margin-top:8px;padding:8px 10px;background:#f8f8f8;border-radius:8px;font-size:11px;color:#555"><strong>Observaciones:</strong> ${d.obs}</div>`:''}
