@@ -822,7 +822,10 @@ window.cargarDatos=async function(){
         const tpVal=eq.tp??eq.tpProgramado??null;
         if(tpVal!=null){tpPorDia[f]=(tpPorDia[f]||0)+tpVal;}
         (eq.detenciones||[]).forEach(det=>{
-          const k=det.motivo||'(sin motivo)';
+          let k=det.motivo||'(sin motivo)';
+          // Códigos 14 y 99: colapsar variantes en una sola clave base
+          if(k.startsWith('(14)')) k='(14) FALLA EQUIPO';
+          else if(k.startsWith('(99)')) k='(99) OTRO';
           causalesPorDia[k]=causalesPorDia[k]||{};
           causalesPorDia[k][f]=(causalesPorDia[k][f]||0)+(det.horas||0);
         });
