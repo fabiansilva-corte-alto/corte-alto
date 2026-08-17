@@ -1399,9 +1399,45 @@ window.guardarCierre=async function(){
     verCierre(r||{},c);
   }catch(e){showLoader(false);showToast('❌ Error al guardar cierre');}
 }
-window.verCierre=function(r,c){
+async function _obtenerMetaMañana(fechaHoy,linea){
+  if(!fechaHoy||!linea)return'';
+  try{
+    const hoy=new Date(fechaHoy+'T12:00:00');
+    hoy.setDate(hoy.getDate()+1);
+    const anio=hoy.getFullYear();
+    const mes=hoy.getMonth()+1;
+    const dia=hoy.getDate();
+    const mesStr=String(mes).padStart(2,'0');
+    const diaStr=String(dia).padStart(2,'0');
+    const fechaMañana=`${dia.toString().padStart(2,'0')}-${mesStr}-${anio}`;
+    const docId=`${linea}_${anio}-${mesStr}`;
+    const snap=await getDoc(doc(db,'config_volumen_meta',docId));
+    if(snap.exists()){
+      const vals=snap.data().valores||[];
+      const meta=vals[dia-1];
+      if(meta!=null&&meta!==''&&Number(meta)>0){
+        return`<div style="background:#EAF3DE;border:1px solid #C9DDB4;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin:8px 0">
+          <i class="ti ti-target" aria-hidden="true" style="font-size:20px;color:#3B6D11;flex-shrink:0"></i>
+          <div><div style="font-size:11px;color:#3B6D11;font-weight:500;margin-bottom:1px">Producción meta para mañana</div>
+          <div style="font-size:14px;font-weight:500;color:#27500A">${fechaMañana} — ${Number(meta).toLocaleString('es-CL')} m³ <span style="font-size:11px;color:#3B6D11">· ${linea}</span></div></div>
+        </div>`;
+      }
+    }
+    return`<div style="background:var(--surface-1);border:0.5px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin:8px 0">
+      <i class="ti ti-clock-question" aria-hidden="true" style="font-size:20px;color:var(--text3);flex-shrink:0"></i>
+      <div><div style="font-size:11px;color:var(--text2);font-weight:500;margin-bottom:1px">Producción meta para mañana</div>
+      <div style="font-size:13px;color:var(--text3)">${fechaMañana} — Aún no se cargan datos <span style="font-size:11px">· ${linea}</span></div></div>
+    </div>`;
+  }catch(e){return'';}
+}
+
+window.verCierre=async function(r,c){
   const ECLS={op:'var(--green)',rev:'#D97706',no:'var(--red)'};
   const eqHTML=(c.equipos||[]).map(e=>`<div style="padding:5px 0;border-bottom:1px solid var(--border);font-size:12px"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${e.cancha?`<span style="font-size:10px;color:var(--text2);font-weight:600;background:#f0f0f0;padding:1px 6px;border-radius:4px">N° Cancha: ${e.cancha}</span>`:''}<strong style="color:${ECLS[e.estado_principal||'op']}">${e.equipo||'—'}</strong>${e.carro?`<span style="color:var(--text2)">+ Carro: <strong style="color:${ECLS[e.estado_carro||'op']}">${e.carro}</strong></span>`:''}<span style="color:var(--text2)">Apoyo: <strong style="color:${ECLS[e.estado_apoyo||'op']}">${e.apoyo||'—'}</strong></span></div>${(e.estado_principal==='no'&&e.obs_principal)?`<div style="color:var(--red);font-size:11px;margin-top:2px">⚠ Principal: ${e.obs_principal}</div>`:''}${(e.estado_carro==='no'&&e.obs_carro)?`<div style="color:var(--red);font-size:11px;margin-top:2px">⚠ Carro: ${e.obs_carro}</div>`:''}${(e.estado_apoyo==='no'&&e.obs_apoyo)?`<div style="color:var(--red);font-size:11px;margin-top:2px">⚠ Apoyo: ${e.obs_apoyo}</div>`:''}</div>`).join('');
+
+  // Buscar meta de producción para mañana
+  const metaHTML=await _obtenerMetaMañana(r.fecha,r.linea);
+
   document.getElementById('modal-cierre-contenido').innerHTML=`
     <div class="modal-section" style="border-bottom:2px solid var(--border2);padding-bottom:1rem;margin-bottom:1rem">
       <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Reporte cierre de jornada</div>
@@ -1414,7 +1450,8 @@ window.verCierre=function(r,c){
       <div style="font-size:13px;margin-top:2px">Acceso carguío: <strong>${c.accesoCarguio||'—'}</strong></div>
     </div>
     <div class="modal-section"><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:6px">⚙️ Equipos al cierre</div>${eqHTML||'<div style="font-size:12px;color:var(--text3)">Sin equipos</div>'}</div>
-    <div style="font-size:13px;color:var(--text2)">Fin reporte cierre jornada · ATTE <strong>${c.firma||'—'}</strong></div>`;
+    ${metaHTML}
+    <div style="font-size:13px;color:var(--text2);margin-top:8px">Fin reporte cierre jornada · ATTE <strong>${c.firma||'—'}</strong></div>`;
   document.getElementById('modal-cierre').style.display='block';document.getElementById('modal-cierre').scrollTop=0;
 }
 window.cerrarModalCierre=function(){document.getElementById('modal-cierre').style.display='none';salirCierre();}
@@ -1429,6 +1466,22 @@ window.generarImagenCierre=async function(btnEl){
   const green='#3B6D11',red='#A32D2D';const ECLS_IMG={op:green,rev:'#D97706',no:red};
   const climaAlerta=esClimaAlerta(c.clima);
   const eqHTML=(c.equipos||[]).map(e=>`<div style="padding:5px 0;border-bottom:1px solid #e8e8e8;font-size:11px"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${e.cancha?`<span style="font-size:10px;color:#555;font-weight:600;background:#f0f0f0;padding:1px 6px;border-radius:4px">N° Cancha: ${e.cancha}</span>`:''}<strong style="color:${ECLS_IMG[e.estado_principal||'op']}">${e.equipo||'—'}</strong>${e.carro?`<span style="color:#555">+ Carro: <strong style="color:${ECLS_IMG[e.estado_carro||'op']}">${e.carro}</strong></span>`:''}<span style="color:#555">Apoyo: <strong style="color:${ECLS_IMG[e.estado_apoyo||'op']}">${e.apoyo||'—'}</strong></span></div>${(e.estado_principal==='no'&&e.obs_principal)?`<div style="color:${red};font-size:10px;margin-top:2px">⚠ Principal: ${e.obs_principal}</div>`:''}${(e.estado_carro==='no'&&e.obs_carro)?`<div style="color:${red};font-size:10px;margin-top:2px">⚠ Carro: ${e.obs_carro}</div>`:''}${(e.estado_apoyo==='no'&&e.obs_apoyo)?`<div style="color:${red};font-size:10px;margin-top:2px">⚠ Apoyo: ${e.obs_apoyo}</div>`:''}</div>`).join('');
+  // Meta para mañana en imagen
+  let metaImgHTML='';
+  try{
+    const hoy=new Date((r.fecha||new Date().toISOString().split('T')[0])+'T12:00:00');
+    hoy.setDate(hoy.getDate()+1);
+    const anioM=hoy.getFullYear(),mesM=hoy.getMonth()+1,diaM=hoy.getDate();
+    const mesStr=String(mesM).padStart(2,'0');
+    const fechaMañanaStr=`${String(diaM).padStart(2,'0')}-${mesStr}-${anioM}`;
+    const snapM=await getDoc(doc(db,'config_volumen_meta',`${r.linea}_${anioM}-${mesStr}`));
+    if(snapM.exists()){
+      const vals=snapM.data().valores||[];const meta=vals[diaM-1];
+      if(meta!=null&&meta!==''&&Number(meta)>0){
+        metaImgHTML=`<div style="background:#EAF3DE;border:1px solid #C9DDB4;border-radius:9px;padding:8px 11px;margin-bottom:8px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">🎯</span><div><div style="font-size:9px;font-weight:700;color:#3B6D11;text-transform:uppercase;letter-spacing:.05em">Meta producción mañana · ${r.linea||''}</div><div style="font-size:13px;font-weight:700;color:#27500A">${fechaMañanaStr} — ${Number(meta).toLocaleString('es-CL')} m³</div></div></div>`;
+      }else{metaImgHTML=`<div style="background:#f8f8f8;border:1px solid #e0e0e0;border-radius:9px;padding:8px 11px;margin-bottom:8px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">⏳</span><div><div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em">Meta producción mañana · ${r.linea||''}</div><div style="font-size:12px;color:#888">${fechaMañanaStr} — Aún no se cargan datos</div></div></div>`;}
+    }else{metaImgHTML=`<div style="background:#f8f8f8;border:1px solid #e0e0e0;border-radius:9px;padding:8px 11px;margin-bottom:8px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">⏳</span><div><div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em">Meta producción mañana · ${r.linea||''}</div><div style="font-size:12px;color:#888">${fechaMañanaStr} — Aún no se cargan datos</div></div></div>`;}
+  }catch(e){}
   const container=document.createElement('div');container.style.cssText='position:fixed;left:-9999px;top:0;width:480px;background:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1a1a1a;padding:0';
   container.innerHTML=`
   <div style="background:linear-gradient(135deg,#1a3a1a 0%,#2d5a2d 100%);padding:14px 18px;color:#fff;position:relative">
@@ -1445,6 +1498,7 @@ window.generarImagenCierre=async function(btnEl){
       <div style="font-size:12px">Acceso carguío: <strong>${c.accesoCarguio||'—'}</strong></div>
     </div>
     ${c.equipos?.length?`<div style="background:#f8f8f8;border-radius:9px;padding:9px 11px;margin-bottom:8px"><div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">⚙️ Equipos</div><div style="display:flex;gap:14px;align-items:center;margin-bottom:6px;font-size:10px;color:#333"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:${green};display:inline-block"></span>Operativo</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#D97706;display:inline-block"></span>En revisión</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:${red};display:inline-block"></span>No operativo</span></div>${eqHTML}</div>`:''}
+    ${metaImgHTML}
     <div style="background:linear-gradient(135deg,#1a3a1a 0%,#2d5a2d 100%);border-radius:9px;padding:7px 14px;text-align:center;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px">
       <span style="font-size:9px;opacity:.65;text-transform:uppercase;letter-spacing:.08em">Fin reporte cierre jornada · ATTE</span>
       <span style="font-size:13px;font-weight:800">${c.firma||'—'}</span>
