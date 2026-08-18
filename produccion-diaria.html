@@ -251,7 +251,6 @@ input.bad{border-color:var(--red)!important;background:var(--red-bg)!important;c
         <span style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">Largo</span>
         <span style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">Diám.</span>
         <span id="sc-hdr-cantidad" style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">N° Cargas</span>
-        <span id="sc-hdr-m3" style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">m³ aprox</span>
         <span></span>
       </div>
       <!-- FRESCA -->
@@ -1699,16 +1698,12 @@ function scAplicarModo(modo,limpiar=false){
   document.getElementById('sc-btn-volumen')?.classList.toggle('sc-toggle-active',esVol);
   // encabezados
   const hdrQ=document.getElementById('sc-hdr-cantidad');
-  const hdrM=document.getElementById('sc-hdr-m3');
   if(hdrQ)hdrQ.textContent=esVol?'Vol (m³)':'N° Cargas';
-  if(hdrM)hdrM.style.display=esVol?'none':'';
   // filas existentes
   document.querySelectorAll('[data-sc-row]').forEach(row=>{
     row.dataset.scModo=modo;
     const inp=row.querySelector('.sc-cargas-inp');
-    const m3=row.querySelector('.sc-m3-aprox');
     if(inp)inp.placeholder=esVol?'0,000':'0';
-    if(m3)m3.style.display=esVol?'none':'';
     if(limpiar&&inp)inp.value='';
   });
   scRecalcTotal();
@@ -1894,13 +1889,12 @@ window.scAgregarFila=function(tipo='',prod='',largo='',diam='',calidad='FRESCA')
   const prodSel=`<select class="sc-prod-sel" style="font-size:12px;padding:5px 3px;width:100%"><option value="${prod}">${prod||'— Prod —'}</option></select>`;
   const phCargas=scModo==='volumen'?'0,000':'0';
   row.innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr 55px 65px 60px 52px 28px;gap:4px;align-items:center;margin-bottom:5px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 55px 65px 60px 28px;gap:4px;align-items:center;margin-bottom:5px">
       <select class="sc-tipo-sel" style="font-size:12px;padding:5px 3px"><option value="">— Tipo —</option>${tiposOpts}</select>
       ${prodSel}
       <input type="text" inputmode="decimal" value="${largo}" placeholder="0,00" class="sc-largo-inp" style="text-align:center;font-size:12px;width:100%">
       <input type="text" inputmode="text" value="${diam}" placeholder="8-28" class="sc-diam-inp" style="text-align:center;font-size:12px;width:100%">
       <input type="text" inputmode="decimal" value="" placeholder="${phCargas}" class="sc-cargas-inp" style="text-align:center;font-size:13px;font-weight:600;width:100%">
-      <span class="sc-m3-aprox" style="text-align:center;font-size:11px;font-weight:600;color:#27500A;${scModo==='volumen'?'display:none':''}">—</span>
       <button class="sc-del-btn" style="background:#fff;color:var(--red);border:1px solid #F7C1C1;border-radius:6px;padding:4px 6px;cursor:pointer"><i class="ti ti-trash"></i></button>
     </div>
     <input type="hidden" class="sc-cal-inp" value="${calidad}">`;
@@ -1929,7 +1923,6 @@ window.scAgregarFila=function(tipo='',prod='',largo='',diam='',calidad='FRESCA')
   });
   // ---- N° Cargas: entero o ,5 (múltiplos de 0,5) ----
   const inp=row.querySelector('.sc-cargas-inp');
-  const m3span=row.querySelector('.sc-m3-aprox');
   inp.addEventListener('input',()=>{
     const modo=window.SC_MODO||'cargas';
     if(modo==='volumen'){
@@ -1940,9 +1933,6 @@ window.scAgregarFila=function(tipo='',prod='',largo='',diam='',calidad='FRESCA')
       let v=inp.value.replace('.',',').replace(/[^0-9,]/g,'');
       const p=v.split(',');if(p.length>1)v=p[0]+','+(p[1].slice(0,1)==='5'?'5':'');
       inp.value=v;
-      // m³ aprox
-      const n=parseFloat(v.replace(',','.'))||0;
-      if(m3span)m3span.textContent=n?Math.round(n*27)+'m³':'—';
     }
     scRecalcTotal();
   });
