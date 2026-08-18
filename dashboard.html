@@ -140,6 +140,38 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 .prod-table .row-total .tot-shovel{background:var(--purple-bg);color:var(--purple)}
 .prod-table .row-total .tot-grand{background:#1a1a1a;color:#fff}
 
+/* VOLUMEN POR FUNDO */
+.fundo-section{margin-bottom:.75rem}
+.fundo-header{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--green);border-radius:var(--radius-sm);margin-bottom:6px}
+.fundo-header-name{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em}
+.fundo-header-vol{font-size:13px;font-weight:800;color:#fff}
+.fundo-rodales{display:flex;flex-wrap:wrap;gap:6px}
+.fundo-rodal-item{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 10px;min-width:110px}
+.fundo-rodal-num{font-size:11px;font-weight:700;color:var(--text2)}
+.fundo-rodal-vol{font-size:14px;font-weight:800;color:var(--blue)}
+.fundo-rodal-pct{font-size:10px;color:var(--text3);margin-top:1px}
+.fundo-rodal-bar{height:3px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden}
+.fundo-rodal-bar-fill{height:100%;background:var(--blue);border-radius:2px}
+
+/* MODAL EQUIPOS */
+.eq-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
+.eq-modal-overlay.open{display:flex}
+.eq-modal{background:#fff;border-radius:var(--radius);padding:1.25rem;width:90%;max-width:400px;max-height:80vh;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.eq-modal-title{font-size:14px;font-weight:700;color:var(--text)}
+.eq-modal-body{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:4px}
+.eq-modal-group{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:8px 4px 3px;border-bottom:1px solid var(--border)}
+.eq-modal-item{display:flex;align-items:center;gap:8px;padding:7px 4px;cursor:pointer;font-size:13px;border-radius:6px}
+.eq-modal-item:hover{background:#f5f5f5}
+.eq-modal-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--green);flex-shrink:0}
+.eq-modal-footer{display:flex;gap:8px;padding-top:4px;border-top:1px solid var(--border)}
+.eq-modal-footer button{flex:1;padding:9px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);border:none}
+.eq-modal-ok{background:var(--text);color:#fff}
+.eq-modal-cancel{background:#f0f0f0;color:var(--text2)}
+.eq-modal-selall{font-size:11px;color:var(--blue);cursor:pointer;text-decoration:underline;text-align:right}
+
+/* PIE % en leyenda */
+.pie-legend .leg-pct{font-size:10px;font-weight:700;color:var(--text3);margin-left:2px}
+
 /* VARAS EN PISO */
 .varas-grid{display:flex;flex-direction:column;gap:.75rem}
 .varas-card{border-radius:var(--radius-sm);padding:.875rem 1rem;border:2px solid transparent}
@@ -357,11 +389,34 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 
   <!-- ═══ BLOQUE 4: RENDIMIENTO POR EQUIPO ═══ -->
   <div class="section">
-    <div class="section-title"><i class="ti ti-table"></i> Rendimiento por equipo</div>
+    <div class="section-title" style="justify-content:space-between">
+      <span><i class="ti ti-table"></i> Rendimiento por equipo</span>
+      <button onclick="abrirModalEquipos()" style="background:var(--blue-bg);color:var(--blue);border:1px solid #C0D5F0;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font)">
+        <i class="ti ti-filter"></i> <span id="rend-eq-label">Todos los equipos</span>
+      </button>
+    </div>
     <div id="rend-wrap">
       <div class="loading-block"><div class="spinner"></div> Cargando...</div>
     </div>
   </div>
+
+<!-- MODAL EQUIPOS RENDIMIENTO -->
+<div class="eq-modal-overlay" id="eq-modal-overlay">
+  <div class="eq-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="eq-modal-title">⚙️ Seleccionar equipos</div>
+      <div style="display:flex;gap:10px">
+        <span class="eq-modal-selall" onclick="eqModalSelAll(true)">Todos</span>
+        <span class="eq-modal-selall" onclick="eqModalSelAll(false)">Ninguno</span>
+      </div>
+    </div>
+    <div class="eq-modal-body" id="eq-modal-body"><!-- se puebla dinámicamente --></div>
+    <div class="eq-modal-footer">
+      <button class="eq-modal-cancel" onclick="eqModalCancelar()">Cancelar</button>
+      <button class="eq-modal-ok" onclick="eqModalOK()">✓ Aplicar</button>
+    </div>
+  </div>
+</div>
 
 </div><!-- /app -->
 
@@ -713,32 +768,42 @@ function renderProduccion() {
        * Volumen en m³ · Operador = quien madereó esa madera (opMadereo) · Solo equipos con producción en el período
      </div>`;
 
-  // ── Volumen por rodal (desde cartolas[], misma fuente que control de producción) ──
-  const rodalMap = {}; // "fundo__rodal" -> {fundo, numero, vol}
+  // ── Volumen por fundo y rodal ──
+  const fundoMap = {};
   prod.forEach(d => {
-    (d.cartolas||[]).forEach(c => {
-      if(!c.rodal) return;
-      const fundo = d.fundo || c.fundo || '—';
-      const key = `${fundo}__${c.rodal}`;
-      if(!rodalMap[key]) rodalMap[key] = { fundo, numero: c.rodal, vol: 0 };
+    (d.cartolas||[]).forEach(cc => {
+      if(!cc.rodal) return;
+      const fundo = d.fundo || cc.fundo || '—';
+      if(!fundoMap[fundo]) fundoMap[fundo] = { vol:0, rodales:{} };
       let v = 0;
-      (c.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
-      rodalMap[key].vol += v;
+      (cc.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
+      fundoMap[fundo].vol += v;
+      fundoMap[fundo].rodales[cc.rodal] = (fundoMap[fundo].rodales[cc.rodal]||0) + v;
     });
   });
-  const rodales = Object.values(rodalMap).sort((a,b)=>b.vol-a.vol);
-  const rodalHTML = rodales.length
-    ? rodales.map(r=>`
-        <div class="rodal-item">
-          <div class="rodal-fundo">${r.fundo}</div>
-          <div class="rodal-num">Rodal ${r.numero}</div>
-          <div class="rodal-vol">${fmt2(r.vol)}</div>
-          <div class="rodal-unit">m³</div>
-        </div>`).join('')
-    : '<div style="font-size:12px;color:var(--text3)">Sin datos de rodales</div>';
+  const fundosOrden = Object.entries(fundoMap).sort((a,b)=>b[1].vol-a[1].vol);
+  const fundoHTML = fundosOrden.length ? fundosOrden.map(([fundo, datos]) => {
+    const rodalesOrden = Object.entries(datos.rodales).sort((a,b)=>b[1]-a[1]);
+    const rodalItems = rodalesOrden.map(([num, vol]) => {
+      const pct = datos.vol>0 ? (vol/datos.vol*100) : 0;
+      return `<div class="fundo-rodal-item">
+        <div class="fundo-rodal-num">Rodal ${num}</div>
+        <div class="fundo-rodal-vol">${fmt2(vol)} <span style="font-size:10px;font-weight:400;color:var(--text3)">m³</span></div>
+        <div class="fundo-rodal-pct">${pct.toFixed(1)}% del fundo</div>
+        <div class="fundo-rodal-bar"><div class="fundo-rodal-bar-fill" style="width:${Math.min(pct,100).toFixed(1)}%"></div></div>
+      </div>`;
+    }).join('');
+    return `<div class="fundo-section">
+      <div class="fundo-header">
+        <div class="fundo-header-name">📍 ${fundo}</div>
+        <div class="fundo-header-vol">${fmt2(datos.vol)} m³</div>
+      </div>
+      <div class="fundo-rodales">${rodalItems}</div>
+    </div>`;
+  }).join('') : '<div style="font-size:12px;color:var(--text3)">Sin datos de rodales</div>';
   document.getElementById('rodal-card').innerHTML =
-    `<div class="kpi-label"><i class="ti ti-trees"></i> Volumen por rodal</div>
-     <div class="rodal-list">${rodalHTML}</div>`;
+    `<div class="kpi-label"><i class="ti ti-trees"></i> Volumen por fundo y rodal</div>
+     <div style="margin-top:8px">${fundoHTML}</div>`;
 
   // ── Gráfico ──
   renderGrafico(prod, meta, desde, hasta);
@@ -967,6 +1032,7 @@ window.renderOEE = function() {
 // ══════════════════════════════════════════════════════════════════════════
 function renderRendimiento() {
   const { jefe, prod } = G;
+  const eqFiltro = EQ_FILTRO_REND; // null = todos
 
   const toP = v => { const n=parseFloat(String(v||'').replace('%','')); return isNaN(n)?NaN:(n<=1?n*100:n); };
 
@@ -975,6 +1041,7 @@ function renderRendimiento() {
   jefe.forEach(d => (d.equipos||[]).forEach(eq => {
     const tipo   = (eq.tipo||'').toUpperCase();
     const nombre = eq.equipo||'—';
+    if(eqFiltro && !eqFiltro.has(nombre)) return;
     const key    = `${tipo}__${nombre}`;
     if(!eqs[key]) eqs[key]={tipo,nombre,ciclos:0,arboles:0,horas:0,oees:[],fds:[],fes:[]};
     const e = eqs[key];
@@ -1204,9 +1271,9 @@ function renderUtilizacion(jefe) {
         ${totalCarro>0
           ? `<div class="pie-canvas-wrap"><canvas id="pie-torre"></canvas></div>
              <div class="pie-legend">
-               <div class="leg-row"><div class="leg-dot" style="background:#D97706"></div><div class="leg-name">Bereuter</div></div>
-               <div class="leg-row"><div class="leg-dot" style="background:#1D5FAD"></div><div class="leg-name">Wyssen</div></div>
-               <div class="leg-row"><div class="leg-dot" style="background:#7C5C3A"></div><div class="leg-name">Mixto</div></div>
+               <div class="leg-row"><div class="leg-dot" style="background:#D97706"></div><div class="leg-name">Bereuter</div><div class="leg-pct">${dataCarro[0]>0?Math.round(dataCarro[0]/totalCarro*100)+'%':''}</div></div>
+               <div class="leg-row"><div class="leg-dot" style="background:#1D5FAD"></div><div class="leg-name">Wyssen</div><div class="leg-pct">${dataCarro[1]>0?Math.round(dataCarro[1]/totalCarro*100)+'%':''}</div></div>
+               <div class="leg-row"><div class="leg-dot" style="background:#7C5C3A"></div><div class="leg-name">Mixto</div><div class="leg-pct">${dataCarro[2]>0?Math.round(dataCarro[2]/totalCarro*100)+'%':''}</div></div>
              </div>`
           : sinDatos}
       </div>
@@ -1216,9 +1283,9 @@ function renderUtilizacion(jefe) {
         ${totalHuinche>0
           ? `<div class="pie-canvas-wrap"><canvas id="pie-skid"></canvas></div>
              <div class="pie-legend">
-               <div class="leg-row"><div class="leg-dot" style="background:#3B6D11"></div><div class="leg-name">Sin asistencia</div></div>
-               <div class="leg-row"><div class="leg-dot" style="background:#D97706"></div><div class="leg-name">Con asistencia</div></div>
-               <div class="leg-row"><div class="leg-dot" style="background:#A3C97A"></div><div class="leg-name">Mixto</div></div>
+               <div class="leg-row"><div class="leg-dot" style="background:#3B6D11"></div><div class="leg-name">Sin asistencia</div><div class="leg-pct">${dataHuinche[0]>0?Math.round(dataHuinche[0]/totalHuinche*100)+'%':''}</div></div>
+               <div class="leg-row"><div class="leg-dot" style="background:#D97706"></div><div class="leg-name">Con asistencia</div><div class="leg-pct">${dataHuinche[1]>0?Math.round(dataHuinche[1]/totalHuinche*100)+'%':''}</div></div>
+               <div class="leg-row"><div class="leg-dot" style="background:#A3C97A"></div><div class="leg-name">Mixto</div><div class="leg-pct">${dataHuinche[2]>0?Math.round(dataHuinche[2]/totalHuinche*100)+'%':''}</div></div>
              </div>`
           : sinDatos}
       </div>
@@ -1556,6 +1623,77 @@ window.renderCausalesTipo = function(jefe, tipos, wrapId, equipoFiltro='') {
         </div>`).join('')}
     </div>`;
 }
+
+// ══════════════════════════════════════════════════════════════════
+// MODAL EQUIPOS — BLOQUE RENDIMIENTO
+// ══════════════════════════════════════════════════════════════════
+let EQ_FILTRO_REND = null; // null = todos
+let EQ_TEMPORAL = null;    // selección temporal mientras modal abierto
+
+const TIPOS_EXCLUIR_MODAL = ['HUINCHE DE ASISTENCIA','GARRA ORDENADORA'];
+const TIPO_LABEL_M = { TORRE:'Torre / Alpine', ALPINE:'Torre / Alpine', SKIDDER:'Skidder', PROCESADOR:'Procesador', SHOVEL:'Shovel' };
+let EQ_CONFIG_MODAL = [];
+
+// Cargar equipos para el modal desde config_equipos
+(async () => {
+  try {
+    const snap = await getDocs(query(collection(db,'config_equipos'), orderBy('nombre')));
+    snap.forEach(d => {
+      const data = d.data();
+      const tipo = (data.tipo||'').toUpperCase();
+      if(data.nombre && !TIPOS_EXCLUIR_MODAL.includes(tipo))
+        EQ_CONFIG_MODAL.push({ nombre: data.nombre, tipo });
+    });
+  } catch(e) {}
+})();
+
+window.abrirModalEquipos = function() {
+  const body = document.getElementById('eq-modal-body');
+  const grupos = {};
+  EQ_CONFIG_MODAL.forEach(eq => {
+    const g = TIPO_LABEL_M[eq.tipo] || eq.tipo || 'Otros';
+    if(!grupos[g]) grupos[g] = [];
+    grupos[g].push(eq.nombre);
+  });
+  body.innerHTML = Object.entries(grupos).map(([g, eqs]) => `
+    <div class="eq-modal-group">${g}</div>
+    ${eqs.map(nombre => `
+      <label class="eq-modal-item">
+        <input type="checkbox" class="eq-modal-chk" value="${nombre}"
+          ${EQ_FILTRO_REND!==null && EQ_FILTRO_REND.has(nombre) ? 'checked' : ''}>
+        ${nombre}
+      </label>`).join('')}
+  `).join('');
+  document.getElementById('eq-modal-overlay').classList.add('open');
+};
+
+window.eqModalSelAll = function(val) {
+  document.querySelectorAll('.eq-modal-chk').forEach(cb => cb.checked = val);
+};
+
+window.eqModalCancelar = function() {
+  document.getElementById('eq-modal-overlay').classList.remove('open');
+};
+
+window.eqModalOK = function() {
+  const todos = [...document.querySelectorAll('.eq-modal-chk')];
+  const sel = todos.filter(cb => cb.checked).map(cb => cb.value);
+  if(sel.length === 0 || sel.length === todos.length) {
+    EQ_FILTRO_REND = null;
+    document.getElementById('rend-eq-label').textContent = 'Todos los equipos';
+  } else {
+    EQ_FILTRO_REND = new Set(sel);
+    document.getElementById('rend-eq-label').textContent =
+      sel.length <= 2 ? sel.join(', ') : `${sel.length} equipos`;
+  }
+  document.getElementById('eq-modal-overlay').classList.remove('open');
+  renderRendimiento();
+};
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('eq-modal-overlay').addEventListener('click', function(e) {
+  if(e.target === this) eqModalCancelar();
+});
 
 window.addEventListener('DOMContentLoaded', () => consultar());
 </script>
