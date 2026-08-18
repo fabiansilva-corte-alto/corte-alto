@@ -245,12 +245,12 @@ input.bad{border-color:var(--red)!important;background:var(--red-bg)!important;c
         </div>
       </div>
       <!-- Encabezado columnas -->
-      <div id="sc-col-headers" style="display:grid;grid-template-columns:1fr 1fr 55px 65px 60px 60px 28px;gap:4px;align-items:center;margin-bottom:6px;padding:0 4px">
-        <span style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase">Tipo</span>
-        <span style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase">Producto</span>
-        <span style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">Largo</span>
-        <span style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">Diám.</span>
-        <span id="sc-hdr-cantidad" style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">N° Cargas</span>
+      <div id="sc-col-headers" style="display:grid;grid-template-columns:1fr 1fr 50px 60px 56px 28px;gap:3px;align-items:center;margin-bottom:4px;padding:0 2px">
+        <span style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase">Tipo</span>
+        <span style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase">Producto</span>
+        <span style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">Largo</span>
+        <span style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">Diám.</span>
+        <span id="sc-hdr-cantidad" style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">N° Cargas</span>
         <span></span>
       </div>
       <!-- FRESCA -->
@@ -1885,17 +1885,17 @@ window.scAgregarFila=function(tipo='',prod='',largo='',diam='',calidad='FRESCA')
   row.dataset.scCal=calidad;
   const scModo=window.SC_MODO||'cargas';
   row.dataset.scModo=scModo;
-  row.style.cssText='background:var(--surface-1);border:0.5px solid var(--border);border-radius:8px;padding:6px 8px;margin-bottom:6px';
-  const prodSel=`<select class="sc-prod-sel" style="font-size:12px;padding:5px 3px;width:100%"><option value="${prod}">${prod||'— Prod —'}</option></select>`;
+  row.style.cssText='background:var(--surface-1);border:0.5px solid var(--border);border-radius:8px;padding:4px 6px;margin-bottom:5px';
+  const prodSel=`<select class="sc-prod-sel" style="font-size:11px;padding:3px 2px;width:100%"><option value="${prod}">${prod||'— Prod —'}</option></select>`;
   const phCargas=scModo==='volumen'?'0,000':'0';
   row.innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr 55px 65px 60px 28px;gap:4px;align-items:center;margin-bottom:5px">
-      <select class="sc-tipo-sel" style="font-size:12px;padding:5px 3px"><option value="">— Tipo —</option>${tiposOpts}</select>
+    <div style="display:grid;grid-template-columns:1fr 1fr 50px 60px 56px 28px;gap:3px;align-items:center;margin-bottom:3px">
+      <select class="sc-tipo-sel" style="font-size:11px;padding:3px 2px"><option value="">— Tipo —</option>${tiposOpts}</select>
       ${prodSel}
-      <input type="text" inputmode="decimal" value="${largo}" placeholder="0,00" class="sc-largo-inp" style="text-align:center;font-size:12px;width:100%">
-      <input type="text" inputmode="text" value="${diam}" placeholder="8-28" class="sc-diam-inp" style="text-align:center;font-size:12px;width:100%">
-      <input type="text" inputmode="decimal" value="" placeholder="${phCargas}" class="sc-cargas-inp" style="text-align:center;font-size:13px;font-weight:600;width:100%">
-      <button class="sc-del-btn" style="background:#fff;color:var(--red);border:1px solid #F7C1C1;border-radius:6px;padding:4px 6px;cursor:pointer"><i class="ti ti-trash"></i></button>
+      <input type="text" inputmode="decimal" value="${largo}" placeholder="0,00" class="sc-largo-inp" style="text-align:center;font-size:11px;padding:3px 2px;width:100%">
+      <input type="text" inputmode="text" value="${diam}" placeholder="8-28" class="sc-diam-inp" style="text-align:center;font-size:11px;padding:3px 2px;width:100%">
+      <input type="text" inputmode="decimal" value="" placeholder="${phCargas}" class="sc-cargas-inp" style="text-align:center;font-size:12px;font-weight:600;padding:3px 2px;width:100%">
+      <button class="sc-del-btn" style="background:#fff;color:var(--red);border:1px solid #F7C1C1;border-radius:6px;padding:3px 5px;cursor:pointer"><i class="ti ti-trash"></i></button>
     </div>
     <input type="hidden" class="sc-cal-inp" value="${calidad}">`;
   const _calId=calidad==='ESPORADA'?'sc-filas-esporada':calidad==='MANCHADA'?'sc-filas-manchada':'sc-filas-fresca';
