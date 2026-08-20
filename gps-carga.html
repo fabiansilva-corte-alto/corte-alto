@@ -278,6 +278,30 @@ input[type="date"]:focus{outline:2px solid var(--ac);outline-offset:1px;}
   display:flex;align-items:center;
 }
 .btn-del:hover{color:var(--rojo);background:var(--rojo-s);}
+.btn-edit{
+  background:none;border:none;color:var(--ts);cursor:pointer;
+  padding:4px;border-radius:4px;transition:color .15s,background .15s;
+  display:flex;align-items:center;
+}
+.btn-edit:hover{color:var(--azul);background:var(--azul-s);}
+.edit-fecha-row{
+  display:flex;align-items:center;gap:6px;
+  background:var(--azul-s);border:1px solid #aed6f1;
+  border-radius:6px;padding:6px 10px;margin-top:6px;font-size:12px;
+}
+.edit-fecha-row input[type="date"]{
+  border:1px solid #aed6f1;border-radius:5px;padding:4px 8px;
+  font-size:12px;font-family:var(--f);color:var(--tp);background:var(--sup);
+}
+.btn-edit-ok{
+  background:var(--azul);color:#fff;border:none;padding:4px 10px;
+  border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;
+}
+.btn-edit-ok:hover{background:#1a5276;}
+.btn-edit-cancel{
+  background:none;border:1px solid #aed6f1;color:var(--azul);
+  padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;
+}
 
 .empty-state{
   text-align:center;padding:40px 20px;color:var(--ts);
@@ -503,12 +527,12 @@ if('serviceWorker' in navigator){
    FIREBASE CONFIG — pegar credenciales reales
 ══════════════════════════════════════ */
 const firebaseConfig = {
-  apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
-  authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
-  projectId: "reporte-inicio-faena-forestal",
-  storageBucket: "reporte-inicio-faena-forestal.firebasestorage.app",
-  messagingSenderId: "962534414054",
-  appId: "1:962534414054:web:fa43371d31413fc0524d27"
+  apiKey: "PEGAR_AQUI",
+  authDomain: "PEGAR_AQUI",
+  projectId: "PEGAR_AQUI",
+  storageBucket: "PEGAR_AQUI",
+  messagingSenderId: "PEGAR_AQUI",
+  appId: "PEGAR_AQUI"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -958,7 +982,7 @@ async function cargarHistorial() {
     cont.innerHTML = snap.docs.map(d => {
       const dt = d.data();
       return `
-        <div class="hist-row">
+        <div class="hist-row" id="hrow-${d.id}">
           <span class="hist-fecha">📅 ${formatFecha(dt.fecha)}</span>
           <span class="hist-meta">
             ${dt.totalMoviles} móviles · ${dt.totalKm} km ·
@@ -966,13 +990,85 @@ async function cargarHistorial() {
             <span style="color:var(--amarillo)">${dt.totalExcRuta} exc. ruta</span>
             ${dt.sinGPS&&dt.sinGPS.length ? ` · <span style="color:var(--rojo)">⚠ Sin GPS: ${dt.sinGPS.join(', ')}</span>` : ''}
           </span>
+          <button class="btn-edit" onclick="mostrarEditFecha('${d.id}','${dt.fecha}')" title="Editar fecha">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
           <button class="btn-del" onclick="eliminarRegistro('${d.id}','${dt.fecha}')" title="Eliminar este día">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
           </button>
+        </div>
+        <div id="hedit-${d.id}" style="display:none;padding:0 0 8px 0;">
+          <div class="edit-fecha-row">
+            <span style="color:var(--azul);font-weight:600;">✏️ Nueva fecha:</span>
+            <input type="date" id="finp-${d.id}" value="${dt.fecha}">
+            <button class="btn-edit-ok" onclick="guardarNuevaFecha('${d.id}','${dt.fecha}')">Guardar</button>
+            <button class="btn-edit-cancel" onclick="ocultarEditFecha('${d.id}')">Cancelar</button>
+          </div>
         </div>`;
     }).join('');
   } catch(err) {
     cont.innerHTML = `<div class="empty-state"><p style="color:var(--rojo)">Error al cargar historial: ${err.message}</p></div>`;
+  }
+}
+
+function mostrarEditFecha(id, fechaActual) {
+  // Ocultar cualquier otro editor abierto
+  document.querySelectorAll('[id^="hedit-"]').forEach(el => el.style.display = 'none');
+  document.getElementById('hedit-' + id).style.display = 'block';
+  document.getElementById('finp-' + id).focus();
+}
+
+function ocultarEditFecha(id) {
+  document.getElementById('hedit-' + id).style.display = 'none';
+}
+
+async function guardarNuevaFecha(idAntiguo, fechaAntigua) {
+  const nuevaFecha = document.getElementById('finp-' + idAntiguo).value;
+  if (!nuevaFecha) { mostrarToast('Selecciona una fecha válida', 'warn'); return; }
+  if (nuevaFecha === fechaAntigua) { ocultarEditFecha(idAntiguo); return; }
+
+  // Verificar que la nueva fecha no exista ya
+  const existe = await db.collection(COL).doc(nuevaFecha).get();
+  if (existe.exists) {
+    mostrarToast(`Ya existe un registro para ${formatFecha(nuevaFecha)}`, 'warn');
+    return;
+  }
+
+  try {
+    // Leer documento original completo
+    const docRef = db.collection(COL).doc(idAntiguo);
+    const snap = await docRef.get();
+    const data = snap.data();
+
+    // Leer subcolección móviles
+    const movSnap = await docRef.collection('moviles').get();
+
+    // Crear nuevo documento con nueva fecha como ID
+    const nuevoRef = db.collection(COL).doc(nuevaFecha);
+    await nuevoRef.set({
+      ...data,
+      fecha: nuevaFecha,
+      fechaTS: firebase.firestore.Timestamp.fromDate(new Date(nuevaFecha + 'T12:00:00')),
+    });
+
+    // Copiar subcolección móviles al nuevo documento
+    const batch = db.batch();
+    movSnap.forEach(m => {
+      batch.set(nuevoRef.collection('moviles').doc(m.id), m.data());
+    });
+    await batch.commit();
+
+    // Eliminar documento antiguo y su subcolección
+    const batchDel = db.batch();
+    movSnap.forEach(m => batchDel.delete(docRef.collection('moviles').doc(m.id)));
+    await batchDel.commit();
+    await docRef.delete();
+
+    mostrarToast(`Fecha corregida: ${formatFecha(fechaAntigua)} → ${formatFecha(nuevaFecha)}`, 'ok');
+    cargarHistorial();
+  } catch(err) {
+    mostrarToast('Error al editar fecha: ' + err.message, 'err');
+    console.error(err);
   }
 }
 
