@@ -713,13 +713,21 @@ async function analizarArchivos() {
       archivos.pick ? leerCSV(archivos.pick) : Promise.resolve([]),
     ]);
 
-    // Construir mapa de excesos en ruta por patente
+    // Construir mapa de excesos en ruta por patente + velocidad máxima + límite
     const excRuta = {};
+    const velMaxRuta = {};   // velocidad máxima registrada en ruta por patente
+    const velLimRuta = {};   // velocidad límite en ruta por patente
     [...rowsCam, ...rowsFur, ...rowsPick].forEach(r => {
       const pat = (r['Placa patente'] || r['Patente'] || '').trim().toUpperCase();
       if (!pat) return;
       const n = parseInt(r['Numero excesos'] || r['Número excesos'] || 0) || 0;
       excRuta[pat] = (excRuta[pat] || 0) + n;
+      // Velocidad máxima alcanzada (campo puede variar por proveedor)
+      const vmax = parseNum(r['Velocidad maxima (km/h)'] || r['Vel. Maxima'] || r['Velocidad Maxima'] || r['velocidad_maxima'] || 0);
+      if (vmax > (velMaxRuta[pat] || 0)) velMaxRuta[pat] = vmax;
+      // Velocidad límite de la vía
+      const vlim = parseNum(r['Velocidad Limite (km/h)'] || r['Vel. Limite'] || r['Velocidad Limite'] || 0);
+      if (vlim > 0 && !velLimRuta[pat]) velLimRuta[pat] = vlim;
     });
 
     // Construir mapa de excesos en geocerca por patente
@@ -773,6 +781,8 @@ async function analizarArchivos() {
         imei,
         excGeo: excGeo[patCSV] || 0,
         excRuta: excRuta[patCSV] || 0,
+        velMaxRuta: velMaxRuta[patCSV] || 0,
+        velLimRuta: velLimRuta[patCSV] || 0,
         sinGPS,
       };
     });
@@ -966,6 +976,8 @@ async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo) {
         odomFin: m.odomFin,
         excGeo: m.excGeo,
         excRuta: m.excRuta,
+        velMaxRuta: m.velMaxRuta || 0,
+        velLimRuta: m.velLimRuta || 0,
         sinGPS: m.sinGPS,
         eventosGeo: eventosGeo[m.patente] || [],
       });

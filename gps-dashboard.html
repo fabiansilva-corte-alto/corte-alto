@@ -217,6 +217,65 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
   .kpi .kv{font-size:20px;}
   .lbl-periodo{display:none;}
 }
+/* ALERTA HEADER 5 DÍAS */
+.alerta-header{
+  background:#7d1c1c;color:#fff;
+  padding:7px 20px;font-size:12px;font-weight:600;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.alerta-header.oculta{display:none;}
+.alerta-header .tags-sin{display:flex;flex-wrap:wrap;gap:4px;}
+.alerta-header .tag-pat{
+  background:rgba(255,255,255,.2);border-radius:10px;
+  padding:1px 7px;font-size:11px;font-weight:700;
+}
+/* SELECTOR MÚLTIPLE */
+.multi-wrap{position:relative;}
+.multi-display{
+  border:1px solid var(--vb);border-radius:5px;padding:6px 10px;
+  font-size:12px;background:var(--sup);cursor:pointer;min-height:34px;
+  display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+}
+.multi-display .tag-sel{
+  background:var(--vs);border:1px solid var(--vb);
+  border-radius:3px;padding:1px 6px;font-size:11px;
+}
+.multi-drop{
+  display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:99;
+  background:var(--sup);border:1px solid var(--vb);border-radius:6px;
+  box-shadow:0 4px 14px rgba(0,0,0,.15);max-height:260px;overflow-y:auto;
+}
+.multi-drop.abierto{display:block;}
+.multi-op{
+  display:flex;align-items:center;gap:8px;padding:7px 12px;
+  font-size:12px;cursor:pointer;border-bottom:1px solid var(--vb);
+}
+.multi-op:last-of-type{border-bottom:none;}
+.multi-op:hover{background:var(--vs);}
+.multi-op input{accent-color:var(--ac);width:14px;height:14px;flex-shrink:0;}
+.multi-foot{
+  display:flex;gap:8px;padding:8px 12px;border-top:2px solid var(--vb);
+  position:sticky;bottom:0;background:var(--sup);
+}
+.btn-mok{
+  background:var(--vd);color:#fff;border:none;padding:6px 16px;
+  border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;flex:1;
+}
+.btn-mok:hover{background:var(--vc);}
+.btn-mcancel{
+  background:none;border:1px solid var(--vb);color:var(--ts);
+  padding:6px 12px;border-radius:5px;font-size:12px;cursor:pointer;
+}
+/* TABLA GEOCERCA */
+.tabla-geo{width:100%;border-collapse:collapse;font-size:12px;}
+.tabla-geo thead tr{background:var(--vd);color:#fff;}
+.tabla-geo thead th{padding:8px 10px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.4px;white-space:nowrap;}
+.tabla-geo thead th.r{text-align:right;}
+.tabla-geo tbody tr{border-bottom:1px solid var(--vb);}
+.tabla-geo tbody tr:hover{background:var(--vs);}
+.tabla-geo tbody td{padding:7px 10px;}
+.tabla-geo tbody td.r{text-align:right;}
+.vel-alta{color:var(--rojo);font-weight:700;}
 </style>
 </head>
 <body>
@@ -260,6 +319,12 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
   <span class="lbl-periodo" id="lbl-periodo">—</span>
 </div>
 
+<!-- ALERTA FIJA 5+ DÍAS SIN GPS -->
+<div class="alerta-header oculta" id="alerta-5dias">
+  <span>⚠️ Sin transmisión 5+ días:</span>
+  <div class="tags-sin" id="tags-5dias"></div>
+</div>
+
 <main>
 
   <!-- KPIs -->
@@ -277,7 +342,7 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
       <div style="margin-left:auto;display:flex;gap:6px;">
         <button class="tab-btn on" data-g="excesos" onclick="cambiarGrafico(this)">Excesos</button>
         <button class="tab-btn" data-g="km" onclick="cambiarGrafico(this)">Km recorridos</button>
-        <button class="tab-btn" data-g="tendencia" onclick="cambiarGrafico(this)">Tendencia</button>
+        <button class="tab-btn" data-g="tendencia" onclick="cambiarGrafico(this)">Km/Exceso</button>
       </div>
     </div>
     <div class="card-body">
@@ -293,6 +358,7 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
       <button class="tab-btn on" onclick="cambiarTab(this,'tab-ranking')">🏆 Ranking excesos</button>
       <button class="tab-btn" onclick="cambiarTab(this,'tab-movil')">🚙 Por móvil</button>
       <button class="tab-btn" onclick="cambiarTab(this,'tab-conductor')">👤 Por conductor</button>
+      <button class="tab-btn" onclick="cambiarTab(this,'tab-geocerca')">📍 Detalle geocerca</button>
     </div>
 
     <!-- TAB: RANKING -->
@@ -302,7 +368,6 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
           <thead>
             <tr>
               <th>#</th><th>Patente</th><th>Tipo</th><th>Conductor(es)</th>
-              <th class="r">Km total</th>
               <th class="r">Exc. Geocerca</th>
               <th class="r">Exc. Ruta</th>
               <th class="r">Total exc.</th>
@@ -313,19 +378,29 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
       </div>
     </div>
 
-    <!-- TAB: POR MÓVIL -->
+    <!-- TAB: POR MÓVIL (selección múltiple) -->
     <div class="tab-panel" id="tab-movil">
-      <div class="selector-movil">
-        <label>Seleccionar móvil:</label>
-        <select id="sel-movil" onchange="renderMovil()">
-          <option value="">— Elige una patente —</option>
-        </select>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <label style="font-size:12px;font-weight:600;color:var(--vd);white-space:nowrap;">Seleccionar móvil(es):</label>
+        <div class="multi-wrap" style="flex:1;min-width:200px;max-width:400px;">
+          <div class="multi-display" id="multi-display" onclick="toggleMultiDrop()">
+            <span style="color:var(--ts);font-size:12px;">— Elige una o más patentes —</span>
+          </div>
+          <div class="multi-drop" id="multi-drop">
+            <div id="multi-opts"></div>
+            <div class="multi-foot">
+              <button class="btn-mok" onclick="aplicarMultiMovil()">✓ Ver selección</button>
+              <button class="btn-mcancel" onclick="cerrarMultiDrop()">Cancelar</button>
+            </div>
+          </div>
+        </div>
+        <button class="btn-s" onclick="limpiarSelMovil()" style="font-size:11px;padding:5px 10px;">Limpiar</button>
       </div>
       <div id="detalle-movil">
         <div class="empty">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-          <h3>Selecciona un móvil</h3>
-          <p>Verás el historial día a día con km, conductores y excesos.</p>
+          <h3>Selecciona uno o más móviles</h3>
+          <p>Verás la tabla comparativa día a día con km, conductores y excesos.</p>
         </div>
       </div>
     </div>
@@ -361,6 +436,34 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
         <p>Verás el resumen de la flota, gráficos y ranking de excesos.</p>
       </div>
     </div>
+
+    <!-- TAB: DETALLE GEOCERCA -->
+    <div class="tab-panel" id="tab-geocerca">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <div class="fg">
+          <label>Móvil:</label>
+          <select id="sel-geo-movil" onchange="renderDetalleGeo()">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Geocerca:</label>
+          <select id="sel-geo-zona" onchange="renderDetalleGeo()">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <span style="font-size:11px;color:var(--ts);margin-left:auto;" id="lbl-geo-total"></span>
+      </div>
+      <div style="overflow-x:auto;">
+        <div id="detalle-geo-wrap">
+          <div class="empty">
+            <h3>Consulta el período primero</h3>
+            <p>Aparecerá el detalle de cada evento de velocidad en geocercas.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 </main>
@@ -422,15 +525,13 @@ async function consultar() {
       return;
     }
 
-    // Lee ambos formatos: array en el documento (nuevo) o subcolección (antiguo)
+    // Lee ambos formatos: array en documento (nuevo) o subcolección (antiguo)
     datos = await Promise.all(snap.docs.map(async d => {
       const dia = d.data();
       let moviles = [];
       if (dia.moviles && dia.moviles.length > 0) {
-        // Formato nuevo: array dentro del documento
         moviles = dia.moviles;
       } else {
-        // Formato antiguo: subcolección
         const movSnap = await d.ref.collection('moviles').get();
         moviles = movSnap.docs.map(m => m.data());
       }
@@ -451,8 +552,11 @@ async function consultar() {
     renderKPIs();
     renderGrafico();
     renderRanking();
-    renderSelectMovil();
+    poblarMultiMovil();
     renderConductores();
+    poblarFiltrosGeo();
+    renderDetalleGeo();
+    verificar5Dias();
 
   } catch(err) {
     toast('Error: ' + err.message, 'err');
@@ -465,72 +569,55 @@ async function consultar() {
 
 /* ─── KPIs ─── */
 function renderKPIs() {
-  // Aplanar todos los móviles del período
   const todosMoviles = datos.flatMap(d => d.moviles);
-  const totalKm   = todosMoviles.reduce((s,m) => s + (m.km||0), 0);
-  const totalGeo  = todosMoviles.reduce((s,m) => s + (m.excGeo||0), 0);
-  const totalRuta = todosMoviles.reduce((s,m) => s + (m.excRuta||0), 0);
-  const totalExc  = totalGeo + totalRuta;
+  const totalKm  = todosMoviles.reduce((s,m) => s+(m.km||0), 0);
+  const totalGeo = todosMoviles.reduce((s,m) => s+(m.excGeo||0), 0);
 
-  // Patentes únicas sin GPS en algún día
+  // Sin GPS en el período
   const sinGPSSet = new Set();
   datos.forEach(d => (d.sinGPS||[]).forEach(p => sinGPSSet.add(p)));
 
-  // Mejor y peor móvil (por total excesos)
+  // Agrupar por móvil para calcular infractores por tipo
   const porMovil = agruparPorMovil();
-  const sorted = Object.values(porMovil).sort((a,b) => (b.excGeo+b.excRuta)-(a.excGeo+a.excRuta));
-  const peor = sorted[0];
+  const movArr = Object.values(porMovil);
 
-  document.getElementById('kpi-grid').innerHTML = `
-    <div class="kpi azul">
-      <div class="kl">Días con datos</div>
-      <div class="kv">${datos.length}</div>
-      <div class="ks">en el período</div>
-    </div>
-    <div class="kpi verde">
-      <div class="kl">Km totales flota</div>
-      <div class="kv">${Math.round(totalKm).toLocaleString('es-CL')}</div>
-      <div class="ks">km acumulados</div>
-    </div>
-    <div class="kpi rojo">
-      <div class="kl">Exc. geocercas</div>
-      <div class="kv">${totalGeo}</div>
-      <div class="ks">eventos en geocercas</div>
-    </div>
-    <div class="kpi naranja">
-      <div class="kl">Exc. en ruta</div>
-      <div class="kv">${totalRuta}</div>
-      <div class="ks">eventos en ruta</div>
-    </div>
-    <div class="kpi ${sinGPSSet.size > 0 ? 'rojo' : 'verde'}">
-      <div class="kl">Sin GPS/movimiento</div>
-      <div class="kv">${sinGPSSet.size}</div>
-      <div class="ks">patentes distintas</div>
-    </div>
-    ${peor ? `
-    <div class="kpi rojo">
-      <div class="kl">Mayor infractor</div>
-      <div class="kv" style="font-size:16px;">${peor.patente}</div>
-      <div class="ks">${peor.excGeo + peor.excRuta} excesos totales</div>
-    </div>` : ''}
-  `;
+  // Mayor infractor geocerca
+  const peorGeo = movArr.filter(m=>m.excGeo>0).sort((a,b)=>b.excGeo-a.excGeo)[0];
 
-  // Alerta sin GPS
+  // Mayor infractor por tipo (vel máxima en ruta)
+  const pickups    = movArr.filter(m => m.tipo==='PickUp'          && m.velMaxRuta>0).sort((a,b)=>b.velMaxRuta-a.velMaxRuta)[0];
+  const camComb    = movArr.filter(m => m.tipo==='Cam. Combustible'&& m.velMaxRuta>0).sort((a,b)=>b.velMaxRuta-a.velMaxRuta)[0];
+  const furgones   = movArr.filter(m => m.tipo==='Furgón'          && m.velMaxRuta>0).sort((a,b)=>b.velMaxRuta-a.velMaxRuta)[0];
+
+  // Móvil con mayor recorrido
+  const mayorKm = movArr.sort((a,b)=>b.km-a.km)[0];
+
+  const kpiCard = (cls,label,val,sub) =>
+    `<div class="kpi ${cls}"><div class="kl">${label}</div><div class="kv">${val}</div><div class="ks">${sub}</div></div>`;
+
+  document.getElementById('kpi-grid').innerHTML =
+    kpiCard('azul','Días con datos', datos.length, 'en el período') +
+    kpiCard('verde','Km totales flota', Math.round(totalKm).toLocaleString('es-CL')+' km', 'acumulados') +
+    kpiCard('rojo','Exc. geocercas', totalGeo, 'eventos en geocercas') +
+    kpiCard(sinGPSSet.size>0?'rojo':'verde','Sin GPS/movimiento', sinGPSSet.size, 'patentes distintas') +
+    (peorGeo ? kpiCard('rojo','Mayor infractor geocerca', peorGeo.patente, peorGeo.excGeo+' eventos · '+escH(peorGeo.conductores?[...peorGeo.conductores][0]||'':'')) : '') +
+    (pickups  ? kpiCard('rojo','Infractor PickUp >120', pickups.patente, pickups.velMaxRuta+' km/h máx · '+escH([...pickups.conductores][0]||'')) : '') +
+    (camComb  ? kpiCard('rojo','Infractor Cam. Comb >90', camComb.patente, camComb.velMaxRuta+' km/h máx · '+escH([...camComb.conductores][0]||'')) : '') +
+    (furgones ? kpiCard('rojo','Infractor Furgón >90', furgones.patente, furgones.velMaxRuta+' km/h máx · '+escH([...furgones.conductores][0]||'')) : '') +
+    (mayorKm  ? kpiCard('azul','Mayor recorrido', mayorKm.patente, Math.round(mayorKm.km)+' km') : '');
+
+  // Alerta sin GPS en el período
   const wrap = document.getElementById('alerta-gps-wrap');
-  if (sinGPSSet.size > 0) {
-    wrap.innerHTML = `
-      <div class="alerta-gps">
-        <span class="ico">⚠️</span>
-        <div>
-          <strong>Móviles sin movimiento o sin señal GPS en el período</strong>
-          <div class="patentes-sin-gps">
-            ${[...sinGPSSet].map(p => `<span class="tag-sin-gps">${p}</span>`).join('')}
-          </div>
+  wrap.innerHTML = sinGPSSet.size > 0 ? `
+    <div class="alerta-gps">
+      <span class="ico">⚠️</span>
+      <div>
+        <strong>Móviles sin movimiento o sin señal GPS en el período</strong>
+        <div class="patentes-sin-gps">
+          ${[...sinGPSSet].map(p=>`<span class="tag-sin-gps">${p}</span>`).join('')}
         </div>
-      </div>`;
-  } else {
-    wrap.innerHTML = '';
-  }
+      </div>
+    </div>` : '';
 }
 
 /* ─── AGRUPAR POR MÓVIL (para gráficos y ranking) ─── */
@@ -541,11 +628,13 @@ function agruparPorMovil() {
       const p = m.patente;
       if (!map[p]) map[p] = {
         patente: p, tipo: m.tipo||'', km: 0,
-        excGeo: 0, excRuta: 0, conductores: new Set(), dias: 0
+        excGeo: 0, excRuta: 0, velMaxRuta: 0,
+        conductores: new Set(), dias: 0
       };
       map[p].km      += m.km || 0;
       map[p].excGeo  += m.excGeo || 0;
       map[p].excRuta += m.excRuta || 0;
+      if ((m.velMaxRuta||0) > map[p].velMaxRuta) map[p].velMaxRuta = m.velMaxRuta||0;
       map[p].dias++;
       if (m.conductor) map[p].conductores.add(m.conductor);
     });
@@ -623,47 +712,44 @@ function renderGrafico() {
       }
     });
 
-  } else { // tendencia
-    const labels = datos.map(d => fmtFechaCorta(d.fecha));
-    const excGeoXdia  = datos.map(d => (d.moviles||[]).reduce((s,m) => s+(m.excGeo||0), 0));
-    const excRutaXdia = datos.map(d => (d.moviles||[]).reduce((s,m) => s+(m.excRuta||0), 0));
-    const kmXdia      = datos.map(d => (d.moviles||[]).reduce((s,m) => s+(m.km||0), 0));
+  } else { // Km/Exceso por móvil
+    const porMovil = agruparPorMovil();
+    const movArr = Object.values(porMovil)
+      .filter(m => m.excGeo + m.excRuta > 0)
+      .map(m => ({
+        patente: m.patente,
+        kmExceso: m.excGeo+m.excRuta > 0
+          ? Math.round(m.km / (m.excGeo+m.excRuta))
+          : null
+      }))
+      .filter(m => m.kmExceso !== null)
+      .sort((a,b) => a.kmExceso - b.kmExceso); // menor = más peligroso
 
     graficoActual = new Chart(ctx, {
-      type: 'line',
+      type: 'bar',
       data: {
-        labels,
-        datasets: [
-          {
-            label: 'Exc. Geocercas',
-            data: excGeoXdia,
-            borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,.1)',
-            tension: .3, fill: true, pointRadius: 4,
-          },
-          {
-            label: 'Exc. Ruta',
-            data: excRutaXdia,
-            borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,.08)',
-            tension: .3, fill: true, pointRadius: 4,
-          },
-          {
-            label: 'Km ÷ 10',
-            data: kmXdia.map(k => Math.round(k/10)),
-            borderColor: '#7ab648', backgroundColor: 'rgba(122,182,72,.08)',
-            tension: .3, fill: false, pointRadius: 3,
-            borderDash: [4,3],
-          }
-        ]
+        labels: movArr.map(m => m.patente),
+        datasets: [{
+          label: 'Km por exceso',
+          data: movArr.map(m => m.kmExceso),
+          backgroundColor: movArr.map(m =>
+            m.kmExceso < 50  ? '#c0392b' :
+            m.kmExceso < 150 ? '#e67e22' : '#7ab648'
+          ),
+          borderRadius: 3,
+        }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'top' },
-          title: { display: true, text: 'Tendencia diaria del período', color: '#1a3a1a', font: { weight: '700' } }
+          legend: { display: false },
+          title: { display: true, text: 'Km / Exceso por móvil (menor = más riesgo)', color: '#1a3a1a', font: { weight: '700' } },
+          tooltip: { callbacks: { label: ctx => ctx.parsed.y + ' km por exceso' } }
         },
         scales: {
           x: { grid: { display: false } },
-          y: { beginAtZero: true, grid: { color: '#e8f0e8' } }
+          y: { beginAtZero: true, grid: { color: '#e8f0e8' },
+               title: { display: true, text: 'Km / Exceso' } }
         }
       }
     });
@@ -693,7 +779,6 @@ function renderRanking() {
       <td><strong>${m.patente}</strong></td>
       <td>${badgeTipo(m.tipo)}</td>
       <td style="font-size:11px;color:var(--ts);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${conductores}">${conductores}</td>
-      <td class="r">${Math.round(m.km).toLocaleString('es-CL')}</td>
       <td class="r"><span class="${total > 0 ? 'exc-alto' : 'exc-ok'}">${m.excGeo||'—'}</span></td>
       <td class="r"><span class="${m.excRuta > 0 ? 'exc-medio' : 'exc-ok'}">${m.excRuta||'—'}</span></td>
       <td class="r"><span class="${clsExc}">${total||'—'}</span></td>
@@ -701,68 +786,8 @@ function renderRanking() {
   }).join('');
 }
 
-/* ─── DETALLE POR MÓVIL ─── */
-function renderSelectMovil() {
-  const porMovil = agruparPorMovil();
-  const sorted = Object.keys(porMovil).sort();
-  const sel = document.getElementById('sel-movil');
-  sel.innerHTML = '<option value="">— Elige una patente —</option>' +
-    sorted.map(p => `<option value="${p}">${p}</option>`).join('');
-}
-
-function renderMovil() {
-  const pat = document.getElementById('sel-movil').value;
-  const cont = document.getElementById('detalle-movil');
-  if (!pat) {
-    cont.innerHTML = `<div class="empty"><h3>Selecciona un móvil</h3></div>`;
-    return;
-  }
-
-  const diasConMovil = datos
-    .map(d => ({ fecha: d.fecha, movil: (d.moviles||[]).find(m => m.patente === pat) }))
-    .filter(d => d.movil);
-
-  if (diasConMovil.length === 0) {
-    cont.innerHTML = `<div class="empty"><h3>Sin datos para ${pat} en este período</h3></div>`;
-    return;
-  }
-
-  const totalKm  = diasConMovil.reduce((s,d) => s + (d.movil.km||0), 0);
-  const totalGeo = diasConMovil.reduce((s,d) => s + (d.movil.excGeo||0), 0);
-  const totalRuta= diasConMovil.reduce((s,d) => s + (d.movil.excRuta||0), 0);
-
-  cont.innerHTML = `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-      <div class="kpi azul" style="min-width:100px;flex:1;">
-        <div class="kl">Días</div><div class="kv">${diasConMovil.length}</div>
-      </div>
-      <div class="kpi verde" style="min-width:100px;flex:1;">
-        <div class="kl">Km total</div><div class="kv">${Math.round(totalKm)}</div>
-      </div>
-      <div class="kpi rojo" style="min-width:100px;flex:1;">
-        <div class="kl">Exc. geocerca</div><div class="kv">${totalGeo}</div>
-      </div>
-      <div class="kpi naranja" style="min-width:100px;flex:1;">
-        <div class="kl">Exc. ruta</div><div class="kv">${totalRuta}</div>
-      </div>
-    </div>
-    <div class="hist-movil">
-      ${diasConMovil.map(d => {
-        const m = d.movil;
-        const sinGPS = m.sinGPS;
-        return `<div class="hist-dia">
-          <span class="hd-fecha">${fmtFecha(d.fecha)}</span>
-          <span class="hd-conductor">👤 ${m.conductor || '—'}</span>
-          <span class="hd-km">${sinGPS ? '—' : m.km.toFixed(1) + ' km'}</span>
-          ${m.excGeo > 0 ? `<span class="hd-badge geo">⚡ ${m.excGeo} geo</span>` : ''}
-          ${m.excRuta > 0 ? `<span class="hd-badge ruta">🛣 ${m.excRuta} ruta</span>` : ''}
-          ${sinGPS ? `<span class="hd-badge sin">⚠ Sin GPS</span>` : ''}
-          ${!sinGPS && m.excGeo===0 && m.excRuta===0 ? `<span class="hd-badge ok">✓ OK</span>` : ''}
-        </div>`;
-      }).join('')}
-    </div>
-  `;
-}
+/* ─── DETALLE POR MÓVIL — reemplazado por selector múltiple ─── */
+/* renderMovilMulti() está en la sección de selector múltiple */
 
 /* ─── DETALLE POR CONDUCTOR ─── */
 function renderConductores() {
@@ -886,6 +911,222 @@ function toast(msg, tipo='ok') {
 
 <!-- SERVICE WORKER -->
 <script>
+/* ─── ALERTA 5 DÍAS SIN GPS (independiente del período) ─── */
+async function verificar5Dias() {
+  try {
+    const hoy = new Date();
+    const hace5 = new Date(hoy); hace5.setDate(hoy.getDate() - 5);
+    const limISO = hace5.toISOString().slice(0,10);
+
+    // Traer últimos 10 días de Firestore
+    const snap = await db.collection(COL).orderBy('fecha','desc').limit(10).get();
+    if (snap.empty) return;
+
+    // Recopilar todas las patentes que aparecieron en los últimos 5 días
+    const activas = new Set();
+    snap.docs.forEach(d => {
+      if (d.id >= limISO) {
+        (d.data().sinGPS||[]).forEach(p => {}); // sinGPS son los que no circularon
+        // Patentes que SÍ aparecen en el documento (todas las del día)
+        // Para simplificar: tomamos totalMoviles del resumen, no listamos patentes individuales
+        // La alerta la calculamos desde las patentes que llevan días consecutivos en sinGPS
+      }
+    });
+
+    // Calcular patentes que están en sinGPS en todos los últimos 5 registros disponibles
+    const ultimos5 = snap.docs.slice(0, 5);
+    if (ultimos5.length < 2) return;
+
+    // Intersección: patentes sin GPS en todos los días disponibles
+    let sinGPSTodos = new Set(ultimos5[0].data().sinGPS || []);
+    ultimos5.slice(1).forEach(d => {
+      const s = new Set(d.data().sinGPS || []);
+      sinGPSTodos = new Set([...sinGPSTodos].filter(p => s.has(p)));
+    });
+
+    if (sinGPSTodos.size > 0) {
+      document.getElementById('alerta-5dias').classList.remove('oculta');
+      document.getElementById('tags-5dias').innerHTML =
+        [...sinGPSTodos].map(p => `<span class="tag-pat">${p}</span>`).join('');
+    }
+  } catch(e) { console.warn('alerta 5 días:', e.message); }
+}
+
+/* ─── SELECTOR MÚLTIPLE MÓVILES ─── */
+let movilesSeleccionados = [];
+let multiAbierto = false;
+
+function toggleMultiDrop() {
+  multiAbierto = !multiAbierto;
+  document.getElementById('multi-drop').classList.toggle('abierto', multiAbierto);
+}
+
+function cerrarMultiDrop() {
+  multiAbierto = false;
+  document.getElementById('multi-drop').classList.remove('abierto');
+}
+
+function poblarMultiMovil() {
+  const porMovil = agruparPorMovil();
+  const patentes = Object.keys(porMovil).sort();
+  document.getElementById('multi-opts').innerHTML = patentes.map(p => `
+    <div class="multi-op" onclick="togglePatente('${p}',this)">
+      <input type="checkbox" id="chk-${p}" value="${p}"
+        ${movilesSeleccionados.includes(p)?'checked':''}>
+      <label for="chk-${p}" style="cursor:pointer;flex:1;">${p}
+        <span style="color:var(--ts);font-size:10px;"> · ${porMovil[p].tipo}</span>
+      </label>
+    </div>`).join('');
+}
+
+function togglePatente(pat, el) {
+  const chk = el.querySelector('input');
+  chk.checked = !chk.checked;
+  if (chk.checked) {
+    if (!movilesSeleccionados.includes(pat)) movilesSeleccionados.push(pat);
+  } else {
+    movilesSeleccionados = movilesSeleccionados.filter(p => p !== pat);
+  }
+  el.classList.toggle('on', chk.checked);
+}
+
+function aplicarMultiMovil() {
+  cerrarMultiDrop();
+  // Actualizar display
+  const disp = document.getElementById('multi-display');
+  if (movilesSeleccionados.length === 0) {
+    disp.innerHTML = '<span style="color:var(--ts);font-size:12px;">— Elige una o más patentes —</span>';
+  } else {
+    disp.innerHTML = movilesSeleccionados.map(p =>
+      `<span class="tag-sel">${p}</span>`).join('');
+  }
+  renderMovilMulti();
+}
+
+function limpiarSelMovil() {
+  movilesSeleccionados = [];
+  document.getElementById('multi-display').innerHTML =
+    '<span style="color:var(--ts);font-size:12px;">— Elige una o más patentes —</span>';
+  document.getElementById('detalle-movil').innerHTML =
+    '<div class="empty"><h3>Selecciona uno o más móviles</h3></div>';
+}
+
+function renderMovilMulti() {
+  const cont = document.getElementById('detalle-movil');
+  if (movilesSeleccionados.length === 0) {
+    cont.innerHTML = '<div class="empty"><h3>Selecciona uno o más móviles</h3></div>';
+    return;
+  }
+
+  const fechas = datos.map(d => d.fecha);
+
+  // Tabla comparativa: columnas = días, filas = móviles seleccionados
+  let html = `<div style="overflow-x:auto;">
+    <table class="tabla-rank" style="min-width:500px;">
+      <thead><tr>
+        <th>Móvil</th><th>Conductor</th>
+        ${fechas.map(f=>`<th class="r">${fmtFechaCorta(f)}<br><span style="font-weight:400;font-size:10px;">km · geo · ruta</span></th>`).join('')}
+      </tr></thead>
+      <tbody>`;
+
+  movilesSeleccionados.forEach(pat => {
+    html += `<tr><td><strong>${pat}</strong></td>`;
+    // Conductor más reciente
+    const condsSet = new Set();
+    datos.forEach(d => {
+      const m = (d.moviles||[]).find(x=>x.patente===pat);
+      if (m?.conductor) condsSet.add(m.conductor);
+    });
+    html += `<td style="font-size:11px;color:var(--ts)">${[...condsSet].join(', ')||'—'}</td>`;
+
+    fechas.forEach(f => {
+      const dia = datos.find(d=>d.fecha===f);
+      const m = (dia?.moviles||[]).find(x=>x.patente===pat);
+      if (!m) { html += `<td class="r celda-sin-datos">—</td>`; return; }
+      const kms = m.sinGPS ? '⚠' : m.km.toFixed(1);
+      const geo = m.excGeo>0 ? `<span class="exc-alto">${m.excGeo}</span>` : '—';
+      const ruta= m.excRuta>0? `<span class="exc-medio">${m.excRuta}</span>` : '—';
+      html += `<td class="r" style="font-size:11px;">${kms} · ${geo} · ${ruta}</td>`;
+    });
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  cont.innerHTML = html;
+}
+
+/* ─── DETALLE GEOCERCA ─── */
+function renderDetalleGeo() {
+  const filtMovil = document.getElementById('sel-geo-movil').value;
+  const filtZona  = document.getElementById('sel-geo-zona').value;
+
+  // Recopilar todos los eventos geocerca
+  const eventos = [];
+  datos.forEach(dia => {
+    (dia.moviles||[]).forEach(m => {
+      (m.eventosGeo||[]).forEach(ev => {
+        eventos.push({
+          fecha: dia.fecha,
+          patente: m.patente,
+          conductor: m.conductor||'—',
+          tipo: m.tipo||'',
+          geocerca: ev.geocerca||'',
+          velLimite: ev.velLimite||0,
+          velEvento: ev.velEvento||0,
+          hora: ev.fechaEvento||'',
+        });
+      });
+    });
+  });
+
+  const filtrados = eventos.filter(e =>
+    (!filtMovil || e.patente===filtMovil) &&
+    (!filtZona  || e.geocerca===filtZona)
+  );
+
+  document.getElementById('lbl-geo-total').textContent =
+    `${filtrados.length} evento(s) encontrado(s)`;
+
+  const wrap = document.getElementById('detalle-geo-wrap');
+  if (filtrados.length === 0) {
+    wrap.innerHTML = '<div class="empty"><h3>Sin eventos de geocerca en este período</h3><p>Puede que los datos se hayan cargado con una versión anterior.</p></div>';
+    return;
+  }
+
+  wrap.innerHTML = `<table class="tabla-geo">
+    <thead><tr>
+      <th>Fecha</th><th>Patente</th><th>Conductor</th><th>Geocerca</th>
+      <th class="r">Vel. límite</th><th class="r">Vel. evento</th><th>Hora</th>
+    </tr></thead>
+    <tbody>
+      ${filtrados.map(e => `<tr>
+        <td>${fmtFecha(e.fecha)}</td>
+        <td><strong>${e.patente}</strong></td>
+        <td style="font-size:11px;color:var(--ts)">${escH(e.conductor)}</td>
+        <td style="font-size:11px">${escH(e.geocerca)}</td>
+        <td class="r">${e.velLimite||'—'} km/h</td>
+        <td class="r"><span class="vel-alta">${e.velEvento} km/h</span></td>
+        <td style="font-size:11px;color:var(--ts)">${e.hora||'—'}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function poblarFiltrosGeo() {
+  const patentes = new Set();
+  const geocercas = new Set();
+  datos.forEach(dia => {
+    (dia.moviles||[]).forEach(m => {
+      patentes.add(m.patente);
+      (m.eventosGeo||[]).forEach(ev => geocercas.add(ev.geocerca||''));
+    });
+  });
+  const selMov = document.getElementById('sel-geo-movil');
+  const selZona = document.getElementById('sel-geo-zona');
+  selMov.innerHTML  = '<option value="">Todos</option>' + [...patentes].sort().map(p=>`<option value="${p}">${p}</option>`).join('');
+  selZona.innerHTML = '<option value="">Todas</option>' + [...geocercas].filter(Boolean).sort().map(z=>`<option value="${z}">${escH(z)}</option>`).join('');
+}
+
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').then(reg=>{
     reg.addEventListener('updatefound',()=>{
