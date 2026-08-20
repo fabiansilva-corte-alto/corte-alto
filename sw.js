@@ -26,6 +26,8 @@ const ARCHIVOS_CACHE = [
   './tablero-ddd.html',
   './dashboard.html',
   './resumen_causas_equipo.html',
+  './gps-carga.html',
+  './gps-dashboard.html',
   './manifest.json',
   './logo.png'
 ];

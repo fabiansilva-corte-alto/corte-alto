@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard GPS · Corte Alto</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+:root {
+  --vd:#1a3a1a; --vm:#2d5a2d; --vc:#4a7c4a;
+  --vs:#e8f0e8; --vb:#c2d6c2; --ac:#7ab648; --ac2:#5f9a32;
+  --tp:#1a2e1a; --ts:#5a7a5a; --sup:#ffffff; --fon:#f2f5f2;
+  --rojo:#c0392b; --rojo-s:#fdecea;
+  --naranja:#e67e22; --naranja-s:#fef9e7;
+  --azul:#2471a3; --azul-s:#eaf4fb;
+  --sombra:0 2px 8px rgba(26,58,26,.12);
+  --r:8px; --f:'Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--f);background:var(--fon);color:var(--tp);min-height:100vh;}
+
+/* HEADER */
+header{
+  background:var(--vd);color:#fff;
+  padding:0 20px;height:56px;
+  display:flex;align-items:center;gap:12px;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 6px rgba(0,0,0,.3);
+}
+.btn-volver{
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;
+  font-size:13px;text-decoration:none;display:flex;align-items:center;gap:5px;
+  transition:background .15s;white-space:nowrap;flex-shrink:0;
+}
+.btn-volver:hover{background:rgba(255,255,255,.22);}
+header h1{font-size:16px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+header .sub{font-size:11px;opacity:.6;display:block;}
+
+/* FILTROS BAR */
+.filtros-bar{
+  background:var(--sup);border-bottom:1px solid var(--vb);
+  padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  position:sticky;top:56px;z-index:90;box-shadow:0 2px 4px rgba(0,0,0,.06);
+}
+.fg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ts);}
+.fg label{white-space:nowrap;font-weight:600;}
+.fg select,.fg input[type="date"]{
+  border:1px solid var(--vb);border-radius:5px;padding:5px 8px;
+  font-size:12px;color:var(--tp);background:var(--sup);font-family:var(--f);
+}
+.btn-consultar{
+  background:var(--vd);color:#fff;border:none;
+  padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;
+  cursor:pointer;display:flex;align-items:center;gap:6px;
+  transition:background .15s;white-space:nowrap;
+}
+.btn-consultar:hover{background:var(--vc);}
+.btn-consultar:disabled{opacity:.5;cursor:not-allowed;}
+.lbl-periodo{margin-left:auto;font-size:11px;color:var(--ts);}
+
+/* MAIN */
+main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px;}
+
+/* CARDS */
+.card{background:var(--sup);border:1px solid var(--vb);border-radius:var(--r);box-shadow:var(--sombra);}
+.card-head{
+  padding:12px 16px;border-bottom:1px solid var(--vb);
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.card-head h2{font-size:12px;font-weight:700;color:var(--vd);text-transform:uppercase;letter-spacing:.7px;}
+.acc{width:3px;height:14px;background:var(--ac);border-radius:2px;flex-shrink:0;}
+.card-body{padding:16px;}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+.kpi{
+  background:var(--fon);border:1px solid var(--vb);border-radius:7px;
+  padding:12px 14px;display:flex;flex-direction:column;gap:3px;
+}
+.kpi .kv{font-size:24px;font-weight:700;line-height:1;color:var(--vd);}
+.kpi .kl{font-size:10px;color:var(--ts);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.kpi .ks{font-size:11px;color:var(--ts);}
+.kpi.rojo .kv{color:var(--rojo);}
+.kpi.naranja .kv{color:var(--naranja);}
+.kpi.verde .kv{color:var(--ac2);}
+.kpi.azul .kv{color:var(--azul);}
+
+/* ALERTAS SIN GPS */
+.alerta-gps{
+  display:flex;align-items:flex-start;gap:10px;
+  background:var(--rojo-s);border:1px solid #f5b7b1;
+  border-radius:7px;padding:10px 14px;font-size:12px;
+}
+.alerta-gps .ico{font-size:18px;flex-shrink:0;}
+.alerta-gps strong{color:var(--rojo);display:block;margin-bottom:3px;font-size:13px;}
+.patentes-sin-gps{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;}
+.tag-sin-gps{
+  background:var(--rojo);color:#fff;
+  font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;
+}
+
+/* GRÁFICOS */
+.graficos-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:700px){.graficos-grid{grid-template-columns:1fr;}}
+.grafico-full{grid-column:1/-1;}
+.chart-wrap{position:relative;width:100%;height:260px;}
+@media(max-width:500px){.chart-wrap{height:200px;}}
+
+/* TABS */
+.tabs{display:flex;border-bottom:2px solid var(--vb);background:var(--vs);border-radius:var(--r) var(--r) 0 0;overflow:hidden;}
+.tab-btn{
+  padding:10px 16px;font-size:12px;font-weight:600;
+  color:var(--ts);cursor:pointer;border:none;background:none;
+  border-bottom:2px solid transparent;margin-bottom:-2px;
+  transition:color .15s;white-space:nowrap;
+}
+.tab-btn:hover{color:var(--vd);}
+.tab-btn.on{color:var(--vd);border-bottom-color:var(--ac);background:var(--sup);}
+.tab-panel{display:none;padding:16px;}
+.tab-panel.on{display:block;}
+
+/* TABLA RANKING */
+.tabla-rank{width:100%;border-collapse:collapse;font-size:12px;}
+.tabla-rank thead tr{background:var(--vd);color:#fff;}
+.tabla-rank thead th{padding:8px 10px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.4px;white-space:nowrap;}
+.tabla-rank thead th.r{text-align:right;}
+.tabla-rank tbody tr{border-bottom:1px solid var(--vb);transition:background .1s;}
+.tabla-rank tbody tr:hover{background:var(--vs);}
+.tabla-rank tbody td{padding:7px 10px;vertical-align:middle;}
+.tabla-rank tbody td.r{text-align:right;}
+.num-rank{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:20px;height:20px;border-radius:50%;
+  font-size:10px;font-weight:700;background:var(--vs);color:var(--ts);
+}
+.num-rank.top{background:var(--rojo);color:#fff;}
+
+.badge-tipo{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;}
+.t-cam{background:#e8f4fd;color:#1a5276;}
+.t-fur{background:#fef9e7;color:#7d5c00;}
+.t-pick{background:#eafaf1;color:#1e8449;}
+.t-sk{background:#f4ecf7;color:#6c3483;}
+.t-otro{background:var(--vs);color:var(--vm);}
+
+.exc-alto{color:var(--rojo);font-weight:700;}
+.exc-medio{color:var(--naranja);font-weight:600;}
+.exc-ok{color:var(--ts);}
+
+/* DETALLE MÓVIL */
+.selector-movil{
+  display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;
+}
+.selector-movil label{font-size:12px;font-weight:600;color:var(--vd);}
+.selector-movil select{
+  border:1px solid var(--vb);border-radius:5px;padding:6px 10px;
+  font-size:12px;font-family:var(--f);color:var(--tp);background:var(--sup);
+}
+.hist-movil{display:flex;flex-direction:column;gap:6px;}
+.hist-dia{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;background:var(--fon);border:1px solid var(--vb);
+  border-radius:6px;font-size:12px;flex-wrap:wrap;
+}
+.hist-dia .hd-fecha{font-weight:700;color:var(--vd);min-width:90px;}
+.hist-dia .hd-conductor{color:var(--ts);flex:1;font-size:11px;}
+.hist-dia .hd-km{font-weight:600;min-width:60px;text-align:right;}
+.hd-badge{
+  font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;
+  white-space:nowrap;
+}
+.hd-badge.geo{background:var(--rojo-s);color:var(--rojo);}
+.hd-badge.ruta{background:var(--naranja-s);color:var(--naranja);}
+.hd-badge.ok{background:#edfbe9;color:var(--ac2);}
+.hd-badge.sin{background:var(--rojo-s);color:var(--rojo);}
+
+/* DETALLE CONDUCTOR */
+.conductor-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;}
+.cond-card{
+  background:var(--fon);border:1px solid var(--vb);border-radius:6px;
+  padding:10px 12px;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.cond-card:hover{border-color:var(--ac);background:var(--vs);}
+.cond-card.sel{border-color:var(--ac);border-width:2px;background:var(--vs);}
+.cond-card .cn{font-size:13px;font-weight:700;color:var(--vd);}
+.cond-card .cm{font-size:11px;color:var(--ts);margin-top:2px;}
+.cond-card .cs{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+
+/* ESTADO VACÍO */
+.empty{text-align:center;padding:40px 20px;color:var(--ts);}
+.empty svg{opacity:.25;margin:0 auto 12px;}
+.empty h3{font-size:14px;color:var(--tp);margin-bottom:4px;}
+.empty p{font-size:12px;}
+
+/* LOADING */
+.loading{
+  display:flex;align-items:center;justify-content:center;
+  gap:10px;padding:30px;color:var(--ts);font-size:13px;
+}
+.spinner{
+  width:20px;height:20px;border:2px solid var(--vb);
+  border-top-color:var(--ac);border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .filtros-bar{gap:6px;}
+  .fg select,.fg input{font-size:11px;padding:4px 6px;}
+  .kpi .kv{font-size:20px;}
+  .lbl-periodo{display:none;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="btn-volver">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    Volver
+  </a>
+  <div style="flex:1;min-width:0;">
+    <h1>Dashboard GPS · Flota Corte Alto</h1>
+    <span class="sub">Forestal Corte Alto Ltda.</span>
+  </div>
+</header>
+
+<!-- FILTROS -->
+<div class="filtros-bar">
+  <div class="fg">
+    <label>Desde:</label>
+    <input type="date" id="f-desde">
+  </div>
+  <div class="fg">
+    <label>Hasta:</label>
+    <input type="date" id="f-hasta">
+  </div>
+  <div class="fg">
+    <label>Tipo:</label>
+    <select id="f-tipo">
+      <option value="">Todos</option>
+      <option value="Camioneta">Camioneta</option>
+      <option value="Cam. Combustible">Cam. Combustible</option>
+      <option value="Furgón">Furgón</option>
+      <option value="PickUp">PickUp</option>
+      <option value="Skidder">Skidder</option>
+    </select>
+  </div>
+  <button class="btn-consultar" id="btn-consultar" onclick="consultar()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Consultar
+  </button>
+  <span class="lbl-periodo" id="lbl-periodo">—</span>
+</div>
+
+<main>
+
+  <!-- KPIs -->
+  <div class="card" id="sec-kpis" style="display:none;">
+    <div class="card-head"><span class="acc"></span><h2>Resumen del período</h2></div>
+    <div class="card-body">
+      <div class="kpi-grid" id="kpi-grid"></div>
+      <div id="alerta-gps-wrap" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- GRÁFICOS -->
+  <div class="card" id="sec-graficos" style="display:none;">
+    <div class="card-head"><span class="acc"></span><h2>Gráficos de flota</h2>
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        <button class="tab-btn on" data-g="excesos" onclick="cambiarGrafico(this)">Excesos</button>
+        <button class="tab-btn" data-g="km" onclick="cambiarGrafico(this)">Km recorridos</button>
+        <button class="tab-btn" data-g="tendencia" onclick="cambiarGrafico(this)">Tendencia</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="chart-wrap">
+        <canvas id="chart-principal"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS: RANKING / POR MÓVIL / POR CONDUCTOR -->
+  <div class="card" id="sec-tabs" style="display:none;">
+    <div class="tabs">
+      <button class="tab-btn on" onclick="cambiarTab(this,'tab-ranking')">🏆 Ranking excesos</button>
+      <button class="tab-btn" onclick="cambiarTab(this,'tab-movil')">🚙 Por móvil</button>
+      <button class="tab-btn" onclick="cambiarTab(this,'tab-conductor')">👤 Por conductor</button>
+    </div>
+
+    <!-- TAB: RANKING -->
+    <div class="tab-panel on" id="tab-ranking">
+      <div style="overflow-x:auto;">
+        <table class="tabla-rank" id="tabla-ranking">
+          <thead>
+            <tr>
+              <th>#</th><th>Patente</th><th>Tipo</th><th>Conductor(es)</th>
+              <th class="r">Km total</th>
+              <th class="r">Exc. Geocerca</th>
+              <th class="r">Exc. Ruta</th>
+              <th class="r">Total exc.</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-ranking"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: POR MÓVIL -->
+    <div class="tab-panel" id="tab-movil">
+      <div class="selector-movil">
+        <label>Seleccionar móvil:</label>
+        <select id="sel-movil" onchange="renderMovil()">
+          <option value="">— Elige una patente —</option>
+        </select>
+      </div>
+      <div id="detalle-movil">
+        <div class="empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          <h3>Selecciona un móvil</h3>
+          <p>Verás el historial día a día con km, conductores y excesos.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: POR CONDUCTOR -->
+    <div class="tab-panel" id="tab-conductor">
+      <div id="lista-conductores">
+        <div class="empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <h3>Consulta el período primero</h3>
+          <p>Aparecerán todos los conductores con sus métricas.</p>
+        </div>
+      </div>
+      <div id="detalle-conductor" style="margin-top:14px;display:none;">
+        <div class="hist-movil" id="hist-conductor"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ESTADO INICIAL -->
+  <div class="card" id="sec-inicial">
+    <div class="card-body">
+      <div class="empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M6.3 6.3a8 8 0 0 0 0 11.4"/>
+          <path d="M17.7 6.3a8 8 0 0 1 0 11.4"/>
+          <path d="M3.5 3.5a14 14 0 0 0 0 17"/>
+          <path d="M20.5 3.5a14 14 0 0 1 0 17"/>
+        </svg>
+        <h3>Selecciona un período y presiona Consultar</h3>
+        <p>Verás el resumen de la flota, gráficos y ranking de excesos.</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- TOAST -->
+<div style="position:fixed;bottom:20px;right:20px;z-index:999;" id="toast-wrap"></div>
+
+<script>
+/* ─── FIREBASE ─── */
+const firebaseConfig = {
+  apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+  authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
+  projectId: "reporte-inicio-faena-forestal",
+  storageBucket: "reporte-inicio-faena-forestal.firebasestorage.app",
+  messagingSenderId: "962534414054",
+  appId: "1:962534414054:web:fa43371d31413fc0524d27"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const COL = 'gps_registros';
+
+/* ─── ESTADO ─── */
+let datos = [];      // array de días cargados
+let graficoActual = null;
+let modoGrafico = 'excesos';
+
+/* ─── INICIO ─── */
+document.addEventListener('DOMContentLoaded', () => {
+  const hoy = new Date();
+  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  document.getElementById('f-desde').value = fmtISO(primerDia);
+  document.getElementById('f-hasta').value = fmtISO(hoy);
+});
+
+/* ─── CONSULTA FIRESTORE ─── */
+async function consultar() {
+  const desde = document.getElementById('f-desde').value;
+  const hasta = document.getElementById('f-hasta').value;
+  const tipo  = document.getElementById('f-tipo').value;
+
+  if (!desde || !hasta) { toast('Selecciona el período', 'warn'); return; }
+
+  const btn = document.getElementById('btn-consultar');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Cargando...';
+
+  try {
+    // Traer documentos del período
+    const snap = await db.collection(COL)
+      .where('fecha', '>=', desde)
+      .where('fecha', '<=', hasta)
+      .orderBy('fecha', 'asc')
+      .get();
+
+    if (snap.empty) {
+      toast('Sin datos en ese período', 'warn');
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Consultar';
+      return;
+    }
+
+    // Para cada día, traer subcolección de móviles
+    datos = await Promise.all(snap.docs.map(async d => {
+      const dia = d.data();
+      const movSnap = await d.ref.collection('moviles').get();
+      let moviles = movSnap.docs.map(m => m.data());
+      if (tipo) moviles = moviles.filter(m => m.tipo === tipo);
+      return { ...dia, moviles };
+    }));
+
+    document.getElementById('f-desde').value = desde;
+    document.getElementById('f-hasta').value = hasta;
+    document.getElementById('lbl-periodo').textContent =
+      `${snap.size} día(s) cargado(s): ${fmtFecha(desde)} → ${fmtFecha(hasta)}`;
+
+    document.getElementById('sec-inicial').style.display = 'none';
+    document.getElementById('sec-kpis').style.display = 'block';
+    document.getElementById('sec-graficos').style.display = 'block';
+    document.getElementById('sec-tabs').style.display = 'block';
+
+    renderKPIs();
+    renderGrafico();
+    renderRanking();
+    renderSelectMovil();
+    renderConductores();
+
+  } catch(err) {
+    toast('Error: ' + err.message, 'err');
+    console.error(err);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Consultar';
+}
+
+/* ─── KPIs ─── */
+function renderKPIs() {
+  // Aplanar todos los móviles del período
+  const todosMoviles = datos.flatMap(d => d.moviles);
+  const totalKm   = todosMoviles.reduce((s,m) => s + (m.km||0), 0);
+  const totalGeo  = todosMoviles.reduce((s,m) => s + (m.excGeo||0), 0);
+  const totalRuta = todosMoviles.reduce((s,m) => s + (m.excRuta||0), 0);
+  const totalExc  = totalGeo + totalRuta;
+
+  // Patentes únicas sin GPS en algún día
+  const sinGPSSet = new Set();
+  datos.forEach(d => (d.sinGPS||[]).forEach(p => sinGPSSet.add(p)));
+
+  // Mejor y peor móvil (por total excesos)
+  const porMovil = agruparPorMovil();
+  const sorted = Object.values(porMovil).sort((a,b) => (b.excGeo+b.excRuta)-(a.excGeo+a.excRuta));
+  const peor = sorted[0];
+
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi azul">
+      <div class="kl">Días con datos</div>
+      <div class="kv">${datos.length}</div>
+      <div class="ks">en el período</div>
+    </div>
+    <div class="kpi verde">
+      <div class="kl">Km totales flota</div>
+      <div class="kv">${Math.round(totalKm).toLocaleString('es-CL')}</div>
+      <div class="ks">km acumulados</div>
+    </div>
+    <div class="kpi rojo">
+      <div class="kl">Exc. geocercas</div>
+      <div class="kv">${totalGeo}</div>
+      <div class="ks">eventos en geocercas</div>
+    </div>
+    <div class="kpi naranja">
+      <div class="kl">Exc. en ruta</div>
+      <div class="kv">${totalRuta}</div>
+      <div class="ks">eventos en ruta</div>
+    </div>
+    <div class="kpi ${sinGPSSet.size > 0 ? 'rojo' : 'verde'}">
+      <div class="kl">Sin GPS/movimiento</div>
+      <div class="kv">${sinGPSSet.size}</div>
+      <div class="ks">patentes distintas</div>
+    </div>
+    ${peor ? `
+    <div class="kpi rojo">
+      <div class="kl">Mayor infractor</div>
+      <div class="kv" style="font-size:16px;">${peor.patente}</div>
+      <div class="ks">${peor.excGeo + peor.excRuta} excesos totales</div>
+    </div>` : ''}
+  `;
+
+  // Alerta sin GPS
+  const wrap = document.getElementById('alerta-gps-wrap');
+  if (sinGPSSet.size > 0) {
+    wrap.innerHTML = `
+      <div class="alerta-gps">
+        <span class="ico">⚠️</span>
+        <div>
+          <strong>Móviles sin movimiento o sin señal GPS en el período</strong>
+          <div class="patentes-sin-gps">
+            ${[...sinGPSSet].map(p => `<span class="tag-sin-gps">${p}</span>`).join('')}
+          </div>
+        </div>
+      </div>`;
+  } else {
+    wrap.innerHTML = '';
+  }
+}
+
+/* ─── AGRUPAR POR MÓVIL (para gráficos y ranking) ─── */
+function agruparPorMovil() {
+  const map = {};
+  datos.forEach(dia => {
+    (dia.moviles||[]).forEach(m => {
+      const p = m.patente;
+      if (!map[p]) map[p] = {
+        patente: p, tipo: m.tipo||'', km: 0,
+        excGeo: 0, excRuta: 0, conductores: new Set(), dias: 0
+      };
+      map[p].km      += m.km || 0;
+      map[p].excGeo  += m.excGeo || 0;
+      map[p].excRuta += m.excRuta || 0;
+      map[p].dias++;
+      if (m.conductor) map[p].conductores.add(m.conductor);
+    });
+  });
+  return map;
+}
+
+/* ─── GRÁFICO PRINCIPAL ─── */
+function renderGrafico() {
+  if (graficoActual) { graficoActual.destroy(); graficoActual = null; }
+  const ctx = document.getElementById('chart-principal').getContext('2d');
+  const porMovil = agruparPorMovil();
+  const moviles = Object.values(porMovil);
+
+  Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+  Chart.defaults.font.size = 11;
+
+  if (modoGrafico === 'excesos') {
+    const sorted = moviles.sort((a,b) => (b.excGeo+b.excRuta)-(a.excGeo+a.excRuta)).slice(0,20);
+    graficoActual = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: sorted.map(m => m.patente),
+        datasets: [
+          {
+            label: 'Geocercas',
+            data: sorted.map(m => m.excGeo),
+            backgroundColor: '#c0392b',
+            borderRadius: 3,
+          },
+          {
+            label: 'Ruta',
+            data: sorted.map(m => m.excRuta),
+            backgroundColor: '#e67e22',
+            borderRadius: 3,
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          title: { display: true, text: 'Excesos de velocidad por móvil (top 20)', color: '#1a3a1a', font: { weight: '700' } }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true, grid: { color: '#e8f0e8' } }
+        }
+      }
+    });
+
+  } else if (modoGrafico === 'km') {
+    const sorted = moviles.sort((a,b) => b.km - a.km).slice(0,20);
+    graficoActual = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: sorted.map(m => m.patente),
+        datasets: [{
+          label: 'Km recorridos',
+          data: sorted.map(m => Math.round(m.km * 10)/10),
+          backgroundColor: '#7ab648',
+          borderRadius: 3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: 'Km recorridos por móvil (top 20)', color: '#1a3a1a', font: { weight: '700' } }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, grid: { color: '#e8f0e8' } }
+        }
+      }
+    });
+
+  } else { // tendencia
+    const labels = datos.map(d => fmtFechaCorta(d.fecha));
+    const excGeoXdia  = datos.map(d => (d.moviles||[]).reduce((s,m) => s+(m.excGeo||0), 0));
+    const excRutaXdia = datos.map(d => (d.moviles||[]).reduce((s,m) => s+(m.excRuta||0), 0));
+    const kmXdia      = datos.map(d => (d.moviles||[]).reduce((s,m) => s+(m.km||0), 0));
+
+    graficoActual = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Exc. Geocercas',
+            data: excGeoXdia,
+            borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,.1)',
+            tension: .3, fill: true, pointRadius: 4,
+          },
+          {
+            label: 'Exc. Ruta',
+            data: excRutaXdia,
+            borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,.08)',
+            tension: .3, fill: true, pointRadius: 4,
+          },
+          {
+            label: 'Km ÷ 10',
+            data: kmXdia.map(k => Math.round(k/10)),
+            borderColor: '#7ab648', backgroundColor: 'rgba(122,182,72,.08)',
+            tension: .3, fill: false, pointRadius: 3,
+            borderDash: [4,3],
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          title: { display: true, text: 'Tendencia diaria del período', color: '#1a3a1a', font: { weight: '700' } }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, grid: { color: '#e8f0e8' } }
+        }
+      }
+    });
+  }
+}
+
+function cambiarGrafico(btn) {
+  document.querySelectorAll('[data-g]').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  modoGrafico = btn.dataset.g;
+  renderGrafico();
+}
+
+/* ─── RANKING ─── */
+function renderRanking() {
+  const porMovil = agruparPorMovil();
+  const sorted = Object.values(porMovil)
+    .sort((a,b) => (b.excGeo+b.excRuta) - (a.excGeo+a.excRuta));
+
+  const tbody = document.getElementById('tbody-ranking');
+  tbody.innerHTML = sorted.map((m, i) => {
+    const total = m.excGeo + m.excRuta;
+    const clsExc = total > 20 ? 'exc-alto' : total > 5 ? 'exc-medio' : 'exc-ok';
+    const conductores = [...m.conductores].join(', ') || '—';
+    return `<tr>
+      <td><span class="num-rank ${i < 3 && total > 0 ? 'top' : ''}">${i+1}</span></td>
+      <td><strong>${m.patente}</strong></td>
+      <td>${badgeTipo(m.tipo)}</td>
+      <td style="font-size:11px;color:var(--ts);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${conductores}">${conductores}</td>
+      <td class="r">${Math.round(m.km).toLocaleString('es-CL')}</td>
+      <td class="r"><span class="${total > 0 ? 'exc-alto' : 'exc-ok'}">${m.excGeo||'—'}</span></td>
+      <td class="r"><span class="${m.excRuta > 0 ? 'exc-medio' : 'exc-ok'}">${m.excRuta||'—'}</span></td>
+      <td class="r"><span class="${clsExc}">${total||'—'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ─── DETALLE POR MÓVIL ─── */
+function renderSelectMovil() {
+  const porMovil = agruparPorMovil();
+  const sorted = Object.keys(porMovil).sort();
+  const sel = document.getElementById('sel-movil');
+  sel.innerHTML = '<option value="">— Elige una patente —</option>' +
+    sorted.map(p => `<option value="${p}">${p}</option>`).join('');
+}
+
+function renderMovil() {
+  const pat = document.getElementById('sel-movil').value;
+  const cont = document.getElementById('detalle-movil');
+  if (!pat) {
+    cont.innerHTML = `<div class="empty"><h3>Selecciona un móvil</h3></div>`;
+    return;
+  }
+
+  const diasConMovil = datos
+    .map(d => ({ fecha: d.fecha, movil: (d.moviles||[]).find(m => m.patente === pat) }))
+    .filter(d => d.movil);
+
+  if (diasConMovil.length === 0) {
+    cont.innerHTML = `<div class="empty"><h3>Sin datos para ${pat} en este período</h3></div>`;
+    return;
+  }
+
+  const totalKm  = diasConMovil.reduce((s,d) => s + (d.movil.km||0), 0);
+  const totalGeo = diasConMovil.reduce((s,d) => s + (d.movil.excGeo||0), 0);
+  const totalRuta= diasConMovil.reduce((s,d) => s + (d.movil.excRuta||0), 0);
+
+  cont.innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <div class="kpi azul" style="min-width:100px;flex:1;">
+        <div class="kl">Días</div><div class="kv">${diasConMovil.length}</div>
+      </div>
+      <div class="kpi verde" style="min-width:100px;flex:1;">
+        <div class="kl">Km total</div><div class="kv">${Math.round(totalKm)}</div>
+      </div>
+      <div class="kpi rojo" style="min-width:100px;flex:1;">
+        <div class="kl">Exc. geocerca</div><div class="kv">${totalGeo}</div>
+      </div>
+      <div class="kpi naranja" style="min-width:100px;flex:1;">
+        <div class="kl">Exc. ruta</div><div class="kv">${totalRuta}</div>
+      </div>
+    </div>
+    <div class="hist-movil">
+      ${diasConMovil.map(d => {
+        const m = d.movil;
+        const sinGPS = m.sinGPS;
+        return `<div class="hist-dia">
+          <span class="hd-fecha">${fmtFecha(d.fecha)}</span>
+          <span class="hd-conductor">👤 ${m.conductor || '—'}</span>
+          <span class="hd-km">${sinGPS ? '—' : m.km.toFixed(1) + ' km'}</span>
+          ${m.excGeo > 0 ? `<span class="hd-badge geo">⚡ ${m.excGeo} geo</span>` : ''}
+          ${m.excRuta > 0 ? `<span class="hd-badge ruta">🛣 ${m.excRuta} ruta</span>` : ''}
+          ${sinGPS ? `<span class="hd-badge sin">⚠ Sin GPS</span>` : ''}
+          ${!sinGPS && m.excGeo===0 && m.excRuta===0 ? `<span class="hd-badge ok">✓ OK</span>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+/* ─── DETALLE POR CONDUCTOR ─── */
+function renderConductores() {
+  // Agrupar todos los registros por conductor
+  const mapCond = {};
+  datos.forEach(dia => {
+    (dia.moviles||[]).forEach(m => {
+      const c = (m.conductor||'').trim() || 'Sin asignar';
+      if (!mapCond[c]) mapCond[c] = { nombre:c, km:0, excGeo:0, excRuta:0, dias:0, patentes:new Set() };
+      mapCond[c].km      += m.km||0;
+      mapCond[c].excGeo  += m.excGeo||0;
+      mapCond[c].excRuta += m.excRuta||0;
+      mapCond[c].dias++;
+      mapCond[c].patentes.add(m.patente);
+    });
+  });
+
+  const conductores = Object.values(mapCond).sort((a,b) => (b.excGeo+b.excRuta)-(a.excGeo+a.excRuta));
+
+  const cont = document.getElementById('lista-conductores');
+  cont.innerHTML = `
+    <div class="conductor-cards">
+      ${conductores.map(c => {
+        const total = c.excGeo + c.excRuta;
+        return `<div class="cond-card" onclick="verConductor('${escH(c.nombre)}')">
+          <div class="cn">${escH(c.nombre)}</div>
+          <div class="cm">${c.dias} día(s) · ${Math.round(c.km)} km</div>
+          <div class="cs">
+            ${total > 0 ? `<span class="hd-badge geo">${total} excesos</span>` : `<span class="hd-badge ok">Sin excesos</span>`}
+            <span style="font-size:10px;color:var(--ts);">${[...c.patentes].join(', ')}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  document.getElementById('detalle-conductor').style.display = 'none';
+}
+
+let conductorSeleccionado = null;
+function verConductor(nombre) {
+  // Toggle selección
+  if (conductorSeleccionado === nombre) {
+    conductorSeleccionado = null;
+    document.getElementById('detalle-conductor').style.display = 'none';
+    document.querySelectorAll('.cond-card').forEach(c => c.classList.remove('sel'));
+    return;
+  }
+  conductorSeleccionado = nombre;
+  document.querySelectorAll('.cond-card').forEach(c => {
+    c.classList.toggle('sel', c.querySelector('.cn')?.textContent === nombre);
+  });
+
+  const registros = [];
+  datos.forEach(dia => {
+    (dia.moviles||[]).forEach(m => {
+      if ((m.conductor||'Sin asignar') === nombre) {
+        registros.push({ fecha: dia.fecha, movil: m });
+      }
+    });
+  });
+
+  const det = document.getElementById('detalle-conductor');
+  const hist = document.getElementById('hist-conductor');
+  det.style.display = 'block';
+  hist.innerHTML = registros.map(r => {
+    const m = r.movil;
+    return `<div class="hist-dia">
+      <span class="hd-fecha">${fmtFecha(r.fecha)}</span>
+      <span class="hd-conductor">🚙 ${m.patente}</span>
+      <span class="hd-km">${m.sinGPS ? '—' : (m.km||0).toFixed(1) + ' km'}</span>
+      ${m.excGeo > 0 ? `<span class="hd-badge geo">⚡ ${m.excGeo} geo</span>` : ''}
+      ${m.excRuta > 0 ? `<span class="hd-badge ruta">🛣 ${m.excRuta} ruta</span>` : ''}
+      ${m.sinGPS ? `<span class="hd-badge sin">⚠ Sin GPS</span>` : ''}
+      ${!m.sinGPS && !m.excGeo && !m.excRuta ? `<span class="hd-badge ok">✓ OK</span>` : ''}
+    </div>`;
+  }).join('');
+
+  det.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+/* ─── TABS ─── */
+function cambiarTab(btn, panelId) {
+  document.querySelectorAll('#sec-tabs .tab-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById(panelId).classList.add('on');
+}
+
+/* ─── UTILS ─── */
+function badgeTipo(tipo) {
+  const m = {'Furgón':'t-fur','Camioneta':'t-cam','Cam. Combustible':'t-cam','PickUp':'t-pick','Skidder':'t-sk'};
+  return `<span class="badge-tipo ${m[tipo]||'t-otro'}">${tipo||'—'}</span>`;
+}
+function fmtISO(d) { return d.toISOString().slice(0,10); }
+function fmtFecha(iso) {
+  if (!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const dia = dias[new Date(iso+'T12:00:00').getDay()];
+  return `${dia} ${d}/${m}`;
+}
+function fmtFechaCorta(iso) {
+  if (!iso) return '—';
+  const [,m,d] = iso.split('-');
+  return `${d}/${m}`;
+}
+function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg, tipo='ok') {
+  const el = document.createElement('div');
+  el.style.cssText = `
+    padding:11px 18px;border-radius:8px;font-size:13px;font-weight:600;
+    box-shadow:0 4px 14px rgba(0,0,0,.2);margin-top:8px;
+    background:${tipo==='err'?'#c0392b':tipo==='warn'?'#e67e22':'#1a3a1a'};color:#fff;
+    animation:fadeIn .3s ease;
+  `;
+  el.textContent = msg;
+  document.getElementById('toast-wrap').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+</script>
+
+<!-- SERVICE WORKER -->
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').then(reg=>{
+    reg.addEventListener('updatefound',()=>{
+      const nw=reg.installing;
+      nw.addEventListener('statechange',()=>{
+        if(nw.state==='activated'&&navigator.serviceWorker.controller)
+          window.location.reload();
+      });
+    });
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carga GPS · Corte Alto</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+:root {
+  --vd: #1a3a1a;
+  --vm: #2d5a2d;
+  --vc: #4a7c4a;
+  --vs: #e8f0e8;
+  --vb: #c2d6c2;
+  --ac: #7ab648;
+  --ac2: #5f9a32;
+  --tp: #1a2e1a;
+  --ts: #5a7a5a;
+  --sup: #ffffff;
+  --fon: #f2f5f2;
+  --rojo: #c0392b;
+  --rojo-s: #fdecea;
+  --amarillo: #e67e22;
+  --amar-s: #fef9e7;
+  --azul: #2471a3;
+  --azul-s: #eaf4fb;
+  --sombra: 0 2px 8px rgba(26,58,26,.12);
+  --r: 8px;
+  --f: 'Segoe UI', system-ui, sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--f);background:var(--fon);color:var(--tp);min-height:100vh;}
+
+/* HEADER */
+header{
+  background:var(--vd);color:#fff;
+  padding:0 24px;height:56px;
+  display:flex;align-items:center;gap:14px;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 6px rgba(0,0,0,.3);
+}
+.btn-volver{
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;
+  font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;
+  transition:background .15s;white-space:nowrap;
+}
+.btn-volver:hover{background:rgba(255,255,255,.22);}
+header h1{font-size:17px;font-weight:600;flex:1;}
+header .sub{font-size:11px;opacity:.6;font-weight:400;display:block;margin-top:1px;}
+.badge-fecha{
+  font-size:11px;padding:4px 12px;border-radius:20px;
+  background:rgba(122,182,72,.25);color:var(--ac);
+  border:1px solid rgba(122,182,72,.4);white-space:nowrap;
+}
+
+/* MAIN */
+main{max-width:1100px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:20px;}
+
+/* CARD base */
+.card{
+  background:var(--sup);border:1px solid var(--vb);
+  border-radius:var(--r);box-shadow:var(--sombra);
+}
+.card-head{
+  padding:16px 20px;border-bottom:1px solid var(--vb);
+  display:flex;align-items:center;gap:10px;
+}
+.card-head h2{
+  font-size:13px;font-weight:700;color:var(--vd);
+  text-transform:uppercase;letter-spacing:.7px;
+}
+.card-head .acc{width:3px;height:16px;background:var(--ac);border-radius:2px;flex-shrink:0;}
+.card-body{padding:20px;}
+
+/* PASO INDICATOR */
+.pasos{display:flex;gap:0;margin-bottom:4px;}
+.paso{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 16px;font-size:12px;font-weight:600;
+  color:var(--ts);border-bottom:2px solid transparent;
+  white-space:nowrap;
+}
+.paso.activo{color:var(--vd);border-bottom-color:var(--ac);}
+.paso.completo{color:var(--ac2);}
+.paso .num{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--vb);color:var(--ts);
+  font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.paso.activo .num{background:var(--ac);color:#fff;}
+.paso.completo .num{background:var(--ac2);color:#fff;}
+
+/* FECHA SELECTOR */
+.fecha-row{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:16px 20px;background:var(--vs);border-radius:6px;margin-bottom:16px;
+}
+.fecha-row label{font-size:13px;font-weight:600;color:var(--vd);}
+input[type="date"]{
+  border:1px solid var(--vb);border-radius:6px;padding:7px 12px;
+  font-size:13px;color:var(--tp);background:var(--sup);
+  font-family:var(--f);cursor:pointer;
+}
+input[type="date"]:focus{outline:2px solid var(--ac);outline-offset:1px;}
+.hint{font-size:11px;color:var(--ts);margin-left:auto;}
+
+/* DROP ZONE */
+.drop-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;margin-bottom:16px;
+}
+@media(max-width:900px){.drop-grid{grid-template-columns:repeat(3,1fr);}}
+
+.drop-slot{
+  border:2px dashed var(--vb);border-radius:8px;
+  padding:16px 10px;text-align:center;
+  background:var(--vs);cursor:pointer;
+  transition:border-color .2s,background .2s;
+  position:relative;min-height:100px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+}
+.drop-slot input[type="file"]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.drop-slot:hover,.drop-slot.drag-over{border-color:var(--ac);background:#dff0d8;}
+.drop-slot.cargado{border-color:var(--ac2);border-style:solid;background:#edfbe9;}
+.drop-slot.error-slot{border-color:var(--rojo);border-style:solid;background:var(--rojo-s);}
+
+.slot-icono{font-size:22px;line-height:1;}
+.slot-label{font-size:11px;font-weight:700;color:var(--vd);letter-spacing:.3px;line-height:1.3;}
+.slot-sub{font-size:10px;color:var(--ts);}
+.slot-check{
+  font-size:11px;font-weight:700;
+  display:flex;align-items:center;gap:4px;margin-top:4px;
+}
+.slot-check.ok{color:var(--ac2);}
+.slot-check.err{color:var(--rojo);}
+
+/* BOTONES */
+.btn-p{
+  background:var(--vd);color:#fff;border:none;
+  padding:10px 22px;border-radius:6px;font-size:13px;font-weight:600;
+  cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+  transition:background .15s;
+}
+.btn-p:hover:not(:disabled){background:var(--vc);}
+.btn-p:disabled{opacity:.4;cursor:not-allowed;}
+.btn-s{
+  background:var(--sup);color:var(--vd);
+  border:1px solid var(--vb);padding:9px 16px;border-radius:6px;
+  font-size:13px;font-weight:500;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+  transition:background .15s,border-color .15s;
+}
+.btn-s:hover{background:var(--vs);border-color:var(--ac);}
+
+/* TABLA CONDUCTORES */
+.tabla-conductores{width:100%;border-collapse:collapse;font-size:13px;}
+.tabla-conductores thead tr{background:var(--vd);color:#fff;}
+.tabla-conductores thead th{
+  padding:9px 12px;text-align:left;font-size:11px;
+  font-weight:600;letter-spacing:.5px;white-space:nowrap;
+}
+.tabla-conductores tbody tr{border-bottom:1px solid var(--vb);transition:background .1s;}
+.tabla-conductores tbody tr:hover{background:var(--vs);}
+.tabla-conductores tbody td{padding:7px 12px;vertical-align:middle;}
+
+.badge-tipo{
+  display:inline-block;font-size:10px;font-weight:700;
+  padding:2px 7px;border-radius:10px;letter-spacing:.3px;
+}
+.t-cam{background:#e8f4fd;color:#1a5276;}
+.t-fur{background:#fef9e7;color:#7d5c00;}
+.t-pick{background:#eafaf1;color:#1e8449;}
+.t-sk{background:#f4ecf7;color:#6c3483;}
+.t-otro{background:var(--vs);color:var(--vm);}
+
+.input-conductor{
+  border:1px solid var(--vb);border-radius:5px;
+  padding:5px 8px;font-size:12px;width:100%;
+  font-family:var(--f);color:var(--tp);background:var(--sup);
+}
+.input-conductor:focus{outline:2px solid var(--ac);outline-offset:1px;border-color:var(--ac);}
+.input-conductor.sin-nombre{border-color:var(--amarillo);background:var(--amar-s);}
+
+.km-val{font-weight:600;color:var(--tp);}
+.km-cero{color:var(--rojo);font-weight:700;}
+
+.exc-geo{color:var(--rojo);font-weight:700;}
+.exc-ruta{color:var(--amarillo);font-weight:700;}
+.exc-cero{color:var(--ts);}
+
+.sin-gps{
+  background:var(--rojo-s);
+}
+.sin-gps td:first-child{
+  border-left:3px solid var(--rojo);
+}
+
+/* RESUMEN CHIPS */
+.chips-resumen{
+  display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;
+}
+.chip{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 16px;border-radius:8px;border:1px solid;
+  font-size:12px;min-width:130px;
+}
+.chip .cv{font-size:20px;font-weight:700;line-height:1;}
+.chip .cl{font-size:11px;opacity:.8;margin-top:2px;}
+.chip.verde{background:#edfbe9;border-color:#a9d9a9;color:#1e6b1e;}
+.chip.rojo{background:var(--rojo-s);border-color:#f5b7b1;color:var(--rojo);}
+.chip.naranja{background:var(--amar-s);border-color:#f9d29e;color:#7d5c00;}
+.chip.azul{background:var(--azul-s);border-color:#aed6f1;color:var(--azul);}
+
+/* BARRA PROGRESO */
+.barra-prog{
+  display:none;align-items:center;gap:12px;
+  padding:12px 16px;background:var(--azul-s);
+  border:1px solid #aed6f1;border-radius:6px;
+  font-size:13px;color:var(--azul);
+}
+.barra-prog.vis{display:flex;}
+.prog-track{flex:1;height:6px;background:#aed6f1;border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--azul);border-radius:3px;width:0%;transition:width .3s;}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:24px;right:24px;z-index:999;
+  padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;
+  box-shadow:0 4px 16px rgba(0,0,0,.2);display:flex;align-items:center;gap:10px;
+  transform:translateY(80px);opacity:0;transition:all .3s ease;max-width:380px;
+}
+.toast.vis{transform:translateY(0);opacity:1;}
+.toast.ok{background:var(--vd);color:#fff;}
+.toast.err{background:var(--rojo);color:#fff;}
+.toast.warn{background:var(--amarillo);color:#fff;}
+
+/* MODAL */
+.modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:200;align-items:center;justify-content:center;
+}
+.modal-bg.vis{display:flex;}
+.modal{
+  background:var(--sup);border-radius:var(--r);
+  width:90%;max-width:480px;box-shadow:0 8px 32px rgba(0,0,0,.2);
+  overflow:hidden;
+}
+.modal-head{
+  background:var(--vd);color:#fff;
+  padding:16px 20px;font-size:15px;font-weight:600;
+}
+.modal-body{padding:20px;font-size:13px;line-height:1.6;}
+.modal-foot{
+  padding:12px 20px;border-top:1px solid var(--vb);
+  display:flex;justify-content:flex-end;gap:10px;
+}
+
+/* HISTORIAL mini */
+.hist-row{
+  display:flex;align-items:center;gap:12px;
+  padding:9px 0;border-bottom:1px solid var(--vb);font-size:13px;
+}
+.hist-row:last-child{border-bottom:none;}
+.hist-fecha{font-weight:600;color:var(--vd);min-width:100px;}
+.hist-meta{color:var(--ts);flex:1;font-size:12px;}
+.btn-del{
+  background:none;border:none;color:var(--ts);cursor:pointer;
+  padding:4px;border-radius:4px;transition:color .15s,background .15s;
+  display:flex;align-items:center;
+}
+.btn-del:hover{color:var(--rojo);background:var(--rojo-s);}
+
+.empty-state{
+  text-align:center;padding:40px 20px;color:var(--ts);
+}
+.empty-state p{font-size:13px;margin-top:8px;}
+
+/* barra acciones fija */
+.barra-acc{
+  display:flex;align-items:center;gap:12px;
+  margin-top:16px;padding-top:16px;
+  border-top:1px solid var(--vb);flex-wrap:wrap;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="btn-volver">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    Volver
+  </a>
+  <div style="flex:1">
+    <h1>Carga de Informe GPS</h1>
+    <span class="sub">Forestal Corte Alto Ltda.</span>
+  </div>
+  <span class="badge-fecha" id="badge-fecha">Sin fecha seleccionada</span>
+</header>
+
+<main>
+
+  <!-- PASO 1: FECHA + ARCHIVOS -->
+  <div class="card" id="sec-carga">
+    <div class="card-head">
+      <span class="acc"></span>
+      <h2>Paso 1 — Seleccionar fecha y subir archivos</h2>
+    </div>
+    <div class="card-body">
+
+      <!-- Fecha del reporte -->
+      <div class="fecha-row">
+        <label for="inp-fecha">📅 Fecha del informe:</label>
+        <input type="date" id="inp-fecha">
+        <span class="hint">Los archivos del proveedor GPS corresponden a un solo día</span>
+      </div>
+
+      <!-- 5 slots de archivos -->
+      <div class="drop-grid" id="drop-grid">
+
+        <div class="drop-slot" id="slot-dist" data-tipo="dist">
+          <input type="file" accept=".csv" onchange="recibirArchivo(this,'dist')">
+          <span class="slot-icono">📏</span>
+          <span class="slot-label">Distancia<br>Recorrida</span>
+          <span class="slot-sub">Distancia_Recorrida_Km_.csv</span>
+          <span class="slot-check" id="chk-dist"></span>
+        </div>
+
+        <div class="drop-slot" id="slot-geo" data-tipo="geo">
+          <input type="file" accept=".csv" onchange="recibirArchivo(this,'geo')">
+          <span class="slot-icono">📍</span>
+          <span class="slot-label">Excesos en<br>Geocercas</span>
+          <span class="slot-sub">Exceso_Velocidad_Geocercas_.csv</span>
+          <span class="slot-check" id="chk-geo"></span>
+        </div>
+
+        <div class="drop-slot" id="slot-cam" data-tipo="cam">
+          <input type="file" accept=".csv" onchange="recibirArchivo(this,'cam')">
+          <span class="slot-icono">🚙</span>
+          <span class="slot-label">Excesos<br>Camiones</span>
+          <span class="slot-sub">Exc_Velocidad_Camiones_.csv</span>
+          <span class="slot-check" id="chk-cam"></span>
+        </div>
+
+        <div class="drop-slot" id="slot-fur" data-tipo="fur">
+          <input type="file" accept=".csv" onchange="recibirArchivo(this,'fur')">
+          <span class="slot-icono">🚐</span>
+          <span class="slot-label">Excesos<br>Furgones</span>
+          <span class="slot-sub">Exc_Velocidad_Furgones_.csv</span>
+          <span class="slot-check" id="chk-fur"></span>
+        </div>
+
+        <div class="drop-slot" id="slot-pick" data-tipo="pick">
+          <input type="file" accept=".csv" onchange="recibirArchivo(this,'pick')">
+          <span class="slot-icono">🛻</span>
+          <span class="slot-label">Excesos<br>PickUp</span>
+          <span class="slot-sub">Exc_Velocidad_PickUp_.csv</span>
+          <span class="slot-check" id="chk-pick"></span>
+        </div>
+
+      </div>
+
+      <!-- También acepta arrastre de múltiples archivos al mismo tiempo -->
+      <div style="font-size:12px;color:var(--ts);margin-bottom:12px;">
+        💡 También puedes arrastrar los 5 archivos a la vez sobre cualquier slot — el sistema los detecta automáticamente por nombre.
+      </div>
+
+      <div class="barra-acc">
+        <button class="btn-p" id="btn-analizar" disabled onclick="analizarArchivos()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Analizar y revisar datos
+        </button>
+        <button class="btn-s" onclick="limpiarTodo()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          Limpiar
+        </button>
+        <span style="font-size:12px;color:var(--ts);margin-left:auto;">
+          Archivos cargados: <strong id="n-archivos">0</strong> / 5
+        </span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PASO 2: REVISIÓN Y CONDUCTORES (oculto hasta analizar) -->
+  <div class="card" id="sec-revision" style="display:none;">
+    <div class="card-head">
+      <span class="acc"></span>
+      <h2>Paso 2 — Revisar datos y confirmar conductores</h2>
+      <span style="margin-left:auto;font-size:12px;color:var(--ts);" id="lbl-fecha-rev"></span>
+    </div>
+    <div class="card-body">
+
+      <!-- Chips resumen -->
+      <div class="chips-resumen" id="chips-resumen"></div>
+
+      <!-- Tabla conductores -->
+      <div style="overflow-x:auto;border:1px solid var(--vb);border-radius:6px;margin-bottom:16px;">
+        <table class="tabla-conductores">
+          <thead>
+            <tr>
+              <th>Patente</th>
+              <th>Tipo</th>
+              <th>Centro</th>
+              <th>Conductor</th>
+              <th style="text-align:right">Km día</th>
+              <th style="text-align:center">Exc. Geocerca</th>
+              <th style="text-align:center">Exc. Ruta</th>
+              <th style="text-align:center">Sin GPS</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-conductores"></tbody>
+        </table>
+      </div>
+
+      <div style="font-size:12px;color:var(--ts);margin-bottom:16px;">
+        ⚠️ Las filas en rojo corresponden a móviles <strong>sin movimiento o sin señal GPS</strong> ese día. Verifica si estuvieron en taller o fuera de servicio.
+        <br>✏️ Los conductores en <span style="color:var(--amarillo);font-weight:700;">amarillo</span> no vienen en el archivo — completa el nombre antes de guardar.
+      </div>
+
+      <div class="barra-prog" id="barra-prog">
+        <span id="txt-prog">Guardando en Firestore...</span>
+        <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+        <span id="pct-prog">0%</span>
+      </div>
+
+      <div class="barra-acc">
+        <button class="btn-p" id="btn-guardar" onclick="guardarEnFirestore()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Guardar en Corte Alto
+        </button>
+        <button class="btn-s" onclick="volverPaso1()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Volver a cargar
+        </button>
+        <span style="font-size:12px;color:var(--ts);margin-left:auto;" id="lbl-sin-conductor"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORIAL DE CARGAS -->
+  <div class="card">
+    <div class="card-head">
+      <span class="acc"></span>
+      <h2>Historial de cargas</h2>
+      <button class="btn-s" style="margin-left:auto;font-size:11px;padding:5px 10px;" onclick="cargarHistorial()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Actualizar
+      </button>
+    </div>
+    <div class="card-body" id="body-historial">
+      <div class="empty-state">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;margin:0 auto;">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <p>Cargando historial...</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL confirmar sobreescritura -->
+<div class="modal-bg" id="modal-dup">
+  <div class="modal">
+    <div class="modal-head">⚠️ Fecha ya registrada</div>
+    <div class="modal-body" id="modal-dup-body"></div>
+    <div class="modal-foot">
+      <button class="btn-s" onclick="cerrarModal('modal-dup')">Cancelar</button>
+      <button class="btn-p" id="btn-confirmar-dup" style="background:var(--amarillo);">Sobreescribir</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SERVICE WORKER -->
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').then(reg=>{
+    reg.addEventListener('updatefound',()=>{
+      const nw=reg.installing;
+      nw.addEventListener('statechange',()=>{
+        if(nw.state==='activated'&&navigator.serviceWorker.controller)
+          window.location.reload();
+      });
+    });
+  });
+}
+</script>
+
+<script>
+/* ══════════════════════════════════════
+   FIREBASE CONFIG — pegar credenciales reales
+══════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+  authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
+  projectId: "reporte-inicio-faena-forestal",
+  storageBucket: "reporte-inicio-faena-forestal.firebasestorage.app",
+  messagingSenderId: "962534414054",
+  appId: "1:962534414054:web:fa43371d31413fc0524d27"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const COL = 'gps_registros'; // colección principal
+
+/* ══════════════════════════════════════
+   ESTADO GLOBAL
+══════════════════════════════════════ */
+const archivos = { dist:null, geo:null, cam:null, fur:null, pick:null };
+let datosAnalizados = null; // resultado del análisis listo para guardar
+
+/* ══════════════════════════════════════
+   INICIO
+══════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  // Fecha de hoy como default
+  const hoy = new Date();
+  document.getElementById('inp-fecha').value = hoy.toISOString().slice(0,10);
+  actualizarBadgeFecha();
+
+  document.getElementById('inp-fecha').addEventListener('change', actualizarBadgeFecha);
+
+  // Drag & drop global sobre el grid
+  const grid = document.getElementById('drop-grid');
+  grid.addEventListener('dragover', e => { e.preventDefault(); });
+  grid.addEventListener('drop', e => {
+    e.preventDefault();
+    const files = [...e.dataTransfer.files].filter(f => f.name.endsWith('.csv'));
+    files.forEach(f => detectarYAsignar(f));
+  });
+
+  cargarHistorial();
+});
+
+function actualizarBadgeFecha() {
+  const v = document.getElementById('inp-fecha').value;
+  document.getElementById('badge-fecha').textContent = v ? formatFecha(v) : 'Sin fecha seleccionada';
+}
+
+/* ══════════════════════════════════════
+   RECEPCIÓN DE ARCHIVOS
+══════════════════════════════════════ */
+function recibirArchivo(input, tipo) {
+  const f = input.files[0];
+  if (!f) return;
+  asignarArchivo(f, tipo);
+}
+
+// Detecta automáticamente el tipo por nombre del archivo
+function detectarYAsignar(file) {
+  const n = file.name.toLowerCase();
+  if (n.includes('distancia'))          asignarArchivo(file, 'dist');
+  else if (n.includes('geocerca'))      asignarArchivo(file, 'geo');
+  else if (n.includes('camion'))        asignarArchivo(file, 'cam');
+  else if (n.includes('furgon'))        asignarArchivo(file, 'fur');
+  else if (n.includes('pickup') || n.includes('pick_up') || n.includes('pick-up'))
+                                        asignarArchivo(file, 'pick');
+  else mostrarToast(`No pude identificar "${file.name}" — súbelo en el slot correcto`, 'warn');
+}
+
+function asignarArchivo(file, tipo) {
+  archivos[tipo] = file;
+  const slot = document.getElementById('slot-' + tipo);
+  const chk  = document.getElementById('chk-' + tipo);
+  slot.classList.add('cargado');
+  slot.classList.remove('error-slot');
+  chk.className = 'slot-check ok';
+  chk.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> ${file.name.length > 22 ? file.name.slice(0,20)+'…' : file.name}`;
+
+  const n = Object.values(archivos).filter(Boolean).length;
+  document.getElementById('n-archivos').textContent = n;
+  document.getElementById('btn-analizar').disabled = (n === 0 || !document.getElementById('inp-fecha').value);
+}
+
+/* ══════════════════════════════════════
+   PARSEO CSV
+══════════════════════════════════════ */
+function leerCSV(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => {
+      try {
+        const txt = e.target.result;
+        const lineas = txt.split('\n').map(l => l.trim()).filter(Boolean);
+        const cabecera = lineas[0].split(';').map(c => c.trim());
+        const filas = lineas.slice(1).map(l => {
+          const vals = l.split(';').map(v => v.trim());
+          const obj = {};
+          cabecera.forEach((k, i) => obj[k] = vals[i] ?? '');
+          return obj;
+        });
+        res(filas);
+      } catch(err) { rej(err); }
+    };
+    r.onerror = () => rej(new Error('Error leyendo ' + file.name));
+    r.readAsText(file, 'utf-8');
+  });
+}
+
+function parseNum(s) {
+  if (!s) return 0;
+  return parseFloat(String(s).replace(',','.')) || 0;
+}
+
+// Extrae patente limpia del nombre de móvil (ej: "STWW-61 J. Aguilera" → "STWW-61")
+// y conductor si viene
+function parsearNombreMovil(nombreMovil) {
+  // Patente: primeros caracteres alfanuméricos con guion
+  const m = nombreMovil.match(/^([A-Z0-9]+-?[A-Z0-9]+)/i);
+  const patente = m ? m[1].toUpperCase().trim() : nombreMovil.trim();
+  const resto = nombreMovil.slice(patente.length).trim();
+  const conductor = resto || null;
+  return { patente, conductor };
+}
+
+// Infiere tipo de vehículo desde el grupo o nombre
+function inferirTipo(grupo='', nombre='') {
+  const g = (grupo||'').toLowerCase();
+  const n = (nombre||'').toLowerCase();
+  if (g.includes('furg') || n.includes('furg')) return 'Furgón';
+  if (g.includes('cam comb') || n.includes('comb')) return 'Cam. Combustible';
+  if (g.includes('camion') || g.includes('camioneta')) return 'Camioneta';
+  if (g.includes('pickup') || g.includes('pick')) return 'PickUp';
+  if (n.includes('skidder') || n.includes('625')) return 'Skidder';
+  return 'Vehículo';
+}
+
+function badgeTipo(tipo) {
+  const m = {
+    'Furgón':'t-fur','Camioneta':'t-cam',
+    'Cam. Combustible':'t-cam','PickUp':'t-pick','Skidder':'t-sk'
+  };
+  return `<span class="badge-tipo ${m[tipo]||'t-otro'}">${tipo}</span>`;
+}
+
+/* ══════════════════════════════════════
+   ANÁLISIS PRINCIPAL
+══════════════════════════════════════ */
+async function analizarArchivos() {
+  const fecha = document.getElementById('inp-fecha').value;
+  if (!fecha) { mostrarToast('Selecciona la fecha del informe primero', 'warn'); return; }
+  if (!archivos.dist) { mostrarToast('El archivo de Distancia Recorrida es obligatorio', 'warn'); return; }
+
+  document.getElementById('btn-analizar').disabled = true;
+  document.getElementById('btn-analizar').textContent = 'Analizando...';
+
+  try {
+    // Leer todos los archivos disponibles en paralelo
+    const [rowsDist, rowsGeo, rowsCam, rowsFur, rowsPick] = await Promise.all([
+      leerCSV(archivos.dist),
+      archivos.geo  ? leerCSV(archivos.geo)  : Promise.resolve([]),
+      archivos.cam  ? leerCSV(archivos.cam)  : Promise.resolve([]),
+      archivos.fur  ? leerCSV(archivos.fur)  : Promise.resolve([]),
+      archivos.pick ? leerCSV(archivos.pick) : Promise.resolve([]),
+    ]);
+
+    // Construir mapa de excesos en ruta por patente
+    const excRuta = {};
+    [...rowsCam, ...rowsFur, ...rowsPick].forEach(r => {
+      const pat = (r['Placa patente'] || r['Patente'] || '').trim().toUpperCase();
+      if (!pat) return;
+      const n = parseInt(r['Numero excesos'] || r['Número excesos'] || 0) || 0;
+      excRuta[pat] = (excRuta[pat] || 0) + n;
+    });
+
+    // Construir mapa de excesos en geocerca por patente
+    const excGeo = {};
+    rowsGeo.forEach(r => {
+      const pat = (r['Patente'] || '').trim().toUpperCase();
+      if (!pat) return;
+      excGeo[pat] = (excGeo[pat] || 0) + 1;
+    });
+
+    // Construir array de móviles desde distancia (fuente maestra)
+    const moviles = rowsDist.map(r => {
+      const nombre = r['Nombre'] || '';
+      const patCSV = (r['Patente'] || '').trim().toUpperCase();
+      // Extraer conductor del nombre
+      const { conductor: conductorCSV } = parsearNombreMovil(nombre);
+      const km = parseNum(r['Kilometros Recorridos [km]'] || r['Kilometros Recorridos']);
+      const odomIni = parseNum(r['Odometro Inicial [km]']);
+      const odomFin = parseNum(r['Odometro Final [km]']);
+      const imei = r['Imei'] || '';
+      const sinGPS = km === 0;
+
+      // Intentar inferir tipo desde nombre
+      let tipo = 'Camioneta';
+      const nLow = nombre.toLowerCase();
+      if (nLow.includes('furgon') || nLow.includes('furgón')) tipo = 'Furgón';
+      else if (nLow.includes('comb') || nLow.includes('combustible')) tipo = 'Cam. Combustible';
+      else if (nLow.includes('skidder') || nLow.includes('625')) tipo = 'Skidder';
+      else if (nLow.includes('pickup') || nLow.includes('pick')) tipo = 'PickUp';
+      else if (nLow.includes('cama baja')) tipo = 'Cama Baja';
+
+      // Inferir centro desde nombre
+      let centro = '';
+      const nm = nombre.toUpperCase();
+      if (nm.includes('L1') || nm.includes('NOCHERO L1')) centro = 'L1';
+      else if (nm.includes('L2') || nm.includes('NOCHERO L2')) centro = 'L2';
+      else if (nm.includes('L3') || nm.includes('NOCHERO L3')) centro = 'L3';
+      else if (nm.includes('COMPRAS') || nm.includes('TALLER')) centro = 'Taller/Compras';
+      else if (nm.includes('COMBUSTIBLE')) centro = 'Combustible';
+
+      return {
+        patente: patCSV,
+        nombreMovil: nombre,
+        conductorSugerido: conductorCSV || '',
+        conductorFinal: conductorCSV || '', // editable
+        tipo,
+        centro,
+        km,
+        odomIni,
+        odomFin,
+        imei,
+        excGeo: excGeo[patCSV] || 0,
+        excRuta: excRuta[patCSV] || 0,
+        sinGPS,
+      };
+    });
+
+    // Guardar eventos geocerca detallados por patente
+    const eventosGeo = {};
+    rowsGeo.forEach(r => {
+      const pat = (r['Patente'] || '').trim().toUpperCase();
+      if (!pat) return;
+      if (!eventosGeo[pat]) eventosGeo[pat] = [];
+      eventosGeo[pat].push({
+        geocerca: r['Geocerca'] || '',
+        velLimite: parseNum(r['Velocidad Limite (km/h)']),
+        velEvento: parseNum(r['Velocidad Evento (km/h)']),
+        fechaEvento: r['Fecha Evento (DD-MM-YYYY HH:MM:SS)'] || '',
+        tipoEvento: r['Nombre Evento'] || '',
+        ubicacion: r['Geotexto'] || '',
+      });
+    });
+
+    datosAnalizados = { fecha, moviles, eventosGeo, excRuta };
+    renderizarRevision();
+
+  } catch(err) {
+    mostrarToast('Error al analizar: ' + err.message, 'err');
+    console.error(err);
+  }
+
+  document.getElementById('btn-analizar').disabled = false;
+  document.getElementById('btn-analizar').innerHTML = `
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Analizar y revisar datos`;
+}
+
+/* ══════════════════════════════════════
+   RENDER PASO 2 — REVISIÓN
+══════════════════════════════════════ */
+function renderizarRevision() {
+  const { fecha, moviles } = datosAnalizados;
+  document.getElementById('sec-revision').style.display = 'block';
+  document.getElementById('lbl-fecha-rev').textContent = `Informe: ${formatFecha(fecha)}`;
+
+  // Chips resumen
+  const totalKm = moviles.reduce((s, m) => s + m.km, 0);
+  const totalGeo = moviles.reduce((s, m) => s + m.excGeo, 0);
+  const totalRuta = moviles.reduce((s, m) => s + m.excRuta, 0);
+  const sinGPS = moviles.filter(m => m.sinGPS).length;
+  const sinNombre = moviles.filter(m => !m.conductorFinal).length;
+
+  document.getElementById('chips-resumen').innerHTML = `
+    <div class="chip azul">
+      <div><div class="cv">${moviles.length}</div><div class="cl">Móviles registrados</div></div>
+    </div>
+    <div class="chip verde">
+      <div><div class="cv">${totalKm.toFixed(0)} km</div><div class="cl">Km totales del día</div></div>
+    </div>
+    <div class="chip rojo">
+      <div><div class="cv">${totalGeo}</div><div class="cl">Excesos en geocercas</div></div>
+    </div>
+    <div class="chip naranja">
+      <div><div class="cv">${totalRuta}</div><div class="cl">Excesos en ruta</div></div>
+    </div>
+    <div class="chip ${sinGPS>0?'rojo':'verde'}">
+      <div><div class="cv">${sinGPS}</div><div class="cl">Sin movimiento/GPS</div></div>
+    </div>
+  `;
+
+  // Tabla
+  const tbody = document.getElementById('tbody-conductores');
+  tbody.innerHTML = moviles.map((m, i) => `
+    <tr class="${m.sinGPS ? 'sin-gps' : ''}">
+      <td><strong>${m.patente}</strong></td>
+      <td>${badgeTipo(m.tipo)}</td>
+      <td style="font-size:11px;color:var(--ts);">${m.centro || '—'}</td>
+      <td>
+        <input
+          class="input-conductor ${!m.conductorFinal ? 'sin-nombre' : ''}"
+          type="text"
+          value="${escHtml(m.conductorFinal)}"
+          placeholder="Ingresar conductor..."
+          data-i="${i}"
+          oninput="actualizarConductor(${i}, this.value, this)"
+        >
+      </td>
+      <td style="text-align:right">
+        <span class="${m.sinGPS ? 'km-cero' : 'km-val'}">${m.km.toFixed(1)}</span>
+      </td>
+      <td style="text-align:center">
+        <span class="${m.excGeo > 0 ? 'exc-geo' : 'exc-cero'}">${m.excGeo > 0 ? m.excGeo : '—'}</span>
+      </td>
+      <td style="text-align:center">
+        <span class="${m.excRuta > 0 ? 'exc-ruta' : 'exc-cero'}">${m.excRuta > 0 ? m.excRuta : '—'}</span>
+      </td>
+      <td style="text-align:center">
+        ${m.sinGPS ? '<span style="color:var(--rojo);font-weight:700;">⚠</span>' : '<span style="color:var(--ac);">✓</span>'}
+      </td>
+    </tr>
+  `).join('');
+
+  actualizarLblSinConductor();
+
+  // Scroll suave a la sección
+  document.getElementById('sec-revision').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function actualizarConductor(i, valor, input) {
+  datosAnalizados.moviles[i].conductorFinal = valor.trim();
+  input.classList.toggle('sin-nombre', !valor.trim());
+  actualizarLblSinConductor();
+}
+
+function actualizarLblSinConductor() {
+  const sin = datosAnalizados.moviles.filter(m => !m.conductorFinal).length;
+  document.getElementById('lbl-sin-conductor').textContent =
+    sin > 0 ? `⚠ ${sin} móvil(es) sin conductor asignado` : '✓ Todos los conductores completos';
+  document.getElementById('lbl-sin-conductor').style.color = sin > 0 ? 'var(--amarillo)' : 'var(--ac2)';
+}
+
+/* ══════════════════════════════════════
+   GUARDAR EN FIRESTORE
+══════════════════════════════════════ */
+async function guardarEnFirestore() {
+  const { fecha, moviles, eventosGeo } = datosAnalizados;
+
+  // Verificar si ya existe esa fecha
+  const docId = fecha; // YYYY-MM-DD como ID del documento
+  const docRef = db.collection(COL).doc(docId);
+  const snap = await docRef.get();
+
+  if (snap.exists) {
+    // Mostrar modal de confirmación
+    document.getElementById('modal-dup-body').innerHTML = `
+      Ya existe un informe GPS guardado para el <strong>${formatFecha(fecha)}</strong>.<br><br>
+      ¿Deseas sobreescribir todos los datos de ese día?
+    `;
+    document.getElementById('btn-confirmar-dup').onclick = () => {
+      cerrarModal('modal-dup');
+      ejecutarGuardado(docRef, fecha, moviles, eventosGeo);
+    };
+    document.getElementById('modal-dup').classList.add('vis');
+    return;
+  }
+
+  ejecutarGuardado(docRef, fecha, moviles, eventosGeo);
+}
+
+async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo) {
+  const barra = document.getElementById('barra-prog');
+  const fill  = document.getElementById('prog-fill');
+  const txt   = document.getElementById('txt-prog');
+  const pct   = document.getElementById('pct-prog');
+
+  barra.classList.add('vis');
+  document.getElementById('btn-guardar').disabled = true;
+
+  try {
+    // Estructura del documento principal (resumen del día)
+    const totalKm   = moviles.reduce((s,m) => s+m.km, 0);
+    const totalGeo  = moviles.reduce((s,m) => s+m.excGeo, 0);
+    const totalRuta = moviles.reduce((s,m) => s+m.excRuta, 0);
+    const sinGPS    = moviles.filter(m => m.sinGPS).map(m => m.patente);
+
+    fill.style.width = '20%'; pct.textContent = '20%';
+    txt.textContent = 'Guardando resumen del día...';
+
+    await docRef.set({
+      fecha,
+      fechaTS: firebase.firestore.Timestamp.fromDate(new Date(fecha + 'T12:00:00')),
+      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+      totalMoviles: moviles.length,
+      totalKm: Math.round(totalKm * 10) / 10,
+      totalExcGeo: totalGeo,
+      totalExcRuta: totalRuta,
+      sinGPS,
+    });
+
+    fill.style.width = '50%'; pct.textContent = '50%';
+    txt.textContent = 'Guardando detalle de móviles...';
+
+    // Subcolección: un documento por móvil
+    const batch = db.batch();
+    moviles.forEach(m => {
+      const ref = docRef.collection('moviles').doc(m.patente);
+      batch.set(ref, {
+        patente: m.patente,
+        conductor: m.conductorFinal || '',
+        tipo: m.tipo,
+        centro: m.centro,
+        km: m.km,
+        odomIni: m.odomIni,
+        odomFin: m.odomFin,
+        excGeo: m.excGeo,
+        excRuta: m.excRuta,
+        sinGPS: m.sinGPS,
+        eventosGeo: eventosGeo[m.patente] || [],
+      });
+    });
+    await batch.commit();
+
+    fill.style.width = '100%'; pct.textContent = '100%';
+
+    setTimeout(() => {
+      barra.classList.remove('vis');
+      document.getElementById('btn-guardar').disabled = false;
+      mostrarToast(`✓ Informe del ${formatFecha(fecha)} guardado en Corte Alto`, 'ok');
+      limpiarTodo();
+      cargarHistorial();
+      window.scrollTo({ top:0, behavior:'smooth' });
+    }, 500);
+
+  } catch(err) {
+    barra.classList.remove('vis');
+    document.getElementById('btn-guardar').disabled = false;
+    mostrarToast('Error al guardar: ' + err.message, 'err');
+    console.error(err);
+  }
+}
+
+/* ══════════════════════════════════════
+   HISTORIAL
+══════════════════════════════════════ */
+async function cargarHistorial() {
+  const cont = document.getElementById('body-historial');
+  cont.innerHTML = '<div class="empty-state"><p>Cargando...</p></div>';
+  try {
+    const snap = await db.collection(COL).orderBy('fecha','desc').limit(20).get();
+    if (snap.empty) {
+      cont.innerHTML = '<div class="empty-state"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;margin:0 auto;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><p>Sin registros aún. Carga el primer informe arriba.</p></div>';
+      return;
+    }
+    cont.innerHTML = snap.docs.map(d => {
+      const dt = d.data();
+      return `
+        <div class="hist-row">
+          <span class="hist-fecha">📅 ${formatFecha(dt.fecha)}</span>
+          <span class="hist-meta">
+            ${dt.totalMoviles} móviles · ${dt.totalKm} km ·
+            <span style="color:var(--rojo)">${dt.totalExcGeo} exc. geo</span> ·
+            <span style="color:var(--amarillo)">${dt.totalExcRuta} exc. ruta</span>
+            ${dt.sinGPS&&dt.sinGPS.length ? ` · <span style="color:var(--rojo)">⚠ Sin GPS: ${dt.sinGPS.join(', ')}</span>` : ''}
+          </span>
+          <button class="btn-del" onclick="eliminarRegistro('${d.id}','${dt.fecha}')" title="Eliminar este día">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+        </div>`;
+    }).join('');
+  } catch(err) {
+    cont.innerHTML = `<div class="empty-state"><p style="color:var(--rojo)">Error al cargar historial: ${err.message}</p></div>`;
+  }
+}
+
+async function eliminarRegistro(id, fecha) {
+  if (!confirm(`¿Eliminar el informe GPS del ${formatFecha(fecha)}?\nEsta acción no se puede deshacer.`)) return;
+  try {
+    // Eliminar subcolección móviles primero
+    const movSnap = await db.collection(COL).doc(id).collection('moviles').get();
+    const b = db.batch();
+    movSnap.forEach(d => b.delete(d.ref));
+    await b.commit();
+    await db.collection(COL).doc(id).delete();
+    mostrarToast(`Informe del ${formatFecha(fecha)} eliminado`, 'ok');
+    cargarHistorial();
+  } catch(err) {
+    mostrarToast('Error al eliminar: ' + err.message, 'err');
+  }
+}
+
+/* ══════════════════════════════════════
+   UTILIDADES UI
+══════════════════════════════════════ */
+function limpiarTodo() {
+  ['dist','geo','cam','fur','pick'].forEach(t => {
+    archivos[t] = null;
+    const slot = document.getElementById('slot-' + t);
+    slot.classList.remove('cargado','error-slot');
+    document.getElementById('chk-' + t).innerHTML = '';
+    // Reset file input
+    const inp = slot.querySelector('input[type="file"]');
+    if (inp) inp.value = '';
+  });
+  document.getElementById('n-archivos').textContent = '0';
+  document.getElementById('btn-analizar').disabled = true;
+  document.getElementById('sec-revision').style.display = 'none';
+  datosAnalizados = null;
+}
+
+function volverPaso1() {
+  document.getElementById('sec-revision').style.display = 'none';
+  datosAnalizados = null;
+}
+
+function cerrarModal(id) { document.getElementById(id).classList.remove('vis'); }
+
+function mostrarToast(msg, tipo='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${tipo} vis`;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('vis'), 4000);
+}
+
+function formatFecha(iso) {
+  if (!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const dia = dias[new Date(iso+'T12:00:00').getDay()];
+  return `${dia} ${d}/${m}/${y}`;
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
