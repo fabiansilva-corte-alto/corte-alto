@@ -285,6 +285,30 @@ input[type="date"]:focus{outline:2px solid var(--ac);outline-offset:1px;}
 }
 .btn-edit:hover{color:var(--azul);background:var(--azul-s);}
 .edit-fecha-row{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  background:var(--azul-s);border:1px solid #aed6f1;
+  border-radius:6px;padding:8px 12px;margin-top:4px;font-size:12px;
+}
+.edit-fecha-row input[type="date"]{
+  border:1px solid #aed6f1;border-radius:5px;padding:4px 8px;
+  font-size:12px;font-family:var(--f);color:var(--tp);background:var(--sup);
+}
+.btn-edit-ok{
+  background:var(--azul);color:#fff;border:none;padding:5px 12px;
+  border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;
+}
+.btn-edit-ok:hover{background:#1a5276;}
+.btn-edit-cancel{
+  background:none;border:1px solid #aed6f1;color:var(--azul);
+  padding:5px 12px;border-radius:5px;font-size:11px;cursor:pointer;
+}
+.btn-edit{
+  background:none;border:none;color:var(--ts);cursor:pointer;
+  padding:4px;border-radius:4px;transition:color .15s,background .15s;
+  display:flex;align-items:center;
+}
+.btn-edit:hover{color:var(--azul);background:var(--azul-s);}
+.edit-fecha-row{
   display:flex;align-items:center;gap:6px;
   background:var(--azul-s);border:1px solid #aed6f1;
   border-radius:6px;padding:6px 10px;margin-top:6px;font-size:12px;
@@ -872,8 +896,26 @@ function actualizarLblSinConductor() {
 ══════════════════════════════════════ */
 async function guardarEnFirestore() {
   const { fecha, moviles, eventosGeo } = datosAnalizados;
-  const docRef = db.collection(COL).doc(fecha);
-  // Guardar directo — set() sobreescribe si la fecha ya existe
+
+  // Verificar si ya existe esa fecha
+  const docId = fecha; // YYYY-MM-DD como ID del documento
+  const docRef = db.collection(COL).doc(docId);
+  const snap = await docRef.get();
+
+  if (snap.exists) {
+    // Mostrar modal de confirmación
+    document.getElementById('modal-dup-body').innerHTML = `
+      Ya existe un informe GPS guardado para el <strong>${formatFecha(fecha)}</strong>.<br><br>
+      ¿Deseas sobreescribir todos los datos de ese día?
+    `;
+    document.getElementById('btn-confirmar-dup').onclick = () => {
+      cerrarModal('modal-dup');
+      ejecutarGuardado(docRef, fecha, moviles, eventosGeo);
+    };
+    document.getElementById('modal-dup').classList.add('vis');
+    return;
+  }
+
   ejecutarGuardado(docRef, fecha, moviles, eventosGeo);
 }
 
@@ -885,55 +927,69 @@ async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo) {
 
   barra.classList.add('vis');
   document.getElementById('btn-guardar').disabled = true;
-  fill.style.width = '30%'; pct.textContent = '30%';
-  txt.textContent = 'Guardando en Corte Alto...';
 
   try {
-    const totalKm   = moviles.reduce((s,m) => s+(m.km||0), 0);
-    const totalGeo  = moviles.reduce((s,m) => s+(m.excGeo||0), 0);
-    const totalRuta = moviles.reduce((s,m) => s+(m.excRuta||0), 0);
+    // Estructura del documento principal (resumen del día)
+    const totalKm   = moviles.reduce((s,m) => s+m.km, 0);
+    const totalGeo  = moviles.reduce((s,m) => s+m.excGeo, 0);
+    const totalRuta = moviles.reduce((s,m) => s+m.excRuta, 0);
     const sinGPS    = moviles.filter(m => m.sinGPS).map(m => m.patente);
 
-    const movilesData = moviles.map(m => ({
-      patente: m.patente,
-      conductor: m.conductorFinal || '',
-      tipo: m.tipo,
-      centro: m.centro || '',
-      km: Math.round((m.km||0) * 10) / 10,
-      excGeo: m.excGeo || 0,
-      excRuta: m.excRuta || 0,
-      sinGPS: !!m.sinGPS,
-    }));
+    fill.style.width = '20%'; pct.textContent = '20%';
+    txt.textContent = 'Guardando resumen del día...';
 
     await docRef.set({
       fecha,
+      fechaTS: firebase.firestore.Timestamp.fromDate(new Date(fecha + 'T12:00:00')),
+      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
       totalMoviles: moviles.length,
       totalKm: Math.round(totalKm * 10) / 10,
       totalExcGeo: totalGeo,
       totalExcRuta: totalRuta,
       sinGPS,
-      moviles: movilesData,
     });
+
+    fill.style.width = '50%'; pct.textContent = '50%';
+    txt.textContent = 'Guardando detalle de móviles...';
+
+    // Subcolección: un documento por móvil
+    const batch = db.batch();
+    moviles.forEach(m => {
+      const ref = docRef.collection('moviles').doc(m.patente);
+      batch.set(ref, {
+        patente: m.patente,
+        conductor: m.conductorFinal || '',
+        tipo: m.tipo,
+        centro: m.centro,
+        km: m.km,
+        odomIni: m.odomIni,
+        odomFin: m.odomFin,
+        excGeo: m.excGeo,
+        excRuta: m.excRuta,
+        sinGPS: m.sinGPS,
+        eventosGeo: eventosGeo[m.patente] || [],
+      });
+    });
+    await batch.commit();
 
     fill.style.width = '100%'; pct.textContent = '100%';
 
     setTimeout(() => {
       barra.classList.remove('vis');
       document.getElementById('btn-guardar').disabled = false;
-      mostrarToast('✓ Informe del ' + formatFecha(fecha) + ' guardado', 'ok');
+      mostrarToast(`✓ Informe del ${formatFecha(fecha)} guardado en Corte Alto`, 'ok');
       limpiarTodo();
       cargarHistorial();
       window.scrollTo({ top:0, behavior:'smooth' });
-    }, 400);
+    }, 500);
 
   } catch(err) {
     barra.classList.remove('vis');
     document.getElementById('btn-guardar').disabled = false;
-    mostrarToast('Error: ' + err.message, 'err');
+    mostrarToast('Error al guardar: ' + err.message, 'err');
     console.error(err);
   }
 }
-
 
 /* ══════════════════════════════════════
    HISTORIAL
@@ -1003,16 +1059,33 @@ async function guardarNuevaFecha(idAntiguo, fechaAntigua) {
   }
 
   try {
-    // Todo en el mismo documento — solo copiar y borrar el original
+    // Leer documento original completo
     const docRef = db.collection(COL).doc(idAntiguo);
     const snap = await docRef.get();
     const data = snap.data();
 
-    await db.collection(COL).doc(nuevaFecha).set({
+    // Leer subcolección móviles
+    const movSnap = await docRef.collection('moviles').get();
+
+    // Crear nuevo documento con nueva fecha como ID
+    const nuevoRef = db.collection(COL).doc(nuevaFecha);
+    await nuevoRef.set({
       ...data,
       fecha: nuevaFecha,
       fechaTS: firebase.firestore.Timestamp.fromDate(new Date(nuevaFecha + 'T12:00:00')),
     });
+
+    // Copiar subcolección móviles al nuevo documento
+    const batch = db.batch();
+    movSnap.forEach(m => {
+      batch.set(nuevoRef.collection('moviles').doc(m.id), m.data());
+    });
+    await batch.commit();
+
+    // Eliminar documento antiguo y su subcolección
+    const batchDel = db.batch();
+    movSnap.forEach(m => batchDel.delete(docRef.collection('moviles').doc(m.id)));
+    await batchDel.commit();
     await docRef.delete();
 
     mostrarToast(`Fecha corregida: ${formatFecha(fechaAntigua)} → ${formatFecha(nuevaFecha)}`, 'ok');
@@ -1023,9 +1096,48 @@ async function guardarNuevaFecha(idAntiguo, fechaAntigua) {
   }
 }
 
+function mostrarEditFecha(id) {
+  document.querySelectorAll('[id^="hedit-"]').forEach(el => el.style.display = 'none');
+  document.getElementById('hedit-' + id).style.display = 'block';
+}
+function ocultarEditFecha(id) {
+  document.getElementById('hedit-' + id).style.display = 'none';
+}
+async function guardarNuevaFecha(idAntiguo, fechaAntigua) {
+  const nuevaFecha = document.getElementById('finp-' + idAntiguo).value;
+  if (!nuevaFecha) { mostrarToast('Selecciona una fecha válida', 'warn'); return; }
+  if (nuevaFecha === fechaAntigua) { ocultarEditFecha(idAntiguo); return; }
+  try {
+    const docRef = db.collection(COL).doc(idAntiguo);
+    const snap = await docRef.get();
+    const data = snap.data();
+    // Copiar subcolección móviles
+    const movSnap = await docRef.collection('moviles').get();
+    const nuevoRef = db.collection(COL).doc(nuevaFecha);
+    await nuevoRef.set({ ...data, fecha: nuevaFecha,
+      fechaTS: firebase.firestore.Timestamp.fromDate(new Date(nuevaFecha + 'T12:00:00')) });
+    const batch = db.batch();
+    movSnap.forEach(m => batch.set(nuevoRef.collection('moviles').doc(m.id), m.data()));
+    await batch.commit();
+    const batchDel = db.batch();
+    movSnap.forEach(m => batchDel.delete(docRef.collection('moviles').doc(m.id)));
+    await batchDel.commit();
+    await docRef.delete();
+    mostrarToast('Fecha corregida: ' + formatFecha(fechaAntigua) + ' → ' + formatFecha(nuevaFecha), 'ok');
+    cargarHistorial();
+  } catch(err) {
+    mostrarToast('Error: ' + err.message, 'err');
+    console.error(err);
+  }
+}
 async function eliminarRegistro(id, fecha) {
   if (!confirm(`¿Eliminar el informe GPS del ${formatFecha(fecha)}?\nEsta acción no se puede deshacer.`)) return;
   try {
+    // Eliminar subcolección móviles primero
+    const movSnap = await db.collection(COL).doc(id).collection('moviles').get();
+    const b = db.batch();
+    movSnap.forEach(d => b.delete(d.ref));
+    await b.commit();
     await db.collection(COL).doc(id).delete();
     mostrarToast(`Informe del ${formatFecha(fecha)} eliminado`, 'ok');
     cargarHistorial();
