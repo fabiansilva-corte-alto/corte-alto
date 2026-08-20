@@ -873,30 +873,7 @@ function actualizarLblSinConductor() {
 async function guardarEnFirestore() {
   const { fecha, moviles, eventosGeo } = datosAnalizados;
   const docRef = db.collection(COL).doc(fecha);
-
-  // Verificar duplicado con tolerancia a error offline
-  try {
-    const snap = await Promise.race([
-      docRef.get({ source: 'server' }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
-    ]);
-    if (snap.exists) {
-      document.getElementById('modal-dup-body').innerHTML = `
-        Ya existe un informe GPS guardado para el <strong>${formatFecha(fecha)}</strong>.<br><br>
-        ¿Deseas sobreescribir todos los datos de ese día?
-      `;
-      document.getElementById('btn-confirmar-dup').onclick = () => {
-        cerrarModal('modal-dup');
-        ejecutarGuardado(docRef, fecha, moviles, eventosGeo);
-      };
-      document.getElementById('modal-dup').classList.add('vis');
-      return;
-    }
-  } catch(e) {
-    // Sin conexión o timeout: guardar directo (set() sobreescribe de todas formas)
-    console.warn('Verificación previa omitida, guardando directo:', e.message);
-  }
-
+  // Guardar directo — set() sobreescribe si la fecha ya existe
   ejecutarGuardado(docRef, fecha, moviles, eventosGeo);
 }
 
@@ -979,7 +956,7 @@ async function cargarHistorial() {
   const cont = document.getElementById('body-historial');
   cont.innerHTML = '<div class="empty-state"><p>Cargando...</p></div>';
   try {
-    const snap = await db.collection(COL).orderBy('fecha','desc').limit(20).get({ source: 'server' });
+    const snap = await db.collection(COL).orderBy('fecha','desc').limit(20).get();
     if (snap.empty) {
       cont.innerHTML = '<div class="empty-state"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;margin:0 auto;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><p>Sin registros aún. Carga el primer informe arriba.</p></div>';
       return;
