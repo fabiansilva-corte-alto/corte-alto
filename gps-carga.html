@@ -896,6 +896,7 @@ async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo) {
     fill.style.width = '20%'; pct.textContent = '20%';
     txt.textContent = 'Guardando resumen del día...';
 
+    console.log('GPS: iniciando set() en', docRef.path);
     await docRef.set({
       fecha,
       fechaTS: firebase.firestore.Timestamp.fromDate(new Date(fecha + 'T12:00:00')),
@@ -906,29 +907,35 @@ async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo) {
       totalExcRuta: totalRuta,
       sinGPS,
     });
+    console.log('GPS: set() resumen OK');
 
     fill.style.width = '50%'; pct.textContent = '50%';
     txt.textContent = 'Guardando detalle de móviles...';
 
-    // Subcolección: un documento por móvil
-    const batch = db.batch();
-    moviles.forEach(m => {
-      const ref = docRef.collection('moviles').doc(m.patente);
-      batch.set(ref, {
-        patente: m.patente,
-        conductor: m.conductorFinal || '',
-        tipo: m.tipo,
-        centro: m.centro,
-        km: m.km,
-        odomIni: m.odomIni,
-        odomFin: m.odomFin,
-        excGeo: m.excGeo,
-        excRuta: m.excRuta,
-        sinGPS: m.sinGPS,
-        eventosGeo: eventosGeo[m.patente] || [],
+    // Subcolección en batches de 400 para no superar límite Firestore
+    const CHUNK = 400;
+    for (let i = 0; i < moviles.length; i += CHUNK) {
+      const chunk = moviles.slice(i, i + CHUNK);
+      const batch = db.batch();
+      chunk.forEach(m => {
+        const ref = docRef.collection('moviles').doc(m.patente);
+        batch.set(ref, {
+          patente: m.patente,
+          conductor: m.conductorFinal || '',
+          tipo: m.tipo,
+          centro: m.centro,
+          km: m.km,
+          odomIni: m.odomIni,
+          odomFin: m.odomFin,
+          excGeo: m.excGeo,
+          excRuta: m.excRuta,
+          sinGPS: m.sinGPS,
+          eventosGeo: eventosGeo[m.patente] || [],
+        });
       });
-    });
-    await batch.commit();
+      await batch.commit();
+      console.log('GPS: batch móviles OK, chunk', i, '-', i + chunk.length);
+    }
 
     fill.style.width = '100%'; pct.textContent = '100%';
 
