@@ -422,14 +422,13 @@ async function consultar() {
       return;
     }
 
-    // Para cada día, traer subcolección de móviles
-    datos = await Promise.all(snap.docs.map(async d => {
+    // Móviles vienen como array dentro del mismo documento
+    datos = snap.docs.map(d => {
       const dia = d.data();
-      const movSnap = await d.ref.collection('moviles').get();
-      let moviles = movSnap.docs.map(m => m.data());
+      let moviles = dia.moviles || [];
       if (tipo) moviles = moviles.filter(m => m.tipo === tipo);
       return { ...dia, moviles };
-    }));
+    });
 
     document.getElementById('f-desde').value = desde;
     document.getElementById('f-hasta').value = hasta;

@@ -896,7 +896,25 @@ async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo) {
     fill.style.width = '20%'; pct.textContent = '20%';
     txt.textContent = 'Guardando resumen del día...';
 
-    console.log('GPS: iniciando set() en', docRef.path);
+    // Todo en un solo set() — resumen + array de móviles en el mismo documento
+    // Así son 2 escrituras totales en vez de 38, mucho más rápido
+    const movilesData = moviles.map(m => ({
+      patente: m.patente,
+      conductor: m.conductorFinal || '',
+      tipo: m.tipo,
+      centro: m.centro,
+      km: m.km,
+      odomIni: m.odomIni,
+      odomFin: m.odomFin,
+      excGeo: m.excGeo,
+      excRuta: m.excRuta,
+      sinGPS: m.sinGPS,
+      eventosGeo: (eventosGeo[m.patente] || []).slice(0, 50), // máx 50 eventos por móvil
+    }));
+
+    fill.style.width = '40%'; pct.textContent = '40%';
+    txt.textContent = 'Guardando datos en Corte Alto...';
+
     await docRef.set({
       fecha,
       fechaTS: firebase.firestore.Timestamp.fromDate(new Date(fecha + 'T12:00:00')),
@@ -906,36 +924,8 @@ async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo) {
       totalExcGeo: totalGeo,
       totalExcRuta: totalRuta,
       sinGPS,
+      moviles: movilesData,   // ← todo en el mismo documento
     });
-    console.log('GPS: set() resumen OK');
-
-    fill.style.width = '50%'; pct.textContent = '50%';
-    txt.textContent = 'Guardando detalle de móviles...';
-
-    // Subcolección en batches de 400 para no superar límite Firestore
-    const CHUNK = 400;
-    for (let i = 0; i < moviles.length; i += CHUNK) {
-      const chunk = moviles.slice(i, i + CHUNK);
-      const batch = db.batch();
-      chunk.forEach(m => {
-        const ref = docRef.collection('moviles').doc(m.patente);
-        batch.set(ref, {
-          patente: m.patente,
-          conductor: m.conductorFinal || '',
-          tipo: m.tipo,
-          centro: m.centro,
-          km: m.km,
-          odomIni: m.odomIni,
-          odomFin: m.odomFin,
-          excGeo: m.excGeo,
-          excRuta: m.excRuta,
-          sinGPS: m.sinGPS,
-          eventosGeo: eventosGeo[m.patente] || [],
-        });
-      });
-      await batch.commit();
-      console.log('GPS: batch móviles OK, chunk', i, '-', i + chunk.length);
-    }
 
     fill.style.width = '100%'; pct.textContent = '100%';
 
@@ -1024,33 +1014,16 @@ async function guardarNuevaFecha(idAntiguo, fechaAntigua) {
   }
 
   try {
-    // Leer documento original completo
+    // Todo en el mismo documento — solo copiar y borrar el original
     const docRef = db.collection(COL).doc(idAntiguo);
     const snap = await docRef.get();
     const data = snap.data();
 
-    // Leer subcolección móviles
-    const movSnap = await docRef.collection('moviles').get();
-
-    // Crear nuevo documento con nueva fecha como ID
-    const nuevoRef = db.collection(COL).doc(nuevaFecha);
-    await nuevoRef.set({
+    await db.collection(COL).doc(nuevaFecha).set({
       ...data,
       fecha: nuevaFecha,
       fechaTS: firebase.firestore.Timestamp.fromDate(new Date(nuevaFecha + 'T12:00:00')),
     });
-
-    // Copiar subcolección móviles al nuevo documento
-    const batch = db.batch();
-    movSnap.forEach(m => {
-      batch.set(nuevoRef.collection('moviles').doc(m.id), m.data());
-    });
-    await batch.commit();
-
-    // Eliminar documento antiguo y su subcolección
-    const batchDel = db.batch();
-    movSnap.forEach(m => batchDel.delete(docRef.collection('moviles').doc(m.id)));
-    await batchDel.commit();
     await docRef.delete();
 
     mostrarToast(`Fecha corregida: ${formatFecha(fechaAntigua)} → ${formatFecha(nuevaFecha)}`, 'ok');
@@ -1064,11 +1037,6 @@ async function guardarNuevaFecha(idAntiguo, fechaAntigua) {
 async function eliminarRegistro(id, fecha) {
   if (!confirm(`¿Eliminar el informe GPS del ${formatFecha(fecha)}?\nEsta acción no se puede deshacer.`)) return;
   try {
-    // Eliminar subcolección móviles primero
-    const movSnap = await db.collection(COL).doc(id).collection('moviles').get();
-    const b = db.batch();
-    movSnap.forEach(d => b.delete(d.ref));
-    await b.commit();
     await db.collection(COL).doc(id).delete();
     mostrarToast(`Informe del ${formatFecha(fecha)} eliminado`, 'ok');
     cargarHistorial();
