@@ -1071,10 +1071,6 @@ function renderDetalleGeo() {
 
   // Recopilar todos los eventos geocerca
   const eventos = [];
-  console.log('GEO DEBUG: días=', datos.length,
-    'moviles día0=', datos[0]?.moviles?.length,
-    'eventosGeo muestra=', datos[0]?.moviles?.[0]?.eventosGeo?.length,
-    'keys móvil0=', datos[0]?.moviles?.[0] ? Object.keys(datos[0].moviles[0]) : 'N/A');
   datos.forEach(dia => {
     (dia.moviles||[]).forEach(m => {
       (m.eventosGeo||[]).forEach(ev => {
