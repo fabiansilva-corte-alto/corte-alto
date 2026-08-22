@@ -806,12 +806,12 @@ async function analizarArchivos() {
       const vEv  = parseNum(r['Velocidad Evento (km/h)'] || r['Velocidad Evento'] || 0);
       const fEv  = r['Fecha Evento (DD-MM-YYYY HH:MM:SS)'] || r['Fecha Evento'] || '';
       eventosGeo[pat].push({
+        nombreMovil: r['Nombre Movil'] || r['Nombre Móvil'] || '',
         geocerca: geo,
         velLimite: vLim,
         velEvento: vEv,
         fechaEvento: fEv,
         tipoEvento: r['Nombre Evento'] || '',
-        ubicacion: r['Geotexto'] || '',
       });
     });
     console.log('GPS geocercas procesadas:', Object.keys(eventosGeo).length,
@@ -997,6 +997,29 @@ async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo) {
       });
     });
     await batch.commit();
+
+    // Guardar todos los eventos de geocerca en colección separada — fácil de leer desde dashboard
+    const todosEventos = [];
+    Object.entries(eventosGeo).forEach(([pat, evs]) => {
+      evs.forEach(ev => {
+        todosEventos.push({
+          patente: pat,
+          nombreMovil: ev.nombreMovil || '',
+          geocerca: ev.geocerca || '',
+          velLimite: ev.velLimite || 0,
+          velEvento: ev.velEvento || 0,
+          fechaEvento: ev.fechaEvento || '',
+          tipoEvento: ev.tipoEvento || '',
+        });
+      });
+    });
+    if (todosEventos.length > 0) {
+      await db.collection('gps_geocercas').doc(fecha).set({
+        fecha,
+        totalEventos: todosEventos.length,
+        eventos: todosEventos,
+      });
+    }
 
     fill.style.width = '100%'; pct.textContent = '100%';
 

@@ -549,6 +549,7 @@ async function consultar() {
     renderRanking();
     poblarMultiMovil();
     renderConductores();
+    await cargarEventosGeo();
     poblarFiltrosGeo();
     renderDetalleGeo();
     verificar5Dias();
@@ -860,7 +861,6 @@ function cambiarTab(btn, panelId) {
   document.getElementById(panelId).classList.add('on');
   // Renderizar contenido del panel al activarlo
   if (panelId === 'tab-geocerca' && datos.length > 0) {
-    poblarFiltrosGeo();
     renderDetalleGeo();
   }
   if (panelId === 'tab-movil' && datos.length > 0) {
@@ -1073,75 +1073,101 @@ function renderMovilMulti() {
 }
 
 /* ─── DETALLE GEOCERCA ─── */
+/* ─── DETALLE GEOCERCA — lee directo desde colección gps_geocercas ─── */
+let eventosGeoCache = []; // cache de eventos del período consultado
+
+async function cargarEventosGeo() {
+  const desde = document.getElementById('f-desde').value;
+  const hasta = document.getElementById('f-hasta').value;
+  eventosGeoCache = [];
+  try {
+    const snap = await db.collection('gps_geocercas')
+      .where('fecha', '>=', desde)
+      .where('fecha', '<=', hasta)
+      .get();
+    snap.forEach(d => {
+      const dia = d.data();
+      (dia.eventos || []).forEach(ev => {
+        eventosGeoCache.push({
+          fecha: dia.fecha,
+          patente: ev.patente || '',
+          nombreMovil: ev.nombreMovil || '',
+          geocerca: ev.geocerca || '',
+          velLimite: ev.velLimite || 0,
+          velEvento: ev.velEvento || 0,
+          hora: ev.fechaEvento || '',
+        });
+      });
+    });
+  } catch(e) { console.warn('cargarEventosGeo:', e.message); }
+}
+
+function poblarFiltrosGeo() {
+  const patentes = new Set(eventosGeoCache.map(e => e.patente).filter(Boolean));
+  const geocercas = new Set(eventosGeoCache.map(e => e.geocerca).filter(Boolean));
+  const selMov = document.getElementById('sel-geo-movil');
+  const selZona = document.getElementById('sel-geo-zona');
+  selMov.innerHTML  = '<option value="">Todos</option>' +
+    [...patentes].sort().map(p => `<option value="${p}">${p}</option>`).join('');
+  selZona.innerHTML = '<option value="">Todas</option>' +
+    [...geocercas].sort().map(z => `<option value="${escH(z)}">${escH(z)}</option>`).join('');
+}
+
 function renderDetalleGeo() {
   const filtMovil = document.getElementById('sel-geo-movil').value;
   const filtZona  = document.getElementById('sel-geo-zona').value;
 
-  // Recopilar todos los eventos geocerca
-  const eventos = [];
-  datos.forEach(dia => {
-    (dia.moviles||[]).forEach(m => {
-      (m.eventosGeo||[]).forEach(ev => {
-        eventos.push({
-          fecha: dia.fecha,
-          patente: m.patente,
-          conductor: m.conductor||'—',
-          tipo: m.tipo||'',
-          geocerca: ev.geocerca||'',
-          velLimite: ev.velLimite||0,
-          velEvento: ev.velEvento||0,
-          hora: ev.fechaEvento||'',
-        });
-      });
-    });
-  });
-
-  const filtrados = eventos.filter(e =>
-    (!filtMovil || e.patente===filtMovil) &&
-    (!filtZona  || e.geocerca===filtZona)
+  const filtrados = eventosGeoCache.filter(e =>
+    (!filtMovil || e.patente === filtMovil) &&
+    (!filtZona  || e.geocerca === filtZona)
   );
 
   document.getElementById('lbl-geo-total').textContent =
     `${filtrados.length} evento(s) encontrado(s)`;
 
   const wrap = document.getElementById('detalle-geo-wrap');
+  if (eventosGeoCache.length === 0) {
+    wrap.innerHTML = `<div class="empty">
+      <h3>Sin datos de geocerca en este período</h3>
+      <p>Solo los días cargados con la versión actual tienen este detalle.</p>
+    </div>`;
+    return;
+  }
   if (filtrados.length === 0) {
-    wrap.innerHTML = '<div class="empty"><h3>Sin eventos de geocerca en este período</h3><p>Puede que los datos se hayan cargado con una versión anterior.</p></div>';
+    wrap.innerHTML = `<div class="empty"><h3>Sin resultados con el filtro actual</h3></div>`;
     return;
   }
 
-  wrap.innerHTML = `<table class="tabla-geo">
-    <thead><tr>
-      <th>Fecha</th><th>Patente</th><th>Conductor</th><th>Geocerca</th>
-      <th class="r">Vel. límite</th><th class="r">Vel. evento</th><th>Hora</th>
-    </tr></thead>
-    <tbody>
-      ${filtrados.map(e => `<tr>
-        <td>${fmtFecha(e.fecha)}</td>
-        <td><strong>${e.patente}</strong></td>
-        <td style="font-size:11px;color:var(--ts)">${escH(e.conductor)}</td>
-        <td style="font-size:11px">${escH(e.geocerca)}</td>
-        <td class="r">${e.velLimite||'—'} km/h</td>
-        <td class="r"><span class="vel-alta">${e.velEvento} km/h</span></td>
-        <td style="font-size:11px;color:var(--ts)">${e.hora||'—'}</td>
-      </tr>`).join('')}
-    </tbody>
-  </table>`;
-}
-
-function poblarFiltrosGeo() {
-  const patentes = new Set();
-  const geocercas = new Set();
-  datos.forEach(dia => {
-    (dia.moviles||[]).forEach(m => {
-      patentes.add(m.patente);
-      (m.eventosGeo||[]).forEach(ev => geocercas.add(ev.geocerca||''));
-    });
+  // Ordenar por fecha y hora
+  filtrados.sort((a,b) => {
+    if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+    return (a.hora||'').localeCompare(b.hora||'');
   });
-  const selMov = document.getElementById('sel-geo-movil');
-  const selZona = document.getElementById('sel-geo-zona');
-  selMov.innerHTML  = '<option value="">Todos</option>' + [...patentes].sort().map(p=>`<option value="${p}">${p}</option>`).join('');
-  selZona.innerHTML = '<option value="">Todas</option>' + [...geocercas].filter(Boolean).sort().map(z=>`<option value="${z}">${escH(z)}</option>`).join('');
+
+  wrap.innerHTML = `<div style="overflow-x:auto;">
+    <table class="tabla-geo">
+      <thead><tr>
+        <th>Fecha</th>
+        <th>Patente</th>
+        <th>Nombre Móvil</th>
+        <th>Geocerca</th>
+        <th class="r">Vel. límite</th>
+        <th class="r">Vel. evento</th>
+        <th>Hora evento</th>
+      </tr></thead>
+      <tbody>
+        ${filtrados.map(e => `<tr>
+          <td>${fmtFecha(e.fecha)}</td>
+          <td><strong>${e.patente}</strong></td>
+          <td style="font-size:11px;color:var(--ts)">${escH(e.nombreMovil)}</td>
+          <td style="font-size:11px">${escH(e.geocerca)}</td>
+          <td class="r">${e.velLimite||'—'} km/h</td>
+          <td class="r"><span class="vel-alta">${e.velEvento} km/h</span></td>
+          <td style="font-size:11px;color:var(--ts)">${e.hora||'—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
 }
 
 if('serviceWorker' in navigator){
