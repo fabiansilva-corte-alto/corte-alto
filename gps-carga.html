@@ -641,9 +641,15 @@ function leerCSV(file) {
       try {
         const txt = e.target.result;
         const lineas = txt.split('\n').map(l => l.trim()).filter(Boolean);
-        const cabecera = lineas[0].split(';').map(c => c.trim());
+        if (lineas.length === 0) { res([]); return; }
+
+        // Detectar separador automáticamente: ; o ,
+        const primeraLinea = lineas[0];
+        const sep = primeraLinea.includes(';') ? ';' : ',';
+
+        const cabecera = primeraLinea.split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
         const filas = lineas.slice(1).map(l => {
-          const vals = l.split(';').map(v => v.trim());
+          const vals = l.split(sep).map(v => v.trim().replace(/^"|"$/g, ''));
           const obj = {};
           cabecera.forEach((k, i) => obj[k] = vals[i] ?? '');
           return obj;
@@ -789,19 +795,27 @@ async function analizarArchivos() {
 
     // Guardar eventos geocerca detallados por patente
     const eventosGeo = {};
+    console.log('GPS geocercas: total filas =', rowsGeo.length,
+      'columnas muestra:', rowsGeo[0] ? Object.keys(rowsGeo[0]).join(' | ') : 'sin datos');
     rowsGeo.forEach(r => {
-      const pat = (r['Patente'] || '').trim().toUpperCase();
+      const pat = (r['Patente'] || r['patente'] || '').trim().toUpperCase();
       if (!pat) return;
       if (!eventosGeo[pat]) eventosGeo[pat] = [];
+      const geo = r['Geocerca'] || r['geocerca'] || '';
+      const vLim = parseNum(r['Velocidad Limite (km/h)'] || r['Velocidad Límite (km/h)'] || 0);
+      const vEv  = parseNum(r['Velocidad Evento (km/h)'] || r['Velocidad Evento'] || 0);
+      const fEv  = r['Fecha Evento (DD-MM-YYYY HH:MM:SS)'] || r['Fecha Evento'] || '';
       eventosGeo[pat].push({
-        geocerca: r['Geocerca'] || '',
-        velLimite: parseNum(r['Velocidad Limite (km/h)']),
-        velEvento: parseNum(r['Velocidad Evento (km/h)']),
-        fechaEvento: r['Fecha Evento (DD-MM-YYYY HH:MM:SS)'] || '',
+        geocerca: geo,
+        velLimite: vLim,
+        velEvento: vEv,
+        fechaEvento: fEv,
         tipoEvento: r['Nombre Evento'] || '',
         ubicacion: r['Geotexto'] || '',
       });
     });
+    console.log('GPS geocercas procesadas:', Object.keys(eventosGeo).length,
+      'patentes, total eventos:', Object.values(eventosGeo).reduce((s,v)=>s+v.length,0));
 
     datosAnalizados = { fecha, moviles, eventosGeo, excRuta };
     renderizarRevision();
