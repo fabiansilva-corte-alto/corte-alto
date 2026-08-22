@@ -1070,6 +1070,13 @@ function renderDetalleGeo() {
   const filtZona  = document.getElementById('sel-geo-zona').value;
 
   // Recopilar todos los eventos geocerca
+  // Debug temporal — contar eventosGeo disponibles
+  let _totalEvGeo = 0;
+  datos.forEach(d => (d.moviles||[]).forEach(m => _totalEvGeo += (m.eventosGeo||[]).length));
+  console.log('renderDetalleGeo: total eventosGeo en datos=', _totalEvGeo,
+    '| días=', datos.length,
+    '| sample movil keys=', datos[0]?.moviles?.[0] ? Object.keys(datos[0].moviles[0]).join(',') : 'N/A');
+
   const eventos = [];
   datos.forEach(dia => {
     (dia.moviles||[]).forEach(m => {
