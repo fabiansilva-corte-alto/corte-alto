@@ -483,7 +483,8 @@ const COL = 'gps_registros';
 let datos = [];      // array de días cargados
 let graficoActual = null;
 let modoGrafico = 'excesos';
-let sinGPS5dias = new Set(); // patentes con 5+ días consecutivos sin GPS (desde Firestore)
+let sinGPS5dias = new Set();
+let eventosGeoCache = []; // eventos geocerca del período // patentes con 5+ días consecutivos sin GPS (desde Firestore)
 
 /* ─── INICIO ─── */
 document.addEventListener('DOMContentLoaded', () => {
@@ -1073,23 +1074,17 @@ function renderMovilMulti() {
 }
 
 /* ─── DETALLE GEOCERCA ─── */
-/* ─── DETALLE GEOCERCA — lee directo desde colección gps_geocercas ─── */
-let eventosGeoCache = []; // cache de eventos del período consultado
-
 async function cargarEventosGeo() {
-  const desde = document.getElementById('f-desde').value;
-  const hasta = document.getElementById('f-hasta').value;
   eventosGeoCache = [];
   try {
-    const snap = await db.collection('gps_geocercas')
-      .where('fecha', '>=', desde)
-      .where('fecha', '<=', hasta)
-      .get();
-    snap.forEach(d => {
-      const dia = d.data();
-      (dia.eventos || []).forEach(ev => {
+    // Leer un doc por fecha desde gps_geocercas (ID = YYYY-MM-DD)
+    const fechas = datos.map(d => d.fecha);
+    const docs = await Promise.all(fechas.map(f => db.collection('gps_geocercas').doc(f).get()));
+    docs.forEach(d => {
+      if (!d.exists) return;
+      (d.data().eventos || []).forEach(ev => {
         eventosGeoCache.push({
-          fecha: dia.fecha,
+          fecha: d.id,
           patente: ev.patente || '',
           nombreMovil: ev.nombreMovil || '',
           geocerca: ev.geocerca || '',
@@ -1103,14 +1098,14 @@ async function cargarEventosGeo() {
 }
 
 function poblarFiltrosGeo() {
-  const patentes = new Set(eventosGeoCache.map(e => e.patente).filter(Boolean));
-  const geocercas = new Set(eventosGeoCache.map(e => e.geocerca).filter(Boolean));
-  const selMov = document.getElementById('sel-geo-movil');
-  const selZona = document.getElementById('sel-geo-zona');
-  selMov.innerHTML  = '<option value="">Todos</option>' +
-    [...patentes].sort().map(p => `<option value="${p}">${p}</option>`).join('');
-  selZona.innerHTML = '<option value="">Todas</option>' +
-    [...geocercas].sort().map(z => `<option value="${escH(z)}">${escH(z)}</option>`).join('');
+  const patentes = new Set(eventosGeoCache.map(e=>e.patente).filter(Boolean));
+  const geocercas = new Set(eventosGeoCache.map(e=>e.geocerca).filter(Boolean));
+  document.getElementById('sel-geo-movil').innerHTML =
+    '<option value="">Todos</option>' +
+    [...patentes].sort().map(p=>`<option value="${p}">${p}</option>`).join('');
+  document.getElementById('sel-geo-zona').innerHTML =
+    '<option value="">Todas</option>' +
+    [...geocercas].sort().map(z=>`<option value="${escH(z)}">${escH(z)}</option>`).join('');
 }
 
 function renderDetalleGeo() {
@@ -1120,17 +1115,15 @@ function renderDetalleGeo() {
   const filtrados = eventosGeoCache.filter(e =>
     (!filtMovil || e.patente === filtMovil) &&
     (!filtZona  || e.geocerca === filtZona)
-  );
+  ).sort((a,b) => a.fecha.localeCompare(b.fecha) || (a.hora||'').localeCompare(b.hora||''));
 
   document.getElementById('lbl-geo-total').textContent =
-    `${filtrados.length} evento(s) encontrado(s)`;
+    `${filtrados.length} evento(s)`;
 
   const wrap = document.getElementById('detalle-geo-wrap');
   if (eventosGeoCache.length === 0) {
-    wrap.innerHTML = `<div class="empty">
-      <h3>Sin datos de geocerca en este período</h3>
-      <p>Solo los días cargados con la versión actual tienen este detalle.</p>
-    </div>`;
+    wrap.innerHTML = `<div class="empty"><h3>Sin datos de geocerca en este período</h3>
+      <p>Solo los días cargados con la versión actual tienen este detalle.</p></div>`;
     return;
   }
   if (filtrados.length === 0) {
@@ -1138,37 +1131,25 @@ function renderDetalleGeo() {
     return;
   }
 
-  // Ordenar por fecha y hora
-  filtrados.sort((a,b) => {
-    if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
-    return (a.hora||'').localeCompare(b.hora||'');
-  });
-
-  wrap.innerHTML = `<div style="overflow-x:auto;">
-    <table class="tabla-geo">
-      <thead><tr>
-        <th>Fecha</th>
-        <th>Patente</th>
-        <th>Nombre Móvil</th>
-        <th>Geocerca</th>
-        <th class="r">Vel. límite</th>
-        <th class="r">Vel. evento</th>
-        <th>Hora evento</th>
-      </tr></thead>
-      <tbody>
-        ${filtrados.map(e => `<tr>
-          <td>${fmtFecha(e.fecha)}</td>
-          <td><strong>${e.patente}</strong></td>
-          <td style="font-size:11px;color:var(--ts)">${escH(e.nombreMovil)}</td>
-          <td style="font-size:11px">${escH(e.geocerca)}</td>
-          <td class="r">${e.velLimite||'—'} km/h</td>
-          <td class="r"><span class="vel-alta">${e.velEvento} km/h</span></td>
-          <td style="font-size:11px;color:var(--ts)">${e.hora||'—'}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
+  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="tabla-geo">
+    <thead><tr>
+      <th>Fecha</th><th>Patente</th><th>Nombre Móvil</th><th>Geocerca</th>
+      <th class="r">Vel. límite</th><th class="r">Vel. evento</th><th>Hora</th>
+    </tr></thead>
+    <tbody>
+      ${filtrados.map(e=>`<tr>
+        <td>${fmtFecha(e.fecha)}</td>
+        <td><strong>${e.patente}</strong></td>
+        <td style="font-size:11px;color:var(--ts)">${escH(e.nombreMovil)}</td>
+        <td style="font-size:11px">${escH(e.geocerca)}</td>
+        <td class="r">${e.velLimite||'—'} km/h</td>
+        <td class="r"><span class="vel-alta">${e.velEvento} km/h</span></td>
+        <td style="font-size:11px;color:var(--ts)">${e.hora||'—'}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div>`;
 }
+
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').then(reg=>{
