@@ -319,12 +319,6 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
   <span class="lbl-periodo" id="lbl-periodo">—</span>
 </div>
 
-<!-- ALERTA FIJA 5+ DÍAS SIN GPS -->
-<div class="alerta-header oculta" id="alerta-5dias">
-  <span>⚠️ Sin transmisión 5+ días:</span>
-  <div class="tags-sin" id="tags-5dias"></div>
-</div>
-
 <main>
 
   <!-- KPIs -->
@@ -489,6 +483,7 @@ const COL = 'gps_registros';
 let datos = [];      // array de días cargados
 let graficoActual = null;
 let modoGrafico = 'excesos';
+let sinGPS5dias = new Set(); // patentes con 5+ días consecutivos sin GPS (desde Firestore)
 
 /* ─── INICIO ─── */
 document.addEventListener('DOMContentLoaded', () => {
@@ -573,22 +568,8 @@ function renderKPIs() {
   const totalKm  = todosMoviles.reduce((s,m) => s+(m.km||0), 0);
   const totalGeo = todosMoviles.reduce((s,m) => s+(m.excGeo||0), 0);
 
-  // Sin GPS: 5+ días CONSECUTIVOS con km=0 dentro del período
-  const todasPatentes = new Set(datos.flatMap(d=>(d.moviles||[]).map(m=>m.patente)));
-  const sinGPSSet = new Set();
-  const diasOrden = [...datos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  todasPatentes.forEach(pat => {
-    let racha = 0;
-    diasOrden.forEach(dia => {
-      const mov = (dia.moviles||[]).find(m=>m.patente===pat);
-      if (!mov || mov.sinGPS || (mov.km||0)===0) {
-        racha++;
-        if (racha >= 5) sinGPSSet.add(pat);
-      } else {
-        racha = 0;
-      }
-    });
-  });
+  // sinGPS5dias viene de verificar5Dias() — 5 días consecutivos desde Firestore
+  // Se usa la variable global, no se recalcula aquí
 
   // Agrupar por móvil para calcular infractores por tipo
   const porMovil = agruparPorMovil();
@@ -612,25 +593,15 @@ function renderKPIs() {
     kpiCard('azul','Días con datos', datos.length, 'en el período') +
     kpiCard('verde','Km totales flota', Math.round(totalKm).toLocaleString('es-CL')+' km', 'acumulados') +
     kpiCard('rojo','Exc. geocercas', totalGeo, 'eventos en geocercas') +
-    kpiCard(sinGPSSet.size>0?'rojo':'verde','Sin GPS/movimiento', sinGPSSet.size, 'patentes distintas') +
+    `<div class="kpi ${sinGPS5dias.size>0?'rojo':'verde'}" id="kpi-sin-gps"><div class="kl">Sin GPS/movimiento</div><div class="kv">${sinGPS5dias.size}</div><div class="ks">${sinGPS5dias.size>0?sinGPS5dias.size+' patente(s)':'flota normal'}</div></div>` +
     (peorGeo ? kpiCard('rojo','Mayor infractor geocerca', peorGeo.patente, peorGeo.excGeo+' eventos · '+escH(peorGeo.conductores?[...peorGeo.conductores][0]||'':'')) : '') +
     (pickups  ? kpiCard('rojo','Infractor PickUp >120', pickups.patente, pickups.velMaxRuta+' km/h máx · '+escH([...pickups.conductores][0]||'')) : '') +
     (camComb  ? kpiCard('rojo','Infractor Cam. Comb >90', camComb.patente, camComb.velMaxRuta+' km/h máx · '+escH([...camComb.conductores][0]||'')) : '') +
     (furgones ? kpiCard('rojo','Infractor Furgón >90', furgones.patente, furgones.velMaxRuta+' km/h máx · '+escH([...furgones.conductores][0]||'')) : '') +
     (mayorKm  ? kpiCard('azul','Mayor recorrido', mayorKm.patente, Math.round(mayorKm.km)+' km') : '');
 
-  // Alerta sin GPS en el período
-  const wrap = document.getElementById('alerta-gps-wrap');
-  wrap.innerHTML = sinGPSSet.size > 0 ? `
-    <div class="alerta-gps">
-      <span class="ico">⚠️</span>
-      <div>
-        <strong>Móviles sin movimiento o sin señal GPS en el período</strong>
-        <div class="patentes-sin-gps">
-          ${[...sinGPSSet].map(p=>`<span class="tag-sin-gps">${p}</span>`).join('')}
-        </div>
-      </div>
-    </div>` : '';
+  // Alerta sin GPS — se actualiza desde actualizarAlertaSinGPS() vía verificar5Dias()
+  actualizarAlertaSinGPS();
 }
 
 /* ─── AGRUPAR POR MÓVIL (para gráficos y ranking) ─── */
@@ -957,15 +928,37 @@ async function verificar5Dias() {
       }
     });
 
-    const el = document.getElementById('alerta-5dias');
-    if (criticos.size > 0) {
-      el.classList.remove('oculta');
-      document.getElementById('tags-5dias').innerHTML =
-        [...criticos].sort().map(p => `<span class="tag-pat">${p}</span>`).join('');
-    } else {
-      el.classList.add('oculta');
-    }
+    // Guardar en variable global
+    sinGPS5dias = criticos;
+
+    // Actualizar el KPI y la alerta rosada con este resultado
+    actualizarAlertaSinGPS();
   } catch(e) { console.warn('alerta 5 días:', e.message); }
+}
+
+function actualizarAlertaSinGPS() {
+  // Actualizar KPI
+  const kpiEl = document.getElementById('kpi-sin-gps');
+  if (kpiEl) {
+    kpiEl.querySelector('.kv').textContent = sinGPS5dias.size;
+    kpiEl.className = 'kpi ' + (sinGPS5dias.size > 0 ? 'rojo' : 'verde');
+    kpiEl.querySelector('.ks').textContent = sinGPS5dias.size > 0
+      ? sinGPS5dias.size + ' patente(s) sin movimiento'
+      : 'flota en operación normal';
+  }
+  // Actualizar alerta rosada
+  const wrap = document.getElementById('alerta-gps-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = sinGPS5dias.size > 0 ? `
+    <div class="alerta-gps">
+      <span class="ico">⚠️</span>
+      <div>
+        <strong>Móviles con 5+ días consecutivos sin movimiento o señal GPS</strong>
+        <div class="patentes-sin-gps">
+          ${[...sinGPS5dias].sort().map(p => `<span class="tag-sin-gps">${p}</span>`).join('')}
+        </div>
+      </div>
+    </div>` : '';
 }
 
 /* ─── SELECTOR MÚLTIPLE MÓVILES ─── */
