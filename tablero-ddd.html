@@ -737,26 +737,37 @@ window.cargarDatos=async function(){
 
     // ── 1. Producción diaria ──
     const madSel=madereoSeleccionados();
-    // Si hay equipos madereo seleccionados, buscar en todas las líneas del fundo
-    // porque equipos prestados pueden reportar bajo otra línea
-    const snapProd=await getDocs(query(
-      collection(db,COL_PROD),
-      where('fecha','>=',desde),
-      where('fecha','<=',hasta),
-      ...(madSel.length ? [] : [where('linea','==',linea)])
-    ));
-    const docsProd=snapProd.docs.map(d=>d.data())
-      .filter(d=>fundosSel.includes(d.fundo));
+
+    let docsProd=[];
+    if(madSel.length){
+      // Con equipos seleccionados: buscar solo por fecha en toda la colección
+      // El filtro de equipo se aplica en cliente sobre cartolas
+      const snapProd=await getDocs(query(
+        collection(db,COL_PROD),
+        where('fecha','>=',desde),
+        where('fecha','<=',hasta)
+      ));
+      docsProd=snapProd.docs.map(d=>d.data());
+    }else{
+      // Sin equipos: filtrar por línea y fundo como siempre
+      const snapProd=await getDocs(query(
+        collection(db,COL_PROD),
+        where('fecha','>=',desde),
+        where('fecha','<=',hasta),
+        where('linea','==',linea)
+      ));
+      docsProd=snapProd.docs.map(d=>d.data())
+        .filter(d=>fundosSel.includes(d.fundo));
+    }
 
     // Volumen real por día — si hay equipos madereo seleccionados, sumar solo sus cartolas
     const volRealPorDia={};
     docsProd.forEach(d=>{
       let vol=0;
+      // Filtrar cartolas: si hay equipos seleccionados, solo esos; si no, todos
+      const cartolas=(d.cartolas||[]).filter(c=>!madSel.length||madSel.includes(c.equipo));
       if(madSel.length){
-        // Sumar solo cartolas de los equipos seleccionados
-        (d.cartolas||[]).forEach(c=>{
-          if(madSel.includes(c.equipo)) vol+=(c.total||0);
-        });
+        cartolas.forEach(c=>vol+=(c.total||0));
       }else{
         vol=d.totalGlobal||0;
       }
@@ -768,9 +779,11 @@ window.cargarDatos=async function(){
     const rodalMap={};
     docsProd.forEach(d=>{
       const fecha=d.fecha;
-      // % Real: calcular desde volumen por tipo en cartolas
+      // Filtrar cartolas por equipos madereo seleccionados
+      const cartolas=(d.cartolas||[]).filter(c=>!madSel.length||madSel.includes(c.equipo));
+      // % Real: calcular desde volumen por tipo en cartolas filtradas
       const rodalVols={};
-      (d.cartolas||[]).forEach(c=>{
+      cartolas.forEach(c=>{
         const rodal=c.rodal;if(!rodal)return;
         if(!rodalVols[rodal])rodalVols[rodal]={CLEAR:0,INDUSTRIAL:0,PULPA:0,SINIESTRADO:0,total:0};
         (c.productos||[]).forEach(p=>{
