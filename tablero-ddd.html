@@ -44,7 +44,17 @@ html,body{height:100%;width:100%;font-family:var(--font);background:var(--bg);co
   background:var(--bg2);
   border-bottom:1px solid var(--border);
 }
-.btn-inicio{
+#btn-pdf{
+  font-size:12px;font-weight:700;
+  padding:5px 12px;height:30px;
+  border:1px solid var(--border2);border-radius:var(--radius-sm);
+  background:var(--card2);color:var(--text2);cursor:pointer;
+  transition:background .15s,color .15s;
+  margin-left:6px;
+}
+#btn-pdf:hover{background:var(--border2);color:var(--white)}
+
+
   font-size:16px;text-decoration:none;
   padding:4px 7px;border-radius:var(--radius-sm);
   background:var(--card2);border:1px solid var(--border2);
@@ -406,6 +416,8 @@ table.tabla-ddd tr.div-bloque td{
   .header-logo{width:36px;height:36px}
 }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -453,6 +465,7 @@ table.tabla-ddd tr.div-bloque td{
   <input type="date" id="fecha-hasta">
 
   <button id="btn-cargar" onclick="cargarDatos()">Cargar ▶</button>
+  <button id="btn-pdf" onclick="exportarPDF()" title="Exportar a PDF" style="display:none">📄 PDF</button>
 </div>
 
 <!-- SPINNER -->
@@ -888,6 +901,7 @@ window.cargarDatos=async function(){
     $id('estado-vacio').style.display='none';
     $id('bloque-header').style.display='';
     $id('grid-main').style.display='';
+    $id('btn-pdf').style.display='';
 
     toast(`✅ ${dias.length} días cargados`);
 
@@ -1160,6 +1174,54 @@ function filaSimple(lbl,vals,total,claseFn,decimales,sufijo){
   const clsTotal=claseFn?claseFn(total):'';
   return `<tr><td class="lbl">${lbl}</td>${celdas}<td class="resumen ${clsTotal}">${fmtV(total)}</td></tr>`;
 }
+
+window.exportarPDF=async function(){
+  const btn=$id('btn-pdf');
+  btn.textContent='⏳ Generando…';
+  btn.disabled=true;
+  try{
+    const {jsPDF}=window.jspdf;
+    const dashboard=$id('dashboard');
+    // Forzar altura completa para capturar todo el contenido
+    const fullH=dashboard.scrollHeight;
+    const fullW=dashboard.scrollWidth;
+    const canvas=await html2canvas(dashboard,{
+      scale:1.5,
+      useCORS:true,
+      backgroundColor:'#0f1f0f',
+      scrollX:0,
+      scrollY:0,
+      width:fullW,
+      height:fullH,
+      windowWidth:fullW,
+      windowHeight:fullH
+    });
+    const imgData=canvas.toDataURL('image/png');
+    // PDF landscape A4 en mm
+    const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    const pdfW=pdf.internal.pageSize.getWidth(); // 297mm
+    const pdfH=pdf.internal.pageSize.getHeight(); // 210mm
+    // Escalar imagen al ancho del PDF
+    const imgWmm=pdfW;
+    const imgHmm=(canvas.height/canvas.width)*pdfW;
+    let yOffset=0;
+    let page=0;
+    while(yOffset<imgHmm){
+      if(page>0)pdf.addPage();
+      pdf.addImage(imgData,'PNG',0,-yOffset,imgWmm,imgHmm);
+      yOffset+=pdfH;
+      page++;
+    }
+    const linea=$id('sel-linea').value||'tablero';
+    const hoy=new Date().toISOString().split('T')[0];
+    pdf.save(`DdD_${linea}_${hoy}.pdf`);
+  }catch(err){
+    toast('⚠️ Error al generar PDF: '+err.message,4000);
+  }finally{
+    btn.textContent='📄 PDF';
+    btn.disabled=false;
+  }
+};
 
 init();
 </script>
