@@ -119,6 +119,24 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 .pie-legend .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .pie-legend .leg-name{font-size:10px;color:var(--text2);white-space:nowrap}
 
+/* MODAL MULTI-SELECT FILTROS */
+.ms-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:flex-end;justify-content:center}
+.ms-overlay.open{display:flex}
+.ms-modal{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:75vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.ms-modal-head{padding:16px 20px 8px;border-bottom:1px solid var(--border)}
+.ms-modal-title{font-size:15px;font-weight:700;color:var(--text)}
+.ms-modal-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.ms-modal-body{overflow-y:auto;flex:1;padding:4px 0}
+.ms-modal-item{display:flex;align-items:center;gap:12px;padding:12px 20px;cursor:pointer;font-size:14px;color:var(--text);border-bottom:1px solid #f5f5f5}
+.ms-modal-item:hover{background:#fafafa}
+.ms-modal-item input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--green);flex-shrink:0}
+.ms-modal-footer{padding:12px 20px;border-top:1px solid var(--border)}
+.ms-modal-ok{width:100%;padding:13px;background:var(--text);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font)}
+
+/* Botón de filtro multi-select en el form */
+.ms-trigger{width:100%;font-size:14px;font-family:var(--font);padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--text);outline:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left;min-height:38px}
+.ms-trigger:after{content:"▾";font-size:10px;color:var(--text3);flex-shrink:0}
+
 /* TABLA PRODUCCIÓN DIARIA */
 .prod-wrap{overflow-x:auto;margin-top:8px}
 .prod-table{width:100%;border-collapse:collapse;font-size:11px;min-width:400px}
@@ -251,12 +269,13 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
   <!-- ═══ BLOQUE 1: FILTRO GENERAL ═══ -->
   <div class="section">
     <div class="section-title"><i class="ti ti-filter"></i> Filtro general</div>
-    <div class="filters-row">
-      <div class="filter-field" style="max-width:160px">
+    <!-- Fila 1: Fechas + Línea -->
+    <div class="filters-row" style="margin-bottom:10px">
+      <div class="filter-field" style="max-width:150px">
         <div class="filter-label"><i class="ti ti-calendar"></i> Desde</div>
         <input type="date" id="f-desde">
       </div>
-      <div class="filter-field" style="max-width:160px">
+      <div class="filter-field" style="max-width:150px">
         <div class="filter-label"><i class="ti ti-calendar"></i> Hasta</div>
         <input type="date" id="f-hasta">
       </div>
@@ -266,9 +285,52 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
           <option value="">Todas las líneas</option>
         </select>
       </div>
+    </div>
+    <!-- Fila 2: Fundo + Eq. Madereo + Consultar -->
+    <div class="filters-row">
+      <div class="filter-field">
+        <div class="filter-label"><i class="ti ti-map-pin"></i> Fundo <span id="f-fundo-lbl" style="font-weight:400;color:var(--text3)">(todos)</span></div>
+        <button class="ms-trigger" onclick="msAbrir('fundo')">
+          <span id="f-fundo-txt">Todos los fundos</span>
+        </button>
+      </div>
+      <div class="filter-field">
+        <div class="filter-label"><i class="ti ti-engine"></i> Eq. Madereo <span id="f-eqm-lbl" style="font-weight:400;color:var(--text3)">(todos)</span></div>
+        <button class="ms-trigger" onclick="msAbrir('eqm')">
+          <span id="f-eqm-txt">Todos los equipos</span>
+        </button>
+      </div>
       <button class="btn-consultar" onclick="consultar()" id="btn-consultar">
         <i class="ti ti-search"></i> Consultar
       </button>
+    </div>
+  </div>
+
+  <!-- MODAL FUNDO -->
+  <div class="ms-overlay" id="ms-overlay-fundo" onclick="msCerrar('fundo')">
+    <div class="ms-modal" onclick="event.stopPropagation()">
+      <div class="ms-modal-head">
+        <div class="ms-modal-title">🗺 Seleccionar fundos</div>
+        <div class="ms-modal-sub">Seleccione 1 o más opciones</div>
+      </div>
+      <div class="ms-modal-body" id="ms-body-fundo"></div>
+      <div class="ms-modal-footer">
+        <button class="ms-modal-ok" onclick="msOK('fundo')">Listo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EQ. MADEREO -->
+  <div class="ms-overlay" id="ms-overlay-eqm" onclick="msCerrar('eqm')">
+    <div class="ms-modal" onclick="event.stopPropagation()">
+      <div class="ms-modal-head">
+        <div class="ms-modal-title">⚙️ Seleccionar Eq. Madereo</div>
+        <div class="ms-modal-sub">Seleccione 1 o más opciones</div>
+      </div>
+      <div class="ms-modal-body" id="ms-body-eqm"></div>
+      <div class="ms-modal-footer">
+        <button class="ms-modal-ok" onclick="msOK('eqm')">Listo</button>
+      </div>
     </div>
   </div>
 
@@ -454,8 +516,11 @@ const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
 document.getElementById('f-desde').value = toISO(primerDia);
 document.getElementById('f-hasta').value = toISO(hoy);
 
-// ── CARGAR LÍNEAS ─────────────────────────────────────────────────────────
+// ── CARGAR LÍNEAS, FUNDOS Y EQUIPOS MADEREO ──────────────────────────────
+const MS_SEL = { fundo: null, eqm: null }; // null=todos, Set=filtro activo
+
 (async () => {
+  // Líneas
   try {
     const snap = await getDocs(query(collection(db,'config_lineas'), orderBy('nombre')));
     const sel = document.getElementById('f-linea');
@@ -465,7 +530,99 @@ document.getElementById('f-hasta').value = toISO(hoy);
       sel.appendChild(o);
     });
   } catch(e) {}
+
+  // Fundos
+  try {
+    const snap = await getDocs(query(collection(db,'config_fundos'), orderBy('nombre')));
+    const body = document.getElementById('ms-body-fundo');
+    // Opción Todos al inicio
+    body.innerHTML = `<label class="ms-modal-item">
+      <input type="checkbox" class="ms-chk-fundo" value="__todos__" id="ms-fundo-todos" onchange="msTodosToggle('fundo',this)"> Todos
+    </label>`;
+    snap.forEach(d => {
+      const nombre = d.data().nombre;
+      if(!nombre) return;
+      body.innerHTML += `<label class="ms-modal-item">
+        <input type="checkbox" class="ms-chk-fundo" value="${nombre}" onchange="msItemChange('fundo')">
+        ${nombre}
+      </label>`;
+    });
+  } catch(e) {}
+
+  // Equipos madereo (Torre + Skidder)
+  try {
+    const snap = await getDocs(query(collection(db,'config_equipos'), orderBy('nombre')));
+    const body = document.getElementById('ms-body-eqm');
+    const grupos = {};
+    snap.forEach(d => {
+      const data = d.data();
+      const tipo = (data.tipo||'').toUpperCase();
+      if(!data.nombre) return;
+      let g = null;
+      if(tipo==='TORRE'||tipo==='ALPINE') g = 'Torre / Alpine';
+      else if(tipo==='SKIDDER') g = 'Skidder';
+      if(g) { if(!grupos[g]) grupos[g]=[]; grupos[g].push(data.nombre); }
+    });
+    // Opción Todos
+    body.innerHTML = `<label class="ms-modal-item">
+      <input type="checkbox" class="ms-chk-eqm" value="__todos__" id="ms-eqm-todos" onchange="msTodosToggle('eqm',this)"> Todos
+    </label>`;
+    Object.entries(grupos).forEach(([g, eqs]) => {
+      body.innerHTML += `<div style="padding:8px 20px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;background:#f8f8f8;border-bottom:1px solid var(--border)">${g}</div>`;
+      eqs.forEach(nombre => {
+        body.innerHTML += `<label class="ms-modal-item">
+          <input type="checkbox" class="ms-chk-eqm" value="${nombre}" onchange="msItemChange('eqm')">
+          ${nombre}
+        </label>`;
+      });
+    });
+  } catch(e) {}
 })();
+
+// ── FUNCIONES MULTI-SELECT ─────────────────────────────────────────────────
+window.msAbrir = function(id) {
+  document.getElementById(`ms-overlay-${id}`).classList.add('open');
+};
+window.msCerrar = function(id) {
+  document.getElementById(`ms-overlay-${id}`).classList.remove('open');
+};
+window.msOK = function(id) {
+  msCerrar(id);
+  msActLabel(id);
+  // Actualizar MS_SEL
+  const chks = [...document.querySelectorAll(`.ms-chk-${id}`)].filter(c=>c.value!=='__todos__');
+  const sel = chks.filter(cb=>cb.checked).map(cb=>cb.value);
+  MS_SEL[id] = (sel.length===0||sel.length===chks.length) ? null : new Set(sel);
+};
+window.msTodosToggle = function(id, cb) {
+  const chks = [...document.querySelectorAll(`.ms-chk-${id}`)].filter(c=>c.value!=='__todos__');
+  // Todos marcado → marcar todos los items; desmarcado → desmarcar todos
+  chks.forEach(c => c.checked = cb.checked);
+};
+window.msItemChange = function(id) {
+  const chks = [...document.querySelectorAll(`.ms-chk-${id}`)].filter(c=>c.value!=='__todos__');
+  const todosEl = document.getElementById(`ms-${id}-todos`);
+  // Todos se marca solo si todos los items están marcados
+  if(todosEl) todosEl.checked = chks.every(c=>c.checked);
+};
+
+function msActLabel(id) {
+  const chks = [...document.querySelectorAll(`.ms-chk-${id}`)].filter(c=>c.value!=='__todos__');
+  const sel = chks.filter(cb=>cb.checked).map(cb=>cb.value);
+  const txt = document.getElementById(`f-${id}-txt`);
+  const lbl = document.getElementById(`f-${id}-lbl`);
+  if(!txt||!lbl) return;
+  if(sel.length===0 || sel.length===chks.length) {
+    txt.textContent = id==='fundo'?'Todos los fundos':'Todos los equipos';
+    lbl.textContent = '(todos)';
+  } else {
+    txt.textContent = sel.length<=2 ? sel.join(', ') : `${sel.length} seleccionados`;
+    lbl.textContent = `(${sel.length})`;
+  }
+}
+
+function getFundoFiltro() { return MS_SEL.fundo; }
+function getEqmFiltro()   { return MS_SEL.eqm; }
 
 // ── ESTADO GLOBAL ─────────────────────────────────────────────────────────
 let G = { prod:[], jefe:[], meta:{}, inicio:[], desde:'', hasta:'' };
@@ -482,44 +639,72 @@ window.consultar = async function() {
   document.getElementById('btn-consultar').disabled = true;
   mostrarLoaders();
 
+  const fundoFiltro = getFundoFiltro(); // null=todos
+  const eqmFiltro   = getEqmFiltro();   // null=todos
+
   try {
-    // Producción
+    // ── Producción: consulta SIN filtro de línea ──────────────────────────
     let snap = await getDocs(query(collection(db,'reportes_produccion'),
       where('fecha','>=',desde), where('fecha','<=',hasta), orderBy('fecha')));
-    let prod = []; snap.forEach(d => prod.push(d.data()));
-    if(linea) prod = prod.filter(d => (d.linea||d.codLinea||'') === linea);
+    let prodTodo = []; snap.forEach(d => prodTodo.push(d.data()));
 
-    // Productividad jefe
+    // prod para KPI cards y gráfico → filtro LÍNEA
+    let prod = linea ? prodTodo.filter(d=>(d.linea||d.codLinea||'')===linea) : prodTodo;
+
+    // prodEqm para tabla diaria, rodales/fundo → filtro EQ.MADEREO (independiente de línea)
+    let prodEqm = prodTodo.map(d => ({
+      ...d,
+      cartolas: (d.cartolas||[]).filter(c => {
+        if(eqmFiltro && !eqmFiltro.has(c.equipo||'') && !eqmFiltro.has(c.procesador||'')) return false;
+        return true;
+      })
+    })).filter(d => !eqmFiltro || d.cartolas.length>0);
+    if(fundoFiltro) prodEqm = prodEqm.filter(d=>fundoFiltro.has(d.fundo||''));
+
+    // ── Productividad jefe: consulta SIN filtro de línea ─────────────────
     snap = await getDocs(query(collection(db,'productividad_jefe'),
       where('fecha','>=',desde), where('fecha','<=',hasta), orderBy('fecha')));
-    let jefe = []; snap.forEach(d => jefe.push(d.data()));
-    if(linea) jefe = jefe.filter(d => (d.linea||'') === linea);
+    let jefeTodo = []; snap.forEach(d => jefeTodo.push(d.data()));
 
-    // Meta volumen
+    // jefeLinea → OEE, Varas en piso, Causales Volteo (filtro LÍNEA)
+    let jefeLinea = linea ? jefeTodo.filter(d=>(d.linea||'')===linea) : jefeTodo;
+
+    // jefeEqm → Tabla diaria, Utilización, Causales Madereo, Cambios de línea (filtro EQ.MADEREO)
+    let jefeEqm = jefeTodo.map(d => ({
+      ...d,
+      equipos: (d.equipos||[]).filter(eq => !eqmFiltro || eqmFiltro.has(eq.equipo||''))
+    })).filter(d => !eqmFiltro || d.equipos.length>0);
+    if(fundoFiltro) jefeEqm = jefeEqm.filter(d=>fundoFiltro.has(d.fundo||''));
+
+    // Meta volumen (filtro LÍNEA)
     const meta = await cargarMeta(desde, hasta, linea, prod);
 
-    // Inicio jornada
+    // Inicio jornada (filtro LÍNEA)
     snap = await getDocs(query(collection(db,'reportes_v3'),
       where('fecha','>=',desde), where('fecha','<=',hasta)));
     let inicio = []; snap.forEach(d => inicio.push(d.data()));
-    if(linea) inicio = inicio.filter(d => (d.linea||'') === linea);
+    if(linea) inicio = inicio.filter(d=>(d.linea||'')===linea);
 
-    G = { prod, jefe, meta, inicio, desde, hasta };
+    G = { prod, prodEqm, jefe:jefeLinea, jefeEqm, meta, inicio, desde, hasta };
 
-    // Poblar selector procesadores (solo los que reportaron en el rango/línea)
-    poblarProcesadores(jefe);
+    // Poblar selector procesadores (por LÍNEA)
+    poblarProcesadores(jefeLinea);
 
-    renderProduccion();
+    // Bloques por LÍNEA
+    renderProduccion();          // KPI cards (usa G.prod) — gráfico al final
     renderOEE();
-    renderUtilizacion(jefe);
-    await renderVarasEnPiso(jefe);
-    renderCambioLinea(jefe);
-    // Guardar jefe globalmente para usarlo en los selectores
-    window._jefeData = jefe;
-    poblarSelectorEquipo(jefe, ['TORRE','ALPINE','SKIDDER'], 'f-madereo');
-    poblarSelectorEquipo(jefe, ['SHOVEL'], 'f-volteo');
-    renderCausalesTipo(jefe, ['TORRE','ALPINE','SKIDDER'], 'causal-madereo-wrap', '');
-    renderCausalesTipo(jefe, ['SHOVEL'], 'causal-volteo-wrap', '');
+    await renderVarasEnPiso(jefeLinea);
+
+    // Bloques por EQ.MADEREO
+    renderTablaDiariaEqm();
+    renderRodalesFundoEqm();
+    renderUtilizacion(jefeEqm);
+    renderCambioLinea(jefeEqm);
+    window._jefeData = jefeEqm;
+    poblarSelectorEquipo(jefeEqm, ['TORRE','ALPINE','SKIDDER'], 'f-madereo');
+    poblarSelectorEquipo(jefeEqm, ['SHOVEL'], 'f-volteo');
+    renderCausalesTipo(jefeEqm, ['TORRE','ALPINE','SKIDDER'], 'causal-madereo-wrap', '');
+    renderCausalesTipo(jefeLinea, ['SHOVEL'], 'causal-volteo-wrap', '');
     renderRendimiento();
 
   } catch(e) {
@@ -619,6 +804,13 @@ function renderProduccion() {
       <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(isNaN(cumpl)?0:cumpl,100)}%;background:${barColor}"></div></div>
     </div>`;
 
+  // ── Gráfico ──
+  renderGrafico(prod, meta, desde, hasta);
+}
+
+// ── TABLA DIARIA (filtro EQ.MADEREO) ────────────────────────────────────
+function renderTablaDiariaEqm() {
+  const { prodEqm:prod, desde, hasta } = G;
   // ── Volumen por equipo/operador (tabla diaria) y por procesador (bloque 4) ──
   const volEqM = {}, volEqP = {};
   // Estructura: prodDiaria[fecha][equipo][opMadereo] = vol
@@ -768,6 +960,11 @@ function renderProduccion() {
        * Volumen en m³ · Operador = quien madereó esa madera (opMadereo) · Solo equipos con producción en el período
      </div>`;
 
+}
+
+// ── RODALES/FUNDO (filtro EQ.MADEREO) ───────────────────────────────────
+function renderRodalesFundoEqm() {
+  const { prodEqm:prod } = G;
   // ── Volumen por fundo y rodal ──
   const fundoMap = {};
   prod.forEach(d => {
@@ -805,8 +1002,6 @@ function renderProduccion() {
     `<div class="kpi-label"><i class="ti ti-trees"></i> Volumen por fundo y rodal</div>
      <div style="margin-top:8px">${fundoHTML}</div>`;
 
-  // ── Gráfico ──
-  renderGrafico(prod, meta, desde, hasta);
 }
 
 // ── GRÁFICO ───────────────────────────────────────────────────────────────
@@ -849,7 +1044,7 @@ function renderGrafico(prod, meta, desde, hasta) {
       responsive:true,maintainAspectRatio:false,
       plugins:{
         legend:{position:'bottom',labels:{font:{size:11},boxWidth:14,padding:12}},
-        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt2(c.parsed.y)} m³`}}
+        tooltip:{mode:'index',intersect:false,callbacks:{label:c=>` ${c.dataset.label}: ${fmt2(c.parsed.y)} m³`}}
       },
       scales:{
         x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:15}},
