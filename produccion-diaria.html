@@ -240,8 +240,8 @@ input.bad{border-color:var(--red)!important;background:var(--red-bg)!important;c
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
         <span style="font-size:12px;color:var(--text3);white-space:nowrap">Modo:</span>
         <div id="sc-toggle" style="display:flex;background:var(--bg2,#f5f5f5);border:0.5px solid var(--border);border-radius:8px;padding:3px;gap:3px">
-          <button id="sc-btn-cargas" class="sc-toggle-btn sc-toggle-active"><i class="ti ti-stack-2" style="margin-right:4px;font-size:13px"></i>Stock de Cargas</button>
-          <button id="sc-btn-volumen" class="sc-toggle-btn"><i class="ti ti-box" style="margin-right:4px;font-size:13px"></i>Volumen m³</button>
+          <button id="sc-btn-cargas" class="sc-toggle-btn sc-toggle-active" onclick="scToggleModo('cargas')"><i class="ti ti-stack-2" style="margin-right:4px;font-size:13px"></i>Stock de Cargas</button>
+          <button id="sc-btn-volumen" class="sc-toggle-btn" onclick="scToggleModo('volumen')"><i class="ti ti-box" style="margin-right:4px;font-size:13px"></i>Volumen m³</button>
         </div>
       </div>
       <!-- Encabezado columnas -->
@@ -1709,7 +1709,7 @@ function scAplicarModo(modo,limpiar=false){
   scRecalcTotal();
 }
 
-function scToggleModo(modo){
+window.scToggleModo=function scToggleModo(modo){
   if(modo===window.SC_MODO)return;
   // verificar si hay datos
   const hayDatos=[...document.querySelectorAll('.sc-cargas-inp')].some(i=>i.value.trim());
@@ -2003,26 +2003,7 @@ function scValida(d){
 }
 
 window.scGuardar=async function(){
-  // Validar cada fila antes de guardar
-  let hayError=false;
-  let primeraError=null;
-  document.querySelectorAll('[data-sc-row]').forEach(row=>{
-    const largoInp=row.querySelector('.sc-largo-inp');
-    const diamInp=row.querySelector('.sc-diam-inp');
-    const cargasInp=row.querySelector('.sc-cargas-inp');
-    const tipo=row.querySelector('.sc-tipo-sel')?.value||'';
-    // si la fila tiene tipo, exigir largo, diam y cargas válidas
-    if(tipo){
-      if(!largoInp.value){largoInp.classList.add('campo-error');if(!primeraError)primeraError=largoInp;hayError=true;}
-      if(!diamInp.value){}// diámetro opcional por ahora — validar en próxima sesión
-      const val=parseFloat((cargasInp.value||'').replace(',','.'));
-      if(!cargasInp.value||isNaN(val)||Math.round(val*2)!==val*2){cargasInp.classList.add('campo-error');if(!primeraError)primeraError=cargasInp;hayError=true;}
-    }
-  });
-  if(hayError){
-    if(primeraError){primeraError.scrollIntoView({behavior:'smooth',block:'center'});mostrarErrorCampo(primeraError,'Revisa los campos marcados en rojo');}
-    return;
-  }
+  // Validaciones desactivadas temporalmente — revisar en próxima sesión
   const d=scCollect();
   if(!scValida(d))return;
   loader(true,'Guardando stock...');
