@@ -373,7 +373,10 @@ table.tabla-ddd td.lbl-sub{
   white-space:normal;word-break:break-word;
   padding-left:20px;font-size:14px;
 }
-/* Meta entre paréntesis */
+/* Filas indicadores — fondo diferenciado */
+table.tabla-ddd tr.tr-indic td{background:#dce8d0}
+table.tabla-ddd tr.tr-indic td.lbl{background:#cddfc2;font-weight:600}
+table.tabla-ddd tr.tr-indic td.resumen{background:#cddfc2}
 span.meta-lbl{font-size:12px;color:#2d6a10;font-weight:700;margin-left:3px}
 /* Divisor entre bloques principales */
 table.tabla-ddd tr.div-bloque td{
@@ -1085,7 +1088,7 @@ function renderTablaDdd(ctx){
     const tc=fnTotal?fnTotal(total):(fn?fn(total):'');
     const grupoCell=i===0?`<td class="grupo g-proc" rowspan="${nProc}">${procNombre}</td>`:'';
     const subCell=i===0?`<td class="grupo g-sub" rowspan="${nIndicadores}">Indicadores</td>`:'';
-    filas.push(`<tr>${grupoCell}${subCell}<td class="lbl">${lbl}</td>${celdas}<td class="resumen ${tc}">${total!=null?fmt(total,dec)+s:'—'}</td></tr>`);
+    filas.push(`<tr class="tr-indic">${grupoCell}${subCell}<td class="lbl">${lbl}</td>${celdas}<td class="resumen ${tc}">${total!=null?fmt(total,dec)+s:'—'}</td></tr>`);
   });
 
   // Divisor secundario entre Indicadores y Causales — via borde en primera fila de causales
@@ -1104,11 +1107,13 @@ function renderTablaDdd(ctx){
     motivos.forEach((m,i)=>{
       const vals=dias.map(f=>causalesPorDia[m][f]??null);
       const total=vals.reduce((a,b)=>a+(b||0),0);
-      const celdas=vals.map(v=>`<td>${v!=null?fmt(v,2):'—'}</td>`).join('');
       const subCell=i===0?`<td class="grupo g-sub" rowspan="${nCausales}">T. Perdidos Obvios</td>`:'';
-      const estiloResumen=coloresSemaforo[m]?`style="${coloresSemaforo[m]};font-weight:700;border-radius:4px"`:'';
-      const estiloBorde=i===0?'style="border-top:1px solid #7aaa4a"':'';
-      filas.push(`<tr ${estiloBorde}>${subCell}<td class="lbl">${m}</td>${celdas}<td class="resumen" ${estiloResumen}>${fmt(total,2)}</td></tr>`);
+      const esBorde=i===0?'border-top:2px solid #7aaa4a;':'';
+      const celdas=vals.map(v=>`<td style="${esBorde}">${v!=null?fmt(v,2):'—'}</td>`).join('');
+      const lblCell=`<td class="lbl" style="${esBorde}">${m}</td>`;
+      let resumenStyle=esBorde;
+      if(coloresSemaforo[m])resumenStyle+=coloresSemaforo[m]+';font-weight:700;border-radius:4px;';
+      filas.push(`<tr>${subCell}${lblCell}${celdas}<td class="resumen" style="${resumenStyle}">${fmt(total,2)}</td></tr>`);
     });
   }
 
