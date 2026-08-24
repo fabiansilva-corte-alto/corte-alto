@@ -240,8 +240,8 @@ input.bad{border-color:var(--red)!important;background:var(--red-bg)!important;c
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
         <span style="font-size:12px;color:var(--text3);white-space:nowrap">Modo:</span>
         <div id="sc-toggle" style="display:flex;background:var(--bg2,#f5f5f5);border:0.5px solid var(--border);border-radius:8px;padding:3px;gap:3px">
-          <button id="sc-btn-cargas" class="sc-toggle-btn sc-toggle-active"><i class="ti ti-stack-2" style="margin-right:4px;font-size:13px"></i>Stock de Cargas</button>
-          <button id="sc-btn-volumen" class="sc-toggle-btn"><i class="ti ti-box" style="margin-right:4px;font-size:13px"></i>Volumen m³</button>
+          <button id="sc-btn-cargas" class="sc-toggle-btn sc-toggle-active" onclick="window.scToggleModo('cargas')"><i class="ti ti-stack-2" style="margin-right:4px;font-size:13px"></i>Stock de Cargas</button>
+          <button id="sc-btn-volumen" class="sc-toggle-btn" onclick="window.scToggleModo('volumen')"><i class="ti ti-box" style="margin-right:4px;font-size:13px"></i>Volumen m³</button>
         </div>
       </div>
       <!-- Encabezado columnas -->
@@ -1709,17 +1709,10 @@ function scAplicarModo(modo,limpiar=false){
   scRecalcTotal();
 }
 
-function scToggleModo(modo){
+window.scToggleModo=function scToggleModo(modo){
   if(modo===window.SC_MODO)return;
-  // verificar si hay datos
-  const hayDatos=[...document.querySelectorAll('.sc-cargas-inp')].some(i=>i.value.trim());
-  if(hayDatos){
-    if(!confirm('¿Cambiar de modo? Los valores de cantidad ingresados se borrarán.'))return;
-    scAplicarModo(modo,true);
-  }else{
-    scAplicarModo(modo,false);
-  }
-}
+  scAplicarModo(modo,false);
+};
 
 window._scInit=async function(){await initStock();};
 const SC_DRAFT='ca_sc_draft_v1';
