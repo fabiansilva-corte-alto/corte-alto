@@ -826,7 +826,7 @@ let historialCache = [];
 /* ============================================================
    INICIO
    ============================================================ */
-document.getElementById("fecha").valueAsDate = new Date();
+const _hoy = new Date(); document.getElementById("fecha").value = _hoy.getFullYear() + "-" + String(_hoy.getMonth()+1).padStart(2,"0") + "-" + String(_hoy.getDate()).padStart(2,"0");
 const jefeGuardado = localStorage.getItem(LS_JEFE);
 if (jefeGuardado) document.getElementById("jefe").value = jefeGuardado;
 restaurarBorrador();
@@ -874,9 +874,9 @@ window.agregarEquipo = function (datos) {
     reportaOEE: datos?.reportaOEE ?? "",
     shoveleo: datos?.shoveleo || "",
     arbolesShoveleo: datos?.arbolesShoveleo ?? "",
-    volteos: datos?.volteos ? JSON.parse(JSON.stringify(datos.volteos)) : [],
+    volteos: datos?.volteos ? JSON.parse(JSON.stringify(datos.volteos)) : [{ rodal: "", arboles: "", destino: "" }],
     operadorOtro: datos?.operadorOtro || "",
-    rodales: datos?.rodales ? JSON.parse(JSON.stringify(datos.rodales)) : [],
+    rodales: datos?.rodales ? JSON.parse(JSON.stringify(datos.rodales)) : [{ rodal: "", arboles: "" }],
     detenciones: datos?.detenciones ? JSON.parse(JSON.stringify(datos.detenciones)) : [],
     observaciones: datos?.observaciones || ""
   };
@@ -1735,7 +1735,7 @@ function limpiarFormulario() {
   document.getElementById("linea").value = "";
   document.getElementById("fundo").value = "";
   document.getElementById("codigoFundo").value = "";
-  document.getElementById("fecha").valueAsDate = new Date();
+  const _hoy = new Date(); document.getElementById("fecha").value = _hoy.getFullYear() + "-" + String(_hoy.getMonth()+1).padStart(2,"0") + "-" + String(_hoy.getDate()).padStart(2,"0");
   renderEquipos();
   localStorage.removeItem(LS_DRAFT);
 }
