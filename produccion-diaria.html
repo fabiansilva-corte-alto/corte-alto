@@ -1711,14 +1711,7 @@ function scAplicarModo(modo,limpiar=false){
 
 window.scToggleModo=function scToggleModo(modo){
   if(modo===window.SC_MODO)return;
-  // verificar si hay datos
-  const hayDatos=[...document.querySelectorAll('.sc-cargas-inp')].some(i=>i.value.trim());
-  if(hayDatos){
-    if(!confirm('¿Cambiar de modo? Los valores de cantidad ingresados se borrarán.'))return;
-    scAplicarModo(modo,true);
-  }else{
-    scAplicarModo(modo,false);
-  }
+  scAplicarModo(modo,false); // cambia modo sin borrar datos
 }
 
 window._scInit=async function(){await initStock();};
