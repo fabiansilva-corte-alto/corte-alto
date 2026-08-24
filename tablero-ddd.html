@@ -798,6 +798,8 @@ window.cargarDatos=async function(){
       });
       Object.entries(rodalVols).forEach(([rodal,v])=>{
         if(!rodalMap[rodal])rodalMap[rodal]={};
+        // Guardar fundo del doc para mostrarlo junto al rodal
+        if(!rodalMap[rodal]._fundo)rodalMap[rodal]._fundo=d.fundo||'';
         const t=v.total||1;
         rodalMap[rodal][fecha]={
           clear:      Math.round(v.CLEAR/t*100),
@@ -1102,7 +1104,11 @@ function renderTablaDdd(ctx){
   // ─────────────────────────────────────────────
   // BLOQUE APROVECHAMIENTO
   // ─────────────────────────────────────────────
-  const rodales=Object.keys(rodalMap);
+  const rodales=Object.keys(rodalMap).filter(rodal=>{
+    // Solo mostrar rodales que tengan al menos un día con dato real
+    const r=rodalMap[rodal];
+    return dias.some(f=>r[f]!=null);
+  });
   const tiposAprov=[['Clear','clear'],['Industrial','industrial'],['Pulpa','pulpa'],['Siniestrado','siniestrado']];
   const nAprov=rodales.length===0?1:rodales.length*(1+tiposAprov.length); // fila cabecera rodal + 4 tipos
 
@@ -1126,7 +1132,7 @@ function renderTablaDdd(ctx){
       // Fila cabecera rodal
       const grupoCell=primeraFilaAprov?`<td class="grupo g-aprov" rowspan="${nAprov}">Aprov. Trozado</td>`:'';
       const subCell=`<td class="grupo g-sub" rowspan="${nFilasEsteRodal}">Rodal ${rodal}</td>`;
-      filas.push(`<tr class="${clsB}">${grupoCell}${subCell}<td class="lbl" style="font-weight:700">RODAL: ${rodal}</td>${dias.map(()=>'<td></td>').join('')}<td class="resumen"></td></tr>`);
+      filas.push(`<tr class="${clsB}">${grupoCell}${subCell}<td class="lbl" style="font-weight:700">RODAL: ${rodal} <span style="font-weight:400;font-size:11px;color:#6a8a5a">(${r._fundo||''})</span></td>${dias.map(()=>'<td></td>').join('')}<td class="resumen"></td></tr>`);
       primeraFilaAprov=false;
       // Filas tipos
       tiposAprov.forEach(([lbl,key])=>{
