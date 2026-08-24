@@ -240,8 +240,8 @@ input.bad{border-color:var(--red)!important;background:var(--red-bg)!important;c
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
         <span style="font-size:12px;color:var(--text3);white-space:nowrap">Modo:</span>
         <div id="sc-toggle" style="display:flex;background:var(--bg2,#f5f5f5);border:0.5px solid var(--border);border-radius:8px;padding:3px;gap:3px">
-          <button id="sc-btn-cargas" class="sc-toggle-btn sc-toggle-active" onclick="scToggleModo('cargas')"><i class="ti ti-stack-2" style="margin-right:4px;font-size:13px"></i>Stock de Cargas</button>
-          <button id="sc-btn-volumen" class="sc-toggle-btn" onclick="scToggleModo('volumen')"><i class="ti ti-box" style="margin-right:4px;font-size:13px"></i>Volumen m³</button>
+          <button id="sc-btn-cargas" class="sc-toggle-btn sc-toggle-active"><i class="ti ti-stack-2" style="margin-right:4px;font-size:13px"></i>Stock de Cargas</button>
+          <button id="sc-btn-volumen" class="sc-toggle-btn"><i class="ti ti-box" style="margin-right:4px;font-size:13px"></i>Volumen m³</button>
         </div>
       </div>
       <!-- Encabezado columnas -->
@@ -1709,9 +1709,16 @@ function scAplicarModo(modo,limpiar=false){
   scRecalcTotal();
 }
 
-window.scToggleModo=function scToggleModo(modo){
+function scToggleModo(modo){
   if(modo===window.SC_MODO)return;
-  scAplicarModo(modo,false); // cambia modo sin borrar datos
+  // verificar si hay datos
+  const hayDatos=[...document.querySelectorAll('.sc-cargas-inp')].some(i=>i.value.trim());
+  if(hayDatos){
+    if(!confirm('¿Cambiar de modo? Los valores de cantidad ingresados se borrarán.'))return;
+    scAplicarModo(modo,true);
+  }else{
+    scAplicarModo(modo,false);
+  }
 }
 
 window._scInit=async function(){await initStock();};
@@ -1905,16 +1912,13 @@ window.scAgregarFila=function(tipo='',prod='',largo='',diam='',calidad='FRESCA')
     if(!v)return;const p=v.split(',');
     largoInp.value=(p[0]||'0')+','+(p[1]||'').padEnd(2,'0').slice(0,2);
   });
-  // ---- Diámetro: solo números y guión, validar solo al guardar ----
+  // ---- Diámetro: sin restricción, acepta cualquier símbolo ----
   const diamInp=row.querySelector('.sc-diam-inp');
   diamInp.addEventListener('input',()=>{
-    // limpiar solo caracteres que definitivamente no son válidos (letras, símbolos excepto guión)
-    const clean=diamInp.value.replace(/[^0-9\-]/g,'');
-    if(clean!==diamInp.value)diamInp.value=clean;
     diamInp.classList.remove('campo-error');
     const em=diamInp.parentNode?.querySelector('.diam-err-msg');if(em)em.remove();
   });
-  // ---- N° Cargas: entero o ,5 (múltiplos de 0,5) ----
+    // ---- N° Cargas: entero o ,5 (múltiplos de 0,5) ----
   const inp=row.querySelector('.sc-cargas-inp');
   inp.addEventListener('input',()=>{
     const modo=window.SC_MODO||'cargas';
@@ -1996,7 +2000,26 @@ function scValida(d){
 }
 
 window.scGuardar=async function(){
-  // Validaciones desactivadas temporalmente — revisar en próxima sesión
+  // Validar cada fila antes de guardar
+  let hayError=false;
+  let primeraError=null;
+  document.querySelectorAll('[data-sc-row]').forEach(row=>{
+    const largoInp=row.querySelector('.sc-largo-inp');
+    const diamInp=row.querySelector('.sc-diam-inp');
+    const cargasInp=row.querySelector('.sc-cargas-inp');
+    const tipo=row.querySelector('.sc-tipo-sel')?.value||'';
+    // si la fila tiene tipo, exigir largo, diam y cargas válidas
+    if(tipo){
+      if(!largoInp.value){largoInp.classList.add('campo-error');if(!primeraError)primeraError=largoInp;hayError=true;}
+      // diámetro sin validación — mañana revisamos
+      const val=parseFloat((cargasInp.value||'').replace(',','.'));
+      if(!cargasInp.value||isNaN(val)||Math.round(val*2)!==val*2){cargasInp.classList.add('campo-error');if(!primeraError)primeraError=cargasInp;hayError=true;}
+    }
+  });
+  if(hayError){
+    if(primeraError){primeraError.scrollIntoView({behavior:'smooth',block:'center'});mostrarErrorCampo(primeraError,'Revisa los campos marcados en rojo');}
+    return;
+  }
   const d=scCollect();
   if(!scValida(d))return;
   loader(true,'Guardando stock...');
