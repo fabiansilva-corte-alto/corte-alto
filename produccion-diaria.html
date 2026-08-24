@@ -1912,14 +1912,14 @@ window.scAgregarFila=function(tipo='',prod='',largo='',diam='',calidad='FRESCA')
     if(!v)return;const p=v.split(',');
     largoInp.value=(p[0]||'0')+','+(p[1]||'').padEnd(2,'0').slice(0,2);
   });
-  // ---- Diámetro: solo números y guión ----
+  // ---- Diámetro: solo números y guión, validar solo al guardar ----
   const diamInp=row.querySelector('.sc-diam-inp');
   diamInp.addEventListener('input',()=>{
-    const orig=diamInp.value;
-    const clean=orig.replace(/[^0-9\-]/g,'');
-    if(clean!==orig)showDiamErr(diamInp);
-    else diamInp.classList.remove('campo-error');
-    diamInp.value=clean;
+    // limpiar solo caracteres que definitivamente no son válidos (letras, símbolos excepto guión)
+    const clean=diamInp.value.replace(/[^0-9\-]/g,'');
+    if(clean!==diamInp.value)diamInp.value=clean;
+    diamInp.classList.remove('campo-error');
+    const em=diamInp.parentNode?.querySelector('.diam-err-msg');if(em)em.remove();
   });
   // ---- N° Cargas: entero o ,5 (múltiplos de 0,5) ----
   const inp=row.querySelector('.sc-cargas-inp');
@@ -2014,7 +2014,7 @@ window.scGuardar=async function(){
     // si la fila tiene tipo, exigir largo, diam y cargas válidas
     if(tipo){
       if(!largoInp.value){largoInp.classList.add('campo-error');if(!primeraError)primeraError=largoInp;hayError=true;}
-      if(!diamInp.value||!diamValido(diamInp.value)){diamInp.classList.add('campo-error');if(!primeraError)primeraError=diamInp;hayError=true;}
+      if(!diamInp.value){}// diámetro opcional por ahora — validar en próxima sesión
       const val=parseFloat((cargasInp.value||'').replace(',','.'));
       if(!cargasInp.value||isNaN(val)||Math.round(val*2)!==val*2){cargasInp.classList.add('campo-error');if(!primeraError)primeraError=cargasInp;hayError=true;}
     }
