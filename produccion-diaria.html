@@ -1817,7 +1817,7 @@ window.initStock=async function initStock(){
   const fundoNuevo=document.getElementById('fundo')?.value||'';
   if(fundoNuevo)document.getElementById('sc-fundo').value=fundoNuevo;
   // si no hay filas, precargar
-  if(!document.getElementById('sc-filas').children.length)await scPrecargarDesdeUltimoReporte();
+  if(!document.getElementById('sc-filas-fresca').children.length)await scPrecargarDesdeUltimoReporte();
 }
 
 async function scPrecargarDesdeUltimoReporte(){
