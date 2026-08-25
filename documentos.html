@@ -10,7 +10,6 @@
 <meta name="theme-color" content="#1a3a1a">
 <title>Documentos &amp; RRHH — Corte Alto</title>
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -21,34 +20,61 @@
   --radius:14px;--font:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
-.app{max-width:480px;margin:0 auto;padding:0 0 2rem}
+.hidden{display:none !important}
+a{color:inherit}
 
-.header{background:linear-gradient(135deg,#1a3a1a 0%,#2d5a2d 100%);padding:1.25rem 1.25rem 1.5rem;color:#fff;position:relative;border-radius:0 0 20px 20px;margin-bottom:1.5rem}
-.header-back{position:absolute;top:16px;left:14px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:#fff;text-decoration:none;font-size:18px}
-.header-top{font-size:10px;opacity:.65;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem;text-align:center}
-.header-brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:.3rem}
-.header-logo{width:40px;height:40px;background:#fff;border-radius:8px;padding:4px;object-fit:contain}
-.header-title{font-size:20px;font-weight:800}
-.header-sub{font-size:12.5px;opacity:.8;text-align:center;margin-top:2px}
-
-.section-wrap{padding:0 1.1rem}
-
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem 1.25rem}
+/* ---------- Campos y botones reutilizables ---------- */
 .field-label{font-size:12.5px;font-weight:700;color:var(--text2);margin-bottom:6px;display:block}
-.field-input{width:100%;height:46px;border:1px solid var(--border);border-radius:10px;padding:0 14px;font-size:14.5px;font-family:var(--font);color:var(--text);background:#fbfbfb;margin-bottom:16px}
+.field-input{width:100%;height:44px;border:1px solid var(--border);border-radius:10px;padding:0 14px;font-size:14px;font-family:var(--font);color:var(--text);background:#fbfbfb;margin-bottom:14px}
 .field-input:focus{outline:none;border-color:var(--green2);background:#fff}
-.btn-primary{width:100%;height:48px;border:none;border-radius:10px;background:var(--green2);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.btn-primary{height:46px;border:none;border-radius:10px;background:var(--green2);color:#fff;font-size:14.5px;font-weight:700;cursor:pointer;font-family:var(--font);padding:0 22px}
 .btn-primary:disabled{opacity:.6}
-.btn-secondary{width:100%;height:44px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)}
-
+.btn-primary.full{width:100%}
+.btn-secondary{height:42px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text2);font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--font);padding:0 18px}
+.btn-secondary.full{width:100%}
 .msg-error{background:var(--red-bg);color:var(--red);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:14px;display:none}
 .msg-error.show{display:block}
+.chk-row{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--text2);margin-bottom:16px;font-weight:600}
 
-.roles-note{margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0}
+/* ---------- Pantalla: LOGIN (pantalla completa, dos paneles) ---------- */
+#pantalla-login{min-height:100vh;display:flex;flex-wrap:wrap}
+.login-panel-brand{flex:1 1 460px;background:linear-gradient(135deg,#1a3a1a 0%,#2d5a2d 100%);color:#fff;padding:2.75rem 3rem;display:flex;flex-direction:column;justify-content:space-between}
+.login-marca{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800}
+.login-marca svg{flex-shrink:0}
+.login-cuerpo{margin:3rem 0}
+.login-cuerpo h1{font-size:32px;font-weight:800;margin-bottom:14px;line-height:1.15}
+.login-cuerpo p{font-size:14.5px;opacity:.85;max-width:420px;line-height:1.55}
+.login-stats{display:flex;gap:2.5rem}
+.login-stats .num{font-size:21px;font-weight:800}
+.login-stats .lbl{font-size:11.5px;opacity:.7}
+
+.login-panel-form{flex:1 1 400px;display:flex;align-items:center;justify-content:center;padding:2.75rem 2rem;background:#fff}
+.login-form-box{width:100%;max-width:360px}
+.login-form-box h2{font-size:23px;font-weight:800;margin-bottom:6px;color:var(--text)}
+.login-form-box .sub{font-size:13px;color:var(--text3);margin-bottom:22px}
+.roles-note{margin-top:18px;padding-top:16px;border-top:1px solid #f0f0f0}
 .roles-note-title{font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
 .role-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12.5px;color:var(--text2)}
 .role-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--green-light);color:var(--green2);flex-shrink:0}
 
+@media (max-width:860px){
+  .login-panel-brand{padding:2rem 1.5rem;flex:1 1 100%}
+  .login-cuerpo{margin:1.75rem 0}
+  .login-cuerpo h1{font-size:26px}
+  .login-stats{display:none}
+  .login-panel-form{flex:1 1 100%;padding:2rem 1.5rem}
+}
+
+/* ---------- Pantallas angostas (jefe de centro / sin acceso) ---------- */
+.shell-angosto{max-width:480px;margin:0 auto;padding:0 0 2rem;min-height:100vh}
+.header-angosto{background:linear-gradient(135deg,#1a3a1a 0%,#2d5a2d 100%);padding:1.25rem 1.25rem 1.5rem;color:#fff;position:relative;border-radius:0 0 20px 20px;margin-bottom:1.5rem}
+.header-back{position:absolute;top:16px;left:14px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:#fff;text-decoration:none}
+.header-top{font-size:10px;opacity:.65;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem;text-align:center}
+.header-brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:.3rem}
+.header-logo{width:40px;height:40px;background:#fff;border-radius:8px;padding:4px;object-fit:contain;display:flex;align-items:center;justify-content:center;font-size:20px}
+.header-title{font-size:20px;font-weight:800}
+.header-sub{font-size:12.5px;opacity:.8;text-align:center;margin-top:2px}
+.card-angosto{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem 1.25rem;margin:0 1.1rem}
 .status-card{text-align:center;padding:2rem 1.25rem}
 .status-icon{width:56px;height:56px;border-radius:999px;background:var(--green-light);color:var(--green2);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px}
 .status-name{font-size:18px;font-weight:800;color:var(--text)}
@@ -56,28 +82,95 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .status-detail{margin-top:18px;text-align:left;background:#fafafa;border-radius:10px;padding:12px 14px;font-size:13px;color:var(--text2);line-height:1.7}
 .status-note{margin-top:16px;font-size:12px;color:var(--text3);line-height:1.6}
 
-.hidden{display:none}
+/* ---------- Pantalla: ESCRITORIO (RRHH / Admin) ---------- */
+#pantalla-escritorio{display:flex;min-height:100vh}
+.sidebar{width:250px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.4rem 0}
+.sidebar-back{font-size:12px;color:var(--text3);text-decoration:none;display:block;margin:0 1.4rem 12px}
+.sidebar-brand{display:flex;align-items:center;gap:9px;padding:0 1.4rem 1.3rem;border-bottom:1px solid #f0f0f0;margin-bottom:.7rem}
+.sidebar-brand .icono{width:30px;height:30px;background:var(--green-light);color:var(--green2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sidebar-brand .titulo{font-size:14.5px;font-weight:800;color:var(--text);line-height:1.25}
+.sidebar-nav{flex:1;padding:0 .7rem}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:var(--text2);font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;font-family:var(--font)}
+.nav-item svg{flex-shrink:0}
+.nav-item:hover{background:#f7f7f7}
+.nav-item.active{background:var(--green-light);color:var(--green2)}
+.nav-badge{margin-left:auto;background:#C23B3B;color:#fff;font-size:10.5px;font-weight:800;border-radius:20px;padding:2px 7px}
+.sidebar-user{padding:.9rem 1.4rem 0;border-top:1px solid #f0f0f0;margin-top:.7rem;display:flex;align-items:center;gap:9px}
+.sidebar-user-avatar{width:32px;height:32px;border-radius:999px;background:var(--green-light);color:var(--green2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12.5px;flex-shrink:0}
+.sidebar-user-nombre{font-size:12.5px;font-weight:700;color:var(--text)}
+.sidebar-user-rol{font-size:11px;color:var(--text3)}
+.sidebar-cerrar{margin:10px 1.4rem 0;font-size:11.5px;color:var(--text3);background:none;border:none;cursor:pointer;text-align:left;padding:0;font-family:var(--font)}
+
+.contenido{flex:1;padding:2.25rem 2.75rem;overflow-y:auto;min-width:0}
+.contenido-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.contenido-titulo{font-size:22px;font-weight:800;color:var(--text)}
+.contenido-sub{font-size:13px;color:var(--text3);margin-top:4px}
+
+.toolbar-desktop{display:flex;align-items:center;gap:10px;margin-bottom:1.1rem;flex-wrap:wrap}
+.toolbar-desktop .field-input{margin-bottom:0}
+.buscar-desktop{max-width:280px}
+.filtro-desktop{max-width:200px}
+
+.tabs{display:inline-flex;gap:6px;background:#f0f0f0;padding:4px;border-radius:11px;margin-bottom:1.1rem}
+.tab{height:34px;padding:0 16px;border:none;background:none;border-radius:8px;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;font-family:var(--font)}
+.tab.active{background:#fff;color:var(--green2);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+.tabla-wrap{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+table.tabla{width:100%;border-collapse:collapse}
+table.tabla th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);font-weight:700;padding:11px 16px;border-bottom:1px solid var(--border);background:#fafafa}
+table.tabla td{padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:13.5px;color:var(--text);vertical-align:middle}
+table.tabla tr:last-child td{border-bottom:none}
+table.tabla tbody tr:hover td{background:#fbfbfb}
+.nombre-cell{font-weight:700}
+.badge-centro{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--green-light);color:var(--green2);white-space:nowrap}
+.badge-centro.pendiente{background:var(--amber-bg);color:var(--amber)}
+.badge-inactivo{font-size:10px;font-weight:700;color:var(--red);background:var(--red-bg);padding:2px 8px;border-radius:20px;margin-left:6px}
+.empresa-cell{font-size:12.5px;color:var(--text2)}
+.accion-editar{border:1px solid var(--border);background:#fff;border-radius:8px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;color:var(--text2);cursor:pointer}
+.contador-desktop{font-size:12px;color:var(--text3);font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
+
+.estado-vacio-desktop{background:#fff;border:1px dashed var(--border);border-radius:14px;padding:3.25rem 2rem;text-align:center;color:var(--text3);font-size:13.5px;max-width:520px}
+.estado-vacio-desktop .icono{width:46px;height:46px;border-radius:999px;background:var(--green-light);color:var(--green2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.estado-vacio-desktop strong{display:block;color:var(--text);font-size:15px;margin-bottom:6px}
+
+@media (max-width:760px){
+  #pantalla-escritorio{flex-direction:column}
+  .sidebar{width:100%;flex-direction:row;flex-wrap:wrap;align-items:center;padding:.9rem 1rem;gap:.4rem}
+  .sidebar-brand,.sidebar-back,.sidebar-user,.sidebar-cerrar{display:none}
+  .sidebar-nav{display:flex;flex:none;padding:0;gap:4px;overflow-x:auto}
+  .nav-item{white-space:nowrap;width:auto}
+  .contenido{padding:1.5rem 1.25rem}
+}
+
+/* ---------- Modales (compartidos) ---------- */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:1rem}
+.modal-box{background:#fff;width:100%;max-width:420px;border-radius:16px;padding:1.5rem 1.4rem 1.6rem;max-height:88vh;overflow-y:auto}
+.modal-titulo{font-size:16px;font-weight:800;margin-bottom:16px;color:var(--text)}
+.btn-eliminar{width:100%;height:40px;border:none;background:none;color:var(--red);font-size:13px;font-weight:700;cursor:pointer;margin-top:12px;font-family:var(--font)}
 </style>
 </head>
 <body>
-<div class="app">
 
-  <div class="header">
-    <a href="index.html" class="header-back" aria-label="Volver"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></a>
-    <div class="header-top">Sistema de gestión forestal</div>
-    <div class="header-brand">
-      <div class="header-logo" style="display:flex;align-items:center;justify-content:center;font-size:20px">📁</div>
-      <div>
-        <div class="header-title">Documentos &amp; RRHH</div>
-      </div>
+<!-- ===== PANTALLA: LOGIN ===== -->
+<div id="pantalla-login">
+  <div class="login-panel-brand">
+    <div class="login-marca">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L19 14 H15 L20 22 H4 L9 14 H5 Z"/></svg>
+      Corte Alto
     </div>
-    <div class="header-sub">Acceso restringido — inicia sesión con tu cuenta</div>
+    <div class="login-cuerpo">
+      <h1>Documentos &amp; RRHH</h1>
+      <p>Un solo lugar para la documentación legal de los 4 centros de costo, con acceso controlado por rol — reemplaza el ciclo de tablets.</p>
+    </div>
+    <div class="login-stats">
+      <div><div class="num">4</div><div class="lbl">Centros de costo</div></div>
+      <div><div class="num">0</div><div class="lbl">Tablets en circulación</div></div>
+    </div>
   </div>
-
-  <div class="section-wrap">
-
-    <!-- ===== PANTALLA: LOGIN ===== -->
-    <div id="vista-login" class="card">
+  <div class="login-panel-form">
+    <div class="login-form-box">
+      <h2>Iniciar sesión</h2>
+      <div class="sub">Ingresa con la cuenta que te asignó Fabián.</div>
       <div class="msg-error" id="login-error"></div>
 
       <label class="field-label" for="input-correo">Correo</label>
@@ -86,7 +179,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       <label class="field-label" for="input-clave">Contraseña</label>
       <input class="field-input" id="input-clave" type="password" autocomplete="current-password" placeholder="••••••••••">
 
-      <button class="btn-primary" id="btn-ingresar" onclick="iniciarSesion()">Ingresar</button>
+      <button class="btn-primary full" id="btn-ingresar" onclick="iniciarSesion()">Ingresar</button>
 
       <div class="roles-note">
         <div class="roles-note-title">Acceso según tu rol</div>
@@ -94,43 +187,258 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
         <div class="role-row"><span class="role-chip">Jefe de centro</span> solo visualiza los de su centro</div>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- ===== PANTALLA: SESIÓN INICIADA (ronda 1 — confirmación) ===== -->
-    <div id="vista-status" class="card status-card hidden">
-      <div class="status-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.3l2.4 2.4 4.6-5.2"/></svg></div>
-      <div class="status-name" id="status-nombre">—</div>
-      <div class="status-role" id="status-rol">—</div>
+<!-- ===== PANTALLA: SIN ACCESO ===== -->
+<div id="pantalla-sinacceso" class="shell-angosto hidden">
+  <div class="header-angosto">
+    <a href="index.html" class="header-back" aria-label="Volver"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="header-top">Sistema de gestión forestal</div>
+    <div class="header-brand"><div class="header-logo">📁</div><div class="header-title">Documentos &amp; RRHH</div></div>
+    <div class="header-sub">Acceso restringido</div>
+  </div>
+  <div class="card-angosto status-card">
+    <div class="status-icon" style="background:var(--red-bg);color:var(--red)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    <div class="status-name">Sin acceso</div>
+    <div class="status-note" style="margin-top:10px">
+      Tu cuenta inició sesión correctamente, pero no tiene un perfil habilitado en el módulo de Documentos &amp; RRHH. Contacta al administrador (Fabián) para que te active el acceso.
+    </div>
+    <button class="btn-secondary full" style="margin-top:18px" onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>
+</div>
 
-      <div class="status-detail">
-        <div>Rol: <strong id="detalle-rol">—</strong></div>
-        <div>Centro: <strong id="detalle-centro">—</strong></div>
-        <div>Correo: <strong id="detalle-correo">—</strong></div>
+<!-- ===== PANTALLA: JEFE DE CENTRO (vista provisoria, mobile) ===== -->
+<div id="pantalla-jefe" class="shell-angosto hidden">
+  <div class="header-angosto">
+    <a href="index.html" class="header-back" aria-label="Volver"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="header-top">Sistema de gestión forestal</div>
+    <div class="header-brand"><div class="header-logo">📁</div><div class="header-title">Documentos &amp; RRHH</div></div>
+    <div class="header-sub">Acceso restringido — inicia sesión con tu cuenta</div>
+  </div>
+  <div class="card-angosto status-card">
+    <div class="status-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.3l2.4 2.4 4.6-5.2"/></svg></div>
+    <div class="status-name" id="jefe-nombre">—</div>
+    <div class="status-role" id="jefe-rol">—</div>
+    <div class="status-detail">
+      <div>Rol: <strong id="jefe-detalle-rol">—</strong></div>
+      <div>Centro: <strong id="jefe-detalle-centro">—</strong></div>
+      <div>Correo: <strong id="jefe-detalle-correo">—</strong></div>
+    </div>
+    <div class="status-note">
+      Tu vista de consulta (documentos de tu centro, solo lectura) se está construyendo como un módulo aparte, pensado para tablet y celular. Te avisamos apenas esté lista.
+    </div>
+    <button class="btn-secondary full" style="margin-top:18px" onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>
+</div>
+
+<!-- ===== PANTALLA: ESCRITORIO (RRHH / Admin) ===== -->
+<div id="pantalla-escritorio" class="hidden">
+  <div class="sidebar">
+    <a href="index.html" class="sidebar-back">‹ Corte Alto</a>
+    <div class="sidebar-brand">
+      <div class="icono"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L19 14 H15 L20 22 H4 L9 14 H5 Z"/></svg></div>
+      <div class="titulo">Documentos &amp; RRHH</div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-item active" data-seccion="bandeja" onclick="mostrarSeccion('bandeja')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 3h6l2-3h4"/><path d="M5 12 3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2l-2 5"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+        Bandeja
+      </button>
+      <button class="nav-item" data-seccion="boveda" onclick="mostrarSeccion('boveda')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+        Bóveda de documentos
+      </button>
+      <button class="nav-item" data-seccion="dotacion" onclick="mostrarSeccion('dotacion')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 19a6.5 6.5 0 0 1 13 0"/><circle cx="17.5" cy="8.5" r="2.6"/><path d="M15.5 12.5c2.9-.3 5.1 2 5.6 6.5"/></svg>
+        Dotación de personal
+        <span class="nav-badge hidden" id="badge-dotacion-pendientes">0</span>
+      </button>
+      <button class="nav-item" data-seccion="anexos" onclick="mostrarSeccion('anexos')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        Anexos pendientes
+      </button>
+      <button class="nav-item" data-seccion="configuracion" onclick="mostrarSeccion('configuracion')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.16.31.44.55.77.66.14.05.29.08.43.09H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+        Configuración
+      </button>
+    </div>
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar" id="escritorio-avatar">—</div>
+      <div>
+        <div class="sidebar-user-nombre" id="escritorio-nombre">—</div>
+        <div class="sidebar-user-rol" id="escritorio-rol">—</div>
       </div>
+    </div>
+    <button class="sidebar-cerrar" onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>
 
-      <div class="status-note">
-        Este es el acceso al módulo Documentos &amp; RRHH. La Bandeja de clasificación, la Bóveda de documentos, Dotación de personal y Anexos pendientes se agregan en las próximas rondas de construcción, igual que el resto de Corte Alto.
+  <div class="contenido">
+
+    <!-- Bandeja (placeholder) -->
+    <div id="seccion-bandeja" class="seccion">
+      <div class="contenido-header">
+        <div>
+          <div class="contenido-titulo">Bandeja de clasificación</div>
+          <div class="contenido-sub">Archivos nuevos detectados en el servidor de la oficina, agrupados por carpeta de trabajador.</div>
+        </div>
       </div>
-
-      <button class="btn-secondary" style="margin-top:18px" onclick="cerrarSesion()">Cerrar sesión</button>
+      <div class="estado-vacio-desktop">
+        <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 3h6l2-3h4"/><path d="M5 12 3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2l-2 5"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></div>
+        <strong>Todavía no está construida</strong>
+        Se agrega en la próxima ronda. Mientras tanto, puedes ir cargando y corrigiendo la <a href="#" onclick="mostrarSeccion('dotacion');return false" style="color:var(--green2);font-weight:700">Dotación de personal</a>, que ya funciona.
+      </div>
     </div>
 
-    <!-- ===== PANTALLA: SIN ACCESO ===== -->
-    <div id="vista-sin-acceso" class="card status-card hidden">
-      <div class="status-icon" style="background:var(--red-bg);color:var(--red)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
-      <div class="status-name">Sin acceso</div>
-      <div class="status-note" style="margin-top:10px">
-        Tu cuenta inició sesión correctamente, pero no tiene un perfil habilitado en el módulo de Documentos &amp; RRHH. Contacta al administrador (Fabián) para que te active el acceso.
+    <!-- Bóveda (placeholder) -->
+    <div id="seccion-boveda" class="seccion hidden">
+      <div class="contenido-header">
+        <div>
+          <div class="contenido-titulo">Bóveda de documentos</div>
+          <div class="contenido-sub">Documentación legal por trabajador. Solo RRHH/Admin puede subir, reemplazar o eliminar.</div>
+        </div>
       </div>
-      <button class="btn-secondary" style="margin-top:18px" onclick="cerrarSesion()">Cerrar sesión</button>
+      <div class="estado-vacio-desktop">
+        <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></div>
+        <strong>Todavía no está construida</strong>
+        Se agrega en una próxima ronda, una vez que la Bandeja de clasificación esté funcionando.
+      </div>
     </div>
 
+    <!-- Dotación de personal (REAL) -->
+    <div id="seccion-dotacion" class="seccion hidden">
+      <div class="contenido-header">
+        <div>
+          <div class="contenido-titulo">Dotación de personal</div>
+          <div class="contenido-sub">Asigna cada trabajador a su centro de costo — de aquí se alimenta el resto del sistema.</div>
+        </div>
+      </div>
+
+      <div class="tabs" id="dot-tabs">
+        <button class="tab active" data-tab="corte-alto" onclick="cambiarTabDotacion('corte-alto')">Corte Alto</button>
+        <button class="tab" data-tab="emco" onclick="cambiarTabDotacion('emco')">EMCO LTDA</button>
+      </div>
+
+      <div class="toolbar-desktop">
+        <input class="field-input buscar-desktop" id="dot-buscar" type="text" placeholder="Buscar por nombre o RUT..." oninput="renderTablaDotacion()">
+        <select class="field-input filtro-desktop" id="dot-filtro-centro" onchange="renderTablaDotacion()">
+          <option value="">Todos los centros</option>
+          <option value="FORMIN 1">FORMIN 1</option>
+          <option value="FORMIN 2">FORMIN 2</option>
+          <option value="FORMIN 3">FORMIN 3</option>
+          <option value="TALLER_COIHUE">Taller Coihue</option>
+          <option value="ROTATIVO">Rotativo</option>
+          <option value="__PENDIENTE__">Pendiente de asignar</option>
+        </select>
+        <span style="flex:1"></span>
+        <button class="btn-secondary" onclick="abrirModalImportar()">Importar CSV</button>
+        <button class="btn-primary" onclick="abrirModalTrabajador()">+ Agregar trabajador(a)</button>
+      </div>
+
+      <div class="contador-desktop" id="dot-contador">Cargando…</div>
+      <div class="tabla-wrap">
+        <table class="tabla">
+          <thead>
+            <tr><th>Trabajador</th><th>RUT</th><th>Centro</th><th>Empresa</th><th>Subárea</th><th>Estado</th><th></th></tr>
+          </thead>
+          <tbody id="dot-tabla-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Anexos pendientes (placeholder) -->
+    <div id="seccion-anexos" class="seccion hidden">
+      <div class="contenido-header">
+        <div>
+          <div class="contenido-titulo">Anexos pendientes</div>
+          <div class="contenido-sub">Cruce automático entre la dotación y los reportes diarios de faena: detecta cambios de fundo sin anexo generado.</div>
+        </div>
+      </div>
+      <div class="estado-vacio-desktop">
+        <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+        <strong>Todavía no está construida</strong>
+        Se agrega más adelante, una vez que la Dotación de personal esté completa y conectada con los reportes de faena.
+      </div>
+    </div>
+
+    <!-- Configuración (placeholder) -->
+    <div id="seccion-configuracion" class="seccion hidden">
+      <div class="contenido-header">
+        <div>
+          <div class="contenido-titulo">Configuración</div>
+          <div class="contenido-sub">Catálogo de tipos de documento y ajustes del módulo.</div>
+        </div>
+      </div>
+      <div class="estado-vacio-desktop">
+        <strong>Todavía no está construida</strong>
+        Se agrega más adelante.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== MODAL: AGREGAR / EDITAR TRABAJADOR ===== -->
+<div id="modal-trabajador" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-titulo" id="modal-trabajador-titulo">Agregar trabajador</div>
+    <input type="hidden" id="mt-id">
+
+    <label class="field-label" for="mt-nombre">Nombre completo</label>
+    <input class="field-input" id="mt-nombre" type="text" placeholder="Ej: Juan Pérez González">
+
+    <label class="field-label" for="mt-rut">RUT</label>
+    <input class="field-input" id="mt-rut" type="text" placeholder="Ej: 12345678-9">
+
+    <label class="field-label" for="mt-centro">Centro</label>
+    <select class="field-input" id="mt-centro" onchange="sugerirEmpresa()">
+      <option value="">— Sin centro asignado —</option>
+      <option value="FORMIN 1">FORMIN 1</option>
+      <option value="FORMIN 2">FORMIN 2</option>
+      <option value="FORMIN 3">FORMIN 3</option>
+      <option value="TALLER_COIHUE">Taller Coihue</option>
+      <option value="ROTATIVO">Rotativo</option>
+    </select>
+
+    <label class="field-label" for="mt-empresa">Empresa</label>
+    <input class="field-input" id="mt-empresa" type="text" placeholder="Ej: F. Corte Alto Ltda.">
+
+    <label class="field-label" for="mt-rutempresa">Rut empresa</label>
+    <input class="field-input" id="mt-rutempresa" type="text" placeholder="Ej: 78.264.940-K">
+
+    <label class="field-label" for="mt-subarea">Subárea (opcional, uso interno de RRHH)</label>
+    <input class="field-input" id="mt-subarea" type="text" placeholder="Ej: FORMIN 1, Taller 2...">
+
+    <label class="chk-row"><input type="checkbox" id="mt-activo" checked> Activo</label>
+
+    <div class="msg-error" id="modal-trabajador-error"></div>
+
+    <button class="btn-primary full" onclick="guardarTrabajador()">Guardar</button>
+    <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModales()">Cancelar</button>
+    <button class="btn-eliminar hidden" id="mt-btn-eliminar" onclick="eliminarTrabajadorActual()">Eliminar trabajador</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: IMPORTAR CSV ===== -->
+<div id="modal-importar" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-titulo">Importar CSV</div>
+    <div class="status-note" style="margin:0 0 12px;text-align:left">
+      Columnas esperadas, con encabezado: <strong>rut,nombre,centro,subarea,activo,empresa,rutempresa</strong><br>
+      Centro debe ser exactamente uno de: FORMIN 1, FORMIN 2, FORMIN 3, TALLER_COIHUE, ROTATIVO, o vacío (trabajador pendiente de asignar). Las columnas empresa y rutempresa son opcionales.
+    </div>
+    <textarea id="mi-csv" class="field-input" style="height:160px;padding:10px;resize:vertical;font-family:monospace;font-size:12.5px" placeholder="rut,nombre,centro,subarea,activo"></textarea>
+    <div class="msg-error" id="modal-importar-error"></div>
+    <div class="status-note" id="modal-importar-resultado" style="margin-top:4px"></div>
+    <button class="btn-primary full" id="mi-btn-importar" style="margin-top:10px" onclick="importarCSV()">Importar</button>
+    <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModales()">Cerrar</button>
   </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
@@ -145,12 +453,44 @@ const auth = getAuth(app);
 const db = initializeFirestore(app, { localCache: persistentLocalCache() });
 
 const NOMBRES_ROL = { admin: "Administrador maestro", rrhh: "RRHH", jefe_centro: "Jefe de centro" };
-const NOMBRES_CENTRO = { T1: "Línea T1", T2: "Línea T2", T3: "Línea T3", TALLER_COIHUE: "Taller Coihue" };
+const NOMBRES_CENTRO = { "FORMIN 1": "FORMIN 1", "FORMIN 2": "FORMIN 2", "FORMIN 3": "FORMIN 3", TALLER_COIHUE: "Taller Coihue", ROTATIVO: "Rotativo" };
+const EMPRESAS_SUGERIDAS = {
+  "FORMIN 1": { empresa: "F. Corte Alto Ltda.", rut: "78.264.940-K" },
+  "FORMIN 2": { empresa: "F. Corte Alto Ltda.", rut: "78.264.940-K" },
+  "FORMIN 3": { empresa: "F. Corte Alto Ltda.", rut: "78.264.940-K" },
+  "TALLER_COIHUE": { empresa: "F. Corte Alto Ltda.", rut: "78.264.940-K" }
+};
 
-function mostrarVista(id){
-  ["vista-login","vista-status","vista-sin-acceso"].forEach(v=>{
+let usuarioActual = null; // { rol, centro, nombre }
+let dotTabActual = "corte-alto";
+let dotDatosTodos = null; // fetch único con todos los trabajadores; las pestañas se separan en el render
+
+function mostrarPantalla(id){
+  ["pantalla-login","pantalla-sinacceso","pantalla-jefe","pantalla-escritorio"].forEach(v=>{
     document.getElementById(v).classList.toggle("hidden", v !== id);
   });
+}
+
+window.mostrarSeccion = function(id){
+  ["bandeja","boveda","dotacion","anexos","configuracion"].forEach(s=>{
+    document.getElementById("seccion-"+s).classList.toggle("hidden", s !== id);
+  });
+  document.querySelectorAll(".nav-item").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.seccion === id);
+  });
+  if(id === "dotacion" && dotDatosTodos === null){
+    cambiarTabDotacion(dotTabActual);
+  }
+};
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function normalizar(str){
+  return String(str||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+}
+function limpiarRut(r){
+  return String(r||"").replace(/\./g,"").replace(/\s+/g,"").toUpperCase();
 }
 
 window.iniciarSesion = async function(){
@@ -171,7 +511,6 @@ window.iniciarSesion = async function(){
 
   try{
     await signInWithEmailAndPassword(auth, correo, clave);
-    // onAuthStateChanged se encarga de mostrar la pantalla siguiente
   }catch(e){
     let texto = "No se pudo iniciar sesión. Intenta de nuevo.";
     if(e.code === "auth/invalid-credential" || e.code === "auth/wrong-password" || e.code === "auth/user-not-found"){
@@ -191,26 +530,315 @@ window.cerrarSesion = async function(){
 
 onAuthStateChanged(auth, async (user) => {
   if(!user){
-    mostrarVista("vista-login");
+    mostrarPantalla("pantalla-login");
     return;
   }
   try{
     const snap = await getDoc(doc(db, "usuarios", user.uid));
     if(!snap.exists() || snap.data().activo !== true){
-      mostrarVista("vista-sin-acceso");
+      mostrarPantalla("pantalla-sinacceso");
       return;
     }
     const u = snap.data();
-    document.getElementById("status-nombre").textContent = u.nombre || user.email;
-    document.getElementById("status-rol").textContent = NOMBRES_ROL[u.rol] || u.rol;
-    document.getElementById("detalle-rol").textContent = NOMBRES_ROL[u.rol] || u.rol;
-    document.getElementById("detalle-centro").textContent = u.centro ? (NOMBRES_CENTRO[u.centro] || u.centro) : "Todos (RRHH/Admin)";
-    document.getElementById("detalle-correo").textContent = user.email;
-    mostrarVista("vista-status");
+    usuarioActual = { rol: u.rol, centro: u.centro || null, nombre: u.nombre || user.email };
+    dotDatosTodos = null;
+
+    if(u.rol === "admin" || u.rol === "rrhh"){
+      const iniciales = (u.nombre || user.email).trim().split(/\s+/).slice(0,2).map(p=>p[0]).join("").toUpperCase();
+      document.getElementById("escritorio-avatar").textContent = iniciales;
+      document.getElementById("escritorio-nombre").textContent = u.nombre || user.email;
+      document.getElementById("escritorio-rol").textContent = NOMBRES_ROL[u.rol] || u.rol;
+      mostrarPantalla("pantalla-escritorio");
+      mostrarSeccion("bandeja");
+    }else{
+      document.getElementById("jefe-nombre").textContent = u.nombre || user.email;
+      document.getElementById("jefe-rol").textContent = NOMBRES_ROL[u.rol] || u.rol;
+      document.getElementById("jefe-detalle-rol").textContent = NOMBRES_ROL[u.rol] || u.rol;
+      document.getElementById("jefe-detalle-centro").textContent = u.centro ? (NOMBRES_CENTRO[u.centro] || u.centro) : "—";
+      document.getElementById("jefe-detalle-correo").textContent = user.email;
+      mostrarPantalla("pantalla-jefe");
+    }
   }catch(e){
-    mostrarVista("vista-sin-acceso");
+    mostrarPantalla("pantalla-sinacceso");
   }
 });
+
+// ================= DOTACIÓN DE PERSONAL (solo RRHH/Admin) =================
+
+async function fetchDotacionTodos(){
+  const dotacionRef = collection(db, "dotacion");
+  const q = query(dotacionRef, where("centro", "in", ["FORMIN 1","FORMIN 2","FORMIN 3","TALLER_COIHUE","ROTATIVO",""]));
+  const snap = await getDocs(q);
+  const datos = [];
+  snap.forEach(d => datos.push({ id: d.id, ...d.data() }));
+  dotDatosTodos = datos;
+}
+
+function esEmpresaEmco(t){
+  return normalizar(t.empresa) === "emco ltda.";
+}
+
+window.cambiarTabDotacion = async function(tab){
+  dotTabActual = tab;
+  document.querySelectorAll("#dot-tabs .tab").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.tab === tab);
+  });
+  if(dotDatosTodos === null){
+    document.getElementById("dot-tabla-body").innerHTML = "";
+    document.getElementById("dot-contador").textContent = "Cargando…";
+    try{
+      await fetchDotacionTodos();
+    }catch(e){
+      document.getElementById("dot-contador").textContent = "No se pudo cargar.";
+      return;
+    }
+  }
+  renderTablaDotacion();
+};
+
+function actualizarBadgePendientes(){
+  const badge = document.getElementById("badge-dotacion-pendientes");
+  if(!badge) return;
+  const total = (dotDatosTodos || []).filter(t => !t.centro).length;
+  badge.textContent = total;
+  badge.classList.toggle("hidden", total === 0);
+}
+
+window.renderTablaDotacion = function(){
+  const todos = dotDatosTodos || [];
+  const term = normalizar(document.getElementById("dot-buscar").value);
+  const filtroCentro = document.getElementById("dot-filtro-centro").value;
+
+  let datosTab = todos.filter(t => dotTabActual === "emco" ? esEmpresaEmco(t) : !esEmpresaEmco(t));
+
+  let filtrados = datosTab.filter(t => {
+    if(filtroCentro === "__PENDIENTE__"){
+      if(t.centro) return false;
+    }else if(filtroCentro){
+      if(t.centro !== filtroCentro) return false;
+    }
+    if(term){
+      const hay = normalizar(t.nombre) + " " + normalizar(t.rut);
+      if(!hay.includes(term)) return false;
+    }
+    return true;
+  });
+  filtrados.sort((a,b) => String(a.nombre||"").localeCompare(String(b.nombre||""), "es"));
+
+  document.getElementById("dot-contador").textContent = filtrados.length + (filtrados.length === 1 ? " trabajador" : " trabajadores");
+
+  const cuerpo = document.getElementById("dot-tabla-body");
+  if(filtrados.length === 0){
+    cuerpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">No hay trabajadores para mostrar.</td></tr>';
+    actualizarBadgePendientes();
+    return;
+  }
+
+  cuerpo.innerHTML = filtrados.map(t => {
+    const pendiente = !t.centro;
+    const etiquetaCentro = pendiente ? "Pendiente de asignar" : (NOMBRES_CENTRO[t.centro] || t.centro);
+    return `
+    <tr>
+      <td class="nombre-cell">${escapeHtml(t.nombre || "—")}</td>
+      <td>${escapeHtml(t.rut || "—")}</td>
+      <td><span class="badge-centro${pendiente ? ' pendiente' : ''}">${escapeHtml(etiquetaCentro)}</span></td>
+      <td class="empresa-cell">${escapeHtml(t.empresa || "—")}</td>
+      <td>${(t.subarea && normalizar(t.subarea) !== normalizar(NOMBRES_CENTRO[t.centro]||"")) ? escapeHtml(t.subarea) : "—"}</td>
+      <td>${t.activo === false ? '<span class="badge-inactivo">Inactivo</span>' : '<span style="color:var(--green2);font-weight:700;font-size:12.5px">Activo</span>'}</td>
+      <td><button class="accion-editar" onclick="abrirModalTrabajador('${t.id}')" aria-label="Editar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></td>
+    </tr>
+  `;
+  }).join("");
+
+  actualizarBadgePendientes();
+};
+
+window.cerrarModales = function(){
+  document.getElementById("modal-trabajador").classList.add("hidden");
+  document.getElementById("modal-importar").classList.add("hidden");
+};
+
+window.sugerirEmpresa = function(){
+  const centro = document.getElementById("mt-centro").value;
+  const campoEmpresa = document.getElementById("mt-empresa");
+  const campoRut = document.getElementById("mt-rutempresa");
+  if(campoEmpresa.value.trim() || campoRut.value.trim()) return; // no pisar una edición manual
+  const sugerencia = EMPRESAS_SUGERIDAS[centro];
+  if(sugerencia){
+    campoEmpresa.value = sugerencia.empresa;
+    campoRut.value = sugerencia.rut;
+  }
+};
+
+window.abrirModalTrabajador = function(id){
+  document.getElementById("modal-trabajador-error").classList.remove("show");
+  if(id){
+    const t = (dotDatosTodos || []).find(x => x.id === id);
+    if(!t) return;
+    document.getElementById("modal-trabajador-titulo").textContent = "Editar trabajador";
+    document.getElementById("mt-id").value = id;
+    document.getElementById("mt-nombre").value = t.nombre || "";
+    document.getElementById("mt-rut").value = t.rut || "";
+    document.getElementById("mt-centro").value = t.centro || "";
+    document.getElementById("mt-empresa").value = t.empresa || "";
+    document.getElementById("mt-rutempresa").value = t.rutEmpresa || "";
+    document.getElementById("mt-subarea").value = t.subarea || "";
+    document.getElementById("mt-activo").checked = t.activo !== false;
+    document.getElementById("mt-btn-eliminar").classList.remove("hidden");
+  }else{
+    document.getElementById("modal-trabajador-titulo").textContent = "Agregar trabajador(a)";
+    document.getElementById("mt-id").value = "";
+    document.getElementById("mt-nombre").value = "";
+    document.getElementById("mt-rut").value = "";
+    if(dotTabActual === "emco"){
+      document.getElementById("mt-centro").value = "ROTATIVO";
+      document.getElementById("mt-empresa").value = "Emco Ltda.";
+      document.getElementById("mt-rutempresa").value = "78.616.600-4";
+    }else{
+      document.getElementById("mt-centro").value = "";
+      document.getElementById("mt-empresa").value = "";
+      document.getElementById("mt-rutempresa").value = "";
+    }
+    document.getElementById("mt-subarea").value = "";
+    document.getElementById("mt-activo").checked = true;
+    document.getElementById("mt-btn-eliminar").classList.add("hidden");
+  }
+  document.getElementById("modal-trabajador").classList.remove("hidden");
+};
+
+window.guardarTrabajador = async function(){
+  const errorBox = document.getElementById("modal-trabajador-error");
+  errorBox.classList.remove("show");
+
+  const nombre = document.getElementById("mt-nombre").value.trim();
+  const rutInput = document.getElementById("mt-rut").value.trim();
+  const centro = document.getElementById("mt-centro").value;
+  const empresa = document.getElementById("mt-empresa").value.trim();
+  const rutEmpresa = document.getElementById("mt-rutempresa").value.trim();
+  const subarea = document.getElementById("mt-subarea").value.trim();
+  const activo = document.getElementById("mt-activo").checked;
+  const idExistente = document.getElementById("mt-id").value;
+
+  if(!nombre || !rutInput){
+    errorBox.textContent = "Completa nombre y RUT.";
+    errorBox.classList.add("show");
+    return;
+  }
+
+  const rutLimpio = limpiarRut(rutInput);
+  const idDoc = idExistente || rutLimpio;
+
+  try{
+    await setDoc(doc(db, "dotacion", idDoc), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo }, { merge: true });
+    cerrarModales();
+    dotDatosTodos = null;
+    await fetchDotacionTodos();
+    renderTablaDotacion();
+  }catch(e){
+    errorBox.textContent = "No se pudo guardar. Intenta de nuevo.";
+    errorBox.classList.add("show");
+  }
+};
+
+window.eliminarTrabajadorActual = async function(){
+  const id = document.getElementById("mt-id").value;
+  if(!id) return;
+  if(!confirm("¿Eliminar este trabajador de la dotación? Esta acción no se puede deshacer.")) return;
+  try{
+    await deleteDoc(doc(db, "dotacion", id));
+    cerrarModales();
+    dotDatosTodos = null;
+    await fetchDotacionTodos();
+    renderTablaDotacion();
+  }catch(e){
+    alert("No se pudo eliminar. Intenta de nuevo.");
+  }
+};
+
+window.abrirModalImportar = function(){
+  document.getElementById("modal-importar-error").classList.remove("show");
+  document.getElementById("modal-importar-resultado").textContent = "";
+  document.getElementById("mi-csv").value = "";
+  document.getElementById("modal-importar").classList.remove("hidden");
+};
+
+window.importarCSV = async function(){
+  const errorBox = document.getElementById("modal-importar-error");
+  const resultBox = document.getElementById("modal-importar-resultado");
+  errorBox.classList.remove("show");
+  resultBox.textContent = "";
+
+  const CENTROS_VALIDOS = ["FORMIN 1","FORMIN 2","FORMIN 3","TALLER_COIHUE","ROTATIVO",""];
+  const texto = document.getElementById("mi-csv").value.trim();
+  if(!texto){
+    errorBox.textContent = "Pega el contenido del CSV primero.";
+    errorBox.classList.add("show");
+    return;
+  }
+
+  const lineas = texto.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if(lineas.length < 2){
+    errorBox.textContent = "El CSV necesita encabezado y al menos una fila de datos.";
+    errorBox.classList.add("show");
+    return;
+  }
+
+  const encabezado = lineas[0].split(",").map(h => h.trim().toLowerCase());
+  const idxRut = encabezado.indexOf("rut");
+  const idxNombre = encabezado.indexOf("nombre");
+  const idxCentro = encabezado.indexOf("centro");
+  const idxSubarea = encabezado.indexOf("subarea");
+  const idxActivo = encabezado.indexOf("activo");
+  const idxEmpresa = encabezado.indexOf("empresa");
+  const idxRutEmpresa = encabezado.indexOf("rutempresa");
+
+  if(idxRut === -1 || idxNombre === -1 || idxCentro === -1){
+    errorBox.textContent = "El encabezado debe incluir al menos: rut,nombre,centro";
+    errorBox.classList.add("show");
+    return;
+  }
+
+  const boton = document.getElementById("mi-btn-importar");
+  boton.disabled = true;
+  boton.textContent = "Importando…";
+
+  let ok = 0, conError = 0;
+  const invalidos = [];
+
+  for(let i = 1; i < lineas.length; i++){
+    const cols = lineas[i].split(",").map(c => c.trim());
+    const rut = cols[idxRut];
+    const nombre = cols[idxNombre];
+    const centro = cols[idxCentro] || "";
+    const subarea = idxSubarea > -1 ? (cols[idxSubarea] || "") : "";
+    const activo = idxActivo > -1 ? (cols[idxActivo] || "true").toLowerCase() !== "false" : true;
+    const empresa = idxEmpresa > -1 ? (cols[idxEmpresa] || "") : "";
+    const rutEmpresa = idxRutEmpresa > -1 ? (cols[idxRutEmpresa] || "") : "";
+
+    if(!rut || !nombre || !CENTROS_VALIDOS.includes(centro)){
+      conError++;
+      invalidos.push(lineas[i]);
+      continue;
+    }
+
+    const rutLimpio = limpiarRut(rut);
+    try{
+      await setDoc(doc(db, "dotacion", rutLimpio), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo }, { merge: true });
+      ok++;
+    }catch(e){
+      conError++;
+      invalidos.push(lineas[i]);
+    }
+  }
+
+  boton.disabled = false;
+  boton.textContent = "Importar";
+  resultBox.textContent = `Importados: ${ok}. Con error: ${conError}.` + (invalidos.length ? " Revisa: " + invalidos.slice(0,5).join(" | ") : "");
+
+  dotDatosTodos = null;
+  await fetchDotacionTodos();
+  renderTablaDotacion();
+};
 </script>
 
 <script>
