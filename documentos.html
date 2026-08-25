@@ -427,6 +427,11 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
       Columnas esperadas, con encabezado: <strong>rut,nombre,centro,subarea,activo,empresa,rutempresa</strong><br>
       Centro debe ser exactamente uno de: FORMIN 1, FORMIN 2, FORMIN 3, TALLER_COIHUE, ROTATIVO, o vacío (trabajador pendiente de asignar). Las columnas empresa y rutempresa son opcionales.
     </div>
+
+    <label class="field-label" for="mi-archivo">Selecciona el archivo .csv</label>
+    <input class="field-input" id="mi-archivo" type="file" accept=".csv,text/csv" style="height:auto;padding:9px 12px" onchange="cargarArchivoCSV(event)">
+
+    <div class="field-label" style="margin-top:14px">O pega el contenido aquí</div>
     <textarea id="mi-csv" class="field-input" style="height:160px;padding:10px;resize:vertical;font-family:monospace;font-size:12.5px" placeholder="rut,nombre,centro,subarea,activo"></textarea>
     <div class="msg-error" id="modal-importar-error"></div>
     <div class="status-note" id="modal-importar-resultado" style="margin-top:4px"></div>
@@ -759,7 +764,24 @@ window.abrirModalImportar = function(){
   document.getElementById("modal-importar-error").classList.remove("show");
   document.getElementById("modal-importar-resultado").textContent = "";
   document.getElementById("mi-csv").value = "";
+  document.getElementById("mi-archivo").value = "";
   document.getElementById("modal-importar").classList.remove("hidden");
+};
+
+window.cargarArchivoCSV = function(event){
+  const archivo = event.target.files[0];
+  if(!archivo) return;
+  const errorBox = document.getElementById("modal-importar-error");
+  errorBox.classList.remove("show");
+  const lector = new FileReader();
+  lector.onload = (e) => {
+    document.getElementById("mi-csv").value = e.target.result;
+  };
+  lector.onerror = () => {
+    errorBox.textContent = "No se pudo leer el archivo. Intenta de nuevo o pega el contenido manualmente.";
+    errorBox.classList.add("show");
+  };
+  lector.readAsText(archivo, "UTF-8");
 };
 
 window.importarCSV = async function(){
