@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta name="theme-color" content="#1a3a1a">
+<title>Documentos &amp; RRHH — Corte Alto</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f5;--card:#ffffff;--border:#e0e0e0;
+  --text:#1a1a1a;--text2:#555;--text3:#888;
+  --green:#1a3a1a;--green2:#2d5a2d;--green-light:#EAF3DE;
+  --amber:#633806;--amber-bg:#FAEEDA;--red:#791F1F;--red-bg:#FCEBEB;
+  --radius:14px;--font:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:480px;margin:0 auto;padding:0 0 2rem}
+
+.header{background:linear-gradient(135deg,#1a3a1a 0%,#2d5a2d 100%);padding:1.25rem 1.25rem 1.5rem;color:#fff;position:relative;border-radius:0 0 20px 20px;margin-bottom:1.5rem}
+.header-back{position:absolute;top:16px;left:14px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:#fff;text-decoration:none;font-size:18px}
+.header-top{font-size:10px;opacity:.65;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem;text-align:center}
+.header-brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:.3rem}
+.header-logo{width:40px;height:40px;background:#fff;border-radius:8px;padding:4px;object-fit:contain}
+.header-title{font-size:20px;font-weight:800}
+.header-sub{font-size:12.5px;opacity:.8;text-align:center;margin-top:2px}
+
+.section-wrap{padding:0 1.1rem}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem 1.25rem}
+.field-label{font-size:12.5px;font-weight:700;color:var(--text2);margin-bottom:6px;display:block}
+.field-input{width:100%;height:46px;border:1px solid var(--border);border-radius:10px;padding:0 14px;font-size:14.5px;font-family:var(--font);color:var(--text);background:#fbfbfb;margin-bottom:16px}
+.field-input:focus{outline:none;border-color:var(--green2);background:#fff}
+.btn-primary{width:100%;height:48px;border:none;border-radius:10px;background:var(--green2);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.btn-primary:disabled{opacity:.6}
+.btn-secondary{width:100%;height:44px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)}
+
+.msg-error{background:var(--red-bg);color:var(--red);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:14px;display:none}
+.msg-error.show{display:block}
+
+.roles-note{margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0}
+.roles-note-title{font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.role-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12.5px;color:var(--text2)}
+.role-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--green-light);color:var(--green2);flex-shrink:0}
+
+.status-card{text-align:center;padding:2rem 1.25rem}
+.status-icon{width:56px;height:56px;border-radius:999px;background:var(--green-light);color:var(--green2);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px}
+.status-name{font-size:18px;font-weight:800;color:var(--text)}
+.status-role{font-size:13px;color:var(--text3);margin-top:3px}
+.status-detail{margin-top:18px;text-align:left;background:#fafafa;border-radius:10px;padding:12px 14px;font-size:13px;color:var(--text2);line-height:1.7}
+.status-note{margin-top:16px;font-size:12px;color:var(--text3);line-height:1.6}
+
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <a href="index.html" class="header-back" aria-label="Volver"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="header-top">Sistema de gestión forestal</div>
+    <div class="header-brand">
+      <div class="header-logo" style="display:flex;align-items:center;justify-content:center;font-size:20px">📁</div>
+      <div>
+        <div class="header-title">Documentos &amp; RRHH</div>
+      </div>
+    </div>
+    <div class="header-sub">Acceso restringido — inicia sesión con tu cuenta</div>
+  </div>
+
+  <div class="section-wrap">
+
+    <!-- ===== PANTALLA: LOGIN ===== -->
+    <div id="vista-login" class="card">
+      <div class="msg-error" id="login-error"></div>
+
+      <label class="field-label" for="input-correo">Correo</label>
+      <input class="field-input" id="input-correo" type="email" autocomplete="username" placeholder="nombre@cortealto.cl">
+
+      <label class="field-label" for="input-clave">Contraseña</label>
+      <input class="field-input" id="input-clave" type="password" autocomplete="current-password" placeholder="••••••••••">
+
+      <button class="btn-primary" id="btn-ingresar" onclick="iniciarSesion()">Ingresar</button>
+
+      <div class="roles-note">
+        <div class="roles-note-title">Acceso según tu rol</div>
+        <div class="role-row"><span class="role-chip">RRHH / Admin</span> sube, edita y clasifica documentos</div>
+        <div class="role-row"><span class="role-chip">Jefe de centro</span> solo visualiza los de su centro</div>
+      </div>
+    </div>
+
+    <!-- ===== PANTALLA: SESIÓN INICIADA (ronda 1 — confirmación) ===== -->
+    <div id="vista-status" class="card status-card hidden">
+      <div class="status-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.3l2.4 2.4 4.6-5.2"/></svg></div>
+      <div class="status-name" id="status-nombre">—</div>
+      <div class="status-role" id="status-rol">—</div>
+
+      <div class="status-detail">
+        <div>Rol: <strong id="detalle-rol">—</strong></div>
+        <div>Centro: <strong id="detalle-centro">—</strong></div>
+        <div>Correo: <strong id="detalle-correo">—</strong></div>
+      </div>
+
+      <div class="status-note">
+        Este es el acceso al módulo Documentos &amp; RRHH. La Bandeja de clasificación, la Bóveda de documentos, Dotación de personal y Anexos pendientes se agregan en las próximas rondas de construcción, igual que el resto de Corte Alto.
+      </div>
+
+      <button class="btn-secondary" style="margin-top:18px" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+
+    <!-- ===== PANTALLA: SIN ACCESO ===== -->
+    <div id="vista-sin-acceso" class="card status-card hidden">
+      <div class="status-icon" style="background:var(--red-bg);color:var(--red)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+      <div class="status-name">Sin acceso</div>
+      <div class="status-note" style="margin-top:10px">
+        Tu cuenta inició sesión correctamente, pero no tiene un perfil habilitado en el módulo de Documentos &amp; RRHH. Contacta al administrador (Fabián) para que te active el acceso.
+      </div>
+      <button class="btn-secondary" style="margin-top:18px" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+  authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
+  projectId: "reporte-inicio-faena-forestal",
+  storageBucket: "reporte-inicio-faena-forestal.appspot.com",
+  messagingSenderId: "962534414054",
+  appId: "1:962534414054:web:fa43371d31413fc0524d27"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+
+const NOMBRES_ROL = { admin: "Administrador maestro", rrhh: "RRHH", jefe_centro: "Jefe de centro" };
+const NOMBRES_CENTRO = { T1: "Línea T1", T2: "Línea T2", T3: "Línea T3", TALLER_COIHUE: "Taller Coihue" };
+
+function mostrarVista(id){
+  ["vista-login","vista-status","vista-sin-acceso"].forEach(v=>{
+    document.getElementById(v).classList.toggle("hidden", v !== id);
+  });
+}
+
+window.iniciarSesion = async function(){
+  const correo = document.getElementById("input-correo").value.trim();
+  const clave = document.getElementById("input-clave").value;
+  const errorBox = document.getElementById("login-error");
+  errorBox.classList.remove("show");
+
+  if(!correo || !clave){
+    errorBox.textContent = "Ingresa tu correo y contraseña.";
+    errorBox.classList.add("show");
+    return;
+  }
+
+  const boton = document.getElementById("btn-ingresar");
+  boton.disabled = true;
+  boton.textContent = "Ingresando…";
+
+  try{
+    await signInWithEmailAndPassword(auth, correo, clave);
+    // onAuthStateChanged se encarga de mostrar la pantalla siguiente
+  }catch(e){
+    let texto = "No se pudo iniciar sesión. Intenta de nuevo.";
+    if(e.code === "auth/invalid-credential" || e.code === "auth/wrong-password" || e.code === "auth/user-not-found"){
+      texto = "Correo o contraseña incorrectos.";
+    }
+    errorBox.textContent = texto;
+    errorBox.classList.add("show");
+  }finally{
+    boton.disabled = false;
+    boton.textContent = "Ingresar";
+  }
+};
+
+window.cerrarSesion = async function(){
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if(!user){
+    mostrarVista("vista-login");
+    return;
+  }
+  try{
+    const snap = await getDoc(doc(db, "usuarios", user.uid));
+    if(!snap.exists() || snap.data().activo !== true){
+      mostrarVista("vista-sin-acceso");
+      return;
+    }
+    const u = snap.data();
+    document.getElementById("status-nombre").textContent = u.nombre || user.email;
+    document.getElementById("status-rol").textContent = NOMBRES_ROL[u.rol] || u.rol;
+    document.getElementById("detalle-rol").textContent = NOMBRES_ROL[u.rol] || u.rol;
+    document.getElementById("detalle-centro").textContent = u.centro ? (NOMBRES_CENTRO[u.centro] || u.centro) : "Todos (RRHH/Admin)";
+    document.getElementById("detalle-correo").textContent = user.email;
+    mostrarVista("vista-status");
+  }catch(e){
+    mostrarVista("vista-sin-acceso");
+  }
+});
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+      reg.addEventListener('updatefound', () => {
+        const nuevoWorker = reg.installing;
+        nuevoWorker.addEventListener('statechange', () => {
+          if (nuevoWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            nuevoWorker.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+      reg.update();
+    }).catch(() => {});
+    let yaRecargo = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (yaRecargo) return;
+      yaRecargo = true;
+      window.location.reload();
+    });
+  });
+}
+</script>
+
+</body>
+</html>

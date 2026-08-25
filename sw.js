@@ -9,7 +9,7 @@
    alguien abre la app.
    ============================================================ */
 
-const CACHE_VERSION = 'v14';
+const CACHE_VERSION = 'v15';
 const CACHE_NAME = `corte-alto-${CACHE_VERSION}`;
 
 /* Archivos que se guardan para que la app funcione más rápido
@@ -28,6 +28,7 @@ const ARCHIVOS_CACHE = [
   './resumen_causas_equipo.html',
   './gps-carga.html',
   './gps-dashboard.html',
+  './documentos.html',
   './manifest.json',
   './logo.png'
 ];
