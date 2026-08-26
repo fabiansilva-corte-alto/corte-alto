@@ -581,6 +581,7 @@ let FUNDOS_DIN=null;
 let LINEAS_DIN=null;
 let JEFES_DIN=null;
 let EQUIPOS_POR_TIPO_DIN=null;
+let OPERADORES_POR_EQUIPO={}; // { "KOM-3": ["JUAN OPORTO", ...], ... }
 let TIPOS_EQUIPO_DIN=null;
 let OPERADORES_DIN=null;
 const COLECCION = "productividad_jefe";
@@ -668,25 +669,30 @@ const FUNCION_POR_TIPO = {
   'SKIDDER':    'MADEREO SKIDDER',
   'TORRE':      'MADEREO TORRE'
 };
-function operadoresPara(equipo) {
+function operadoresPara(equipo, tipo) {
+  // 1° prioridad: operadores anexados directamente al equipo en config_equipos
+  if (OPERADORES_POR_EQUIPO[equipo] && OPERADORES_POR_EQUIPO[equipo].length) {
+    const lista = OPERADORES_POR_EQUIPO[equipo];
+    return lista.includes("OTRO") ? lista : [...lista, "OTRO"];
+  }
   if (OPERADORES_DIN) {
-    // Buscar el tipo del equipo seleccionado para filtrar por función
-    let funcion = null;
-    if (EQUIPOS_POR_TIPO_DIN) {
-      for (const [tipo, lista] of Object.entries(EQUIPOS_POR_TIPO_DIN)) {
-        if (lista.includes(equipo)) { funcion = FUNCION_POR_TIPO[tipo] || null; break; }
-      }
-    } else {
-      // Fallback: buscar en EQUIPOS_POR_TIPO hardcodeado
-      for (const [tipo, lista] of Object.entries(EQUIPOS_POR_TIPO)) {
-        if (lista.includes(equipo)) { funcion = FUNCION_POR_TIPO[tipo] || null; break; }
+    // 2° prioridad: filtrar por equipo específico en config_operadores (campo equipos[])
+    const porEquipo = OPERADORES_DIN.filter(o => (o.equipos||[]).includes(equipo));
+    if (porEquipo.length) return [...porEquipo.map(o => o.nombre), "OTRO"];
+    // 3° prioridad: filtrar por función/tipo
+    let funcion = tipo ? (FUNCION_POR_TIPO[tipo] || null) : null;
+    if (!funcion) {
+      const todas = EQUIPOS_POR_TIPO_DIN || EQUIPOS_POR_TIPO;
+      for (const [t, lista] of Object.entries(todas)) {
+        if (lista.includes(equipo)) { funcion = FUNCION_POR_TIPO[t] || null; break; }
       }
     }
-    const ops = funcion
+    const porFuncion = funcion
       ? OPERADORES_DIN.filter(o => (o.funciones||[]).includes(funcion))
       : OPERADORES_DIN;
-    return ops.length ? [...ops.map(o => o.nombre), "OTRO"] : ["OTRO"];
+    return porFuncion.length ? [...porFuncion.map(o => o.nombre), "OTRO"] : ["OTRO"];
   }
+  // Fallback hardcoded
   const g = OPERADORES_GRUPOS.find(g => g.equipos.includes(equipo));
   return g ? [...g.operadores, "OTRO"] : [];
 }
@@ -949,7 +955,7 @@ function cardEquipo(eq, idx) {
         <label>Operador <span class="req">*</span></label>
         <select id="in-${eq.id}-operador" onchange="setCampo('${eq.id}','operador',this.value)" ${!eq.equipo ? "disabled" : ""}>
           <option value="">${eq.equipo ? "— Seleccionar —" : "— Primero el equipo —"}</option>
-          ${operadoresPara(eq.equipo).map(o =>
+          ${operadoresPara(eq.equipo, eq.tipo).map(o =>
             `<option ${eq.operador === o ? "selected" : ""}>${o}</option>`).join("")}
         </select>
         <div class="msg-error" id="err-${eq.id}-operador">Seleccione el operador</div>
@@ -1352,7 +1358,7 @@ window.setCampo = function (id, campo, valor, rerender = true) {
     renderEquipos();
     if (!eq.turno) abrirModalTurno(id); // turno obligatorio al elegir tipo
   } else if (campo === "equipo") {
-    if (!operadoresPara(eq.equipo).includes(eq.operador)) eq.operador = "";
+    if (!operadoresPara(eq.equipo, eq.tipo).includes(eq.operador)) eq.operador = "";
     renderEquipos();
   } else if (CAMPOS_RERENDER.includes(campo)) {
     renderEquipos();
@@ -1896,6 +1902,8 @@ async function cargarConfiguracionCentralizada(){
         if(!v.nombre||!v.tipo)return;
         if(!porTipo[v.tipo]){porTipo[v.tipo]=[];tiposOrden.push(v.tipo);}
         porTipo[v.tipo].push(v.nombre);
+        // Guardar operadores anexados a cada equipo
+        if(v.operadores&&v.operadores.length) OPERADORES_POR_EQUIPO[v.nombre]=v.operadores;
       });
       if(Object.keys(porTipo).length){
         EQUIPOS_POR_TIPO_DIN=porTipo;
@@ -1914,7 +1922,7 @@ async function cargarConfiguracionCentralizada(){
       const lista=[];
       snap.forEach(d=>{
         const v=d.data();
-        if(v.nombre)lista.push({nombre:v.nombre, funciones:v.funciones||[]});
+        if(v.nombre)lista.push({nombre:v.nombre, equipos:v.equipos||[], funciones:v.funciones||[]});
       });
       if(lista.length) OPERADORES_DIN=lista;
     }
@@ -2174,7 +2182,7 @@ window.editarReporte = function (id) {
   document.getElementById("jefe").value = r.jefe;
 
   (r.equipos || []).forEach(e => {
-    const esOtroOp = e.operador && !operadoresPara(e.equipo).slice(0, -1).includes(e.operador);
+    const esOtroOp = e.operador && !operadoresPara(e.equipo, e.tipo).slice(0, -1).includes(e.operador);
     agregarEquipo({
       ...e,
       operativo: e.operativo || "SÍ",
