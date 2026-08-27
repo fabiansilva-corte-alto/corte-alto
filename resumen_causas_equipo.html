@@ -161,6 +161,39 @@
   .resp-divider { border: none; border-top: 1px solid var(--borde); margin: 8px 0; }
   .resp-total-row { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-top: 4px; }
 
+
+  /* ── PANEL DÍAS SIN REPORTE ── */
+  .dias-panel {
+    max-width: 1100px;
+    margin: 0 auto 8px;
+    padding: 0 16px;
+  }
+  .dias-inner {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid var(--borde);
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+  .dias-ok {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--verde); font-weight: 600;
+  }
+  .dias-alerta { display: flex; flex-direction: column; gap: 8px; }
+  .dias-alerta-titulo {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 700; color: #92400e; font-size: 13px;
+  }
+  .dias-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip-dia {
+    background: #fef3c7; border: 1px solid #fde68a; color: #92400e;
+    border-radius: 6px; padding: 3px 10px; font-size: 12px;
+    font-weight: 600; white-space: nowrap;
+  }
+  .chip-dia.domingo {
+    background: #fee2e2; border-color: #fca5a5; color: #991b1b;
+  }
+  .dias-nota { font-size: 11px; color: #94a3b8; margin-top: 4px; font-style: italic; }
 </style>
 </head>
 <body>
@@ -202,6 +235,11 @@
     </div>
     <button class="btn-aplicar" onclick="calcularYMostrar()">▶ Calcular</button>
   </div>
+</div>
+
+<!-- PANEL DÍAS SIN REPORTE -->
+<div class="dias-panel" id="dias-panel" style="display:none">
+  <div class="dias-inner" id="dias-inner"></div>
 </div>
 
 <div class="resultados" id="resultados">
@@ -508,6 +546,7 @@ function calcularYMostrar() {
   renderRespTOB(causasResultado, totalPerdido);
   renderCausasChart(causasResultado);
   renderMiniTabla(causasResultado);
+  renderDiasSinReporte(equipo, desde, hasta, filas);
   renderFooter(equipo, filas.length, desde, hasta);
 
   document.getElementById('resultados').style.display = 'block';
@@ -685,6 +724,52 @@ function renderMiniTabla(causas) {
   }
   html += '</tbody>';
   document.getElementById('mini-tabla').innerHTML = html;
+}
+
+function renderDiasSinReporte(equipo, desde, hasta, filas) {
+  const panel = document.getElementById('dias-panel');
+  const inner = document.getElementById('dias-inner');
+
+  const fechasConDatos = new Set(filas.map(r => r.fecha));
+
+  const diasFaltantes = [];
+  const cur = new Date(desde + 'T12:00:00');
+  const fin = new Date(hasta + 'T12:00:00');
+  const DIAS_ES  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const MESES_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+  while (cur <= fin) {
+    const y = cur.getFullYear();
+    const m = String(cur.getMonth()+1).padStart(2,'0');
+    const d = String(cur.getDate()).padStart(2,'0');
+    const fechaStr = `${y}-${m}-${d}`;
+    if (!fechasConDatos.has(fechaStr)) {
+      diasFaltantes.push({ fechaStr, dow: cur.getDay(), d: cur.getDate(), mes: cur.getMonth() });
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  panel.style.display = 'block';
+
+  if (diasFaltantes.length === 0) {
+    inner.innerHTML = `<div class="dias-ok">✅ Sin días faltantes — todos los días del rango tienen registro para <strong>${equipo}</strong>.</div>`;
+    return;
+  }
+
+  const chips = diasFaltantes.map(f => {
+    const clase = f.dow === 0 ? 'chip-dia domingo' : 'chip-dia';
+    const label = `${DIAS_ES[f.dow]} ${f.d}-${MESES_ES[f.mes]}`;
+    return `<span class="${clase}" title="${f.fechaStr}">${label}</span>`;
+  }).join('');
+
+  inner.innerHTML = `
+    <div class="dias-alerta">
+      <div class="dias-alerta-titulo">
+        ⚠️ <span>${diasFaltantes.length} día${diasFaltantes.length > 1 ? 's' : ''} sin reporte — <strong>${equipo}</strong></span>
+      </div>
+      <div class="dias-chips">${chips}</div>
+      <div class="dias-nota">Domingos en rojo: normalmente no se reportan. Los demás podrían ser olvidos del jefe de faena.</div>
+    </div>`;
 }
 
 function renderFooter(equipo, dias, desde, hasta) {
