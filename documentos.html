@@ -419,18 +419,24 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
       </div>
     </div>
 
-    <!-- Configuración (placeholder) -->
+    <!-- Configuración -->
     <div id="seccion-configuracion" class="seccion hidden">
       <div class="contenido-header">
         <div>
           <div class="contenido-titulo">Configuración</div>
-          <div class="contenido-sub">Catálogo de tipos de documento y ajustes del módulo.</div>
+          <div class="contenido-sub">Catálogo de tipos de documento — se usa en la Bandeja de clasificación y en la Bóveda.</div>
         </div>
+        <button class="btn-primary" onclick="abrirModalTipo()">+ Nuevo tipo de documento</button>
       </div>
-      <div class="estado-vacio-desktop">
-        <strong>Todavía no está construida</strong>
-        Se agrega más adelante.
+      <div class="tabla-wrap" style="max-width:620px">
+        <table class="tabla">
+          <thead>
+            <tr><th>Tipo de documento</th><th>Origen</th><th></th></tr>
+          </thead>
+          <tbody id="config-tipos-tabla-body"></tbody>
+        </table>
       </div>
+      <p style="font-size:12px;color:var(--text3);margin-top:10px;max-width:560px">Los tipos predeterminados no se pueden eliminar (son los que usa el sistema para "Anexo — cambio de fundo" y el resto de las reglas), pero sí puedes cambiarles el nombre. Los tipos personalizados que agregues se pueden editar y eliminar libremente, salvo que ya tengan documentos subidos.</p>
     </div>
 
   </div>
@@ -498,10 +504,22 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
   </div>
 </div>
 
+<!-- ===== MODAL: NUEVO / EDITAR TIPO DE DOCUMENTO ===== -->
+<div id="modal-tipo-documento" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-titulo" id="mt-tipo-titulo">Nuevo tipo de documento</div>
+    <input type="hidden" id="mt-tipo-slug">
+    <label class="field-label" for="mt-tipo-label">Nombre</label>
+    <input class="field-input" id="mt-tipo-label" type="text" placeholder="Ej: Certificado de antecedentes">
+    <button class="btn-primary full" id="mt-tipo-guardar" style="margin-top:6px" onclick="guardarTipo()">Guardar</button>
+    <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModalTipo()">Cancelar</button>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref as storageRef, uploadBytes } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
@@ -517,14 +535,16 @@ const auth = getAuth(app);
 const db = initializeFirestore(app, { localCache: persistentLocalCache() });
 const storage = getStorage(app);
 
-const TIPOS_DOCUMENTO = [
-  { slug: "contrato", label: "Contrato de trabajo" },
-  { slug: "anexo_fundo", label: "Anexo — cambio de fundo" },
-  { slug: "anexo_otro", label: "Anexo — otro cambio" },
-  { slug: "seguridad", label: "Certificado de seguridad / EPP" },
-  { slug: "finiquito", label: "Finiquito" },
-  { slug: "otro", label: "Otro / sin clasificar" }
+const TIPOS_DOCUMENTO_DEFECTO = [
+  { slug: "contrato", label: "Contrato de trabajo", orden: 1, sistema: true },
+  { slug: "anexo_fundo", label: "Anexo — cambio de fundo", orden: 2, sistema: true },
+  { slug: "anexo_otro", label: "Anexo — otro cambio", orden: 3, sistema: true },
+  { slug: "seguridad", label: "Certificado de seguridad / EPP", orden: 4, sistema: true },
+  { slug: "finiquito", label: "Finiquito", orden: 5, sistema: true },
+  { slug: "otro", label: "Otro / sin clasificar", orden: 6, sistema: true }
 ];
+let TIPOS_DOCUMENTO = TIPOS_DOCUMENTO_DEFECTO.slice();
+let tiposDocumentoCargados = false;
 
 const NOMBRES_ROL = { admin: "Administrador maestro", rrhh: "RRHH", jefe_centro: "Jefe de centro" };
 const NOMBRES_CENTRO = { "FORMIN 1": "FORMIN 1", "FORMIN 2": "FORMIN 2", "FORMIN 3": "FORMIN 3", TALLER_COIHUE: "Taller Coihue", ROTATIVO: "Rotativo" };
@@ -559,6 +579,13 @@ window.mostrarSeccion = function(id){
   }
   if(id === "bandeja" && dotDatosTodos === null){
     fetchDotacionTodos().catch(()=>{});
+  }
+  if(id === "configuracion"){
+    if(!tiposDocumentoCargados){
+      fetchTiposDocumento().then(renderConfiguracionTipos).catch(()=>renderConfiguracionTipos());
+    }else{
+      renderConfiguracionTipos();
+    }
   }
 };
 
@@ -629,6 +656,7 @@ onAuthStateChanged(auth, async (user) => {
       document.getElementById("escritorio-rol").textContent = NOMBRES_ROL[u.rol] || u.rol;
       mostrarPantalla("pantalla-escritorio");
       mostrarSeccion("bandeja");
+      fetchTiposDocumento().catch(()=>{});
     }else{
       document.getElementById("jefe-nombre").textContent = u.nombre || user.email;
       document.getElementById("jefe-rol").textContent = NOMBRES_ROL[u.rol] || u.rol;
@@ -1208,6 +1236,136 @@ window.subirDocumentosBandeja = async function(){
 
   if(conError === 0){
     setTimeout(() => { window.cancelarBandeja(); }, 1800);
+  }
+};
+
+// ================= CONFIGURACIÓN — CATÁLOGO DE TIPOS DE DOCUMENTO (solo RRHH/Admin) =================
+
+async function fetchTiposDocumento(){
+  const snap = await getDocs(collection(db, "tipos_documento"));
+  if(snap.empty){
+    // Primera vez: si el usuario puede escribir (RRHH/Admin), sembramos el catálogo por defecto.
+    if(usuarioActual && (usuarioActual.rol === "admin" || usuarioActual.rol === "rrhh")){
+      try{
+        await Promise.all(TIPOS_DOCUMENTO_DEFECTO.map(t =>
+          setDoc(doc(db, "tipos_documento", t.slug), { label: t.label, orden: t.orden, sistema: true })
+        ));
+      }catch(e){ /* si falla la siembra, seguimos con los valores por defecto en memoria */ }
+    }
+    TIPOS_DOCUMENTO = TIPOS_DOCUMENTO_DEFECTO.slice();
+  }else{
+    const datos = [];
+    snap.forEach(d => datos.push({ slug: d.id, ...d.data() }));
+    datos.sort((a,b) => (a.orden ?? 999) - (b.orden ?? 999));
+    TIPOS_DOCUMENTO = datos;
+  }
+  tiposDocumentoCargados = true;
+}
+
+function generarSlugTipo(label){
+  let base = normalizar(label).replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  if(!base) base = "tipo";
+  let slug = base;
+  let i = 2;
+  while(TIPOS_DOCUMENTO.some(t => t.slug === slug)){
+    slug = `${base}_${i}`;
+    i++;
+  }
+  return slug;
+}
+
+function renderConfiguracionTipos(){
+  const cont = document.getElementById("config-tipos-tabla-body");
+  if(!cont) return;
+  if(TIPOS_DOCUMENTO.length === 0){
+    cont.innerHTML = `<tr><td colspan="3" style="color:var(--text3)">No hay tipos de documento cargados.</td></tr>`;
+    return;
+  }
+  cont.innerHTML = TIPOS_DOCUMENTO.map(t => `
+    <tr>
+      <td class="nombre-cell">${escapeHtml(t.label)}</td>
+      <td>${t.sistema ? '<span class="badge-centro">Predeterminado</span>' : '<span class="badge-centro" style="background:#eee;color:var(--text3)">Personalizado</span>'}</td>
+      <td style="text-align:right">
+        <button class="accion-editar" title="Editar" onclick="abrirModalTipo('${t.slug}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+        ${t.sistema ? "" : `<button class="accion-editar" title="Eliminar" style="color:var(--red);margin-left:6px" onclick="eliminarTipo('${t.slug}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>`}
+      </td>
+    </tr>
+  `).join("");
+}
+
+window.abrirModalTipo = function(slug){
+  const modal = document.getElementById("modal-tipo-documento");
+  const input = document.getElementById("mt-tipo-label");
+  const titulo = document.getElementById("mt-tipo-titulo");
+  const slugField = document.getElementById("mt-tipo-slug");
+  if(slug){
+    const t = TIPOS_DOCUMENTO.find(x => x.slug === slug);
+    titulo.textContent = "Editar tipo de documento";
+    input.value = t ? t.label : "";
+    slugField.value = slug;
+  }else{
+    titulo.textContent = "Nuevo tipo de documento";
+    input.value = "";
+    slugField.value = "";
+  }
+  modal.classList.remove("hidden");
+  input.focus();
+};
+
+window.cerrarModalTipo = function(){
+  document.getElementById("modal-tipo-documento").classList.add("hidden");
+};
+
+window.guardarTipo = async function(){
+  const input = document.getElementById("mt-tipo-label");
+  const slugField = document.getElementById("mt-tipo-slug");
+  const label = input.value.trim();
+  if(!label){
+    input.focus();
+    return;
+  }
+  const boton = document.getElementById("mt-tipo-guardar");
+  boton.disabled = true;
+  boton.textContent = "Guardando…";
+  try{
+    if(slugField.value){
+      // Editar: solo se actualiza la etiqueta, el slug queda fijo.
+      const t = TIPOS_DOCUMENTO.find(x => x.slug === slugField.value);
+      await setDoc(doc(db, "tipos_documento", slugField.value), {
+        label, orden: t ? (t.orden ?? 999) : 999, sistema: t ? !!t.sistema : false
+      });
+    }else{
+      // Nuevo tipo personalizado.
+      const slug = generarSlugTipo(label);
+      const orden = TIPOS_DOCUMENTO.reduce((max,t) => Math.max(max, t.orden ?? 0), 0) + 1;
+      await setDoc(doc(db, "tipos_documento", slug), { label, orden, sistema: false });
+    }
+    await fetchTiposDocumento();
+    renderConfiguracionTipos();
+    window.cerrarModalTipo();
+  }catch(e){
+    alert("No se pudo guardar el tipo de documento. Intenta de nuevo.");
+  }finally{
+    boton.disabled = false;
+    boton.textContent = "Guardar";
+  }
+};
+
+window.eliminarTipo = async function(slug){
+  const t = TIPOS_DOCUMENTO.find(x => x.slug === slug);
+  if(!t || t.sistema) return;
+  if(!confirm(`¿Eliminar el tipo "${t.label}"? Esta acción no se puede deshacer.`)) return;
+  try{
+    const enUso = await getDocs(query(collection(db, "documentos"), where("tipo", "==", slug), limit(1)));
+    if(!enUso.empty){
+      alert("No se puede eliminar: ya hay documentos subidos con este tipo. Puedes renombrarlo en vez de eliminarlo.");
+      return;
+    }
+    await deleteDoc(doc(db, "tipos_documento", slug));
+    await fetchTiposDocumento();
+    renderConfiguracionTipos();
+  }catch(e){
+    alert("No se pudo eliminar el tipo de documento. Intenta de nuevo.");
   }
 };
 </script>
