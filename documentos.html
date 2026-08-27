@@ -133,6 +133,26 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 .estado-vacio-desktop .icono{width:46px;height:46px;border-radius:999px;background:var(--green-light);color:var(--green2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
 .estado-vacio-desktop strong{display:block;color:var(--text);font-size:15px;margin-bottom:6px}
 
+/* ---------- Bandeja de clasificación ---------- */
+.bandeja-dropzone{background:#fff;border:1.5px dashed var(--border);border-radius:14px;padding:2.25rem 2rem;text-align:center;max-width:620px}
+.bandeja-dropzone .icono{width:46px;height:46px;border-radius:999px;background:var(--green-light);color:var(--green2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.bandeja-dropzone strong{display:block;color:var(--text);font-size:15px;margin-bottom:6px}
+.bandeja-dropzone p{color:var(--text3);font-size:12.5px;margin-bottom:16px;max-width:440px;margin-left:auto;margin-right:auto}
+.bandeja-match-card{margin:1.1rem 0}
+.bandeja-match-ok{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.bandeja-match-nombre{font-weight:800;font-size:14.5px;color:var(--text)}
+.bandeja-match-detalle{font-size:12.5px;color:var(--text3);margin-top:2px}
+.bandeja-match-falta{background:var(--amber-bg);color:var(--amber);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600}
+.bandeja-busqueda-wrap{margin-top:10px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px}
+.bandeja-busqueda-wrap .field-input{margin-bottom:8px}
+.bandeja-sugerencia{padding:9px 10px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px}
+.bandeja-sugerencia:hover{background:#f7f7f7}
+.bandeja-sugerencia span{color:var(--text3);font-size:12px;white-space:nowrap}
+.bandeja-sugerencia-vacio{padding:9px 10px;color:var(--text3);font-size:13px}
+.bandeja-select-tipo{width:100%;height:38px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:12.5px;font-family:var(--font);background:#fbfbfb}
+.bandeja-input-fundo{width:100%;height:38px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:12.5px;font-family:var(--font);background:#fbfbfb}
+.bandeja-quitar{border:1px solid var(--border);background:#fff;border-radius:8px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;color:var(--red);cursor:pointer;font-size:13px}
+
 @media (max-width:760px){
   #pantalla-escritorio{flex-direction:column}
   .sidebar{width:100%;flex-direction:row;flex-wrap:wrap;align-items:center;padding:.9rem 1rem;gap:.4rem}
@@ -275,18 +295,50 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 
   <div class="contenido">
 
-    <!-- Bandeja (placeholder) -->
+    <!-- Bandeja de clasificación (REAL) -->
     <div id="seccion-bandeja" class="seccion">
       <div class="contenido-header">
         <div>
           <div class="contenido-titulo">Bandeja de clasificación</div>
-          <div class="contenido-sub">Archivos nuevos detectados en el servidor de la oficina, agrupados por carpeta de trabajador.</div>
+          <div class="contenido-sub">Selecciona la carpeta de un trabajador desde el explorador de tu computador — el sistema sugiere el tipo de cada documento, tú confirmas o corriges antes de subir.</div>
         </div>
       </div>
-      <div class="estado-vacio-desktop">
-        <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 3h6l2-3h4"/><path d="M5 12 3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2l-2 5"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></div>
-        <strong>Todavía no está construida</strong>
-        Se agrega en la próxima ronda. Mientras tanto, puedes ir cargando y corrigiendo la <a href="#" onclick="mostrarSeccion('dotacion');return false" style="color:var(--green2);font-weight:700">Dotación de personal</a>, que ya funciona.
+
+      <div class="bandeja-dropzone">
+        <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></div>
+        <strong>Selecciona la carpeta del trabajador</strong>
+        <p>Elige la carpeta completa desde tu explorador (ej. "Aguilera Aguilera Reinaldo"), tal como está organizada hoy en el servidor.</p>
+        <input type="file" id="bandeja-carpeta-input" webkitdirectory directory multiple style="display:none" onchange="manejarCarpetaTrabajador(event)">
+        <button class="btn-primary" onclick="document.getElementById('bandeja-carpeta-input').click()">Elegir carpeta</button>
+      </div>
+
+      <div id="bandeja-revision" class="hidden" style="margin-top:1.5rem">
+        <div class="field-label">Carpeta seleccionada: <span id="bandeja-carpeta-detectada" style="font-weight:800;color:var(--text);text-transform:none;letter-spacing:0"></span></div>
+
+        <div class="bandeja-match-card" id="bandeja-match-card"></div>
+
+        <div id="bandeja-busqueda-wrap" class="bandeja-busqueda-wrap hidden">
+          <label class="field-label" for="bandeja-busqueda-input">Buscar trabajador por nombre o RUT</label>
+          <input class="field-input" id="bandeja-busqueda-input" type="text" placeholder="Escribe para buscar..." oninput="buscarTrabajadorBandeja()">
+          <div id="bandeja-busqueda-resultados"></div>
+        </div>
+
+        <div class="contador-desktop" id="bandeja-archivos-contador" style="margin-top:1.2rem">0 archivos</div>
+        <div class="tabla-wrap">
+          <table class="tabla">
+            <thead>
+              <tr><th>Archivo</th><th>Tipo de documento</th><th>Fundo</th><th>Vigente</th><th></th></tr>
+            </thead>
+            <tbody id="bandeja-archivos-body"></tbody>
+          </table>
+        </div>
+
+        <div id="bandeja-resultado-subida" style="margin-top:12px"></div>
+
+        <div class="toolbar-desktop" style="margin-top:14px">
+          <button class="btn-primary" id="bandeja-btn-subir" onclick="subirDocumentosBandeja()">Subir documentos</button>
+          <button class="btn-secondary" onclick="cancelarBandeja()">Cancelar</button>
+        </div>
       </div>
     </div>
 
@@ -444,6 +496,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getStorage, ref as storageRef, uploadBytes } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
@@ -456,6 +509,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const storage = getStorage(app);
+
+const TIPOS_DOCUMENTO = [
+  { slug: "contrato", label: "Contrato de trabajo" },
+  { slug: "anexo_fundo", label: "Anexo — cambio de fundo" },
+  { slug: "anexo_otro", label: "Anexo — otro cambio" },
+  { slug: "seguridad", label: "Certificado de seguridad / EPP" },
+  { slug: "finiquito", label: "Finiquito" },
+  { slug: "otro", label: "Otro / sin clasificar" }
+];
 
 const NOMBRES_ROL = { admin: "Administrador maestro", rrhh: "RRHH", jefe_centro: "Jefe de centro" };
 const NOMBRES_CENTRO = { "FORMIN 1": "FORMIN 1", "FORMIN 2": "FORMIN 2", "FORMIN 3": "FORMIN 3", TALLER_COIHUE: "Taller Coihue", ROTATIVO: "Rotativo" };
@@ -469,6 +532,8 @@ const EMPRESAS_SUGERIDAS = {
 let usuarioActual = null; // { rol, centro, nombre }
 let dotTabActual = "corte-alto";
 let dotDatosTodos = null; // fetch único con todos los trabajadores; las pestañas se separan en el render
+let bandejaTrabajadorSeleccionado = null;
+let bandejaArchivos = []; // [{ file, nombre, tipo, fundo, vigente }]
 
 function mostrarPantalla(id){
   ["pantalla-login","pantalla-sinacceso","pantalla-jefe","pantalla-escritorio"].forEach(v=>{
@@ -485,6 +550,9 @@ window.mostrarSeccion = function(id){
   });
   if(id === "dotacion" && dotDatosTodos === null){
     cambiarTabDotacion(dotTabActual);
+  }
+  if(id === "bandeja" && dotDatosTodos === null){
+    fetchDotacionTodos().catch(()=>{});
   }
 };
 
@@ -860,6 +928,281 @@ window.importarCSV = async function(){
   dotDatosTodos = null;
   await fetchDotacionTodos();
   renderTablaDotacion();
+};
+
+// ================= BANDEJA DE CLASIFICACIÓN (solo RRHH/Admin) =================
+
+function sugerirTipoDocumento(nombreArchivo, rutaRelativa){
+  // Usa el nombre del archivo Y el de cualquier subcarpeta intermedia
+  // (ej. ".../Aguilera Reinaldo/Seguridad/PTS1.jpg") como pistas — algunas
+  // carpetas del servidor agrupan por categoría (Seguridad, Procedimientos)
+  // en vez de que todo esté suelto junto al resto de "documentación laboral".
+  const partesRuta = (rutaRelativa || "").split("/");
+  const subcarpetas = partesRuta.slice(1, -1); // sin la carpeta raíz (trabajador) ni el archivo
+  const n = normalizar(nombreArchivo + " " + subcarpetas.join(" "));
+  if(n.includes("finiquito")) return "finiquito";
+  if(n.includes("anexo")){
+    return n.includes("fundo") ? "anexo_fundo" : "anexo_otro";
+  }
+  if(n.includes("contrato")) return "contrato";
+  if(/(d\.?a\.?s\.?|\bpts\b|\br\.?i\.?\b|\bimm\b|reglamento interno|procedimiento de trabajo seguro|derecho a saber|entrega r\.i|induccion|\bepp\b|seguridad|procedimiento)/.test(n)) return "seguridad";
+  return "otro";
+}
+
+function extraerFundo(nombreArchivo, nombreTrabajador){
+  const idx = nombreArchivo.toLowerCase().indexOf("fundo");
+  if(idx === -1) return "";
+  let resto = nombreArchivo.slice(idx + 5).replace(/\.(jpg|jpeg|png|pdf|heic)$/i, "").trim();
+  const tokensTrabajador = new Set(normalizar(nombreTrabajador).split(/\s+/).filter(Boolean));
+  const palabras = resto.split(/\s+/);
+  const resultado = [];
+  for(const palabra of palabras){
+    const norm = normalizar(palabra).replace(/[^a-z0-9]/g, "");
+    if(tokensTrabajador.has(norm)) break;
+    resultado.push(palabra);
+  }
+  return resultado.join(" ").trim();
+}
+
+function matchTrabajador(nombreCarpeta){
+  const candidatos = dotDatosTodos || [];
+  const normCarpeta = normalizar(nombreCarpeta);
+  const exacto = candidatos.find(t => normalizar(t.nombre) === normCarpeta);
+  if(exacto) return exacto;
+
+  const tokensCarpeta = new Set(normCarpeta.split(/\s+/).filter(Boolean));
+  let mejorPuntaje = 0;
+  let empatados = [];
+  for(const t of candidatos){
+    const tokensNombre = new Set(normalizar(t.nombre).split(/\s+/).filter(Boolean));
+    let interseccion = 0;
+    tokensCarpeta.forEach(tok => { if(tokensNombre.has(tok)) interseccion++; });
+    if(interseccion > mejorPuntaje){
+      mejorPuntaje = interseccion;
+      empatados = [t];
+    }else if(interseccion === mejorPuntaje && interseccion > 0){
+      empatados.push(t);
+    }
+  }
+  if(mejorPuntaje >= 2 && empatados.length === 1) return empatados[0];
+  return null;
+}
+
+window.manejarCarpetaTrabajador = function(event){
+  const archivos = Array.from(event.target.files || []);
+  if(!archivos.length) return;
+
+  const primerPath = archivos[0].webkitRelativePath || archivos[0].name;
+  const nombreCarpeta = primerPath.split("/")[0];
+
+  bandejaArchivos = archivos
+    .filter(f => !/^\./.test(f.name) && !/^thumbs\.db$/i.test(f.name))
+    .map(f => ({ file: f, nombre: f.name, tipo: sugerirTipoDocumento(f.name, f.webkitRelativePath || f.name), fundo: "", vigente: false }));
+
+  bandejaTrabajadorSeleccionado = matchTrabajador(nombreCarpeta);
+  document.getElementById("bandeja-carpeta-detectada").textContent = nombreCarpeta;
+
+  if(bandejaTrabajadorSeleccionado){
+    bandejaArchivos.forEach(a => {
+      if(a.tipo === "anexo_fundo") a.fundo = extraerFundo(a.nombre, bandejaTrabajadorSeleccionado.nombre);
+    });
+  }
+
+  document.getElementById("bandeja-resultado-subida").innerHTML = "";
+  renderBandejaMatch();
+  renderBandejaArchivos();
+  document.getElementById("bandeja-revision").classList.remove("hidden");
+};
+
+function renderBandejaMatch(){
+  const cont = document.getElementById("bandeja-match-card");
+  if(bandejaTrabajadorSeleccionado){
+    const t = bandejaTrabajadorSeleccionado;
+    const etiquetaCentro = t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente de asignar";
+    cont.innerHTML = `
+      <div class="bandeja-match-ok">
+        <div>
+          <div class="bandeja-match-nombre">${escapeHtml(t.nombre)}</div>
+          <div class="bandeja-match-detalle">${escapeHtml(t.rut || "—")} · ${escapeHtml(etiquetaCentro)} · ${escapeHtml(t.empresa || "—")}</div>
+        </div>
+        <button class="btn-secondary" onclick="abrirBusquedaBandeja()">Cambiar trabajador</button>
+      </div>
+    `;
+    document.getElementById("bandeja-busqueda-wrap").classList.add("hidden");
+  }else{
+    cont.innerHTML = `<div class="bandeja-match-falta">No se pudo identificar automáticamente al trabajador a partir del nombre de la carpeta. Búscalo manualmente abajo.</div>`;
+    abrirBusquedaBandeja();
+  }
+}
+
+window.abrirBusquedaBandeja = function(){
+  document.getElementById("bandeja-busqueda-wrap").classList.remove("hidden");
+  document.getElementById("bandeja-busqueda-input").value = "";
+  document.getElementById("bandeja-busqueda-resultados").innerHTML = "";
+  document.getElementById("bandeja-busqueda-input").focus();
+};
+
+window.buscarTrabajadorBandeja = function(){
+  const term = normalizar(document.getElementById("bandeja-busqueda-input").value);
+  const cont = document.getElementById("bandeja-busqueda-resultados");
+  if(term.length < 2){ cont.innerHTML = ""; return; }
+  const candidatos = (dotDatosTodos || [])
+    .filter(t => normalizar(t.nombre).includes(term) || normalizar(t.rut).includes(term))
+    .slice(0, 8);
+  cont.innerHTML = candidatos.length ? candidatos.map(t => `
+    <div class="bandeja-sugerencia" onclick="elegirTrabajadorBandeja('${t.id}')">
+      <strong>${escapeHtml(t.nombre)}</strong>
+      <span>${escapeHtml(t.rut || "—")} · ${escapeHtml(t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente")}</span>
+    </div>
+  `).join("") : '<div class="bandeja-sugerencia-vacio">Sin resultados.</div>';
+};
+
+window.elegirTrabajadorBandeja = function(id){
+  const t = (dotDatosTodos || []).find(x => x.id === id);
+  if(!t) return;
+  bandejaTrabajadorSeleccionado = t;
+  bandejaArchivos.forEach(a => {
+    if(a.tipo === "anexo_fundo" && !a.fundo) a.fundo = extraerFundo(a.nombre, t.nombre);
+  });
+  renderBandejaMatch();
+  renderBandejaArchivos();
+};
+
+function renderBandejaArchivos(){
+  document.getElementById("bandeja-archivos-contador").textContent =
+    bandejaArchivos.length + (bandejaArchivos.length === 1 ? " archivo" : " archivos");
+
+  const cuerpo = document.getElementById("bandeja-archivos-body");
+  if(!bandejaArchivos.length){
+    cuerpo.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:1.5rem">No hay archivos.</td></tr>';
+    return;
+  }
+
+  cuerpo.innerHTML = bandejaArchivos.map((a, i) => `
+    <tr>
+      <td>${escapeHtml(a.nombre)}</td>
+      <td>
+        <select class="bandeja-select-tipo" onchange="actualizarTipoArchivoBandeja(${i}, this.value)">
+          ${TIPOS_DOCUMENTO.map(td => `<option value="${td.slug}" ${a.tipo === td.slug ? "selected" : ""}>${td.label}</option>`).join("")}
+        </select>
+      </td>
+      <td>${a.tipo === "anexo_fundo" ? `<input class="bandeja-input-fundo" value="${escapeHtml(a.fundo)}" placeholder="Nombre del fundo" oninput="actualizarFundoArchivoBandeja(${i}, this.value)">` : "—"}</td>
+      <td style="text-align:center">${a.tipo === "anexo_fundo" ? `<input type="checkbox" ${a.vigente ? "checked" : ""} onchange="marcarVigenteArchivoBandeja(${i}, this.checked)">` : "—"}</td>
+      <td><button class="bandeja-quitar" onclick="quitarArchivoBandeja(${i})" aria-label="Quitar">✕</button></td>
+    </tr>
+  `).join("");
+}
+
+window.actualizarTipoArchivoBandeja = function(i, valor){
+  const a = bandejaArchivos[i];
+  if(!a) return;
+  a.tipo = valor;
+  if(valor === "anexo_fundo"){
+    if(!a.fundo && bandejaTrabajadorSeleccionado) a.fundo = extraerFundo(a.nombre, bandejaTrabajadorSeleccionado.nombre);
+  }else{
+    a.fundo = "";
+    a.vigente = false;
+  }
+  renderBandejaArchivos();
+};
+
+window.actualizarFundoArchivoBandeja = function(i, valor){
+  if(bandejaArchivos[i]) bandejaArchivos[i].fundo = valor;
+};
+
+window.marcarVigenteArchivoBandeja = function(i, marcado){
+  bandejaArchivos.forEach((a, idx) => {
+    if(a.tipo === "anexo_fundo") a.vigente = (idx === i) ? marcado : false;
+  });
+  renderBandejaArchivos();
+};
+
+window.quitarArchivoBandeja = function(i){
+  bandejaArchivos.splice(i, 1);
+  renderBandejaArchivos();
+};
+
+window.cancelarBandeja = function(){
+  bandejaArchivos = [];
+  bandejaTrabajadorSeleccionado = null;
+  document.getElementById("bandeja-carpeta-input").value = "";
+  document.getElementById("bandeja-revision").classList.add("hidden");
+  document.getElementById("bandeja-busqueda-wrap").classList.add("hidden");
+  document.getElementById("bandeja-resultado-subida").innerHTML = "";
+};
+
+window.subirDocumentosBandeja = async function(){
+  if(!bandejaTrabajadorSeleccionado){
+    alert("Primero identifica al trabajador de esta carpeta.");
+    return;
+  }
+  if(!bandejaArchivos.length){
+    alert("No hay archivos para subir.");
+    return;
+  }
+
+  const t = bandejaTrabajadorSeleccionado;
+  const boton = document.getElementById("bandeja-btn-subir");
+  const resultadoBox = document.getElementById("bandeja-resultado-subida");
+  boton.disabled = true;
+  resultadoBox.innerHTML = "";
+
+  const centroCarpeta = t.centro || "SIN_CENTRO";
+
+  // Si algún anexo de cambio de fundo queda marcado como vigente, desmarcar los anteriores del mismo trabajador
+  const marcaVigenteNueva = bandejaArchivos.some(a => a.tipo === "anexo_fundo" && a.vigente);
+  if(marcaVigenteNueva){
+    try{
+      const previos = await getDocs(query(collection(db, "documentos"), where("trabajadorId", "==", t.id)));
+      const actualizaciones = [];
+      previos.forEach(d => {
+        const data = d.data();
+        if(data.tipo === "anexo_fundo" && data.vigente === true){
+          actualizaciones.push(setDoc(doc(db, "documentos", d.id), { vigente: false }, { merge: true }));
+        }
+      });
+      await Promise.all(actualizaciones);
+    }catch(e){
+      // si falla la desmarcación de anexos anteriores, seguimos igual con la subida
+    }
+  }
+
+  let ok = 0, conError = 0;
+  for(let i = 0; i < bandejaArchivos.length; i++){
+    const a = bandejaArchivos[i];
+    boton.textContent = `Subiendo ${i + 1}/${bandejaArchivos.length}…`;
+    try{
+      const nombreSeguro = a.nombre.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const rutaStorage = `documentos_rrhh/${centroCarpeta}/${t.id}/${a.tipo}/${Date.now()}_${nombreSeguro}`;
+      await uploadBytes(storageRef(storage, rutaStorage), a.file);
+
+      const tipoInfo = TIPOS_DOCUMENTO.find(td => td.slug === a.tipo);
+      await setDoc(doc(collection(db, "documentos")), {
+        trabajadorId: t.id,
+        trabajadorNombre: t.nombre,
+        centro: t.centro || "",
+        tipo: a.tipo,
+        tipoLabel: tipoInfo ? tipoInfo.label : a.tipo,
+        fundo: a.tipo === "anexo_fundo" ? (a.fundo || "") : "",
+        vigente: a.tipo === "anexo_fundo" ? !!a.vigente : false,
+        nombreArchivo: a.nombre,
+        storagePath: rutaStorage,
+        fechaSubida: new Date().toISOString(),
+        subidoPor: usuarioActual ? usuarioActual.nombre : ""
+      });
+      ok++;
+    }catch(e){
+      conError++;
+    }
+  }
+
+  boton.disabled = false;
+  boton.textContent = "Subir documentos";
+  resultadoBox.innerHTML = `<div class="status-note" style="color:${conError ? "var(--red)" : "var(--green2)"}">Subidos: ${ok}. Con error: ${conError}.</div>`;
+
+  if(conError === 0){
+    setTimeout(() => { window.cancelarBandeja(); }, 1800);
+  }
 };
 </script>
 
