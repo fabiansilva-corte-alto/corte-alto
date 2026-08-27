@@ -40,8 +40,6 @@ label{font-size:12px;color:var(--text2);font-weight:500}
 input,select{width:100%;font-size:14px;font-family:var(--font);padding:9px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--text);outline:none;transition:border-color .15s,background .15s}
 input:focus,select:focus{border-color:#666}
 select:disabled{background:#f5f5f5;color:#b4b2a9;cursor:not-allowed}
-.campo-error{border-color:var(--red)!important;background:var(--red-bg)!important;animation:shake .3s}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .filtros-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 @media(min-width:560px){.filtros-grid{grid-template-columns:repeat(4,1fr)}}
 .filtro-card{border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;background:#fff;transition:border-color .15s,background .15s}
@@ -85,13 +83,6 @@ td.sin-datos{color:var(--text3);font-style:italic}
 .estado.error{color:var(--red)}
 .estado .btn-secondary{margin-top:10px;flex:none;display:inline-flex}
 .resumen{font-size:12px;color:var(--text3);margin-bottom:8px}
-#gate{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem}
-.gate-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem 1.25rem;max-width:320px;width:100%;text-align:center}
-.gate-icon{width:48px;height:48px;border-radius:50%;background:var(--green-bg);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:24px}
-.gate-title{font-size:15px;font-weight:600;margin-bottom:2px}
-.gate-sub{font-size:12px;color:var(--text3);margin-bottom:14px}
-.gate-card input{text-align:center;font-size:16px;letter-spacing:.15em}
-.gate-card .btn-primary{width:100%;margin-top:10px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--text);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:200}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .loader{position:fixed;inset:0;background:rgba(255,255,255,.75);z-index:150;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px}
@@ -103,17 +94,7 @@ td.sin-datos{color:var(--text3);font-style:italic}
 </head>
 <body>
 
-<div id="gate">
-  <div class="gate-card">
-    <div class="gate-icon"><i class="ti ti-lock"></i></div>
-    <div class="gate-title">CORTE ALTO · SISTEMA DE GESTIÓN</div>
-    <div class="gate-sub">Ingresa la clave de acceso</div>
-    <input type="password" id="gate-clave" inputmode="numeric" autocomplete="off" placeholder="••••••••">
-    <button class="btn-primary" id="gate-btn">Entrar</button>
-  </div>
-</div>
-
-<div class="app" id="app" style="display:none">
+<div class="app" id="app">
   <div class="header">
     <div class="header-left">
       <button class="back-btn" id="btn-volver" title="Volver"><i class="ti ti-arrow-left"></i></button>
@@ -173,8 +154,6 @@ td.sin-datos{color:var(--text3);font-style:italic}
 <script id="ca-logic">
 window.CA = (function(){
   'use strict';
-
-  const CLAVE = '78264940';
 
   const CAMPOS = [
     {id:'fundo',      label:'Fundo',       nivel:'reporte'},
@@ -285,6 +264,7 @@ window.CA = (function(){
     filtros = filtros || {};
     const hayFiltroCartola = CAMPOS_CARTOLA.some(id => esRestrictivo(filtros[id]));
     const hayFiltroTipo = esRestrictivo(filtros.tipo);
+    const camposAgrupar = CAMPOS_CARTOLA.filter(id => filtros[id] !== null && filtros[id] !== undefined);
     const rows = [];
     (docs || []).forEach(doc => {
       let ok = true;
@@ -296,35 +276,50 @@ window.CA = (function(){
       const cartolas = doc.cartolas || [];
       let visibles = hayFiltroCartola ? cartolas.filter(c => cartolaCumple(c, filtros)) : cartolas;
       if(hayFiltroTipo) visibles = visibles.filter(c => productosDelTipo(c, filtros).length > 0);
-      if((hayFiltroCartola || hayFiltroTipo) && visibles.length === 0) return;
+      if((hayFiltroCartola || hayFiltroTipo || camposAgrupar.length > 0) && visibles.length === 0) return;
 
-      let total;
-      if(hayFiltroTipo){
-        total = visibles.reduce((s,c) => s + volProductos(productosDelTipo(c, filtros)), 0);
-      } else if(hayFiltroCartola){
-        total = visibles.reduce((s,c) => s + (typeof c.total === 'number' && isFinite(c.total) ? c.total : 0), 0);
+      const filaDesde = (grupo) => {
+        const tipos = [];
+        grupo.forEach(c => productosDelTipo(c, filtros).forEach(p => tipos.push(String(p.tipo || ''))));
+        const total = hayFiltroTipo
+          ? grupo.reduce((s,c) => s + volProductos(productosDelTipo(c, filtros)), 0)
+          : grupo.reduce((s,c) => s + (typeof c.total === 'number' && isFinite(c.total) ? c.total : 0), 0);
+        return {
+          fecha: doc.fecha || '',
+          fundo: doc.fundo || '',
+          linea: doc.linea || '',
+          rodal: listaUnica(grupo.map(c => String(c.rodal || ''))),
+          opTrozado: listaUnica(grupo.map(c => String(c.opTrozado || ''))),
+          opMadereo: listaUnica(grupo.map(c => String(c.opMadereo || ''))),
+          equipo: listaUnica(grupo.map(c => String(c.equipo || ''))),
+          procesador: listaUnica(grupo.map(c => String(c.procesador || ''))),
+          tipo: listaUnica(tipos) || '—',
+          turno: turnoTexto(grupo),
+          calibrador: doc.calibrador || '',
+          total: total,
+          creadoEn: doc.creadoEn || ''
+        };
+      };
+
+      if(camposAgrupar.length === 0){
+        // Sin ningún filtro de cartola marcado: una fila por reporte (comportamiento base)
+        if(!hayFiltroCartola && !hayFiltroTipo){
+          rows.push(Object.assign(filaDesde(visibles), {
+            total: (typeof doc.totalGlobal === 'number' && isFinite(doc.totalGlobal)) ? doc.totalGlobal : 0
+          }));
+        } else {
+          rows.push(filaDesde(visibles));
+        }
       } else {
-        total = (typeof doc.totalGlobal === 'number' && isFinite(doc.totalGlobal)) ? doc.totalGlobal : 0;
+        // Uno o más filtros de cartola marcados: una fila por combinación distinta de esos campos
+        const grupos = new Map();
+        visibles.forEach(c => {
+          const key = camposAgrupar.map(id => String(c[id] || '')).join('\u241F');
+          if(!grupos.has(key)) grupos.set(key, []);
+          grupos.get(key).push(c);
+        });
+        grupos.forEach(grupo => rows.push(filaDesde(grupo)));
       }
-
-      const tipos = [];
-      visibles.forEach(c => productosDelTipo(c, filtros).forEach(p => tipos.push(String(p.tipo || ''))));
-
-      rows.push({
-        fecha: doc.fecha || '',
-        fundo: doc.fundo || '',
-        linea: doc.linea || '',
-        rodal: listaUnica(visibles.map(c => String(c.rodal || ''))),
-        opTrozado: listaUnica(visibles.map(c => String(c.opTrozado || ''))),
-        opMadereo: listaUnica(visibles.map(c => String(c.opMadereo || ''))),
-        equipo: listaUnica(visibles.map(c => String(c.equipo || ''))),
-        procesador: listaUnica(visibles.map(c => String(c.procesador || ''))),
-        tipo: listaUnica(tipos) || '—',
-        turno: turnoTexto(visibles),
-        calibrador: doc.calibrador || '',
-        total: total,
-        creadoEn: doc.creadoEn || ''
-      });
     });
     rows.sort((a,b) => a.fecha === b.fecha ? a.creadoEn.localeCompare(b.creadoEn) : a.fecha.localeCompare(b.fecha));
     return rows;
@@ -398,7 +393,7 @@ window.CA = (function(){
     return aoa;
   }
 
-  return { CLAVE, CAMPOS, CAMPOS_GENERAL, fmtVol, fmtFecha, mesEnCurso, valoresUnicos, filtrar, totalPeriodo, columnasVisibles, construirAOA, turnoTexto, diasEnRango, totalesDiarios, construirAOAGeneral };
+  return { CAMPOS, CAMPOS_GENERAL, fmtVol, fmtFecha, mesEnCurso, valoresUnicos, filtrar, totalPeriodo, columnasVisibles, construirAOA, turnoTexto, diasEnRango, totalesDiarios, construirAOAGeneral };
 })();
 </script>
 
@@ -420,24 +415,6 @@ let colsActuales = [];
 let filasGeneralActuales = [];
 let hayConsulta = false;
 let tabActual = 'detalle';
-
-// ---- Acceso ----
-function intentarEntrar(){
-  const inp = $('gate-clave');
-  if(inp.value === CA.CLAVE){
-    $('gate').style.display = 'none';
-    $('app').style.display = 'block';
-  } else {
-    inp.classList.remove('campo-error');
-    void inp.offsetWidth;
-    inp.classList.add('campo-error');
-    inp.value = '';
-    inp.focus();
-  }
-}
-$('gate-btn').addEventListener('click', intentarEntrar);
-$('gate-clave').addEventListener('keydown', e => { if(e.key === 'Enter') intentarEntrar(); });
-$('gate-clave').addEventListener('input', e => e.target.classList.remove('campo-error'));
 
 // ---- Volver ----
 $('btn-volver').addEventListener('click', () => { location.href = 'index.html'; });
@@ -737,7 +714,6 @@ $('btn-exportar').addEventListener('click', () => {
   }
 });
 
-$('gate-clave').focus();
 </script>
 
 <script>
