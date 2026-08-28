@@ -240,8 +240,7 @@ input.bad{border-color:var(--red)!important;background:var(--red-bg)!important;c
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
         <span style="font-size:12px;color:var(--text3);white-space:nowrap">Modo:</span>
         <div id="sc-toggle" style="display:flex;background:var(--bg2,#f5f5f5);border:0.5px solid var(--border);border-radius:8px;padding:3px;gap:3px">
-          <button id="sc-btn-cargas" class="sc-toggle-btn sc-toggle-active"><i class="ti ti-stack-2" style="margin-right:4px;font-size:13px"></i>Stock de Cargas</button>
-          <button id="sc-btn-volumen" class="sc-toggle-btn"><i class="ti ti-box" style="margin-right:4px;font-size:13px"></i>Volumen m³</button>
+
         </div>
       </div>
       <!-- Encabezado columnas -->
@@ -1686,41 +1685,7 @@ const COL_STOCK='stock_cargas';
 let scFilaId=0;
 // Registrar punto de entrada diferido para showTab
 // ===== TOGGLE MODO =====
-const SC_MODO_KEY='ca_sc_modo_v1';
-window.SC_MODO=localStorage.getItem(SC_MODO_KEY)||'cargas';
-
-function scAplicarModo(modo,limpiar=false){
-  window.SC_MODO=modo;
-  localStorage.setItem(SC_MODO_KEY,modo);
-  const esVol=modo==='volumen';
-  // toggle UI
-  document.getElementById('sc-btn-cargas')?.classList.toggle('sc-toggle-active',!esVol);
-  document.getElementById('sc-btn-volumen')?.classList.toggle('sc-toggle-active',esVol);
-  // encabezados
-  const hdrQ=document.getElementById('sc-hdr-cantidad');
-  if(hdrQ)hdrQ.textContent=esVol?'Vol (m³)':'N° Cargas';
-  // filas existentes
-  document.querySelectorAll('[data-sc-row]').forEach(row=>{
-    row.dataset.scModo=modo;
-    const inp=row.querySelector('.sc-cargas-inp');
-    if(inp)inp.placeholder=esVol?'0,000':'0';
-    if(limpiar&&inp)inp.value='';
-  });
-  scRecalcTotal();
-}
-
-function scToggleModo(modo){
-  if(modo===window.SC_MODO)return;
-  // verificar si hay datos
-  const hayDatos=[...document.querySelectorAll('.sc-cargas-inp')].some(i=>i.value.trim());
-  if(hayDatos){
-    if(!confirm('¿Cambiar de modo? Los valores de cantidad ingresados se borrarán.'))return;
-    scAplicarModo(modo,true);
-  }else{
-    scAplicarModo(modo,false);
-  }
-}
-
+// Modo fijo: Stock de Cargas
 window._scInit=async function(){await initStock();};
 const SC_DRAFT='ca_sc_draft_v1';
 function scGuardarDraft(){
@@ -1749,17 +1714,13 @@ function scCollect(draft=false){
     });
   });
   const total=Math.round(filas2.reduce((a,f)=>a+f.cargas,0)*10)/10;
-  return{fundo,fecha,filas:filas2,total,modo:window.SC_MODO||'cargas',obs,creadoEn:new Date().toISOString()};
+  return{fundo,fecha,filas:filas2,total,obs,creadoEn:new Date().toISOString()};
 }
 
 function scRegistrarListeners(){
   const scBtnGuardar=document.getElementById('sc-btn-guardar');
   if(scBtnGuardar&&!scBtnGuardar._scBound){scBtnGuardar._scBound=true;scBtnGuardar.addEventListener('click',()=>scGuardar());}
-  // Toggle modo
-  const btnC=document.getElementById('sc-btn-cargas');
-  const btnV=document.getElementById('sc-btn-volumen');
-  if(btnC&&!btnC._scBound){btnC._scBound=true;btnC.addEventListener('click',()=>scToggleModo('cargas'));}
-  if(btnV&&!btnV._scBound){btnV._scBound=true;btnV.addEventListener('click',()=>scToggleModo('volumen'));}
+
   // Botones de grupo por calidad
   document.querySelectorAll('.sc-btn-grupo').forEach(btn=>{
     if(!btn._scBound){btn._scBound=true;btn.addEventListener('click',()=>{scAgregarFilaGrupo(btn.dataset.cal);scGuardarDraft&&scGuardarDraft();});}
@@ -1824,7 +1785,7 @@ window.initStock=async function initStock(){
   const fundoNuevo=document.getElementById('fundo')?.value||'';
   if(fundoNuevo)document.getElementById('sc-fundo').value=fundoNuevo;
   // si no hay filas, precargar
-  if(!document.getElementById('sc-filas').children.length)await scPrecargarDesdeUltimoReporte();
+  if(!document.getElementById('sc-filas-fresca').children.length)await scPrecargarDesdeUltimoReporte();
 }
 
 async function scPrecargarDesdeUltimoReporte(){
@@ -1839,9 +1800,6 @@ async function scPrecargarDesdeUltimoReporte(){
     let ultimoStock=null;
     snapStock.forEach(d=>{if(!ultimoStock&&d.data().fundo===fundo)ultimoStock=d.data();});
     if(ultimoStock&&ultimoStock.filas&&ultimoStock.filas.length){
-      // aplicar modo del último registro guardado
-      const modoGuardado=ultimoStock.modo||'cargas';
-      scAplicarModo(modoGuardado,false);
       ultimoStock.filas.forEach(f=>{
         scAgregarFila(f.tipo||'',f.producto||'',f.largo||'',f.diam||'',f.calidad||'FRESCA');
         // restaurar cargas del último stock
@@ -1883,7 +1841,7 @@ window.scAgregarFila=function(tipo='',prod='',largo='',diam='',calidad='FRESCA')
   row.id='sc-row-'+id;
   row.dataset.scRow='1';
   row.dataset.scCal=calidad;
-  const scModo=window.SC_MODO||'cargas';
+  const scModo='cargas';
   row.dataset.scModo=scModo;
   row.style.cssText='background:var(--surface-1);border:0.5px solid var(--border);border-radius:8px;padding:4px 6px;margin-bottom:5px';
   const prodSel=`<select class="sc-prod-sel" style="font-size:11px;padding:3px 2px;width:100%"><option value="${prod}">${prod||'— Prod —'}</option></select>`;
@@ -1912,19 +1870,21 @@ window.scAgregarFila=function(tipo='',prod='',largo='',diam='',calidad='FRESCA')
     if(!v)return;const p=v.split(',');
     largoInp.value=(p[0]||'0')+','+(p[1]||'').padEnd(2,'0').slice(0,2);
   });
-  // ---- Diámetro: solo números y guión ----
+  // ---- Diámetro: acepta cualquier símbolo, sugerencia si falta guión ----
   const diamInp=row.querySelector('.sc-diam-inp');
-  diamInp.addEventListener('input',()=>{
-    const orig=diamInp.value;
-    const clean=orig.replace(/[^0-9\-]/g,'');
-    if(clean!==orig)showDiamErr(diamInp);
-    else diamInp.classList.remove('campo-error');
-    diamInp.value=clean;
+  diamInp.addEventListener('blur',()=>{
+    const v=diamInp.value.trim();
+    let hint=diamInp.parentNode?.querySelector('.sc-diam-hint');
+    if(v&&!v.includes('-')){
+      if(!hint){hint=document.createElement('div');hint.className='sc-diam-hint';hint.style.cssText='color:#A32D2D;font-size:10px;margin-top:2px';diamInp.parentNode.appendChild(hint);}
+      hint.textContent='Se sugiere formato con guión (ej: 8-28)';
+    }else{if(hint)hint.remove();}
   });
-  // ---- N° Cargas: entero o ,5 (múltiplos de 0,5) ----
+  diamInp.addEventListener('input',()=>{const hint=diamInp.parentNode?.querySelector('.sc-diam-hint');if(hint)hint.remove();});
+    // ---- N° Cargas: entero o ,5 (múltiplos de 0,5) ----
   const inp=row.querySelector('.sc-cargas-inp');
   inp.addEventListener('input',()=>{
-    const modo=window.SC_MODO||'cargas';
+    const modo='cargas';
     if(modo==='volumen'){
       let v=inp.value.replace('.',',').replace(/[^0-9,]/g,'');
       const p=v.split(',');if(p.length>1)v=p[0]+','+p[1].slice(0,3);
@@ -1960,7 +1920,7 @@ function scActualizarProdSel(row,tipo,selProd=''){
 }
 
 function scRecalcTotal(){
-  const modo=window.SC_MODO||'cargas';
+  const modo='cargas';
   const grupos={FRESCA:0,ESPORADA:0,MANCHADA:0};
   document.querySelectorAll('.sc-cargas-inp').forEach(inp=>{
     const row=inp.closest('[data-sc-row]');
@@ -2048,8 +2008,8 @@ async function scCompartir(d){
   };
   const grupos={};
   (d.filas||[]).forEach(f=>{const k=f.calidad||'';if(!grupos[k])grupos[k]=[];grupos[k].push(f);});
-  const esVol=d.modo==='volumen';
-  const colCantHdr=esVol?'Vol m³':'Cargas';
+  const esVol=false;
+  const colCantHdr='Cargas';
   const tablaPorCalidad=CALIDADES_ORD.filter(k=>grupos[k]?.length).map(k=>{
     const est=CALIDAD_ESTILO[k];
     const subtotal=Math.round(grupos[k].reduce((a,f)=>a+(f.cargas||0),0)*10)/10;
