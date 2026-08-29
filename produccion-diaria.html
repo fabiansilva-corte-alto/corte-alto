@@ -135,6 +135,7 @@ input.bad{border-color:var(--red)!important;background:var(--red-bg)!important;c
     <button class="tab active" onclick="showTab('form',this)"><i class="ti ti-clipboard-list"></i> Nuevo</button>
     <button class="tab" onclick="showTab('hist',this)"><i class="ti ti-history"></i> Historial <span id="badge-n" style="background:rgba(0,0,0,.1);padding:1px 6px;border-radius:10px;font-size:11px;margin-left:3px">0</span></button>
     <button class="tab" onclick="showTab('stock',this)"><i class="ti ti-stack-2"></i> Stock de Cargas</button>
+    <button class="tab" onclick="showTab('inv',this)"><i class="ti ti-clipboard-list"></i> Inventario</button>
   </div>
 
   <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
@@ -219,7 +220,68 @@ input.bad{border-color:var(--red)!important;background:var(--red-bg)!important;c
     <div id="hist-lista"></div>
   </div>
 
-  <!-- ===== STOCK DE CARGAS ===== -->
+  <!-- ===== INVENTARIO INTERNO ===== -->
+  <div id="tab-inv" style="display:none">
+    <div class="section">
+      <div class="section-title"><i class="ti ti-clipboard-list"></i> Identificación</div>
+      <div class="grid2">
+        <div class="field">
+          <label>Nombre del fundo<span class="req">*</span></label>
+          <select id="inv-fundo"><option value="">— Seleccionar —</option></select>
+        </div>
+        <div class="field">
+          <label>Fecha<span class="req">*</span></label>
+          <input type="date" id="inv-fecha">
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title"><i class="ti ti-box"></i> Volumen por producto (m³)</div>
+      <div id="inv-col-headers" style="display:grid;grid-template-columns:1fr 1fr 50px 60px 70px 28px;gap:3px;align-items:center;margin-bottom:4px;padding:0 2px">
+        <span style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase">Tipo</span>
+        <span style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase">Producto</span>
+        <span style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">Largo</span>
+        <span style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">Diám.</span>
+        <span style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;text-align:center">Vol (m³)</span>
+        <span></span>
+      </div>
+      <!-- FRESCA -->
+      <div style="border:1.5px solid #c8e6c9;border-radius:10px;padding:8px;margin-bottom:8px;background:#f9fff9">
+        <div style="font-size:12px;font-weight:700;color:#27500A;margin-bottom:6px">🌿 Madera Fresca</div>
+        <div id="inv-filas-fresca"></div>
+        <button class="add-btn inv-btn-grupo" data-cal="FRESCA" onclick="window.invAgregarFila('FRESCA')" style="margin-top:4px;font-size:12px;padding:5px 10px"><i class="ti ti-plus"></i> Agregar fila fresca</button>
+        <div id="inv-sub-fresca" style="text-align:right;font-size:12px;color:#27500A;font-weight:600;margin-top:4px;display:none">Subtotal: <span id="inv-sub-val-fresca">0,000</span> m³</div>
+      </div>
+      <!-- ESPORADA -->
+      <div style="border:1.5px solid #ffe082;border-radius:10px;padding:8px;margin-bottom:8px;background:#fffdf5">
+        <div style="font-size:12px;font-weight:700;color:#633806;margin-bottom:6px">🍂 Madera Esporada</div>
+        <div id="inv-filas-esporada"></div>
+        <button class="add-btn inv-btn-grupo" data-cal="ESPORADA" onclick="window.invAgregarFila('ESPORADA')" style="margin-top:4px;font-size:12px;padding:5px 10px"><i class="ti ti-plus"></i> Agregar fila esporada</button>
+        <div id="inv-sub-esporada" style="text-align:right;font-size:12px;color:#633806;font-weight:600;margin-top:4px;display:none">Subtotal: <span id="inv-sub-val-esporada">0,000</span> m³</div>
+      </div>
+      <!-- MANCHADA -->
+      <div style="border:1.5px solid #ffccbc;border-radius:10px;padding:8px;margin-bottom:8px;background:#fff8f6">
+        <div style="font-size:12px;font-weight:700;color:#4A1B0C;margin-bottom:6px">⬛ Madera Manchada</div>
+        <div id="inv-filas-manchada"></div>
+        <button class="add-btn inv-btn-grupo" data-cal="MANCHADA" onclick="window.invAgregarFila('MANCHADA')" style="margin-top:4px;font-size:12px;padding:5px 10px"><i class="ti ti-plus"></i> Agregar fila manchada</button>
+        <div id="inv-sub-manchada" style="text-align:right;font-size:12px;color:#4A1B0C;font-weight:600;margin-top:4px;display:none">Subtotal: <span id="inv-sub-val-manchada">0,000</span> m³</div>
+      </div>
+      <div style="text-align:right;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
+        <span style="font-size:13px;color:var(--text3)">Total m³: </span>
+        <span id="inv-total" style="font-size:18px;font-weight:700;color:var(--green)">0,000</span>
+      </div>
+      <div style="margin-top:8px;text-align:right">
+        <button onclick="window.invLimpiarVolumenes()" style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;color:var(--text3);cursor:pointer"><i class="ti ti-eraser"></i> Limpiar volúmenes</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title"><i class="ti ti-notes"></i> Observaciones</div>
+      <textarea id="inv-obs" placeholder="Observaciones..." rows="2" style="width:100%;border:1px solid var(--border);border-radius:var(--radius);padding:8px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box"></textarea>
+    </div>
+    <div style="padding-bottom:24px">
+      <button id="inv-btn-guardar" class="btn-primary" onclick="window.invGuardar()" style="width:100%;padding:14px"><i class="ti ti-device-floppy"></i> Guardar y Compartir</button>
+    </div>
+  </div>
   <div id="tab-stock" style="display:none">
     <div class="section">
       <div class="section-title"><i class="ti ti-stack-2"></i> Identificación</div>
@@ -473,8 +535,10 @@ window.showTab=(t,el)=>{
   document.getElementById('tab-form').style.display=t==='form'?'block':'none';
   document.getElementById('tab-hist').style.display=t==='hist'?'block':'none';
   document.getElementById('tab-stock').style.display=t==='stock'?'block':'none';
+  document.getElementById('tab-inv').style.display=t==='inv'?'block':'none';
   if(t==='hist')loadHist();
   if(t==='stock'){if(typeof window._scInit==='function')window._scInit();else setTimeout(()=>{if(typeof window._scInit==='function')window._scInit();},300);}
+  if(t==='inv'){if(typeof window._invInit==='function')window._invInit();else setTimeout(()=>{if(typeof window._invInit==='function')window._invInit();},300);}
 };
 
 // ---- BORRADOR ----
@@ -520,6 +584,13 @@ async function cargarConfiguracionCentralizada(){
             const fundoNuevo=document.getElementById('fundo')?.value||'';
             if(fundoNuevo)scSel.value=fundoNuevo;
           }
+        }
+        // Poblar inv-fundo (inventario) directamente
+        const invSel=document.getElementById('inv-fundo');
+        if(invSel){
+          const invActual=invSel.value;
+          invSel.innerHTML=optsFundos;
+          if(invActual&&fundosLista.includes(invActual))invSel.value=invActual;
         }
       }
     }
@@ -598,6 +669,9 @@ window.addEventListener('pageshow', function(e){
   // Repoblar sc-fundo si quedó vacío (mismo problema timing en Safari iOS)
   const _scSel=document.getElementById('sc-fundo');
   if(_scSel&&_scSel.options.length<=1&&typeof scPoblarFundo==='function')scPoblarFundo();
+  // Repoblar inv-fundo si quedó vacío
+  const _invSel=document.getElementById('inv-fundo');
+  if(_invSel&&_invSel.options.length<=1&&typeof invPoblarFundo==='function')invPoblarFundo();
 });
 function guardarDraft(){try{const d=collect(true);d._eid=editId;d._ev=editVer;localStorage.setItem(DRAFT,JSON.stringify(d));}catch(e){}}
 function savePersist(){try{const p={};PERSIST_IDS.forEach(id=>{const e=document.getElementById(id);if(e)p[id]=e.value;});localStorage.setItem(PERSIST,JSON.stringify(p));}catch(e){}}
@@ -2052,7 +2126,8 @@ async function scCompartir(d){
     const canvas=await html2canvas(con,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
     document.body.removeChild(con);
     const blob=await new Promise(res=>canvas.toBlob(res,'image/png',1.0));
-    const file=new File([blob],`stock-cargas-${d.fundo||'r'}-${d.fecha||'r'}.png`,{type:'image/png'});
+    const _tsS=()=>{const n=new Date();return String(n.getHours()).padStart(2,'0')+String(n.getMinutes()).padStart(2,'0')+String(n.getSeconds()).padStart(2,'0');};
+    const file=new File([blob],`stock-cargas-${d.fundo||'r'}-${d.fecha||'r'}-${_tsS()}.png`,{type:'image/png'});
     if(navigator.share){
       try{await navigator.share({files:[file],title:'Stock de Cargas - Corte Alto'});toast('✅ Stock compartido');}
       catch(e){if(e.name!=='AbortError'){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=file.name;a.click();toast('✅ Imagen descargada');}}
@@ -2068,9 +2143,281 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(document.getElementById('tab-stock')?.style.display==='block')scPoblarFundo();
   },2000);
 });
-</script>
 
-<script>
+
+// ===== MÓDULO INVENTARIO INTERNO =====
+const COL_INV='inventario_interno';
+const INV_DRAFT='ca_inv_draft_v1';
+let invFilaId=0;
+
+window._invInit=async function(){
+  if(!document.getElementById('inv-fecha').value)
+    document.getElementById('inv-fecha').value=new Date().toISOString().split('T')[0];
+  invPoblarFundo();
+  invRegistrarListeners();
+  // Restaurar draft si existe
+  try{
+    const raw=localStorage.getItem(INV_DRAFT);
+    if(raw){
+      const dr=JSON.parse(raw);
+      if(dr.fundo)document.getElementById('inv-fundo').value=dr.fundo;
+      if(dr.obs)document.getElementById('inv-obs').value=dr.obs;
+      if(dr.filas&&dr.filas.length){
+        ['inv-filas-fresca','inv-filas-esporada','inv-filas-manchada'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
+        dr.filas.forEach(f=>invAgregarFila(f.calidad||'FRESCA',f.tipo||'',f.producto||'',f.largo||'',f.diam||'',f.vol||0));
+        invRecalcTotal();return;
+      }
+    }
+  }catch(e){}
+  // Precargar desde último stock de cargas del mismo fundo
+  // inv-fundo ya fue poblado por Firebase antes de llegar aquí
+  // Si está vacío, sincronizar con pestaña Nuevo
+  const selInv=document.getElementById('inv-fundo');
+  if(selInv&&!selInv.value){
+    const fundoPrincipal=document.getElementById('fundo')?.value||'';
+    if(fundoPrincipal&&selInv.querySelector('option[value="'+fundoPrincipal+'"],option:not([value=""])'))
+      selInv.value=fundoPrincipal;
+  }
+  if(selInv&&selInv.value)await invPrecargar();
+  else if(!document.querySelector('#inv-filas-fresca [data-inv-row]'))invAgregarFila('FRESCA');
+};
+
+function invPoblarFundo(){
+  const sel=document.getElementById('inv-fundo');if(!sel)return;
+  const tabla=FUNDOS_DIN||FUNDOS;const lista=Object.keys(tabla);
+  const actual=sel.value;
+  sel.innerHTML='<option value="">— Seleccionar —</option>'+lista.map(n=>`<option>${n}</option>`).join('');
+  if(actual&&lista.includes(actual))sel.value=actual;
+}
+
+async function invPrecargar(){
+  const fundo=document.getElementById('inv-fundo')?.value||'';
+  ['inv-filas-fresca','inv-filas-esporada','inv-filas-manchada'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
+  invRecalcTotal();
+  if(!fundo)return;
+  try{
+    // Buscar último stock_cargas del mismo fundo para precargar estructura
+    const qStock=query(collection(db,COL_STOCK),orderBy('creadoEn','desc'));
+    const snap=await getDocs(qStock);
+    let ultimo=null;
+    snap.forEach(d=>{if(!ultimo&&d.data().fundo===fundo)ultimo=d.data();});
+    if(ultimo&&ultimo.filas&&ultimo.filas.length){
+      // Pre-llena tipo/producto/largo/diam del último stock, pero vol en blanco
+      ultimo.filas.forEach(f=>invAgregarFila(f.calidad||'FRESCA',f.tipo||'',f.producto||'',f.largo||'',f.diam||'',0));
+      invRecalcTotal();return;
+    }
+  }catch(e){}
+  // Sin stock previo: agregar una fila vacía
+  invAgregarFila('FRESCA');
+}
+
+function invRegistrarListeners(){
+  const btnG=document.getElementById('inv-btn-guardar');
+  if(btnG&&!btnG._invBound){btnG._invBound=true;btnG.addEventListener('click',()=>invGuardar());}
+  document.querySelectorAll('.inv-btn-grupo').forEach(btn=>{
+    if(!btn._invBound){btn._invBound=true;btn.addEventListener('click',()=>{invAgregarFila(btn.dataset.cal);invGuardarDraft();});}
+  });
+  ['inv-filas-fresca','inv-filas-esporada','inv-filas-manchada'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&!el._invBound){el._invBound=true;el.addEventListener('input',()=>invGuardarDraft());}
+  });
+  const obs=document.getElementById('inv-obs');
+  if(obs&&!obs._invBound){obs._invBound=true;obs.addEventListener('input',()=>invGuardarDraft());}
+  const fsel=document.getElementById('inv-fundo');
+  if(fsel&&!fsel._invBound){fsel._invBound=true;fsel.addEventListener('change',()=>{invPrecargar();invGuardarDraft();});}
+}
+
+window.invAgregarFila=function(calidad='FRESCA',tipo='',prod='',largo='',diam='',vol=0){
+  const id=++invFilaId;
+  const tiposOpts=TIPOS.map(t=>`<option${t===tipo?' selected':''}>${t}</option>`).join('');
+  const row=document.createElement('div');
+  row.id='inv-row-'+id;row.dataset.invRow='1';row.dataset.invCal=calidad;
+  row.style.cssText='background:var(--surface-1);border:0.5px solid var(--border);border-radius:8px;padding:4px 6px;margin-bottom:5px';
+  const prodSel=`<select class="inv-prod-sel" style="font-size:11px;padding:3px 2px;width:100%"><option value="${prod}">${prod||'— Prod —'}</option></select>`;
+  const volStr=vol?String(vol).replace('.',','):'';
+  row.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 50px 60px 70px 28px;gap:3px;align-items:center;margin-bottom:3px">
+      <select class="inv-tipo-sel" style="font-size:11px;padding:3px 2px"><option value="">— Tipo —</option>${tiposOpts}</select>
+      ${prodSel}
+      <input type="text" inputmode="decimal" value="${largo}" placeholder="0,00" class="inv-largo-inp" style="text-align:center;font-size:11px;padding:3px 2px;width:100%">
+      <input type="text" value="${diam}" placeholder="8-28" class="inv-diam-inp" style="text-align:center;font-size:11px;padding:3px 2px;width:100%">
+      <input type="text" inputmode="decimal" value="${volStr}" placeholder="0,000" class="inv-vol-inp" style="text-align:center;font-size:12px;font-weight:600;padding:3px 2px;width:100%">
+      <button class="inv-del-btn" style="background:#fff;color:var(--red);border:1px solid #F7C1C1;border-radius:6px;padding:3px 5px;cursor:pointer"><i class="ti ti-trash"></i></button>
+    </div>
+    <input type="hidden" class="inv-cal-inp" value="${calidad}">`;
+  const contenedor=calidad==='ESPORADA'?'inv-filas-esporada':calidad==='MANCHADA'?'inv-filas-manchada':'inv-filas-fresca';
+  (document.getElementById(contenedor)||document.getElementById('inv-filas-fresca')).appendChild(row);
+  // Eventos
+  const volInp=row.querySelector('.inv-vol-inp');
+  volInp.addEventListener('input',()=>{
+    let v=volInp.value.replace('.',',').replace(/[^0-9,]/g,'');
+    const p=v.split(',');if(p.length>1)v=p[0]+','+p[1].slice(0,3);
+    volInp.value=v;invRecalcTotal();
+  });
+  const largoInp=row.querySelector('.inv-largo-inp');
+  largoInp.addEventListener('input',()=>{
+    let v=largoInp.value.replace('.',',').replace(/[^0-9,]/g,'');
+    const p=v.split(',');if(p.length>1)v=p[0]+','+p[1].slice(0,2);
+    largoInp.value=v;
+  });
+  largoInp.addEventListener('blur',()=>{
+    let v=largoInp.value.replace('.',',').trim();
+    if(!v)return;const p=v.split(',');
+    largoInp.value=(p[0]||'0')+','+(p[1]||'').padEnd(2,'0').slice(0,2);
+  });
+  // Diámetro: sugerencia si falta guión
+  const diamInp=row.querySelector('.inv-diam-inp');
+  diamInp.addEventListener('blur',()=>{
+    const v=diamInp.value.trim();
+    let hint=diamInp.parentNode?.querySelector('.inv-diam-hint');
+    if(v&&!v.includes('-')){
+      if(!hint){hint=document.createElement('div');hint.className='inv-diam-hint';hint.style.cssText='color:#A32D2D;font-size:10px;margin-top:2px';diamInp.parentNode.appendChild(hint);}
+      hint.textContent='Se sugiere formato con guión (ej: 8-28)';
+    }else{if(hint)hint.remove();}
+  });
+  diamInp.addEventListener('input',()=>{const hint=diamInp.parentNode?.querySelector('.inv-diam-hint');if(hint)hint.remove();});
+  const tipoSel=row.querySelector('.inv-tipo-sel');
+  tipoSel.addEventListener('change',()=>invActualizarProdSel(row,tipoSel.value,prod));
+  if(tipo)invActualizarProdSel(row,tipo,prod);
+  row.querySelector('.inv-del-btn').addEventListener('click',()=>{row.remove();invRecalcTotal();invGuardarDraft();});
+  invRecalcTotal();
+};
+
+function invActualizarProdSel(row,tipo,selProd=''){
+  const ps=row.querySelector('.inv-prod-sel');if(!ps)return;
+  const esp=Object.keys(PRODUCTOS)[0];
+  const opts=(PRODUCTOS[esp]||[]).map(p=>`<option${p===selProd?' selected':''}>${p}</option>`).join('');
+  ps.innerHTML=`<option value="">— Prod —</option>${opts}`;
+  if(selProd)ps.value=selProd;
+}
+
+function invRecalcTotal(){
+  const grupos={FRESCA:0,ESPORADA:0,MANCHADA:0};
+  document.querySelectorAll('.inv-vol-inp').forEach(inp=>{
+    const row=inp.closest('[data-inv-row]');
+    const cal=row?.querySelector('.inv-cal-inp')?.value||'FRESCA';
+    grupos[cal]=(grupos[cal]||0)+(parseFloat((inp.value||'0').replace(',','.'))||0);
+  });
+  ['FRESCA','ESPORADA','MANCHADA'].forEach(cal=>{
+    const id=cal.toLowerCase();
+    const sub=document.getElementById('inv-sub-'+id);
+    const val=document.getElementById('inv-sub-val-'+id);
+    const sec=document.getElementById('inv-filas-'+id);
+    const tiene=sec&&sec.children.length>0;
+    if(sub)sub.style.display=tiene?'block':'none';
+    if(val){const n=Math.round(grupos[cal]*1000)/1000;val.textContent=n.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3});}
+  });
+  const total=Math.round(Object.values(grupos).reduce((a,b)=>a+b,0)*1000)/1000;
+  const el=document.getElementById('inv-total');
+  if(el)el.textContent=total.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3});
+}
+
+function invCollect(){
+  const fundo=document.getElementById('inv-fundo')?.value||'';
+  const fecha=document.getElementById('inv-fecha')?.value||'';
+  const obs=document.getElementById('inv-obs')?.value||'';
+  const filas=[];
+  const orden=['FRESCA','ESPORADA','MANCHADA'];
+  const ids={FRESCA:'inv-filas-fresca',ESPORADA:'inv-filas-esporada',MANCHADA:'inv-filas-manchada'};
+  orden.forEach(cal=>{
+    document.getElementById(ids[cal])?.querySelectorAll('[data-inv-row]').forEach(row=>{
+      const tipo=row.querySelector('.inv-tipo-sel')?.value||'';
+      const prod=row.querySelector('.inv-prod-sel')?.value||'';
+      const largo=row.querySelector('.inv-largo-inp')?.value||'';
+      const diam=row.querySelector('.inv-diam-inp')?.value||'';
+      const calidad=row.querySelector('.inv-cal-inp')?.value||cal;
+      const vol=parseFloat((row.querySelector('.inv-vol-inp')?.value||'0').replace(',','.'))||0;
+      filas.push({tipo,producto:prod,largo,diam,calidad,vol});
+    });
+  });
+  const total=Math.round(filas.reduce((a,f)=>a+f.vol,0)*1000)/1000;
+  return{fundo,fecha,filas,total,obs,creadoEn:new Date().toISOString()};
+}
+
+function invGuardarDraft(){try{localStorage.setItem(INV_DRAFT,JSON.stringify(invCollect()));}catch(e){}}
+
+window.invLimpiarVolumenes=function(){
+  document.querySelectorAll('.inv-vol-inp').forEach(inp=>{inp.value='';inp.classList.remove('campo-error');});
+  invRecalcTotal();
+  invGuardarDraft();
+};
+
+window.invGuardar=async function(){
+  const d=invCollect();
+  if(!d.fundo){
+    const el=document.getElementById('inv-fundo');
+    el?.classList.add('campo-error');el?.scrollIntoView({behavior:'smooth',block:'center'});
+    mostrarErrorCampo(el,'Selecciona el fundo');return;
+  }
+  loader(true,'Guardando inventario...');
+  try{
+    await addDoc(collection(db,COL_INV),d);
+    try{localStorage.removeItem(INV_DRAFT);}catch(e){}
+    loader(false);toast('✅ Inventario guardado');
+    await invCompartir(d);
+  }catch(e){loader(false);toast('❌ Error: '+e.message);}
+};
+
+async function invCompartir(d){
+  const G='#2d5a2d';
+  const CAL_ESTILO={
+    FRESCA:{color:'#27500A',bg:'#EAF3DE',titulo:'🌿 Madera Fresca'},
+    ESPORADA:{color:'#633806',bg:'#FFFBEA',titulo:'🍂 Madera Esporada'},
+    MANCHADA:{color:'#4A1B0C',bg:'#FAECE7',titulo:'⬛ Madera Manchada'},
+  };
+  const grupos={};
+  (d.filas||[]).forEach(f=>{const k=f.calidad||'FRESCA';if(!grupos[k])grupos[k]=[];grupos[k].push(f);});
+  const codFundo=(FUNDOS_DIN&&FUNDOS_DIN[d.fundo])||FUNDOS[d.fundo]||'';
+  const codCancha=(window.CANCHA_DIN&&window.CANCHA_DIN[d.fundo])||'';
+  const subTitulo=[codFundo?'Cód. '+codFundo:'',codCancha?'Cancha '+codCancha:''].filter(Boolean).join(' · ');
+  const tablaPorCal=['FRESCA','ESPORADA','MANCHADA'].filter(k=>grupos[k]?.length).map(k=>{
+    const est=CAL_ESTILO[k];
+    const sub=Math.round(grupos[k].reduce((a,f)=>a+(f.vol||0),0)*1000)/1000;
+    const subStr=sub.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3});
+    const fTr=grupos[k].map(f=>{
+      const vStr=(f.vol||0).toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3});
+      return`<tr style="border-top:1px solid #e8e8e8"><td style="padding:2px 5px;font-size:11px">${f.tipo||'—'}</td><td style="padding:2px 5px;font-size:11px;text-align:center">${f.producto||'—'}</td><td style="padding:2px 5px;font-size:11px;text-align:center">${f.largo||'—'}</td><td style="padding:2px 5px;font-size:11px;text-align:center">${f.diam||'—'}</td><td style="padding:2px 5px;font-size:12px;font-weight:700;text-align:right;color:${G}">${vStr}</td></tr>`;
+    }).join('');
+    const subRow=`<tr style="background:${est.bg}"><td colspan="5" style="padding:3px 5px;font-size:11px;font-weight:700;color:${est.color};text-align:right">Subtotal: ${subStr} m³</td></tr>`;
+    return`<div style="margin-bottom:10px"><div style="background:${est.bg};color:${est.color};font-size:11px;font-weight:700;text-transform:uppercase;padding:4px 8px;border-radius:6px;margin-bottom:4px">${est.titulo}</div><table style="width:100%;border-collapse:collapse"><tr style="background:#ececec"><th style="padding:2px 5px;font-size:10px;text-align:left">Tipo</th><th style="padding:2px 5px;font-size:10px">Prod.</th><th style="padding:2px 5px;font-size:10px">Largo</th><th style="padding:2px 5px;font-size:10px">Diám.</th><th style="padding:2px 5px;font-size:10px;text-align:right">Vol m³</th></tr>${fTr}${subRow}</table></div>`;
+  }).join('');
+  const con=document.createElement('div');
+  con.style.cssText='width:700px;background:#fff;font-family:-apple-system,sans-serif;color:#1a1a1a;border-radius:12px;overflow:hidden;padding:0';
+  con.innerHTML=`
+    <div style="background:#234a23;padding:14px 16px;color:#fff;position:relative">
+      <div style="position:absolute;top:8px;right:10px;height:72px;width:84px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:3px">
+        <img src="${LOGO_B64}" alt="Corte Alto" style="height:66px;width:78px;object-fit:contain">
+      </div>
+      <div style="font-size:8px;opacity:.7;text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">📋 Inventario Interno · Corte Alto</div>
+      <div style="font-size:18px;font-weight:800;margin-bottom:1px;padding-right:70px">${d.fundo||'—'}</div>
+      ${subTitulo?`<div style="font-size:12px;opacity:.85;margin-bottom:1px">${subTitulo}</div>`:''}
+      <div style="font-size:12px;font-weight:700;opacity:.9">${d.fecha||'—'}</div>
+    </div>
+    <div style="padding:12px">
+      ${tablaPorCal||'<p style="color:#888;font-size:12px">Sin filas ingresadas</p>'}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 14px;background:#EAF3DE;border-radius:9px;border:1.5px solid ${G}">
+        <span style="font-size:13px;font-weight:700;color:#27500A;text-transform:uppercase">Total m³</span>
+        <span style="font-size:26px;font-weight:800;color:#27500A">${d.total.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3})}</span>
+      </div>
+      ${d.obs?`<div style="margin-top:8px;padding:8px 10px;background:#f8f8f8;border-radius:8px;font-size:11px;color:#555"><strong>Observaciones:</strong> ${d.obs}</div>`:''}
+    </div>`;
+  document.body.appendChild(con);
+  try{
+    const canvas=await html2canvas(con,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+    document.body.removeChild(con);
+    const blob=await new Promise(res=>canvas.toBlob(res,'image/png',1.0));
+    const _tsI=()=>{const n=new Date();return String(n.getHours()).padStart(2,'0')+String(n.getMinutes()).padStart(2,'0')+String(n.getSeconds()).padStart(2,'0');};
+    const file=new File([blob],`inventario-${d.fundo||'r'}-${d.fecha||'r'}-${_tsI()}.png`,{type:'image/png'});
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],title:'Inventario Interno - Corte Alto'});toast('✅ Inventario compartido');}
+      catch(e){if(e.name!=='AbortError'){toast('❌ No se pudo compartir');}}
+    }else{
+      toast('⚠️ Tu dispositivo no soporta compartir archivos directamente');
+    }
+  }catch(e){if(document.body.contains(con))document.body.removeChild(con);}
+}
+// ===== FIN MÓDULO INVENTARIO =====
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').then(reg => {
@@ -2094,6 +2441,6 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
-</script>
-</body>
+
+</script></body>
 </html>
