@@ -79,18 +79,38 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
 .card-body{padding:16px;}
 
 /* KPI GRID */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+/* KPI layout */
+.kpi-grid{display:flex;flex-direction:column;gap:0;}
+.kpi-seccion-wrap{padding:10px 0;border-bottom:1px solid var(--vb);}
+.kpi-seccion-wrap:last-child{border-bottom:none;}
+/* Fila resumen */
+.kpi-fila-resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;}
+/* Fila peores/mejores: 3 grupos de 2 separados */
+.kpi-fila-6{display:flex;gap:8px;align-items:stretch;}
+.kpi-grupo-flota{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;}
+.kpi-sep-flota{width:1px;background:var(--vb);flex-shrink:0;margin:0 4px;}
+/* Header de sección */
+.kpi-seccion-header{font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.6px;color:var(--ts);margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+/* Tarjeta base */
 .kpi{
   background:var(--fon);border:1px solid var(--vb);border-radius:7px;
-  padding:12px 14px;display:flex;flex-direction:column;gap:3px;
+  padding:10px 12px;display:flex;flex-direction:column;gap:2px;
 }
-.kpi .kv{font-size:24px;font-weight:700;line-height:1;color:var(--vd);}
+.kpi .kv{font-size:20px;font-weight:700;line-height:1;color:var(--vd);}
 .kpi .kl{font-size:10px;color:var(--ts);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
 .kpi .ks{font-size:11px;color:var(--ts);}
 .kpi.rojo .kv{color:var(--rojo);}
-.kpi.naranja .kv{color:var(--naranja);}
+.kpi.naranja .kv{color:#b7770d;}
 .kpi.verde .kv{color:var(--ac2);}
 .kpi.azul .kv{color:var(--azul);}
+/* Badge flota */
+.kpi-badge{display:inline-block;font-size:9px;font-weight:700;
+  padding:1px 7px;border-radius:8px;color:#fff;margin-bottom:3px;
+  letter-spacing:.3px;width:fit-content;}
+.kpi-badge.fur{background:#2980b9;}
+.kpi-badge.pick{background:#8e44ad;}
+.kpi-badge.cam{background:#e67e22;}
 
 /* ALERTAS SIN GPS */
 .alerta-gps{
@@ -267,23 +287,17 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
   padding:6px 12px;border-radius:5px;font-size:12px;cursor:pointer;
 }
 /* KPI DESTACADO PEOR/MEJOR */
-.kpi.peor{
-  background:var(--rojo-s);border:1.5px solid #f5b7b1;
-}
+.kpi.peor{background:var(--rojo-s);border:1.5px solid #f5b7b1;}
 .kpi.peor .kv{color:var(--rojo);}
 .kpi.peor .kl{color:#922b21;}
-.kpi.mejor{
-  background:#eaf4fb;border:1.5px solid #aed6f1;
-}
+.kpi.mejor{background:#eaf4fb;border:1.5px solid #aed6f1;}
 .kpi.mejor .kv{color:#1a6fa8;}
 .kpi.mejor .kl{color:#1a6fa8;}
 .kpi-ico{font-size:15px;margin-bottom:2px;line-height:1;}
-/* SECCIÓN PEORES/MEJORES */
-.kpi-seccion-titulo{
-  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
-  color:var(--ts);padding:4px 2px 2px;grid-column:1/-1;margin-top:4px;
-  border-top:1px solid var(--vb);
-}
+.kpi.naranja{background:#fef9ec;border:1.5px solid #f9d67a;}
+.kpi.naranja .kv{color:#b7770d;}
+.kpi.naranja .kl{color:#7a4f00;}
+/* sección peores/mejores — estilos en .kpi-seccion-header arriba */
 
 /* TABLA GEOCERCA */
 .tabla-geo{width:100%;border-collapse:collapse;font-size:12px;}
@@ -353,7 +367,8 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
   <div class="card" id="sec-graficos" style="display:none;">
     <div class="card-head"><span class="acc"></span><h2>Gráficos de flota</h2>
       <div style="margin-left:auto;display:flex;gap:6px;">
-        <button class="tab-btn on" data-g="excesos" onclick="cambiarGrafico(this)">Excesos</button>
+        <button class="tab-btn on" data-g="excesos_flota" onclick="cambiarGrafico(this)">Excesos flota</button>
+        <button class="tab-btn" data-g="excesos_geo" onclick="cambiarGrafico(this)">Excesos geocerca</button>
         <button class="tab-btn" data-g="km" onclick="cambiarGrafico(this)">Km recorridos</button>
         <button class="tab-btn" data-g="tendencia" onclick="cambiarGrafico(this)">Km/Exceso</button>
       </div>
@@ -500,9 +515,24 @@ const COL = 'gps_registros';
 /* ─── ESTADO ─── */
 let datos = [];      // array de días cargados
 let graficoActual = null;
-let modoGrafico = 'excesos';
+let modoGrafico = 'excesos_flota';
 let sinGPS5dias = new Set();
-let eventosGeoCache = []; // eventos geocerca del período // patentes con 5+ días consecutivos sin GPS (desde Firestore)
+let eventosGeoCache = [];
+
+/* ─── MAPA FIJO PATENTES → FLOTA ─── */
+const MAPA_FLOTAS = {
+  'HCKS-45':'Camión','KZHW-23':'Camión','RHRV-53':'Camión','VFGG-39':'Camión',
+  'JRFW-97':'Furgón','RGJF-19':'Furgón','SPZL99':'Furgón',
+  'SZFH-90':'Furgón','SZFH-91':'Furgón','VFGD-83':'Furgón',
+  'GDXH-55':'PickUp','GDXH-56':'PickUp','JBVR-17':'PickUp','JRFW-54':'PickUp',
+  'KLKJ-65':'PickUp','KSDC-28':'PickUp','LGVW-36':'PickUp','LRHV-61':'PickUp',
+  'LRHV-62':'PickUp','LRHV-63':'PickUp','LRYK-45':'PickUp','LRYK-46':'PickUp',
+  'RRZC-83':'PickUp','SFCP-18':'PickUp','SFCP-19':'PickUp','SLGB-66':'PickUp',
+  'STWW-57':'PickUp','STWW-61':'PickUp','STWW43':'PickUp','SZGB-73':'PickUp',
+  'TSKK-30':'PickUp','VDSZ-52':'PickUp','VLGL-81':'PickUp','VPXT-63':'PickUp',
+  'TWPT56':'Máquina',
+};
+function flotaDe(patente) { return MAPA_FLOTAS[patente] || 'Otro'; }
 
 /* ─── INICIO ─── */
 document.addEventListener('DOMContentLoaded', () => {
@@ -587,87 +617,109 @@ function renderKPIs() {
   const todosMoviles = datos.flatMap(d => d.moviles);
   const totalKm  = todosMoviles.reduce((s,m) => s+(m.km||0), 0);
   const totalGeo = todosMoviles.reduce((s,m) => s+(m.excGeo||0), 0);
-
   const porMovil = agruparPorMovil();
-  const movArr = Object.values(porMovil);
+  const movArr   = Object.values(porMovil);
 
-  // ── helpers ──
   const cond1 = m => escH(m.conductores ? ([...m.conductores][0]||'') : '');
-  const kpi = (cls,ico,label,val,sub) =>
-    `<div class="kpi ${cls}"><div class="kpi-ico">${ico}</div><div class="kl">${label}</div><div class="kv">${val}</div><div class="ks">${sub}</div></div>`;
-  const sep = txt =>
-    `<div class="kpi-seccion-titulo">${txt}</div>`;
 
-  // ── TOTALES (neutros) ──
-  let html =
+  const kpi = (cls,ico,label,val,sub) =>
+    `<div class="kpi ${cls}">
+      <div class="kpi-ico">${ico}</div>
+      <div class="kl">${label}</div>
+      <div class="kv">${val}</div>
+      <div class="ks">${sub}</div>
+    </div>`;
+
+  // tarjeta con badge de flota
+  const kpiB = (cls, bCls, bTxt, label, val, sub) =>
+    `<div class="kpi ${cls}">
+      <span class="kpi-badge ${bCls}">${bTxt}</span>
+      <div class="kl">${label}</div>
+      <div class="kv">${val}</div>
+      <div class="ks">${sub}</div>
+    </div>`;
+
+  const secH = (ico,txt) =>
+    `<div class="kpi-seccion-header">${ico} ${txt}</div>`;
+
+  const FLOTAS = [
+    { key:'furgon', label:'Furgón',  tipos:['Furgón'], badge:'fur', ico:'🚐' },
+    { key:'pickup', label:'PickUp',  tipos:['PickUp'], badge:'pick', ico:'🛻' },
+    { key:'camion', label:'Camión',  tipos:['Camión'], badge:'cam',  ico:'🚚' },
+  ];
+  const tot = {};
+  FLOTAS.forEach(f => {
+    const arr = movArr.filter(m => f.tipos.includes(m.tipo));
+    tot[f.key] = { excGeo: arr.reduce((s,m)=>s+m.excGeo,0),
+                   excRuta: arr.reduce((s,m)=>s+m.excRuta,0), arr };
+  });
+
+  // ══ RESUMEN ══
+  let html = `<div class="kpi-seccion-wrap"><div class="kpi-fila-resumen">` +
     kpi('azul','📅','Días con datos', datos.length, 'en el período') +
-    kpi('verde','🚛','Km totales flota', Math.round(totalKm).toLocaleString('es-CL')+' km', 'acumulados') +
+    kpi('verde','🚛','Km totales flota', Math.round(totalKm).toLocaleString('es-CL')+' km','acumulados') +
     kpi('rojo','⚠️','Exc. geocercas total', totalGeo, 'eventos en el período') +
     `<div class="kpi ${sinGPS5dias.size>0?'rojo':'verde'}" id="kpi-sin-gps">
       <div class="kpi-ico">${sinGPS5dias.size>0?'📵':'✅'}</div>
       <div class="kl">Sin GPS/movimiento</div>
       <div class="kv">${sinGPS5dias.size}</div>
       <div class="ks">${sinGPS5dias.size>0?sinGPS5dias.size+' patente(s) sin señal':'Flota operativa normal'}</div>
-    </div>`;
+    </div>` +
+    kpi('naranja','🚐','Total exc. Furgones', tot.furgon.excGeo+tot.furgon.excRuta,
+      tot.furgon.excGeo+' geocerca · '+tot.furgon.excRuta+' vel.') +
+    kpi('naranja','🚚','Total exc. Camiones', tot.camion.excGeo+tot.camion.excRuta,
+      tot.camion.excGeo+' geocerca · '+tot.camion.excRuta+' vel.') +
+    kpi('naranja','🛻','Total exc. PickUp', tot.pickup.excGeo+tot.pickup.excRuta,
+      tot.pickup.excGeo+' geocerca · '+tot.pickup.excRuta+' vel.') +
+    `</div></div>`;
 
-  // ── PEORES (rojo) ──
-  html += sep('🔴 Peores del período');
-
-  // Geocerca — mayor infractor total
-  const peorGeo = movArr.filter(m=>m.excGeo>0).sort((a,b)=>b.excGeo-a.excGeo)[0];
-  if (peorGeo) html += kpi('peor','🚨','Más exc. geocerca', peorGeo.patente,
-    peorGeo.excGeo+' eventos · '+cond1(peorGeo));
-
-  // Velocidad por tipo
-  const tipos = [
-    { label:'Vel. máx. Furgón',    tipos:['Furgón'],           limite:'90 km/h' },
-    { label:'Vel. máx. PickUp',    tipos:['PickUp'],           limite:'120 km/h' },
-    { label:'Vel. máx. Camioneta', tipos:['Camioneta','Cam. Combustible'], limite:'—' },
-  ];
-  tipos.forEach(t => {
-    const peor = movArr
-      .filter(m => t.tipos.includes(m.tipo) && m.velMaxRuta>0)
-      .sort((a,b)=>b.velMaxRuta-a.velMaxRuta)[0];
-    if (peor) html += kpi('peor','💨', t.label, peor.patente,
-      peor.velMaxRuta+' km/h máx · '+cond1(peor));
+  // ══ PEORES ══
+  html += `<div class="kpi-seccion-wrap">` + secH('🔴','Peores del período') +
+    `<div class="kpi-fila-6">`;
+  FLOTAS.forEach((f,i) => {
+    const arr = tot[f.key].arr;
+    const peorGeo = [...arr].filter(m=>m.excGeo>0).sort((a,b)=>b.excGeo-a.excGeo)[0];
+    const peorVel = [...arr].filter(m=>m.excRuta>0).sort((a,b)=>b.excRuta-a.excRuta)[0];
+    if (i>0) html += `<div class="kpi-sep-flota"></div>`;
+    html += `<div class="kpi-grupo-flota">`;
+    html += peorGeo
+      ? kpiB('peor',f.badge,f.label,'Peor geocerca',
+          peorGeo.patente, peorGeo.excGeo+' eventos · '+cond1(peorGeo))
+      : kpiB('verde',f.badge,f.label,'Geocerca','—','Sin infracciones');
+    html += peorVel
+      ? kpiB('peor',f.badge,f.label,'Peor velocidad',
+          peorVel.patente, peorVel.excRuta+' excesos · '+cond1(peorVel))
+      : kpiB('verde',f.badge,f.label,'Velocidad','—','Sin infracciones');
+    html += `</div>`;
   });
+  html += `</div></div>`;
 
-  // Menos km (posible inactividad — excluir sinGPS)
-  const menosKm = movArr.filter(m=>!sinGPS5dias.has(m.patente)&&m.km>0).sort((a,b)=>a.km-b.km)[0];
-  if (menosKm) html += kpi('peor','📉','Menor recorrido', menosKm.patente,
-    Math.round(menosKm.km)+' km · '+cond1(menosKm));
-
-  // ── MEJORES (azul) ──
-  html += sep('🔵 Mejores del período');
-
-  // Más km sin excesos geocerca
-  const mejorGeo = movArr.filter(m=>m.excGeo===0&&m.km>0).sort((a,b)=>b.km-a.km)[0];
-  if (mejorGeo) html += kpi('mejor','🏅','Sin exc. geocerca + más km', mejorGeo.patente,
-    Math.round(mejorGeo.km)+' km · '+cond1(mejorGeo));
-
-  // Sin ningún exceso (ni geo ni ruta) con más km
-  const sinExc = movArr.filter(m=>m.excGeo===0&&m.excRuta===0&&m.km>0).sort((a,b)=>b.km-a.km)[0];
-  if (sinExc) html += kpi('mejor','⭐','Sin excesos · más recorrido', sinExc.patente,
-    Math.round(sinExc.km)+' km · '+cond1(sinExc));
-
-  // Mejor por tipo (menor vel máx en ruta, con km suficientes)
-  const tiposMejor = [
-    { label:'Mejor vel. Furgón',    tipos:['Furgón'] },
-    { label:'Mejor vel. PickUp',    tipos:['PickUp'] },
-    { label:'Mejor vel. Camioneta', tipos:['Camioneta','Cam. Combustible'] },
-  ];
-  tiposMejor.forEach(t => {
-    const mejor = movArr
-      .filter(m => t.tipos.includes(m.tipo) && m.km>0 && m.velMaxRuta>0)
-      .sort((a,b)=>a.velMaxRuta-b.velMaxRuta)[0];
-    if (mejor) html += kpi('mejor','✅', t.label, mejor.patente,
-      mejor.velMaxRuta+' km/h máx · '+cond1(mejor));
+  // ══ MEJORES ══
+  html += `<div class="kpi-seccion-wrap">` + secH('🔵','Mejor comportamiento') +
+    `<div class="kpi-fila-6">`;
+  FLOTAS.forEach((f,i) => {
+    const arr = tot[f.key].arr.filter(m=>m.km>0);
+    const sinGeo = [...arr].filter(m=>m.excGeo===0).sort((a,b)=>b.km-a.km)[0]
+      || [...arr].sort((a,b)=>a.excGeo-b.excGeo)[0];
+    const sinVel = [...arr].filter(m=>m.excRuta===0).sort((a,b)=>b.km-a.km)[0]
+      || [...arr].sort((a,b)=>a.excRuta-b.excRuta)[0];
+    if (i>0) html += `<div class="kpi-sep-flota"></div>`;
+    html += `<div class="kpi-grupo-flota">`;
+    html += sinGeo
+      ? kpiB('mejor',f.badge,f.label,'Comportamiento geocerca',
+          sinGeo.patente,
+          sinGeo.excGeo===0?'Sin eventos · '+Math.round(sinGeo.km)+' km'
+                           :sinGeo.excGeo+' eventos (menor) · '+cond1(sinGeo))
+      : kpiB('azul',f.badge,f.label,'Geocerca','—','Sin datos');
+    html += sinVel
+      ? kpiB('mejor',f.badge,f.label,'Comportamiento velocidad',
+          sinVel.patente,
+          sinVel.excRuta===0?'Sin excesos · '+Math.round(sinVel.km)+' km'
+                            :sinVel.excRuta+' excesos (menor) · '+cond1(sinVel))
+      : kpiB('azul',f.badge,f.label,'Velocidad','—','Sin datos');
+    html += `</div>`;
   });
-
-  // Mayor recorrido general
-  const mayorKm = [...movArr].sort((a,b)=>b.km-a.km)[0];
-  if (mayorKm) html += kpi('mejor','🚀','Mayor recorrido', mayorKm.patente,
-    Math.round(mayorKm.km)+' km · '+cond1(mayorKm));
+  html += `</div></div>`;
 
   document.getElementById('kpi-grid').innerHTML = html;
   actualizarAlertaSinGPS();
@@ -680,7 +732,7 @@ function agruparPorMovil() {
     (dia.moviles||[]).forEach(m => {
       const p = m.patente;
       if (!map[p]) map[p] = {
-        patente: p, tipo: m.tipo||'', km: 0,
+        patente: p, tipo: flotaDe(p), km: 0,
         excGeo: 0, excRuta: 0, velMaxRuta: 0,
         conductores: new Set(), dias: 0
       };
@@ -705,32 +757,57 @@ function renderGrafico() {
   Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
   Chart.defaults.font.size = 11;
 
-  if (modoGrafico === 'excesos') {
-    const sorted = moviles.sort((a,b) => (b.excGeo+b.excRuta)-(a.excGeo+a.excRuta)).slice(0,20);
+  if (modoGrafico === 'excesos_flota') {
+    // Solo excesos de velocidad en ruta (por flota), top 20
+    const sorted = [...moviles].filter(m=>m.excRuta>0).sort((a,b)=>b.excRuta-a.excRuta).slice(0,20);
+    const colorFlota = m =>
+      m.tipo==='Furgón' ? '#2980b9' :
+      m.tipo==='PickUp' ? '#8e44ad' : '#e67e22';
     graficoActual = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: sorted.map(m => m.patente),
-        datasets: [
-          {
-            label: 'Geocercas',
-            data: sorted.map(m => m.excGeo),
-            backgroundColor: '#c0392b',
-            borderRadius: 3,
-          },
-          {
-            label: 'Ruta',
-            data: sorted.map(m => m.excRuta),
-            backgroundColor: '#e67e22',
-            borderRadius: 3,
-          }
-        ]
+        datasets: [{
+          label: 'Excesos velocidad flota',
+          data: sorted.map(m => m.excRuta),
+          backgroundColor: sorted.map(m => colorFlota(m)),
+          borderRadius: 3,
+        }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'top' },
-          title: { display: true, text: 'Excesos de velocidad por móvil (top 20)', color: '#1a3a1a', font: { weight: '700' } }
+          legend: { display: false },
+          title: { display: true, text: 'Excesos de velocidad en ruta por móvil — top 20 (🔵 Furgón · 🟠 Camión · 🟣 PickUp)', color: '#1a3a1a', font: { weight: '700' } },
+          tooltip: { callbacks: { label: ctx => ctx.parsed.y + ' excesos de velocidad' } }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, grid: { color: '#e8f0e8' } }
+        }
+      }
+    });
+
+  } else if (modoGrafico === 'excesos_geo') {
+    // Solo excesos en geocercas, top 20
+    const sorted = [...moviles].filter(m=>m.excGeo>0).sort((a,b)=>b.excGeo-a.excGeo).slice(0,20);
+    graficoActual = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: sorted.map(m => m.patente),
+        datasets: [{
+          label: 'Excesos en geocercas',
+          data: sorted.map(m => m.excGeo),
+          backgroundColor: '#c0392b',
+          borderRadius: 3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: 'Excesos de velocidad en geocercas por móvil — top 20', color: '#1a3a1a', font: { weight: '700' } },
+          tooltip: { callbacks: { label: ctx => ctx.parsed.y + ' excesos en geocercas' } }
         },
         scales: {
           x: { grid: { display: false } },
@@ -938,7 +1015,7 @@ function cambiarTab(btn, panelId) {
 
 /* ─── UTILS ─── */
 function badgeTipo(tipo) {
-  const m = {'Furgón':'t-fur','Camioneta':'t-cam','Cam. Combustible':'t-cam','PickUp':'t-pick','Skidder':'t-sk'};
+  const m = {'Furgón':'t-fur','Camión':'t-cam','Camioneta':'t-cam','Cam. Combustible':'t-cam','PickUp':'t-pick','Skidder':'t-sk','Máquina':'t-sk'};
   return `<span class="badge-tipo ${m[tipo]||'t-otro'}">${tipo||'—'}</span>`;
 }
 function fmtISO(d) { return d.toISOString().slice(0,10); }
