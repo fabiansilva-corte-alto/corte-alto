@@ -225,13 +225,20 @@
         <div class="eq-box" id="eq-box"></div>
       </div>
 
-      <div style="display:flex;gap:12px;align-items:flex-end">
-        <div class="fg" style="flex:1">
-          <label>Mes / Año</label>
-          <input type="month" id="mes-anio"/>
+      <div class="fg">
+        <label>Rango de fechas</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:3px">Desde</div>
+            <input type="date" id="fecha-desde" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:7px 10px;font-size:13px;outline:none;width:100%"/>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:3px">Hasta</div>
+            <input type="date" id="fecha-hasta" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:7px 10px;font-size:13px;outline:none;width:100%"/>
+          </div>
         </div>
-        <button class="btn-load" id="btn-cargar" disabled>Cargar datos</button>
       </div>
+      <button class="btn-load" id="btn-cargar" disabled>Cargar datos</button>
       <div class="ibox" id="info-ca"></div>
     </div>
 
@@ -347,7 +354,7 @@ const db = getFirestore(app);
 const EQUIPOS = ["ALPINE-1","ALPINE-2","ALPINE-3","SK625N1","SK625N2","SK625N3","SK635E"];
 
 const S = {
-  linea:"", equipos:new Set(), mesAnio:"",
+  linea:"", equipos:new Set(), fechaDesde:"", fechaHasta:"",
   datosCA:[],    // [{dia, volumen, n, desglose:{eq:{op:vol}}}]
   datosMN:[], manuales:{},
   estructuraEq:{}, // {equipo:[operadores]} para encabezado
@@ -357,7 +364,7 @@ const S = {
 const selLinea = document.getElementById("sel-linea");
 const eqBox    = document.getElementById("eq-box");
 const eqCount  = document.getElementById("eq-count");
-const mesInp   = document.getElementById("mes-anio");
+// fechas manejadas inline
 const btnCar   = document.getElementById("btn-cargar");
 const xlDrop   = document.getElementById("xl-drop");
 const xlFile   = document.getElementById("xl-file");
@@ -366,12 +373,19 @@ const btnClrXL = document.getElementById("btn-clr-xl");
 const infoCA   = document.getElementById("info-ca");
 const infoMN   = document.getElementById("info-mn");
 // tbody reemplazado por data-rows
-const pillsEl  = document.getElementById("pills");
+const pillsEl  = {style:{display:"none"}}; // pills eliminado
 const manList  = document.getElementById("manual-list");
 
 // ── Init checkboxes ───────────────────────────────────────────────────
-mesInp.value = new Date().toISOString().slice(0,7);
-S.mesAnio = mesInp.value;
+// Inicializar rango: primer día del mes actual → hoy
+(function(){
+  var hoy = new Date();
+  var primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  document.getElementById("fecha-desde").value = primerDia.toISOString().slice(0,10);
+  document.getElementById("fecha-hasta").value = hoy.toISOString().slice(0,10);
+  S.fechaDesde = document.getElementById("fecha-desde").value;
+  S.fechaHasta = document.getElementById("fecha-hasta").value;
+})();
 eqBox.innerHTML = EQUIPOS.map(eq=>`
   <label class="eq-item" id="lbl-${eq}">
     <input type="checkbox" value="${eq}" onchange="window._eqChg(this)"/>
@@ -398,8 +412,9 @@ window.selAll = () => {
   actualizarCount(); validar();
 };
 selLinea.addEventListener("change",()=>{S.linea=selLinea.value;validar();});
-mesInp.addEventListener("change",()=>{S.mesAnio=mesInp.value;validar();});
-function validar(){btnCar.disabled=!(S.linea&&S.equipos.size>0&&S.mesAnio);}
+document.getElementById("fecha-desde").addEventListener("change",function(){S.fechaDesde=this.value;validar();});
+document.getElementById("fecha-hasta").addEventListener("change",function(){S.fechaHasta=this.value;validar();});
+function validar(){btnCar.disabled=!(S.linea&&S.equipos.size>0&&S.fechaDesde&&S.fechaHasta&&S.fechaDesde<=S.fechaHasta);}
 
 // ── CARGAR FIRESTORE ──────────────────────────────────────────────────
 btnCar.addEventListener("click", async()=>{
@@ -407,9 +422,8 @@ btnCar.addEventListener("click", async()=>{
   btnCar.innerHTML='<span class="spin"></span> Cargando…';
   infoCA.className="ibox";
   try{
-    const [a,m]=S.mesAnio.split("-");
-    const fi=`${a}-${m}-01`;
-    const ff=`${a}-${m}-${String(new Date(+a,+m,0).getDate()).padStart(2,"0")}`;
+    const fi=S.fechaDesde;
+    const ff=S.fechaHasta;
     const snap=await getDocs(query(
       collection(db,"reportes_produccion"),
       where("linea","==",S.linea),
@@ -778,8 +792,8 @@ function descargarImagen(){
   var btn=document.getElementById("btn-dl-img");
   btn.innerHTML="Generando..."; btn.disabled=true;
   var zona=document.getElementById("zona-tabla");
-  var mes=document.getElementById("mes-anio").value||"tabla";
-  var escala=2;
+  var fd=document.getElementById("fecha-desde").value||""; var fh=document.getElementById("fecha-hasta").value||""; var mes=fd&&fh?fd.slice(0,7):"tabla";
+  var escala=4;
   var w=zona.scrollWidth, h=zona.scrollHeight;
   domtoimage.toPng(zona,{
     width:w*escala, height:h*escala,
@@ -815,7 +829,7 @@ function parseCL(v){
 }
 
 function exportarExcel(){
-  var mes=document.getElementById("mes-anio").value||"tabla";
+  var fd=document.getElementById("fecha-desde").value||""; var fh=document.getElementById("fecha-hasta").value||""; var mes=fd&&fh?fd.slice(0,7):"tabla";
   var lineaTxt=document.getElementById("enc-linea-txt").textContent.trim();
   var lineaTot=document.getElementById("enc-linea-tot").textContent.trim();
   var row2cells=[].slice.call(document.getElementById("enc-row2").children);
