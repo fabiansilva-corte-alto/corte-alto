@@ -1272,5 +1272,77 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- ===== SCRIPT CARGA MASIVA OPERADORES (uso único) ===== -->
+<script type="module">
+// INSTRUCCIONES: abre la consola del navegador (F12) y ejecuta: cargarOperadores()
+// Una vez cargados, este script no hace nada más.
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const fb = { apiKey:"AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4", authDomain:"reporte-inicio-faena-forestal.firebaseapp.com", projectId:"reporte-inicio-faena-forestal", storageBucket:"reporte-inicio-faena-forestal.appspot.com", messagingSenderId:"962534414054", appId:"1:962534414054:web:fa43371d31413fc0524d27" };
+const app2 = getApps().find(a=>a.name==='carga-ops') || initializeApp(fb,'carga-ops');
+const db2 = getFirestore(app2);
+
+const OPERADORES = [
+  { nombre:"FLAVIO ACUÑA",        funciones:["MADEREO TORRE"] },
+  { nombre:"JUVENAL GARAY",       funciones:["MADEREO TORRE"] },
+  { nombre:"JORGE RIQUELME",      funciones:["MADEREO TORRE"] },
+  { nombre:"REINALDO AGUILERA",   funciones:["MADEREO TORRE"] },
+  { nombre:"CARLOS ARMUNA",       funciones:["MADEREO TORRE","OP CLASIFICADO"] },
+  { nombre:"NEFTALÍ AGUILERA",    funciones:["MADEREO TORRE"] },
+  { nombre:"ROBERTO GARAY",       funciones:["MADEREO TORRE"] },
+  { nombre:"TEOBALDO VILLALOBOS", funciones:["MADEREO TORRE"] },
+  { nombre:"CARLOS SILVA",        funciones:["MADEREO SKIDDER"] },
+  { nombre:"VICTOR RIQUELME",     funciones:["MADEREO SKIDDER"] },
+  { nombre:"VICTOR MUÑOZ R",      funciones:["MADEREO SKIDDER"] },
+  { nombre:"PATRICIO ZAMBRANO",   funciones:["MADEREO SKIDDER"] },
+  { nombre:"CARLOS FUENTES",      funciones:["MADEREO SKIDDER"] },
+  { nombre:"MANUEL BENAVIDES",    funciones:["MADEREO SKIDDER"] },
+  { nombre:"SEBASTIAN RIQUELME",  funciones:["MADEREO SKIDDER"] },
+  { nombre:"JUAN OPORTO",         funciones:["OP TROZADO"] },
+  { nombre:"CARLOS ITURRA",       funciones:["OP TROZADO"] },
+  { nombre:"LUIS TORRES",         funciones:["OP TROZADO"] },
+  { nombre:"MARCOS SAEZ",         funciones:["OP TROZADO"] },
+  { nombre:"RUDY MUÑOZ",          funciones:["OP TROZADO"] },
+  { nombre:"JOSÉ VALENCIA",       funciones:["OP TROZADO"] },
+  { nombre:"FRANK CASTRO",        funciones:["OP TROZADO"] },
+  { nombre:"ROBERTO MELLA",       funciones:["OP TROZADO"] },
+  { nombre:"LUIS LOBOS",          funciones:["OP TROZADO"] },
+  { nombre:"SEGUNDO BASCUR",      funciones:["OP TROZADO"] },
+  { nombre:"SERGIO SAAVEDRA",     funciones:["VOLTEO"] },
+  { nombre:"MANUEL MUÑOZ",        funciones:["VOLTEO"] },
+  { nombre:"JUAN CALBUL",         funciones:["VOLTEO"] },
+  { nombre:"ROBERTO BELMAR",      funciones:["VOLTEO"] },
+  { nombre:"PABLO MUÑOZ",         funciones:["VOLTEO"] },
+  { nombre:"BRUNO CARRASCO",      funciones:["VOLTEO"] },
+  { nombre:"ALEJANDRO LEVIQUEO",  funciones:["VOLTEO"] },
+  { nombre:"JOSÉ MANZANO",        funciones:["OP CLASIFICADO"] },
+  { nombre:"FLORENTINO MILANCA",  funciones:["OP CLASIFICADO"] },
+  { nombre:"JUAN SEPULVEDA",      funciones:["OP CLASIFICADO"] },
+  { nombre:"HECTOR CARRILLO",     funciones:["OP CLASIFICADO"] },
+  { nombre:"LUIS PAILLAL",        funciones:["OP CLASIFICADO"] },
+  { nombre:"JAVIER MORALES",      funciones:["OP CLASIFICADO"] },
+  { nombre:"JOSÉ GAJARDO",        funciones:["OP CLASIFICADO"] },
+  { nombre:"BRAULIO LEVIQUEO",    funciones:["OP CLASIFICADO"] },
+  { nombre:"ARIEL TOLOZA",        funciones:["OP CLASIFICADO"] },
+];
+
+window.cargarOperadores = async function(){
+  console.log("🌲 Iniciando carga de operadores...");
+  // Borrar existentes primero
+  const snap = await getDocs(collection(db2,"config_operadores"));
+  for(const d of snap.docs) await deleteDoc(doc(db2,"config_operadores",d.id));
+  console.log(`🗑 ${snap.docs.length} operadores anteriores eliminados`);
+  // Cargar nuevos
+  for(const op of OPERADORES){
+    await addDoc(collection(db2,"config_operadores"), op);
+    console.log(`✅ ${op.nombre} — ${op.funciones.join(", ")}`);
+  }
+  console.log("🎉 ¡Listo! "+OPERADORES.length+" operadores cargados. Recarga la página.");
+};
+console.log("💡 Para cargar los operadores ejecuta en consola: cargarOperadores()");
+</script>
+
 </body>
 </html>
