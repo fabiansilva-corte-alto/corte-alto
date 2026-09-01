@@ -877,6 +877,7 @@ window.agregarEquipo = function (datos) {
     lineaSoportes: datos?.lineaSoportes || "",
     preInstalado: datos?.preInstalado || "",
     cuerdaTirada: datos?.cuerdaTirada || "",
+    cumplePerfil: datos?.cumplePerfil || "",
     reportaOEE: datos?.reportaOEE ?? "",
     shoveleo: datos?.shoveleo || "",
     arbolesShoveleo: datos?.arbolesShoveleo ?? "",
@@ -1089,8 +1090,9 @@ function camposPorTipo(eq) {
       <input type="text" id="in-${eq.id}-horasCambioLinea" inputmode="decimal" value="${esc(eq.horasCambioLinea)}" placeholder="Ej: 2,5"
         oninput="this.value=this.value.replace(/\\./g,',');setCampo('${eq.id}','horasCambioLinea',this.value,false)">
       <div class="msg-error" id="err-${eq.id}-horasCambioLinea">Ingrese las horas del cambio de línea</div>
+      ${selSiNo("cumplePerfil", "¿El cambio de línea cumple con el perfil o se pidió modificación?", ["SÍ", "NO, se pide modificar perfil"])}
       ${selSiNo("cuerdaTirada", "¿Línea tenía cuerda tirada?", ["SÍ", "NO", "INCOMPLETA"])}
-      ${selSiNo("lineaSoportes", "¿La línea tenía soportes?", ["SÍ", "NO"])}
+      ${selSiNo("lineaSoportes", "¿La línea tenía soportes y/o árbol de cola?", ["SÍ", "NO"])}
       ${eq.lineaSoportes === "SÍ" ? selSiNo("preInstalado", "¿El o los soportes estaban pre-instalados?", ["SÍ", "NO", "INCOMPLETO"]) : ""}`;
     }
     html += `<label>¿Qué carro está operando? <span class="req">*</span></label>
@@ -1164,14 +1166,7 @@ function camposPorTipo(eq) {
   }
 
   if (eq.tipo === "SHOVEL") {
-    html += selSiNo("shoveleo", "¿Shoveleó árboles a la cancha?", ["SÍ", "NO"]);
-    if (eq.shoveleo === "SÍ") {
-      html += `
-      <label>¿Cuántos árboles shoveleó a la cancha? <span class="req">*</span></label>
-      <input type="text" id="in-${eq.id}-arbolesShoveleo" inputmode="numeric" value="${esc(eq.arbolesShoveleo)}" placeholder="Ej: 350"
-        oninput="setCampo('${eq.id}','arbolesShoveleo',this.value,false)">
-      <div class="msg-error" id="err-${eq.id}-arbolesShoveleo">Ingrese la cantidad de árboles</div>`;
-    }
+
     html += `
       <label>Árboles volteados por rodal <span class="req">*</span></label>
       <div class="sub-lista" id="vol-${eq.id}">${htmlVolteos(eq)}</div>
@@ -1345,7 +1340,7 @@ function refrescarSubListas(eq) {
 }
 
 /* ---- setCampo genérico ---- */
-const CAMPOS_RERENDER = ["tipo", "equipo", "operador", "operativo", "cambioLinea", "cuerdaTirada", "lineaSoportes", "shoveleo", "tipoCarro", "reportaOEE"];
+const CAMPOS_RERENDER = ["tipo", "equipo", "operador", "operativo", "cambioLinea", "cuerdaTirada", "cumplePerfil", "lineaSoportes", "shoveleo", "tipoCarro", "reportaOEE"];
 window.setCampo = function (id, campo, valor, rerender = true) {
   const eq = equipos.find(e => e.id === id);
   eq[campo] = valor;
@@ -1535,6 +1530,7 @@ function validar() {
       if (eq.cambioLinea === "SÍ") {
         m("horasCambioLinea", !esNum(eq.horasCambioLinea));
         m("cuerdaTirada", !eq.cuerdaTirada);
+        m("cumplePerfil", !eq.cumplePerfil);
         m("lineaSoportes", !eq.lineaSoportes);
         if (eq.lineaSoportes === "SÍ") m("preInstalado", !eq.preInstalado);
       }
@@ -1564,8 +1560,6 @@ function validar() {
       }
     }
     if (eq.tipo === "SHOVEL") {
-      m("shoveleo", !eq.shoveleo);
-      if (eq.shoveleo === "SÍ") m("arbolesShoveleo", !esNum(eq.arbolesShoveleo));
       eq.volteos.forEach((v, i) => {
         marca(`in-${eq.id}-vol-${i}-rodal`, null, !/^\d{6}$/.test(v.rodal));
         marca(`in-${eq.id}-vol-${i}-arboles`, null, !esNum(v.arboles));
@@ -1657,6 +1651,7 @@ function armarDocumento() {
         if (eq.cambioLinea === "SÍ") {
           base.horasCambioLinea = parseDec(eq.horasCambioLinea) || 0;
           base.cuerdaTirada = eq.cuerdaTirada;
+          base.cumplePerfil = eq.cumplePerfil;
           base.lineaSoportes = eq.lineaSoportes;
           if (eq.lineaSoportes === "SÍ") base.preInstalado = eq.preInstalado;
         }
@@ -1683,8 +1678,6 @@ function armarDocumento() {
         base.arboles = base.rodales.reduce((s, r) => s + r.arboles, 0);
       }
       if (eq.tipo === "SHOVEL") {
-        base.shoveleo = eq.shoveleo || "";
-        if (eq.shoveleo === "SÍ") base.arbolesShoveleo = parseInt(eq.arbolesShoveleo) || 0;
         base.volteos = eq.volteos.map(v => ({
           rodal: v.rodal, arboles: parseInt(v.arboles) || 0, destino: v.destino
         }));
@@ -2032,7 +2025,8 @@ window.verReporte = function (id) {
       if (e.cambioLinea === "SÍ") {
         campos.push({ l:"Hrs cambio", v:fmtComa(e.horasCambioLinea||0) });
         campos.push({ l:"Cuerda tirada", v:e.cuerdaTirada||"—" });
-        campos.push({ l:"Soportes", v:e.lineaSoportes||"—" });
+        campos.push({ l:"Cumple perfil", v:e.cumplePerfil||"—" });
+        campos.push({ l:"Soportes y/o árbol cola", v:e.lineaSoportes||"—" });
         if (e.lineaSoportes === "SÍ") campos.push({ l:"Soportes pre-inst.", v:e.preInstalado||"—" });
       }
       campos.push({ l:"Carro", v:e.tipoCarro||"—" });
@@ -2047,7 +2041,7 @@ window.verReporte = function (id) {
       campos.push({ l:"Huinche asist.", v:e.huincheAsistencia||"—" });
     }
     if (e.tipo === "SHOVEL") {
-      campos.push({ l:"Shoveleo", v:e.shoveleo === "SÍ" ? `SÍ (${e.arbolesShoveleo||0} árb.)` : e.shoveleo||"—" });
+      
     }
     if (e.ciclos !== undefined) campos.push({ l:"Ciclos", v:e.ciclos });
     if (e.arboles !== undefined) campos.push({ l:"Árboles", v:e.arboles });
@@ -2195,6 +2189,7 @@ window.editarReporte = function (id) {
       horasCambioLinea: e.horasCambioLinea !== undefined ? fmtComa(e.horasCambioLinea) : "",
       reportaOEE: e.reportaOEE === true ? "SI" : e.reportaOEE === false ? "NO" : "",
       cuerdaTirada: e.cuerdaTirada || "",
+      cumplePerfil: e.cumplePerfil || "",
       asistencia: e.huincheAsistencia ?? e.asistencia ?? "",
       operador: esOtroOp ? "OTRO" : (e.operador || ""),
       operadorOtro: esOtroOp ? e.operador : "",
