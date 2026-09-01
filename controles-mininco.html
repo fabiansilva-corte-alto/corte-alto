@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controles Mininco — Corte Alto</title>
+<style>
+  :root{
+    --verde-osc:#1b5e20; --verde:#2e7d32; --verde-cl:#e8f5e9;
+    --gris-fondo:#f4f6f5; --gris-borde:#dfe4e2; --texto:#212b26;
+    --rojo:#c62828; --ambar:#f9a825; --slate:#37474f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:var(--gris-fondo);color:var(--texto);}
+  header{background:linear-gradient(135deg,var(--verde-osc),var(--verde));color:#fff;padding:16px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  header .marca{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;}
+  header .marca span.logo{font-size:26px;}
+  header a.volver{color:#fff;text-decoration:none;background:rgba(255,255,255,.15);padding:6px 12px;border-radius:8px;font-size:13px;}
+  header a.volver:hover{background:rgba(255,255,255,.28);}
+  header .subt{font-size:12px;opacity:.85;margin-left:auto;}
+
+  .tabs{display:flex;gap:6px;padding:12px 20px 0;background:#fff;border-bottom:1px solid var(--gris-borde);flex-wrap:wrap;}
+  .tab-btn{border:none;background:transparent;padding:10px 16px;font-size:14px;font-weight:600;color:#5b6b62;cursor:pointer;border-bottom:3px solid transparent;border-radius:8px 8px 0 0;}
+  .tab-btn.activo{color:var(--verde-osc);border-bottom-color:var(--verde-osc);background:var(--verde-cl);}
+  .tab-panel{display:none;padding:18px 20px 60px;max-width:1200px;margin:0 auto;}
+  .tab-panel.activo{display:block;}
+
+  .card{background:#fff;border:1px solid var(--gris-borde);border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .drop{display:block;width:100%;border:2px dashed #9db8a3;border-radius:12px;padding:30px 16px;text-align:center;background:#fff;cursor:pointer;transition:.15s;}
+  .drop:hover,.drop.arrastrando{background:var(--verde-cl);border-color:var(--verde);}
+  .drop input{display:none;}
+  .drop .icono{font-size:34px;}
+  .drop p{margin:6px 0 0;color:#5b6b62;font-size:13px;}
+
+  .estado{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;}
+  .estado.procesando{background:#fff3cd;color:#8a6100;}
+  .estado.revisar{background:#e3f2fd;color:#0d47a1;}
+  .estado.guardado{background:var(--verde-cl);color:var(--verde-osc);}
+  .estado.error{background:#fdecea;color:var(--rojo);}
+
+  .grid-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 14px;margin:12px 0;}
+  .campo label{display:block;font-size:11px;font-weight:700;color:#5b6b62;text-transform:uppercase;letter-spacing:.02em;margin-bottom:3px;}
+  .campo input,.campo select,.campo textarea{width:100%;padding:8px 9px;border:1px solid var(--gris-borde);border-radius:7px;font-size:14px;font-family:inherit;background:#fbfcfb;}
+  .campo textarea{min-height:70px;resize:vertical;}
+  .campo.chico{max-width:120px;}
+
+  .fila-nota{display:flex;align-items:center;gap:22px;flex-wrap:wrap;background:var(--gris-fondo);border-radius:10px;padding:12px 14px;margin:10px 0;}
+  .pastilla-nota{font-size:26px;font-weight:800;color:var(--verde-osc);}
+  .pastilla-nota small{font-size:12px;font-weight:600;color:#5b6b62;display:block;}
+  .toggle-bono{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;cursor:pointer;}
+  .toggle-bono input{width:18px;height:18px;}
+  .bono-si{color:var(--verde-osc);} .bono-no{color:#8a8f8b;}
+
+  details.crudo{margin-top:8px;} details.crudo summary{cursor:pointer;font-size:12px;color:#5b6b62;}
+  details.crudo pre{white-space:pre-wrap;font-size:11px;background:#f4f6f5;padding:10px;border-radius:8px;max-height:220px;overflow:auto;}
+
+  .acciones{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  button.btn{border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;}
+  .btn-primario{background:var(--verde-osc);color:#fff;}
+  .btn-primario:hover{background:var(--verde);}
+  .btn-secundario{background:#fff;border:1px solid var(--gris-borde) !important;color:var(--texto);}
+  .btn-peligro{background:#fdecea;color:var(--rojo);}
+  .btn-chico{padding:5px 10px;font-size:12px;}
+
+  .resumen-barra{display:flex;gap:26px;flex-wrap:wrap;background:#fff;border:1px solid var(--gris-borde);border-radius:12px;padding:14px 18px;margin-bottom:14px;}
+  .resumen-item{text-align:center;}
+  .resumen-item b{display:block;font-size:22px;color:var(--verde-osc);}
+  .resumen-item span{font-size:11px;color:#5b6b62;text-transform:uppercase;}
+
+  .filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;background:#fff;border:1px solid var(--gris-borde);border-radius:12px;padding:12px 14px;align-items:end;}
+  .filtros .campo{min-width:150px;}
+
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  th,td{padding:10px 12px;text-align:left;font-size:13px;border-bottom:1px solid var(--gris-borde);}
+  th{background:var(--verde-cl);color:var(--verde-osc);font-size:11px;text-transform:uppercase;letter-spacing:.02em;}
+  tr:hover td{background:#fafcfa;}
+  td.num{font-weight:700;}
+  .chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+  .chip-bono-si{background:var(--verde-cl);color:var(--verde-osc);}
+  .chip-bono-no{background:#f1f1ef;color:#8a8f8b;}
+  .tabla-wrap{overflow-x:auto;}
+  .vacio{text-align:center;padding:40px 10px;color:#8a8f8b;font-size:14px;}
+  .toast{position:fixed;bottom:18px;right:18px;background:var(--verde-osc);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.2);opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:50;}
+  .toast.mostrar{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="volver" href="index.html">← Volver</a>
+  <div class="marca"><span class="logo">🌲</span> Corte Alto — Controles Mininco</div>
+  <div class="subt">Controles de Calidad y Pautas de Supervisión (checklistfácil)</div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn activo" data-tab="cargar">📤 Cargar PDF</button>
+  <button class="tab-btn" data-tab="calidad">✅ Controles de Calidad</button>
+  <button class="tab-btn" data-tab="supervision">📋 Pautas de Supervisión</button>
+</div>
+
+<!-- TAB CARGAR -->
+<section class="tab-panel activo" id="panel-cargar">
+  <div class="card">
+    <label class="drop" id="dropZone">
+      <input type="file" id="inputPDF" accept="application/pdf" multiple>
+      <div class="icono">📄⬆️</div>
+      <p><b>Arrastra aquí los PDF del mes</b> (o haz clic para seleccionarlos)</p>
+      <p>Se leen automáticamente: tipo de control, fecha, controlador, fundo, línea, resultado e inconformidades. Puedes editar cualquier dato antes de guardar.</p>
+    </label>
+  </div>
+  <div id="listaRevision"></div>
+</section>
+
+<!-- TAB CALIDAD -->
+<section class="tab-panel" id="panel-calidad">
+  <div class="resumen-barra" id="resumenCalidad"></div>
+  <div class="filtros" id="filtrosCalidad"></div>
+  <div class="tabla-wrap"><table>
+    <thead><tr><th>Fecha</th><th>Tipo</th><th>Fundo / Línea</th><th>Controlador</th><th>Resultado</th><th>Nota</th><th>Bono</th><th></th></tr></thead>
+    <tbody id="tablaCalidad"></tbody>
+  </table></div>
+</section>
+
+<!-- TAB SUPERVISION -->
+<section class="tab-panel" id="panel-supervision">
+  <div class="resumen-barra" id="resumenSupervision"></div>
+  <div class="filtros" id="filtrosSupervision"></div>
+  <div class="tabla-wrap"><table>
+    <thead><tr><th>Fecha</th><th>Tipo</th><th>Fundo / Línea</th><th>Controlador</th><th>Resultado</th><th>Nota</th><th>Bono</th><th></th></tr></thead>
+    <tbody id="tablaSupervision"></tbody>
+  </table></div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<!-- PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
+
+<!-- Firebase (mismo proyecto reporte-inicio-faena-forestal que el resto de la PWA) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+<!-- Generador de certificado PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+    authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
+    projectId: "reporte-inicio-faena-forestal",
+    storageBucket: "reporte-inicio-faena-forestal.appspot.com",
+    messagingSenderId: "962534414054",
+    appId: "1:962534414054:web:fa43371d31413fc0524d27"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  // Storage guarda el PDF original de cada control para poder verlo/descargarlo después.
+  // Requiere que el proyecto de Firebase tenga Storage habilitado (plan Blaze con capa
+  // gratuita de 5GB). Si no está habilitado, el guardado sigue funcionando igual — solo
+  // no queda adjunto el PDF (se avisa por consola).
+  const storage = firebase.storage();
+  // Si Storage no está habilitado en el proyecto (o el storageBucket del config de
+  // arriba sigue como "PEGAR_AQUI"), cada subida fallaría igual — pero por defecto el
+  // SDK reintenta durante ~2 minutos antes de rendirse, lo que dejaba el botón
+  // "Guardando…" pegado. Se acorta ese reintento a unos segundos para que el guardado
+  // no se sienta lento aunque Storage todavía no esté configurado.
+  storage.setMaxUploadRetryTime(6000);
+  storage.setMaxOperationRetryTime(6000);
+  const COLECCION = 'controles_mininco';
+
+  // Si el firebaseConfig de arriba sigue con los placeholders "PEGAR_AQUI", Firestore
+  // nunca logra conectarse a un proyecto real: queda en modo offline silencioso. La
+  // tarjeta y el listado igual se actualizan (por el caché local en memoria del
+  // navegador), dando la falsa impresión de que se guardó, pero nada llega a la nube
+  // y se pierde apenas se cierra la pestaña. Este aviso hace ese problema imposible
+  // de pasar por alto.
+  const CONFIG_SIN_COMPLETAR = Object.values(firebaseConfig).some(v => v === 'PEGAR_AQUI');
+  if(CONFIG_SIN_COMPLETAR){
+    console.error('⚠️ firebaseConfig sin configurar: reemplaza "PEGAR_AQUI" por los datos reales de tu proyecto Firebase antes de guardar controles.');
+    const aviso = document.createElement('div');
+    aviso.style.cssText = 'position:sticky;top:0;z-index:999;background:#c62828;color:#fff;padding:10px 16px;text-align:center;font-weight:700;font-size:13px;';
+    aviso.textContent = '⚠️ Este módulo aún no está conectado a tu Firebase real (firebaseConfig sin configurar). Nada de lo que "guardes" ahora queda guardado de verdad — se pierde al cerrar la pestaña.';
+    document.body.insertBefore(aviso, document.body.firstChild);
+  }
+</script>
+
+<script>
+/* ============================================================
+   1) DICCIONARIO DE TIPOS DE CHECKLIST CONOCIDOS
+   ============================================================ */
+const TIPOS_CHECKLIST = {
+  'COS_CC_TOCONES': { label: 'Control de Tocones', categoria: 'calidad' },
+  'COS_CC_ARRUMADO_PINO': { label: 'Control Arrumado Pino', categoria: 'calidad' },
+  'COS_CC_TROZOS_EN_CANCHA': { label: 'Trozado en Cancha', categoria: 'calidad' },
+  'COS_CC_ORDENAMIENTO_DESECHOS': { label: 'Ordenamiento de Desechos', categoria: 'calidad' },
+  'CDP_COS_PAUTA COSECHA': { label: 'Pauta Cosecha (Jefe de Faena / Operativa)', categoria: 'supervision' },
+  'CDP_BUENAS PRACTICAS OPERACION DE COSECHA (CUIDADO DEL CAMINO)': { label: 'Buenas Prácticas — Cuidado del Camino', categoria: 'supervision' }
+};
+
+function quitarAcentos(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+function detectarTipo(texto){
+  const primerasLineas = texto.split('\n').slice(0,6).join('\n');
+  const m = primerasLineas.match(/(COS_CC_[A-ZÁÉÍÓÚÑ_]+|CdP_[^\n#]+)/i);
+  let crudo = m ? m[1].trim().replace(/\s+/g,' ') : '';
+  const clave = quitarAcentos(crudo).toUpperCase().trim();
+  let info = TIPOS_CHECKLIST[clave];
+  if(!info){
+    // coincidencia parcial (por si cambia levemente la redacción)
+    const claveEnc = Object.keys(TIPOS_CHECKLIST).find(k => clave.startsWith(k.slice(0,12)));
+    info = claveEnc ? TIPOS_CHECKLIST[claveEnc] : null;
+  }
+  if(!info){
+    const categoria = /^COS_CC_/i.test(crudo) ? 'calidad' : (/^CdP_/i.test(crudo) ? 'supervision' : 'calidad');
+    info = { label: crudo || 'Tipo no identificado (revisar)', categoria };
+  }
+  return { tipoCrudo: crudo || '(no identificado)', tipoLabel: info.label, categoria: info.categoria };
+}
+
+/* ============================================================
+   2) EXTRACCIÓN DE TEXTO DEL PDF (pdf.js) RESPETANDO LÍNEAS
+   ============================================================ */
+async function extraerTextoPDF(file){
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  let textoCompleto = '';
+  for(let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    textoCompleto += agruparLineas(content.items) + '\n';
+  }
+  return colapsarNumerosEspaciados(textoCompleto);
+}
+// checklistfácil a veces exporta el PDF con los dígitos espaciados por letra
+// ("Código: 1 7 2 4" en vez de "1724"); esto los vuelve a unir antes de parsear.
+function colapsarNumerosEspaciados(texto){
+  return texto.replace(/\d(?:[ \t]\d){1,}/g, m => m.replace(/[ \t]/g,''));
+}
+function agruparLineas(items){
+  const lineas = []; let actual = null, ultimaY = null;
+  items.forEach(it=>{
+    const y = Math.round(it.transform[5]);
+    if(ultimaY===null || Math.abs(y-ultimaY) > 2){ actual = []; lineas.push(actual); ultimaY = y; }
+    actual.push(it);
+  });
+  return lineas.map(l => l.map(it=>it.str).join(' ').replace(/\s+/g,' ').trim()).filter(l=>l.length>0).join('\n');
+}
+
+/* ============================================================
+   3) PARSER DE CAMPOS (best-effort — todo queda editable)
+   ============================================================ */
+// Busca una etiqueta (ej. "FUNDO", "LINEA") y dentro de una ventana de texto
+// cercana extrae Código y Nombre, tolerando "Nombre :" con espacio antes de los
+// dos puntos y cortando la ventana antes de la siguiente etiqueta conocida.
+function extraerBloqueCodigoNombre(texto, etiquetaRegex){
+  const idx = texto.search(etiquetaRegex);
+  if(idx === -1) return { codigo:'', nombre:'' };
+  let fin = texto.length;
+  ['LINEA','EQUIPO DE VOLTEO','COORDENADAS','JEFE DE FAENA','ESPECIE','FAENA','INGENIERO RESPONSABLE','NOMBRE CONTROLADOR','Área 2','Subárea'].forEach(et=>{
+    const p = texto.indexOf(et, idx + 6);
+    if(p !== -1 && p < fin) fin = p;
+  });
+  const ventana = texto.slice(idx, Math.min(fin, idx + 300));
+  const mCod = ventana.match(/C[oó]digo\s*:\s*([\d\s]+)/i);
+  const mNom = ventana.match(/Nombre\s*:\s*([^\n]+)/i);
+  return {
+    codigo: mCod ? mCod[1].replace(/\s+/g,'') : '',
+    nombre: mNom ? mNom[1].trim() : ''
+  };
+}
+// Busca el nombre de operador/conductor/calibrador que sigue a una etiqueta de
+// área ("PAUTA OPERADOR SHOVEL", "PAUTA CALIBRADOR", etc.), presente solo en
+// las pautas de auditoría/operativa integrales (CdP_COS_PAUTA COSECHA).
+function extraerOperador(texto, etiquetaFragmento){
+  // Ancla en la línea "Área N | PAUTA OPERADOR ..." real (no en la tabla resumen,
+  // donde el mismo texto aparece antes junto a los porcentajes).
+  const re = new RegExp('[ÁA]rea\\s*\\d+\\s*\\|\\s*' + etiquetaFragmento, 'i');
+  const idx = texto.search(re);
+  if(idx === -1) return '';
+  const ventana = texto.slice(idx, idx + 250);
+  const m = ventana.match(/NOMBRE DEL (?:OPERADOR|CONDUCTOR|MEC[ÁA]NICO|MOTOSIERRISTA)\s*\n\s*([^\n]+)/i);
+  return m ? m[1].trim() : '';
+}
+
+function parsearControl(texto, nombreArchivo){
+  const g = (regex) => { const m = texto.match(regex); return m ? m[1].trim() : ''; };
+
+  const { tipoCrudo, tipoLabel, categoria } = detectarTipo(texto);
+  const numero = g(/#\s*(\d{4,})/);
+
+  let resultado = g(/RESULTADO\s+FINAL[^\d]{0,15}(\d{1,3})/i) ||
+                   g(/RESULTADO\s+PARCIAL[^\d]{0,15}(\d{1,3})/i) ||
+                   g(/#\s*\d+\s*\n?\s*(\d{1,3})\b/);
+  resultado = resultado ? Math.min(100, parseInt(resultado)) : '';
+
+  const fechaTxt = g(/Per[ií]odo de aplicaci[oó]n\s*\n?\s*(\d{2}\/\d{2}\/\d{4})/i);
+  let fechaISO = '';
+  if(fechaTxt){ const [d,m,y] = fechaTxt.split('/'); fechaISO = `${y}-${m}-${d}`; }
+
+  const autor = g(/Autor\s*\n?\s*([^\n]+)/i);
+  let controlador = g(/NOMBRE CONTROLADOR\s*\n?\s*([^\n]+)/i) || autor;
+
+  const fundo = extraerBloqueCodigoNombre(texto, /\bFUNDO\b/i);
+  const linea = extraerBloqueCodigoNombre(texto, /\bLINEA\b/i);
+
+  let jefeFaena = g(/JEFE DE FAENA\s*\n\s*([^\n]+)/i);
+  if(/^(ESPECIE|TIPO DE PAUTA|FAENA|CONTROL PAUTA)/i.test(jefeFaena)) jefeFaena = '';
+
+  const ingResp = extraerBloqueCodigoNombre(texto, /INGENIERO RESPONSABLE/i).nombre;
+  if(!controlador) controlador = ingResp || autor;
+
+  const opVolteo = extraerOperador(texto, 'PAUTA OPERADOR SHOVEL');
+  const opTrozado = extraerOperador(texto, 'PAUTA OPERADOR (TROZADO|PROCESADOR)');
+  const opClasificado = extraerOperador(texto, 'PAUTA OPERADOR (CLASIFICADO|GARRA)');
+  const calibrador = extraerOperador(texto, 'PAUTA CALIBRADOR');
+
+  const inconformidades = extraerInconformidades(texto);
+
+  return {
+    archivoNombre: nombreArchivo,
+    tipoCrudo, tipoLabel, categoria,
+    numero: numero || '(sin número)',
+    fecha: fechaISO,
+    controlador: controlador || '',
+    fundoCodigo: fundo.codigo, fundoNombre: fundo.nombre,
+    lineaCodigo: linea.codigo, lineaNombre: linea.nombre,
+    jefeFaena: jefeFaena || '',
+    opVolteo: opVolteo || '', opTrozado: opTrozado || '', opClasificado: opClasificado || '', calibrador: calibrador || '',
+    resultado: resultado === '' ? '' : resultado,
+    inconformidades,
+    textoCrudo: texto
+  };
+}
+
+function esInicioDePregunta(l){
+  return /^¿/.test(l) || /^[A-ZÁÉÍÓÚÑ]{1,4}\.\d+\s*-/.test(l);
+}
+function esLimiteDeArea(l){
+  return /^Área\s+\d/i.test(l) || /^Subárea\s+\d/i.test(l);
+}
+// Distingue una observación en prosa ("El exceso de lluvia...") de un
+// encabezado de pregunta en MAYÚSCULAS ("MA.008 - DISIPADORES...").
+function esTextoComentario(l){
+  if(esRuidoConocido(l)) return false;
+  const letras = l.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ]/g,'');
+  if(letras.length < 4) return false;
+  const minusculas = letras.replace(/[^a-záéíóúñ]/g,'').length;
+  return (minusculas / letras.length) > 0.4;
+}
+// Textos fijos de la plantilla que no son observaciones reales (encabezado de la
+// sección de adjuntos y el contador "N de archivo(s) listado(s)...").
+function esRuidoConocido(l){
+  return /archivo\(s\)\s*listado/i.test(l) || /^Archivos adjuntos$/i.test(l);
+}
+function capturarPreguntaHaciaAtras(lineas, desde){
+  let j = desde, partes = [], pasos = 0;
+  while(j>=0 && pasos<6){
+    const l = lineas[j];
+    if(/^(S[IÍ]|NO|N\/A)$/i.test(l)) break;
+    if(esLimiteDeArea(l)) break;
+    if(!/^\(Obligatorio\)$/i.test(l)) partes.unshift(l);
+    const inicio = esInicioDePregunta(l);
+    j--; pasos++;
+    if(inicio) break;
+  }
+  return partes.join(' ').replace(/\(Obligatorio\)/ig,'').replace(/\s+/g,' ').trim();
+}
+function extraerInconformidades(texto){
+  const lineas = texto.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  const salida = [];
+  const yaCapturado = new Set();
+  for(let i=0;i<lineas.length;i++){
+    // Caso 1: el badge "No" quedó como texto (checklists simples tipo COS_CC_*)
+    if(/^NO$/i.test(lineas[i])){
+      const pregunta = capturarPreguntaHaciaAtras(lineas, i-1);
+      let comentario = '';
+      const sig = lineas[i+1];
+      if(sig && sig.length < 220 && esTextoComentario(sig) && !esInicioDePregunta(sig) && !esLimiteDeArea(sig) &&
+         !/(Obligatorio\)|^S[IÍ]$|^NO$|^N\/A$)/i.test(sig)){
+        comentario = sig;
+      }
+      if(pregunta && !yaCapturado.has(i)){
+        yaCapturado.add(i);
+        salida.push(comentario ? `${pregunta} — Obs: ${comentario}` : pregunta);
+      }
+    }
+    // Caso 2: el badge Sí/No es solo un ícono gráfico (pautas de auditoría/operativa) —
+    // lo único que queda en el texto tras "(Obligatorio)" es la observación en prosa.
+    else if(/^\(Obligatorio\)$/i.test(lineas[i])){
+      const sig = lineas[i+1];
+      if(sig && esTextoComentario(sig) && !esInicioDePregunta(sig) && !esLimiteDeArea(sig) && !yaCapturado.has(i)){
+        const pregunta = capturarPreguntaHaciaAtras(lineas, i-1);
+        if(pregunta){
+          yaCapturado.add(i);
+          salida.push(`${pregunta} — Obs: ${sig}`);
+        }
+      }
+    }
+  }
+  return salida;
+}
+
+/* ============================================================
+   4) CÁLCULO NOTA / BONO
+   ============================================================ */
+function calcularNota(resultado){
+  if(resultado === '' || resultado === null || isNaN(resultado)) return null;
+  return Math.round((resultado/20)*10)/10; // 1 decimal
+}
+function formatoNota(n){ return n===null ? '—' : n.toFixed(1).replace('.', ','); }
+function bonoAutomatico(resultado){ return resultado !== '' && resultado !== null && resultado >= 90; }
+
+// Enumera las inconformidades (1. 2. 3. ...) cuando hay más de una, para que se
+// lean ordenadas en la tarjeta, en el listado y en el certificado. Con 0 o 1 no
+// hace falta numerar.
+function limpiarNumeracion(l){ return l.replace(/^\d+\.\s*/, '').trim(); }
+function formatoInconformidadesNumeradas(lista){
+  const limpio = (lista||[]).map(limpiarNumeracion).filter(Boolean);
+  if(limpio.length <= 1) return limpio.join('\n');
+  return limpio.map((l,i)=>`${i+1}. ${l}`).join('\n');
+}
+function renumerarTextarea(textarea){
+  const lineas = textarea.value.split('\n').map(limpiarNumeracion).filter(Boolean);
+  textarea.value = formatoInconformidadesNumeradas(lineas);
+}
+
+/* ============================================================
+   5) TABS
+   ============================================================ */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('activo'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('activo'));
+    btn.classList.add('activo');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('activo');
+  });
+});
+
+/* ============================================================
+   6) CARGA Y REVISIÓN DE PDF
+   ============================================================ */
+const dropZone = document.getElementById('dropZone');
+const inputPDF = document.getElementById('inputPDF');
+const listaRevision = document.getElementById('listaRevision');
+
+['dragenter','dragover'].forEach(ev=>dropZone.addEventListener(ev, e=>{e.preventDefault(); dropZone.classList.add('arrastrando');}));
+['dragleave','drop'].forEach(ev=>dropZone.addEventListener(ev, e=>{e.preventDefault(); dropZone.classList.remove('arrastrando');}));
+dropZone.addEventListener('drop', e=>{ procesarArchivos(e.dataTransfer.files); });
+inputPDF.addEventListener('change', e=>{ procesarArchivos(e.target.files); inputPDF.value=''; });
+
+function procesarArchivos(files){
+  Array.from(files).filter(f=>f.type==='application/pdf').forEach(f=>procesarUnPDF(f));
+}
+
+let contadorTarjetas = 0;
+async function procesarUnPDF(file){
+  const id = 'tj_' + (++contadorTarjetas);
+  const tarjeta = document.createElement('div');
+  tarjeta.className = 'card';
+  tarjeta.id = id;
+  tarjeta._archivoOriginal = file; // se usa al guardar, para subir el PDF original a Storage
+  tarjeta.innerHTML = `<div><span class="estado procesando">Procesando…</span> <b>${file.name}</b></div>`;
+  listaRevision.prepend(tarjeta);
+
+  try{
+    const texto = await extraerTextoPDF(file);
+    const datos = parsearControl(texto, file.name);
+    renderTarjetaRevision(tarjeta, datos);
+  }catch(err){
+    console.error(err);
+    tarjeta.innerHTML = `<div><span class="estado error">Error</span> <b>${file.name}</b><p style="font-size:13px;color:#c62828;">No se pudo leer el PDF (${err.message||err}). Puedes ingresar el control manualmente en Firestore o intentar subirlo de nuevo.</p></div>`;
+  }
+}
+
+function renderTarjetaRevision(tarjeta, datos){
+  const nota = calcularNota(datos.resultado);
+  const bonoSugerido = bonoAutomatico(datos.resultado);
+  tarjeta.dataset.bono = bonoSugerido ? '1':'0';
+
+  tarjeta.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <div><span class="estado revisar">Revisar</span> <b>${datos.archivoNombre}</b></div>
+      <div style="font-size:12px;color:#5b6b62;">Tipo detectado: <b>${datos.tipoCrudo}</b> → ${datos.categoria==='calidad'?'Control de Calidad':'Pauta de Supervisión'}</div>
+    </div>
+
+    <div class="grid-campos">
+      <div class="campo"><label>Categoría</label>
+        <select class="f-categoria"><option value="calidad" ${datos.categoria==='calidad'?'selected':''}>Control de Calidad</option><option value="supervision" ${datos.categoria==='supervision'?'selected':''}>Pauta de Supervisión</option></select>
+      </div>
+      <div class="campo"><label>Tipo de checklist</label><input class="f-tipo" value="${datos.tipoLabel}"></div>
+      <div class="campo chico"><label>N° informe</label><input class="f-numero" value="${datos.numero}"></div>
+      <div class="campo chico"><label>Fecha</label><input type="date" class="f-fecha" value="${datos.fecha}"></div>
+      <div class="campo"><label>Controlador</label><input class="f-controlador" value="${datos.controlador}"></div>
+      <div class="campo"><label>Jefe de faena (si aplica)</label><input class="f-jefe" value="${datos.jefeFaena}"></div>
+      <div class="campo"><label>Fundo (código)</label><input class="f-fundocod" value="${datos.fundoCodigo}"></div>
+      <div class="campo"><label>Fundo (nombre)</label><input class="f-fundonom" value="${datos.fundoNombre}"></div>
+      <div class="campo"><label>Línea (nombre)</label><input class="f-lineanom" value="${datos.lineaNombre}"></div>
+      <div class="campo"><label>Op. Volteo (si aplica)</label><input class="f-opvolteo" value="${datos.opVolteo}"></div>
+      <div class="campo"><label>Op. Trozado (si aplica)</label><input class="f-optrozado" value="${datos.opTrozado}"></div>
+      <div class="campo"><label>Op. Clasificado (si aplica)</label><input class="f-opclasificado" value="${datos.opClasificado}"></div>
+      <div class="campo"><label>Calibrador (si aplica)</label><input class="f-calibrador" value="${datos.calibrador}"></div>
+      <div class="campo chico"><label>Resultado (0-100)</label><input type="number" min="0" max="100" class="f-resultado" value="${datos.resultado}"></div>
+    </div>
+
+    <div class="campo"><label>Inconformidades detectadas (una por línea — se numeran solas si hay más de una; edítalas o agrega/quita)</label>
+      <textarea class="f-inconformidades">${formatoInconformidadesNumeradas(datos.inconformidades)}</textarea>
+    </div>
+
+    <div class="fila-nota">
+      <div class="pastilla-nota"><span class="v-resultado">${datos.resultado===''?'—':datos.resultado+'%'}</span><small>Resultado</small></div>
+      <div class="pastilla-nota"><span class="v-nota">${formatoNota(nota)}</span><small>Nota (escala 1,0–5,0)</small></div>
+      <label class="toggle-bono"><input type="checkbox" class="f-bono" ${bonoSugerido?'checked':''}> <span class="v-bono ${bonoSugerido?'bono-si':'bono-no'}">${bonoSugerido?'🏆 Ganó el bono':'Sin bono'}</span></label>
+    </div>
+
+    <details class="crudo"><summary>Ver texto extraído del PDF (para revisar campos)</summary><pre>${datos.textoCrudo.replace(/</g,'&lt;')}</pre></details>
+
+    <div class="acciones">
+      <button class="btn btn-primario f-guardar">💾 Guardar control</button>
+      <button class="btn btn-secundario f-descartar">Descartar</button>
+    </div>
+  `;
+
+  // Recalcular nota/bono en vivo cuando cambia el resultado o el usuario edita el checkbox
+  const inputResultado = tarjeta.querySelector('.f-resultado');
+  const spanResultado = tarjeta.querySelector('.v-resultado');
+  const spanNota = tarjeta.querySelector('.v-nota');
+  const chkBono = tarjeta.querySelector('.f-bono');
+  const spanBono = tarjeta.querySelector('.v-bono');
+  let bonoEditadoManual = false;
+
+  inputResultado.addEventListener('input', ()=>{
+    const r = inputResultado.value === '' ? '' : parseInt(inputResultado.value);
+    spanResultado.textContent = r===''?'—':r+'%';
+    spanNota.textContent = formatoNota(calcularNota(r));
+    if(!bonoEditadoManual){
+      const sug = bonoAutomatico(r);
+      chkBono.checked = sug;
+      spanBono.textContent = sug ? '🏆 Ganó el bono' : 'Sin bono';
+      spanBono.className = 'v-bono ' + (sug?'bono-si':'bono-no');
+    }
+  });
+  chkBono.addEventListener('change', ()=>{
+    bonoEditadoManual = true;
+    spanBono.textContent = chkBono.checked ? '🏆 Ganó el bono' : 'Sin bono';
+    spanBono.className = 'v-bono ' + (chkBono.checked?'bono-si':'bono-no');
+  });
+
+  tarjeta.querySelector('.f-inconformidades').addEventListener('blur', e=> renumerarTextarea(e.target));
+
+  tarjeta.querySelector('.f-descartar').addEventListener('click', ()=> tarjeta.remove());
+  tarjeta.querySelector('.f-guardar').addEventListener('click', ()=> guardarDesdeTarjeta(tarjeta));
+}
+
+async function guardarDesdeTarjeta(tarjeta){
+  if(CONFIG_SIN_COMPLETAR){
+    alert('Este módulo todavía no está conectado a tu Firebase real (el firebaseConfig del archivo sigue con los datos de ejemplo "PEGAR_AQUI"). No se puede guardar hasta reemplazarlo por el config real de tu proyecto — si no, se queda esperando una confirmación que nunca llega.');
+    return;
+  }
+  const val = sel => tarjeta.querySelector(sel).value.trim();
+  const resultado = val('.f-resultado')==='' ? null : parseInt(val('.f-resultado'));
+  const registro = {
+    categoria: val('.f-categoria'),
+    tipoLabel: val('.f-tipo'),
+    numero: val('.f-numero'),
+    fecha: val('.f-fecha'),
+    mesAnio: val('.f-fecha') ? val('.f-fecha').slice(0,7) : '',
+    controlador: val('.f-controlador'),
+    jefeFaena: val('.f-jefe'),
+    fundoCodigo: val('.f-fundocod'),
+    fundoNombre: val('.f-fundonom'),
+    lineaNombre: val('.f-lineanom'),
+    opVolteo: val('.f-opvolteo'),
+    opTrozado: val('.f-optrozado'),
+    opClasificado: val('.f-opclasificado'),
+    calibrador: val('.f-calibrador'),
+    resultado: resultado,
+    nota: calcularNota(resultado),
+    bono: tarjeta.querySelector('.f-bono').checked,
+    inconformidades: val('.f-inconformidades').split('\n').map(s=>s.trim()).filter(Boolean),
+    archivoNombre: tarjeta.querySelector('b').textContent,
+    pdfURL: '',
+    creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+    actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  const btnGuardar = tarjeta.querySelector('.f-guardar');
+  btnGuardar.disabled = true; btnGuardar.textContent = 'Guardando…';
+
+  // Sube el PDF original a Storage (si está habilitado en el proyecto) para poder
+  // verlo/descargarlo después desde el listado. Si falla o tarda demasiado (Storage
+  // no habilitado, sin conexión, etc.) el control se guarda igual, solo sin el PDF
+  // adjunto — nunca se deja esperando más de ~7s por esto.
+  try{
+    const archivo = tarjeta._archivoOriginal;
+    if(archivo){
+      const ruta = `controles_mininco/${registro.categoria}/${Date.now()}_${archivo.name}`;
+      const ref = storage.ref().child(ruta);
+      const tope = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout subiendo PDF a Storage')), 7000));
+      await Promise.race([ref.put(archivo), tope]);
+      registro.pdfURL = await Promise.race([ref.getDownloadURL(), tope]);
+    }
+  }catch(err){
+    console.warn('No se pudo subir el PDF original a Storage (¿está habilitado Storage en tu proyecto Firebase?):', err);
+  }
+
+  try{
+    await db.collection(COLECCION).add(registro);
+    mostrarToast(registro.pdfURL ? 'Control guardado ✔ (con PDF adjunto)' : 'Control guardado ✔');
+    tarjeta.querySelector('.estado').outerHTML = '<span class="estado guardado">Guardado</span>';
+    btnGuardar.textContent = '✔ Guardado';
+    tarjeta.querySelectorAll('input,select,textarea,button').forEach(el=>el.disabled=true);
+  }catch(err){
+    console.error(err);
+    btnGuardar.disabled = false; btnGuardar.textContent = '💾 Guardar control';
+    alert('No se pudo guardar en Firestore: ' + (err.message||err));
+  }
+}
+
+function mostrarToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('mostrar');
+  setTimeout(()=>t.classList.remove('mostrar'), 2200);
+}
+
+/* ============================================================
+   7) LISTADOS (Firestore en tiempo real) + FILTROS + EDICIÓN
+   ============================================================ */
+let TODOS = [];
+db.collection(COLECCION).orderBy('fecha','desc').onSnapshot(snap=>{
+  TODOS = snap.docs.map(d=>({ id: d.id, ...d.data() }));
+  renderListado('calidad');
+  renderListado('supervision');
+}, err=>console.error('Firestore onSnapshot error:', err));
+
+const filtrosEstado = { calidad:{desde:'',hasta:'',fundo:'',linea:''}, supervision:{desde:'',hasta:'',fundo:'',linea:''} };
+
+function construirFiltros(categoria){
+  const cont = document.getElementById('filtros'+(categoria==='calidad'?'Calidad':'Supervision'));
+  const opciones = TODOS.filter(r=>r.categoria===categoria);
+  const fundos = [...new Set(opciones.map(r=>r.fundoNombre).filter(Boolean))];
+  const lineas = [...new Set(opciones.map(r=>r.lineaNombre).filter(Boolean))];
+  cont.innerHTML = `
+    <div class="campo"><label>Desde</label><input type="date" class="fx-desde"></div>
+    <div class="campo"><label>Hasta</label><input type="date" class="fx-hasta"></div>
+    <div class="campo"><label>Fundo</label><select class="fx-fundo"><option value="">Todos</option>${fundos.map(f=>`<option>${f}</option>`).join('')}</select></div>
+    <div class="campo"><label>Línea</label><select class="fx-linea"><option value="">Todas</option>${lineas.map(l=>`<option>${l}</option>`).join('')}</select></div>
+    <button class="btn btn-secundario btn-chico fx-limpiar">Limpiar</button>
+  `;
+  const st = filtrosEstado[categoria];
+  cont.querySelector('.fx-desde').value = st.desde;
+  cont.querySelector('.fx-hasta').value = st.hasta;
+  cont.querySelector('.fx-fundo').value = st.fundo;
+  cont.querySelector('.fx-linea').value = st.linea;
+  cont.querySelector('.fx-desde').addEventListener('change', e=>{st.desde=e.target.value; renderListado(categoria);});
+  cont.querySelector('.fx-hasta').addEventListener('change', e=>{st.hasta=e.target.value; renderListado(categoria);});
+  cont.querySelector('.fx-fundo').addEventListener('change', e=>{st.fundo=e.target.value; renderListado(categoria);});
+  cont.querySelector('.fx-linea').addEventListener('change', e=>{st.linea=e.target.value; renderListado(categoria);});
+  cont.querySelector('.fx-limpiar').addEventListener('click', ()=>{ filtrosEstado[categoria]={desde:'',hasta:'',fundo:'',linea:''}; construirFiltros(categoria); renderListado(categoria); });
+}
+
+function renderListado(categoria){
+  construirFiltros(categoria);
+  const st = filtrosEstado[categoria];
+  let filas = TODOS.filter(r=>r.categoria===categoria);
+  if(st.desde) filas = filas.filter(r=>r.fecha && r.fecha>=st.desde);
+  if(st.hasta) filas = filas.filter(r=>r.fecha && r.fecha<=st.hasta);
+  if(st.fundo) filas = filas.filter(r=>r.fundoNombre===st.fundo);
+  if(st.linea) filas = filas.filter(r=>r.lineaNombre===st.linea);
+
+  const tbody = document.getElementById(categoria==='calidad'?'tablaCalidad':'tablaSupervision');
+  const resumen = document.getElementById(categoria==='calidad'?'resumenCalidad':'resumenSupervision');
+
+  const n = filas.length;
+  const promedioNota = n ? (filas.reduce((s,r)=>s+(r.nota||0),0)/n) : 0;
+  const conBono = filas.filter(r=>r.bono).length;
+  resumen.innerHTML = `
+    <div class="resumen-item"><b>${n}</b><span>Controles</span></div>
+    <div class="resumen-item"><b>${n?formatoNota(Math.round(promedioNota*10)/10):'—'}</b><span>Nota promedio</span></div>
+    <div class="resumen-item"><b>${conBono}</b><span>Con bono</span></div>
+    <div class="resumen-item"><b>${n?Math.round(conBono/n*100)+'%':'—'}</b><span>% con bono</span></div>
+  `;
+
+  if(!n){ tbody.innerHTML = `<tr><td colspan="8"><div class="vacio">Sin controles guardados con estos filtros.</div></td></tr>`; return; }
+
+  tbody.innerHTML = filas.map(r=>`
+    <tr>
+      <td>${formatoFecha(r.fecha)}</td>
+      <td>${r.tipoLabel||''}</td>
+      <td>${r.fundoNombre||''}${r.lineaNombre? ' / '+r.lineaNombre:''}</td>
+      <td>${r.controlador||''}</td>
+      <td class="num">${r.resultado!==null&&r.resultado!==undefined?r.resultado+'%':'—'}</td>
+      <td class="num">${formatoNota(r.nota)}</td>
+      <td><span class="chip ${r.bono?'chip-bono-si':'chip-bono-no'}">${r.bono?'🏆 Bono':'Sin bono'}</span></td>
+      <td>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${r.pdfURL ? `<button class="btn btn-secundario btn-chico" onclick="window.open('${r.pdfURL}','_blank')">👁️ Ver PDF</button>` : ''}
+          <button class="btn btn-secundario btn-chico" onclick="generarCertificado('${r.id}')">📄 Certificado</button>
+          <button class="btn btn-secundario btn-chico" onclick="editarRegistro('${r.id}')">Editar</button>
+          <button class="btn btn-peligro btn-chico" onclick="eliminarRegistro('${r.id}')">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function formatoFecha(iso){
+  if(!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}-${m}-${y}`;
+}
+
+/* ============================================================
+   8) CERTIFICADO PDF (para enviar a RR.HH. y autorizar el bono)
+   ============================================================ */
+function generarCertificado(id){
+  const r = TODOS.find(x=>x.id===id);
+  if(!r) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const verde = [27,94,32], gris = [90,100,95];
+
+  doc.setFillColor(...verde);
+  doc.rect(0,0,210,24,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(15);
+  doc.text('Certificado de Control — Corte Alto', 14, 12);
+  doc.setFontSize(10);
+  doc.text('Forestal Mininco — checklistfácil', 14, 19);
+
+  let y = 34;
+  const campo = (etiqueta, valor) => {
+    doc.setTextColor(0,0,0);
+    doc.setFontSize(10.5);
+    doc.setFont(undefined,'bold'); doc.text(etiqueta+':', 14, y);
+    doc.setFont(undefined,'normal'); doc.text(String(valor && valor!=='' ? valor : '—'), 62, y, {maxWidth:134});
+    y += 7;
+  };
+
+  campo('N° informe', r.numero);
+  campo('Fecha', formatoFecha(r.fecha));
+  campo('Tipo de checklist', r.tipoLabel);
+  campo('Categoría', r.categoria==='calidad' ? 'Control de Calidad' : 'Pauta de Supervisión');
+  campo('Fundo', [r.fundoCodigo, r.fundoNombre].filter(Boolean).join(' — '));
+  campo('Línea', r.lineaNombre);
+  campo('Controlador', r.controlador);
+  campo('Jefe de faena', r.jefeFaena);
+  campo('Op. Volteo', r.opVolteo);
+  campo('Op. Trozado', r.opTrozado);
+  campo('Op. Clasificado', r.opClasificado);
+  campo('Calibrador', r.calibrador);
+
+  y += 2;
+  doc.setDrawColor(220,220,220); doc.line(14,y,196,y); y += 10;
+
+  doc.setFontSize(12.5);
+  campo('Resultado', r.resultado!==null && r.resultado!==undefined ? r.resultado+'%' : '—');
+  campo('Nota', formatoNota(r.nota));
+  doc.setFont(undefined,'bold');
+  doc.setTextColor(...(r.bono ? verde : gris));
+  doc.text('Bono:', 14, y);
+  doc.text(r.bono ? 'GANADO' : 'NO GANADO', 62, y);
+  doc.setTextColor(0,0,0);
+  y += 11;
+
+  doc.setFontSize(10.5);
+  doc.setFont(undefined,'bold');
+  doc.text('Inconformidades detectadas:', 14, y); y += 7;
+  doc.setFont(undefined,'normal');
+  const inc = (r.inconformidades && r.inconformidades.length) ? r.inconformidades : ['Sin inconformidades registradas.'];
+  inc.forEach(txt=>{
+    const wrapped = doc.splitTextToSize(txt, 180);
+    if(y > 265){ doc.addPage(); y = 20; }
+    doc.text(wrapped, 14, y);
+    y += wrapped.length*5.5 + 3;
+  });
+
+  doc.setFontSize(8.5);
+  doc.setTextColor(...gris);
+  doc.text(
+    `Generado automáticamente el ${new Date().toLocaleDateString('es-CL')} — documento de referencia para la autorización del bono de producción (RR.HH.). Archivo original: ${r.archivoNombre||'—'}`,
+    14, 289, {maxWidth:182}
+  );
+
+  doc.save(`certificado_${r.numero||'sn'}_${r.fecha||''}.pdf`);
+}
+
+async function eliminarRegistro(id){
+  if(!confirm('¿Eliminar este control? Esta acción no se puede deshacer.')) return;
+  await db.collection(COLECCION).doc(id).delete();
+  mostrarToast('Control eliminado');
+}
+
+function editarRegistro(id){
+  const r = TODOS.find(x=>x.id===id);
+  if(!r) return;
+  const nuevoResultado = prompt('Editar resultado (0-100):', r.resultado ?? '');
+  if(nuevoResultado===null) return;
+  const nuevaNotaTexto = prompt('Editar nota manualmente (deja igual para usar el cálculo automático resultado÷20):', formatoNota(r.nota));
+  const nuevoBono = confirm('¿Marcar como "ganó el bono"? Aceptar = Sí, Cancelar = No.');
+  const resultadoNum = nuevoResultado===''?null:parseInt(nuevoResultado);
+  let notaNum = calcularNota(resultadoNum);
+  if(nuevaNotaTexto){
+    const parsed = parseFloat(nuevaNotaTexto.replace(',','.'));
+    if(!isNaN(parsed)) notaNum = parsed;
+  }
+  db.collection(COLECCION).doc(id).update({
+    resultado: resultadoNum,
+    nota: notaNum,
+    bono: nuevoBono,
+    actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>mostrarToast('Control actualizado ✔'));
+}
+</script>
+
+<!-- ============================================================
+     Registro de Service Worker (mismo patrón que los demás módulos).
+     Reemplaza este bloque por el snippet EXACTO que ya usan tus otros
+     archivos (index, control, produccion-diaria, etc.) si difiere,
+     para mantener consistencia en la detección de actualizaciones.
+     ============================================================ -->
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('/sw.js').then(reg=>{
+        reg.addEventListener('updatefound', ()=>{
+          const nuevo = reg.installing;
+          nuevo.addEventListener('statechange', ()=>{
+            if(nuevo.state==='installed' && navigator.serviceWorker.controller){
+              window.location.reload();
+            }
+          });
+        });
+      }).catch(err=>console.warn('SW no registrado:', err));
+    });
+  }
+</script>
+
+</body>
+</html>
