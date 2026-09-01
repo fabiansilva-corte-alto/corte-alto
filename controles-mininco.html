@@ -582,6 +582,7 @@ async function guardarDesdeTarjeta(tarjeta){
     inconformidades: val('.f-inconformidades').split('\n').map(s=>s.trim()).filter(Boolean),
     archivoNombre: tarjeta.querySelector('b').textContent,
     pdfURL: '',
+    pdfPath: '',
     creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
     actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -601,6 +602,7 @@ async function guardarDesdeTarjeta(tarjeta){
       const tope = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout subiendo PDF a Storage')), 7000));
       await Promise.race([ref.put(archivo), tope]);
       registro.pdfURL = await Promise.race([ref.getDownloadURL(), tope]);
+      registro.pdfPath = ruta;
     }
   }catch(err){
     console.warn('No se pudo subir el PDF original a Storage (¿está habilitado Storage en tu proyecto Firebase?):', err);
@@ -795,7 +797,15 @@ function generarCertificado(id){
 }
 
 async function eliminarRegistro(id){
-  if(!confirm('¿Eliminar este control? Esta acción no se puede deshacer.')) return;
+  if(!confirm('¿Eliminar este control? Esta acción no se puede deshacer (también borra el PDF adjunto si lo tiene).')) return;
+  const r = TODOS.find(x=>x.id===id);
+  // Borra primero el PDF original en Storage (si lo tiene), para no dejar
+  // archivos huérfanos ocupando espacio. Si esto falla (ya no existe, sin
+  // permiso, etc.) no bloquea el borrado del registro igual.
+  if(r && r.pdfPath){
+    try{ await storage.ref().child(r.pdfPath).delete(); }
+    catch(err){ console.warn('No se pudo borrar el PDF en Storage (se borra igual el registro):', err); }
+  }
   await db.collection(COLECCION).doc(id).delete();
   mostrarToast('Control eliminado');
 }
