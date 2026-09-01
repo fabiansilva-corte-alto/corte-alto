@@ -61,6 +61,7 @@
   .btn-secundario{background:#fff;border:1px solid var(--gris-borde) !important;color:var(--texto);}
   .btn-peligro{background:#fdecea;color:var(--rojo);}
   .btn-chico{padding:5px 10px;font-size:12px;}
+  .btn-icono{padding:5px 8px;font-size:14px;line-height:1;min-width:30px;text-align:center;}
 
   .resumen-barra{display:flex;gap:26px;flex-wrap:wrap;background:#fff;border:1px solid var(--gris-borde);border-radius:12px;padding:14px 18px;margin-bottom:14px;}
   .resumen-item{text-align:center;}
@@ -71,11 +72,11 @@
   .filtros .campo{min-width:150px;}
 
   table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
-  th,td{padding:10px 12px;text-align:left;font-size:13px;border-bottom:1px solid var(--gris-borde);}
+  th,td{padding:6px 10px;text-align:left;font-size:12px;line-height:1.3;border-bottom:1px solid var(--gris-borde);}
   th{background:var(--verde-cl);color:var(--verde-osc);font-size:11px;text-transform:uppercase;letter-spacing:.02em;}
   tr:hover td{background:#fafcfa;}
   td.num{font-weight:700;}
-  .chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+  .chip{display:inline-block;padding:1px 8px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap;}
   .chip-bono-si{background:var(--verde-cl);color:var(--verde-osc);}
   .chip-bono-no{background:#f1f1ef;color:#8a8f8b;}
   .tabla-wrap{overflow-x:auto;}
@@ -116,7 +117,7 @@
   <div class="resumen-barra" id="resumenCalidad"></div>
   <div class="filtros" id="filtrosCalidad"></div>
   <div class="tabla-wrap"><table>
-    <thead><tr><th>Fecha</th><th>Tipo</th><th>Fundo / Línea</th><th>Controlador</th><th>Resultado</th><th>Nota</th><th>Bono</th><th></th></tr></thead>
+    <thead><tr><th>Fecha</th><th>Tipo</th><th>Fundo / Línea</th><th>Controlador</th><th>Jefe de faena</th><th>Op. Volteo</th><th>Op. Trozado</th><th>Op. Clasificado</th><th>Calibrador</th><th>Resultado</th><th>Nota</th><th>Bono</th><th></th></tr></thead>
     <tbody id="tablaCalidad"></tbody>
   </table></div>
 </section>
@@ -126,7 +127,7 @@
   <div class="resumen-barra" id="resumenSupervision"></div>
   <div class="filtros" id="filtrosSupervision"></div>
   <div class="tabla-wrap"><table>
-    <thead><tr><th>Fecha</th><th>Tipo</th><th>Fundo / Línea</th><th>Controlador</th><th>Resultado</th><th>Nota</th><th>Bono</th><th></th></tr></thead>
+    <thead><tr><th>Fecha</th><th>Tipo</th><th>Fundo / Línea</th><th>Controlador</th><th>Jefe de faena</th><th>Resultado</th><th>Nota</th><th>Bono</th><th></th></tr></thead>
     <tbody id="tablaSupervision"></tbody>
   </table></div>
 </section>
@@ -150,7 +151,7 @@
     apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
     authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
     projectId: "reporte-inicio-faena-forestal",
-    storageBucket: "reporte-inicio-faena-forestal.appspot.com",
+    storageBucket: "reporte-inicio-faena-forestal.firebasestorage.app",
     messagingSenderId: "962534414054",
     appId: "1:962534414054:web:fa43371d31413fc0524d27"
   };
@@ -682,7 +683,8 @@ function renderListado(categoria){
     <div class="resumen-item"><b>${n?Math.round(conBono/n*100)+'%':'—'}</b><span>% con bono</span></div>
   `;
 
-  if(!n){ tbody.innerHTML = `<tr><td colspan="8"><div class="vacio">Sin controles guardados con estos filtros.</div></td></tr>`; return; }
+  const esCalidad = categoria === 'calidad';
+  if(!n){ tbody.innerHTML = `<tr><td colspan="${esCalidad?13:9}"><div class="vacio">Sin controles guardados con estos filtros.</div></td></tr>`; return; }
 
   tbody.innerHTML = filas.map(r=>`
     <tr>
@@ -690,15 +692,21 @@ function renderListado(categoria){
       <td>${r.tipoLabel||''}</td>
       <td>${r.fundoNombre||''}${r.lineaNombre? ' / '+r.lineaNombre:''}</td>
       <td>${r.controlador||''}</td>
+      <td>${r.jefeFaena||'—'}</td>
+      ${esCalidad ? `
+      <td>${r.opVolteo||'—'}</td>
+      <td>${r.opTrozado||'—'}</td>
+      <td>${r.opClasificado||'—'}</td>
+      <td>${r.calibrador||'—'}</td>` : ''}
       <td class="num">${r.resultado!==null&&r.resultado!==undefined?r.resultado+'%':'—'}</td>
       <td class="num">${formatoNota(r.nota)}</td>
       <td><span class="chip ${r.bono?'chip-bono-si':'chip-bono-no'}">${r.bono?'🏆 Bono':'Sin bono'}</span></td>
       <td>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          ${r.pdfURL ? `<button class="btn btn-secundario btn-chico" onclick="window.open('${r.pdfURL}','_blank')">👁️ Ver PDF</button>` : ''}
-          <button class="btn btn-secundario btn-chico" onclick="generarCertificado('${r.id}')">📄 Certificado</button>
-          <button class="btn btn-secundario btn-chico" onclick="editarRegistro('${r.id}')">Editar</button>
-          <button class="btn btn-peligro btn-chico" onclick="eliminarRegistro('${r.id}')">Eliminar</button>
+        <div style="display:flex;gap:4px;flex-wrap:nowrap;">
+          ${r.pdfURL ? `<button class="btn btn-secundario btn-icono" title="Ver PDF original" onclick="window.open('${r.pdfURL}','_blank')">👁️</button>` : ''}
+          <button class="btn btn-secundario btn-icono" title="Descargar certificado" onclick="generarCertificado('${r.id}')">📄</button>
+          <button class="btn btn-secundario btn-icono" title="Editar" onclick="editarRegistro('${r.id}')">✏️</button>
+          <button class="btn btn-peligro btn-icono" title="Eliminar" onclick="eliminarRegistro('${r.id}')">🗑️</button>
         </div>
       </td>
     </tr>
