@@ -130,26 +130,18 @@
 <!-- TAB CALIDAD -->
 <section class="tab-panel" id="panel-calidad">
   <div class="resumen-barra" id="resumenCalidad"></div>
-  <div class="filtros" id="filtrosCalidad"></div>
 
-  <div class="card" id="resumenPersonaCalidad">
-    <b style="font-size:14px;color:var(--verde-osc);">📊 Resumen por persona (para autorizar bono)</b>
-    <p style="font-size:12px;color:#5b6b62;margin:4px 0 0;">Usa el rango de fechas "Desde / Hasta" de arriba. Se excluyen del promedio los controles marcados como Bono N/A.</p>
-    <div class="filtros" style="margin:10px 0 0;">
-      <div class="campo"><label>Campo</label>
-        <select id="rp-campo">
-          <option value="jefeFaena">Jefe de faena</option>
-          <option value="opVolteo">Op. Volteo</option>
-          <option value="opTrozado">Op. Trozado</option>
-          <option value="opClasificado">Op. Clasificado</option>
-          <option value="calibrador">Calibrador</option>
-        </select>
+  <div class="card">
+    <b style="font-size:14px;color:var(--verde-osc);">🔎 Filtros</b>
+    <div class="filtros" id="filtrosCalidad" style="margin-top:10px;"></div>
+
+    <div style="margin-top:16px;border-top:1px solid var(--gris-borde);padding-top:14px;">
+      <b style="font-size:14px;color:var(--verde-osc);">📊 Resumen (para autorizar bono)</b>
+      <p style="font-size:12px;color:#5b6b62;margin:4px 0 0;">Refleja los filtros ya consultados arriba. Se excluyen del promedio los controles marcados como Bono N/A.</p>
+      <div class="resumen-barra" id="resumenBonoCalidad" style="margin:10px 0 0;"></div>
+      <div class="acciones" style="margin-top:10px;">
+        <button class="btn btn-primario btn-chico" id="exportarBonoCalidad">📄 Exportar resumen a PDF</button>
       </div>
-      <div class="campo"><label>Persona</label><select id="rp-persona"><option value="">Todos</option></select></div>
-    </div>
-    <div class="resumen-barra" id="rp-resultado" style="margin:12px 0 0;"></div>
-    <div class="acciones" style="margin-top:10px;">
-      <button class="btn btn-primario btn-chico" id="rp-exportar">📄 Exportar resumen a PDF</button>
     </div>
   </div>
 
@@ -162,7 +154,21 @@
 <!-- TAB SUPERVISION -->
 <section class="tab-panel" id="panel-supervision">
   <div class="resumen-barra" id="resumenSupervision"></div>
-  <div class="filtros" id="filtrosSupervision"></div>
+
+  <div class="card">
+    <b style="font-size:14px;color:var(--verde-osc);">🔎 Filtros</b>
+    <div class="filtros" id="filtrosSupervision" style="margin-top:10px;"></div>
+
+    <div style="margin-top:16px;border-top:1px solid var(--gris-borde);padding-top:14px;">
+      <b style="font-size:14px;color:var(--verde-osc);">📊 Resumen (para autorizar bono)</b>
+      <p style="font-size:12px;color:#5b6b62;margin:4px 0 0;">Refleja los filtros ya consultados arriba. Se excluyen del promedio los controles marcados como Bono N/A.</p>
+      <div class="resumen-barra" id="resumenBonoSupervision" style="margin:10px 0 0;"></div>
+      <div class="acciones" style="margin-top:10px;">
+        <button class="btn btn-primario btn-chico" id="exportarBonoSupervision">📄 Exportar resumen a PDF</button>
+      </div>
+    </div>
+  </div>
+
   <div class="tabla-wrap"><table>
     <thead><tr><th>Fecha</th><th>Tipo</th><th>Fundo / Línea</th><th>Controlador</th><th>Jefe de faena</th><th>Resultado</th><th>Nota</th><th>Bono</th><th></th></tr></thead>
     <tbody id="tablaSupervision"></tbody>
@@ -269,17 +275,14 @@ let CONFIG_OPERADORES = []; // [{nombre, funciones:[]}]
 
 db.collection('config_jefes_faena').orderBy('nombre').onSnapshot(snap=>{
   CONFIG_JEFES = snap.docs.map(d=>d.data().nombre).filter(Boolean);
-  if(typeof poblarPersonaResumen==='function') poblarPersonaResumen();
 }, err=>console.warn('No se pudo leer config_jefes_faena:', err));
 
 db.collection('config_calibradores').orderBy('nombre').onSnapshot(snap=>{
   CONFIG_CALIBRADORES = snap.docs.map(d=>d.data().nombre).filter(Boolean);
-  if(typeof poblarPersonaResumen==='function') poblarPersonaResumen();
 }, err=>console.warn('No se pudo leer config_calibradores:', err));
 
 db.collection('config_operadores').orderBy('nombre').onSnapshot(snap=>{
   CONFIG_OPERADORES = snap.docs.map(d=>({ nombre: d.data().nombre, funciones: d.data().funciones||[] })).filter(o=>o.nombre);
-  if(typeof poblarPersonaResumen==='function') poblarPersonaResumen();
 }, err=>console.warn('No se pudo leer config_operadores:', err));
 
 // Las funciones vienen tal cual las guarda configuracion.html: 'OP TROZADO',
@@ -805,43 +808,97 @@ db.collection(COLECCION).orderBy('fecha','desc').onSnapshot(snap=>{
   renderListado('supervision');
 }, err=>console.error('Firestore onSnapshot error:', err));
 
-const filtrosEstado = { calidad:{desde:'',hasta:'',fundo:'',linea:''}, supervision:{desde:'',hasta:'',fundo:'',linea:''} };
+// Un solo objeto de filtros por pestaña, con TODOS los campos posibles (los
+// de Supervisión simplemente no se usan). Los controles NO aplican el
+// filtro apenas cambias un select — solo actualizan este estado; hace falta
+// apretar "Consultar" (o "Limpiar") para que se filtre la tabla y el resumen.
+const filtrosEstado = {
+  calidad:     {desde:'',hasta:'',fundo:'',linea:'',tipo:'',jefeFaena:'',opVolteo:'',opTrozado:'',opClasificado:'',calibrador:''},
+  supervision: {desde:'',hasta:'',fundo:'',linea:'',tipo:'',jefeFaena:'',opVolteo:'',opTrozado:'',opClasificado:'',calibrador:''}
+};
+function filtrosVacios(){
+  return {desde:'',hasta:'',fundo:'',linea:'',tipo:'',jefeFaena:'',opVolteo:'',opTrozado:'',opClasificado:'',calibrador:''};
+}
+function opcionesUnicas(lista, campo){
+  return [...new Set(lista.map(r=>r[campo]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+}
 
 function construirFiltros(categoria){
-  const cont = document.getElementById('filtros'+(categoria==='calidad'?'Calidad':'Supervision'));
+  const esCalidad = categoria === 'calidad';
+  const cont = document.getElementById('filtros'+(esCalidad?'Calidad':'Supervision'));
   const opciones = TODOS.filter(r=>r.categoria===categoria);
-  const fundos = [...new Set(opciones.map(r=>r.fundoNombre).filter(Boolean))];
-  const lineas = [...new Set(opciones.map(r=>r.lineaNombre).filter(Boolean))];
-  cont.innerHTML = `
+  const fundos = opcionesUnicas(opciones,'fundoNombre');
+  const lineas = opcionesUnicas(opciones,'lineaNombre');
+  const tipos = opcionesUnicas(opciones,'tipoLabel');
+  const jefes = opcionesUnicas(opciones,'jefeFaena');
+
+  let html = `
     <div class="campo"><label>Desde</label><input type="date" class="fx-desde"></div>
     <div class="campo"><label>Hasta</label><input type="date" class="fx-hasta"></div>
     <div class="campo"><label>Fundo</label><select class="fx-fundo"><option value="">Todos</option>${fundos.map(f=>`<option>${f}</option>`).join('')}</select></div>
     <div class="campo"><label>Línea</label><select class="fx-linea"><option value="">Todas</option>${lineas.map(l=>`<option>${l}</option>`).join('')}</select></div>
-    <button class="btn btn-secundario btn-chico fx-limpiar">Limpiar</button>
-  `;
+    <div class="campo"><label>Tipo de control</label><select class="fx-tipo"><option value="">Todos</option>${tipos.map(t=>`<option>${t}</option>`).join('')}</select></div>
+    <div class="campo"><label>Jefe de faena</label><select class="fx-jefe"><option value="">Todos</option>${jefes.map(j=>`<option>${j}</option>`).join('')}</select></div>`;
+  if(esCalidad){
+    const opVolteos = opcionesUnicas(opciones,'opVolteo');
+    const opTrozados = opcionesUnicas(opciones,'opTrozado');
+    const opClasificados = opcionesUnicas(opciones,'opClasificado');
+    const calibradores = opcionesUnicas(opciones,'calibrador');
+    html += `
+    <div class="campo"><label>Op. Trozado</label><select class="fx-optrozado"><option value="">Todos</option>${opTrozados.map(o=>`<option>${o}</option>`).join('')}</select></div>
+    <div class="campo"><label>Op. Clasificado</label><select class="fx-opclasificado"><option value="">Todos</option>${opClasificados.map(o=>`<option>${o}</option>`).join('')}</select></div>
+    <div class="campo"><label>Op. Volteo</label><select class="fx-opvolteo"><option value="">Todos</option>${opVolteos.map(o=>`<option>${o}</option>`).join('')}</select></div>
+    <div class="campo"><label>Calibrador</label><select class="fx-calibrador"><option value="">Todos</option>${calibradores.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
+  }
+  html += `
+    <button class="btn btn-primario fx-consultar">🔎 Consultar</button>
+    <button class="btn btn-secundario fx-limpiar">Limpiar</button>`;
+  cont.innerHTML = html;
+
   const st = filtrosEstado[categoria];
-  cont.querySelector('.fx-desde').value = st.desde;
-  cont.querySelector('.fx-hasta').value = st.hasta;
-  cont.querySelector('.fx-fundo').value = st.fundo;
-  cont.querySelector('.fx-linea').value = st.linea;
-  cont.querySelector('.fx-desde').addEventListener('change', e=>{st.desde=e.target.value; renderListado(categoria);});
-  cont.querySelector('.fx-hasta').addEventListener('change', e=>{st.hasta=e.target.value; renderListado(categoria);});
-  cont.querySelector('.fx-fundo').addEventListener('change', e=>{st.fundo=e.target.value; renderListado(categoria);});
-  cont.querySelector('.fx-linea').addEventListener('change', e=>{st.linea=e.target.value; renderListado(categoria);});
-  cont.querySelector('.fx-limpiar').addEventListener('click', ()=>{ filtrosEstado[categoria]={desde:'',hasta:'',fundo:'',linea:''}; construirFiltros(categoria); renderListado(categoria); });
+  const MAPA = { desde:'desde', hasta:'hasta', fundo:'fundo', linea:'linea', tipo:'tipo', jefe:'jefeFaena', optrozado:'opTrozado', opclasificado:'opClasificado', opvolteo:'opVolteo', calibrador:'calibrador' };
+  Object.keys(MAPA).forEach(sufijo=>{
+    const el = cont.querySelector('.fx-'+sufijo);
+    if(!el) return;
+    const key = MAPA[sufijo];
+    el.value = st[key];
+    el.addEventListener('change', e=>{ st[key] = e.target.value; });
+  });
+
+  cont.querySelector('.fx-consultar').addEventListener('click', ()=> renderListado(categoria));
+  cont.querySelector('.fx-limpiar').addEventListener('click', ()=>{
+    filtrosEstado[categoria] = filtrosVacios();
+    renderListado(categoria);
+  });
 }
+
+let resumenActual = { calidad: null, supervision: null };
 
 function renderListado(categoria){
   construirFiltros(categoria);
   const st = filtrosEstado[categoria];
+  const esCalidad = categoria === 'calidad';
+
+  // Todos los filtros seleccionados se combinan con AND: si eliges Jefe de
+  // faena Y Op. Trozado a la vez, solo quedan los controles que coinciden
+  // con ambas condiciones.
   let filas = TODOS.filter(r=>r.categoria===categoria);
   if(st.desde) filas = filas.filter(r=>r.fecha && r.fecha>=st.desde);
   if(st.hasta) filas = filas.filter(r=>r.fecha && r.fecha<=st.hasta);
   if(st.fundo) filas = filas.filter(r=>r.fundoNombre===st.fundo);
   if(st.linea) filas = filas.filter(r=>r.lineaNombre===st.linea);
+  if(st.tipo) filas = filas.filter(r=>r.tipoLabel===st.tipo);
+  if(st.jefeFaena) filas = filas.filter(r=>(r.jefeFaena||'')===st.jefeFaena);
+  if(esCalidad){
+    if(st.opTrozado) filas = filas.filter(r=>(r.opTrozado||'')===st.opTrozado);
+    if(st.opClasificado) filas = filas.filter(r=>(r.opClasificado||'')===st.opClasificado);
+    if(st.opVolteo) filas = filas.filter(r=>(r.opVolteo||'')===st.opVolteo);
+    if(st.calibrador) filas = filas.filter(r=>(r.calibrador||'')===st.calibrador);
+  }
 
-  const tbody = document.getElementById(categoria==='calidad'?'tablaCalidad':'tablaSupervision');
-  const resumen = document.getElementById(categoria==='calidad'?'resumenCalidad':'resumenSupervision');
+  const tbody = document.getElementById(esCalidad?'tablaCalidad':'tablaSupervision');
+  const resumen = document.getElementById(esCalidad?'resumenCalidad':'resumenSupervision');
+  const resumenBono = document.getElementById(esCalidad?'resumenBonoCalidad':'resumenBonoSupervision');
 
   const n = filas.length;
   const promedioNota = n ? (filas.reduce((s,r)=>s+(r.nota||0),0)/n) : 0;
@@ -856,12 +913,19 @@ function renderListado(categoria){
     <div class="resumen-item"><b>${elegiblesBono.length?Math.round(conBono/elegiblesBono.length*100)+'%':'—'}</b><span>% con bono</span></div>
   `;
 
-  const esCalidad = categoria === 'calidad';
-  if(!n){
-    tbody.innerHTML = `<tr><td colspan="${esCalidad?13:9}"><div class="vacio">Sin controles guardados con estos filtros.</div></td></tr>`;
-    if(esCalidad && typeof calcularResumenPersona==='function') calcularResumenPersona();
-    return;
-  }
+  // Resumen específico para decidir el bono: misma nota promedio pero
+  // calculada solo sobre los controles elegibles (excluye N/A), que es el
+  // número que de verdad importa para autorizarlo.
+  const notaPromBono = elegiblesBono.length ? Math.round((elegiblesBono.reduce((s,r)=>s+(r.nota||0),0)/elegiblesBono.length)*10)/10 : null;
+  const ganaBono = notaPromBono !== null && notaPromBono >= 4.5;
+  resumenBono.innerHTML = `
+    <div class="resumen-item"><b>${n}</b><span>Controles en el período</span></div>
+    <div class="resumen-item"><b>${notaPromBono===null?'—':formatoNota(notaPromBono)}</b><span>Nota promedio</span></div>
+    <div class="resumen-item ${notaPromBono===null?'':(ganaBono?'bono-ok':'bono-mal')}"><b>${notaPromBono===null?'—':(ganaBono?'🏆 Sí':'No')}</b><span>Gana bono</span></div>
+  `;
+  resumenActual[categoria] = { filas, elegiblesBono, notaPromBono, ganaBono, filtros: {...st} };
+
+  if(!n){ tbody.innerHTML = `<tr><td colspan="${esCalidad?13:9}"><div class="vacio">Sin controles guardados con estos filtros.</div></td></tr>`; return; }
 
   tbody.innerHTML = filas.map(r=>{
     const eb = estadoBono(r);
@@ -890,8 +954,6 @@ function renderListado(categoria){
       </td>
     </tr>
   `;}).join('');
-
-  if(esCalidad && typeof calcularResumenPersona==='function') calcularResumenPersona();
 }
 
 function formatoFecha(iso){
@@ -901,113 +963,76 @@ function formatoFecha(iso){
 }
 
 /* ============================================================
-   7.5) RESUMEN POR PERSONA (para autorizar el bono) — solo Calidad
-   Cuando varios controles del mes quedan aplicados al mismo Jefe de
-   faena / Op. Volteo / Op. Trozado / Op. Clasificado / Calibrador,
-   este panel calcula cuántos controles tuvo, su nota promedio en el
-   rango de fechas activo (los mismos filtros Desde/Hasta de arriba),
-   y si con esa nota promedio corresponde el bono o no.
+   7.5) EXPORTAR RESUMEN DE BONO A PDF (Calidad y Supervisión)
+   Usa exactamente lo último consultado en la barra de filtros de cada
+   pestaña (guardado en resumenActual por renderListado). Igual que en
+   el certificado, cada línea "etiqueta: valor" ajusta el alto según
+   cuántas líneas ocupe el valor, para que nunca se encimen dos líneas
+   aunque el texto sea largo (ej. varios filtros combinados).
    ============================================================ */
-const CAMPOS_PERSONA = {
-  jefeFaena:     { label: 'Jefe de faena',    opciones: () => CONFIG_JEFES },
-  opVolteo:      { label: 'Op. Volteo',       opciones: () => operadoresPorFuncion('VOLTEO') },
-  opTrozado:     { label: 'Op. Trozado',      opciones: () => operadoresPorFuncion('OP TROZADO') },
-  opClasificado: { label: 'Op. Clasificado',  opciones: () => operadoresPorFuncion('OP CLASIFICADO') },
-  calibrador:    { label: 'Calibrador',       opciones: () => CONFIG_CALIBRADORES },
-};
-let resumenPersonaActual = null; // datos del último cálculo, usados por el export a PDF
+const COLOR_VERDE = [27,94,32], COLOR_GRIS = [90,100,95], COLOR_AMBAR = [138,97,0];
 
-function poblarPersonaResumen(){
-  const selCampo = document.getElementById('rp-campo');
-  const selPersona = document.getElementById('rp-persona');
-  if(!selCampo || !selPersona) return; // el panel solo existe en la pestaña Calidad
-  const campo = selCampo.value;
-  const actual = selPersona.value;
-  const opciones = CAMPOS_PERSONA[campo].opciones();
-  selPersona.innerHTML = `<option value="">Todos</option>` + opciones.map(o=>`<option>${o}</option>`).join('');
-  if(opciones.includes(actual)) selPersona.value = actual;
-  calcularResumenPersona();
+function dibujarCampoPDF(doc, etiqueta, valor, x, yRef){
+  doc.setTextColor(0,0,0);
+  doc.setFontSize(10.5);
+  doc.setFont(undefined,'bold'); doc.text(etiqueta+':', x, yRef.y);
+  doc.setFont(undefined,'normal');
+  const texto = String(valor && valor!=='' ? valor : '—');
+  const wrapped = doc.splitTextToSize(texto, 134);
+  doc.text(wrapped, x+48, yRef.y);
+  yRef.y += Math.max(7, wrapped.length*5.5);
 }
 
-function calcularResumenPersona(){
-  const selCampo = document.getElementById('rp-campo');
-  const selPersona = document.getElementById('rp-persona');
-  const cont = document.getElementById('rp-resultado');
-  if(!selCampo || !selPersona || !cont) return;
-  const campo = selCampo.value;
-  const persona = selPersona.value;
-  const st = filtrosEstado.calidad;
-
-  let filas = TODOS.filter(r=>r.categoria==='calidad');
-  if(st.desde) filas = filas.filter(r=>r.fecha && r.fecha>=st.desde);
-  if(st.hasta) filas = filas.filter(r=>r.fecha && r.fecha<=st.hasta);
-  if(persona){
-    filas = filas.filter(r=>(r[campo]||'').trim().toLowerCase() === persona.trim().toLowerCase());
-  } else {
-    // "Todos": solo los controles donde ese rol efectivamente participó.
-    filas = filas.filter(r=>(r[campo]||'').trim() !== '');
-  }
-
-  // El bono N/A no cuenta para el promedio que decide el bono (mismo
-  // criterio confirmado para el % con bono general).
-  const elegibles = filas.filter(r=>estadoBono(r)!=='na');
-  const n = elegibles.length;
-  const notaProm = n ? Math.round((elegibles.reduce((s,r)=>s+(r.nota||0),0)/n)*10)/10 : null;
-  const ganaBono = notaProm !== null && notaProm >= 4.5;
-
-  cont.innerHTML = `
-    <div class="resumen-item"><b>${filas.length}</b><span>Controles en el período</span></div>
-    <div class="resumen-item"><b>${notaProm===null?'—':formatoNota(notaProm)}</b><span>Nota promedio</span></div>
-    <div class="resumen-item ${notaProm===null?'':(ganaBono?'bono-ok':'bono-mal')}"><b>${notaProm===null?'—':(ganaBono?'🏆 Sí':'No')}</b><span>Gana bono</span></div>
-  `;
-
-  resumenPersonaActual = { campo, campoLabel: CAMPOS_PERSONA[campo].label, persona, filas, elegibles, notaProm, ganaBono, desde: st.desde, hasta: st.hasta };
-}
-
-function exportarResumenPersona(){
-  if(!resumenPersonaActual || !resumenPersonaActual.filas.length){
-    alert('No hay controles que coincidan con estos filtros para exportar.');
+function exportarResumenBono(categoria){
+  const d = resumenActual[categoria];
+  if(!d || !d.filas.length){
+    alert('No hay controles que coincidan con los filtros consultados.');
     return;
   }
-  const d = resumenPersonaActual;
+  const f = d.filtros;
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  dibujarEncabezado(doc, 'Resumen de Bono por Persona');
+  dibujarEncabezado(doc, categoria==='calidad' ? 'Resumen de Bono — Controles de Calidad' : 'Resumen de Bono — Pautas de Supervisión');
 
-  let y = 40;
-  const campo = (etiqueta, valor) => {
-    doc.setTextColor(0,0,0);
-    doc.setFontSize(10.5);
-    doc.setFont(undefined,'bold'); doc.text(etiqueta+':', 14, y);
-    doc.setFont(undefined,'normal'); doc.text(String(valor && valor!=='' ? valor : '—'), 62, y, {maxWidth:134});
-    y += 7;
-  };
-  campo('Campo', d.campoLabel);
-  campo('Persona', d.persona || 'Todos');
-  campo('Período', `${d.desde?formatoFecha(d.desde):'(sin definir)'} a ${d.hasta?formatoFecha(d.hasta):'(sin definir)'}`);
+  const yRef = { y: 40 };
+  const campo = (etq,val) => dibujarCampoPDF(doc, etq, val, 14, yRef);
+
+  const partesFiltro = [
+    f.fundo && `Fundo: ${f.fundo}`,
+    f.linea && `Línea: ${f.linea}`,
+    f.tipo && `Tipo: ${f.tipo}`,
+    f.jefeFaena && `Jefe de faena: ${f.jefeFaena}`,
+    categoria==='calidad' && f.opTrozado && `Op. Trozado: ${f.opTrozado}`,
+    categoria==='calidad' && f.opClasificado && `Op. Clasificado: ${f.opClasificado}`,
+    categoria==='calidad' && f.opVolteo && `Op. Volteo: ${f.opVolteo}`,
+    categoria==='calidad' && f.calibrador && `Calibrador: ${f.calibrador}`,
+  ].filter(Boolean);
+
+  campo('Período', `${f.desde?formatoFecha(f.desde):'(sin definir)'} a ${f.hasta?formatoFecha(f.hasta):'(sin definir)'}`);
+  campo('Filtros', partesFiltro.length ? partesFiltro.join(' · ') : 'Ninguno (todos los controles)');
   campo('Controles en el período', d.filas.length);
-  campo('Controles considerados para el promedio', d.elegibles.length + ' (excluye Bono N/A)');
+  campo('Controles (promedio)', d.elegiblesBono.length + ' — excluye Bono N/A');
 
-  y += 2; doc.setDrawColor(220,220,220); doc.line(14,y,196,y); y += 10;
+  yRef.y += 2; doc.setDrawColor(220,220,220); doc.line(14,yRef.y,196,yRef.y); yRef.y += 10;
 
   doc.setFontSize(13);
-  campo('Nota promedio', d.notaProm===null?'—':formatoNota(d.notaProm));
+  campo('Nota promedio', d.notaPromBono===null?'—':formatoNota(d.notaPromBono));
   doc.setFont(undefined,'bold');
   doc.setTextColor(...(d.ganaBono?COLOR_VERDE:COLOR_GRIS));
-  doc.text('¿Gana bono?:', 14, y);
-  doc.text(d.notaProm===null?'—':(d.ganaBono?'SÍ':'NO'), 62, y);
+  doc.text('¿Gana bono?:', 14, yRef.y);
+  doc.text(d.notaPromBono===null?'—':(d.ganaBono?'SÍ':'NO'), 62, yRef.y);
   doc.setTextColor(0,0,0);
-  y += 12;
+  yRef.y += 12;
 
   doc.setFontSize(10.5); doc.setFont(undefined,'bold');
-  doc.text('Detalle de controles considerados:', 14, y); y += 7;
+  doc.text('Detalle de controles considerados para el promedio:', 14, yRef.y); yRef.y += 7;
   doc.setFont(undefined,'normal'); doc.setFontSize(9.5);
-  d.elegibles.forEach(r=>{
-    if(y > 270){ doc.addPage(); y = 20; }
+  d.elegiblesBono.forEach(r=>{
+    if(yRef.y > 270){ doc.addPage(); yRef.y = 20; }
     const linea = `${formatoFecha(r.fecha)} — ${r.tipoLabel||''} — ${r.fundoNombre||''}${r.lineaNombre?' / '+r.lineaNombre:''} — Resultado ${r.resultado??'—'}% — Nota ${formatoNota(r.nota)}`;
     const wrapped = doc.splitTextToSize(linea, 182);
-    doc.text(wrapped, 14, y);
-    y += wrapped.length*5.2 + 2;
+    doc.text(wrapped, 14, yRef.y);
+    yRef.y += wrapped.length*5.2 + 2;
   });
 
   doc.setFontSize(8.5);
@@ -1017,19 +1042,16 @@ function exportarResumenPersona(){
     14, 289, {maxWidth:182}
   );
 
-  const nombreArchivo = (d.persona || 'todos').replace(/\s+/g,'_');
-  doc.save(`resumen_bono_${nombreArchivo}_${d.desde||'inicio'}_${d.hasta||'hoy'}.pdf`);
+  const nombreArchivo = (f.jefeFaena || f.calibrador || f.opTrozado || f.opClasificado || f.opVolteo || 'todos').replace(/\s+/g,'_');
+  doc.save(`resumen_bono_${categoria}_${nombreArchivo}_${f.desde||'inicio'}_${f.hasta||'hoy'}.pdf`);
 }
 
-document.getElementById('rp-campo').addEventListener('change', poblarPersonaResumen);
-document.getElementById('rp-persona').addEventListener('change', calcularResumenPersona);
-document.getElementById('rp-exportar').addEventListener('click', exportarResumenPersona);
-poblarPersonaResumen();
+document.getElementById('exportarBonoCalidad').addEventListener('click', ()=> exportarResumenBono('calidad'));
+document.getElementById('exportarBonoSupervision').addEventListener('click', ()=> exportarResumenBono('supervision'));
 
 /* ============================================================
    8) CERTIFICADO PDF (para enviar a RR.HH. y autorizar el bono)
    ============================================================ */
-const COLOR_VERDE = [27,94,32], COLOR_GRIS = [90,100,95], COLOR_AMBAR = [138,97,0];
 
 // Encabezado compartido (con logo) para el certificado individual y el
 // resumen por persona.
@@ -1055,14 +1077,8 @@ function generarCertificado(id){
   const doc = new jsPDF();
   dibujarEncabezado(doc, 'Certificado de Control — Forestal Mininco (checklistfácil)');
 
-  let y = 40;
-  const campo = (etiqueta, valor) => {
-    doc.setTextColor(0,0,0);
-    doc.setFontSize(10.5);
-    doc.setFont(undefined,'bold'); doc.text(etiqueta+':', 14, y);
-    doc.setFont(undefined,'normal'); doc.text(String(valor && valor!=='' ? valor : '—'), 62, y, {maxWidth:134});
-    y += 7;
-  };
+  const yRef = { y: 40 };
+  const campo = (etiqueta, valor) => dibujarCampoPDF(doc, etiqueta, valor, 14, yRef);
 
   campo('N° informe', r.numero);
   campo('Fecha', formatoFecha(r.fecha));
@@ -1077,8 +1093,8 @@ function generarCertificado(id){
   campo('Op. Clasificado', r.opClasificado);
   campo('Calibrador', r.calibrador);
 
-  y += 2;
-  doc.setDrawColor(220,220,220); doc.line(14,y,196,y); y += 10;
+  yRef.y += 2;
+  doc.setDrawColor(220,220,220); doc.line(14,yRef.y,196,yRef.y); yRef.y += 10;
 
   doc.setFontSize(12.5);
   campo('Resultado', r.resultado!==null && r.resultado!==undefined ? r.resultado+'%' : '—');
@@ -1087,21 +1103,21 @@ function generarCertificado(id){
   const estadoB = estadoBono(r);
   const colorBono = estadoB==='si' ? COLOR_VERDE : (estadoB==='na' ? COLOR_AMBAR : COLOR_GRIS);
   doc.setTextColor(...colorBono);
-  doc.text('Bono:', 14, y);
-  doc.text(estadoB==='si' ? 'GANADO' : (estadoB==='na' ? 'NO APLICA' : 'NO GANADO'), 62, y);
+  doc.text('Bono:', 14, yRef.y);
+  doc.text(estadoB==='si' ? 'GANADO' : (estadoB==='na' ? 'NO APLICA' : 'NO GANADO'), 62, yRef.y);
   doc.setTextColor(0,0,0);
-  y += 11;
+  yRef.y += 11;
 
   doc.setFontSize(10.5);
   doc.setFont(undefined,'bold');
-  doc.text('Inconformidades detectadas:', 14, y); y += 7;
+  doc.text('Inconformidades detectadas:', 14, yRef.y); yRef.y += 7;
   doc.setFont(undefined,'normal');
   const inc = (r.inconformidades && r.inconformidades.length) ? r.inconformidades : ['Sin inconformidades registradas.'];
   inc.forEach(txt=>{
     const wrapped = doc.splitTextToSize(txt, 180);
-    if(y > 265){ doc.addPage(); y = 20; }
-    doc.text(wrapped, 14, y);
-    y += wrapped.length*5.5 + 3;
+    if(yRef.y > 265){ doc.addPage(); yRef.y = 20; }
+    doc.text(wrapped, 14, yRef.y);
+    yRef.y += wrapped.length*5.5 + 3;
   });
 
   doc.setFontSize(8.5);
