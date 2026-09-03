@@ -651,7 +651,8 @@ window.consultar = async function() {
     // prod para KPI cards y gráfico → filtro LÍNEA
     let prod = linea ? prodTodo.filter(d=>(d.linea||d.codLinea||'')===linea) : prodTodo;
 
-    // prodEqm para tabla diaria, rodales/fundo → filtro EQ.MADEREO (independiente de línea)
+    // prodEqm para tabla diaria, volumen producido, rodales/fundo
+    // → filtro EQ.MADEREO únicamente (independiente de línea Y fundo)
     let prodEqm = prodTodo.map(d => ({
       ...d,
       cartolas: (d.cartolas||[]).filter(c => {
@@ -659,22 +660,30 @@ window.consultar = async function() {
         return true;
       })
     })).filter(d => !eqmFiltro || d.cartolas.length>0);
-    if(fundoFiltro) prodEqm = prodEqm.filter(d=>fundoFiltro.has(d.fundo||''));
 
     // ── Productividad jefe: consulta SIN filtro de línea ─────────────────
     snap = await getDocs(query(collection(db,'productividad_jefe'),
       where('fecha','>=',desde), where('fecha','<=',hasta), orderBy('fecha')));
     let jefeTodo = []; snap.forEach(d => jefeTodo.push(d.data()));
 
-    // jefeLinea → OEE, Varas en piso, Causales Volteo (filtro LÍNEA)
+    // jefeLinea → OEE, Causales Volteo (filtro LÍNEA)
     let jefeLinea = linea ? jefeTodo.filter(d=>(d.linea||'')===linea) : jefeTodo;
+
+    // jefeVaras → Varas en piso: siempre hasta HOY (fecha actual de revisión)
+    // independiente del rango seleccionado en el filtro
+    const hoyISO = toISO(new Date());
+    let jefeVarasSnap = await getDocs(query(collection(db,'productividad_jefe'),
+      where('fecha','<=',hoyISO), orderBy('fecha')));
+    let jefeVaras = [];
+    jefeVarasSnap.forEach(d => jefeVaras.push(d.data()));
+    if(linea) jefeVaras = jefeVaras.filter(d=>(d.linea||'')===linea);
 
     // jefeEqm → Tabla diaria, Utilización, Causales Madereo, Cambios de línea (filtro EQ.MADEREO)
     let jefeEqm = jefeTodo.map(d => ({
       ...d,
       equipos: (d.equipos||[]).filter(eq => !eqmFiltro || eqmFiltro.has(eq.equipo||''))
     })).filter(d => !eqmFiltro || d.equipos.length>0);
-    if(fundoFiltro) jefeEqm = jefeEqm.filter(d=>fundoFiltro.has(d.fundo||''));
+    // jefeEqm NO filtra por fundo — solo por Eq.Madereo
 
     // Meta volumen (filtro LÍNEA)
     const meta = await cargarMeta(desde, hasta, linea, prod);
@@ -693,7 +702,7 @@ window.consultar = async function() {
     // Bloques por LÍNEA
     renderProduccion();          // KPI cards (usa G.prod) — gráfico al final
     renderOEE();
-    await renderVarasEnPiso(jefeLinea);
+    await renderVarasEnPiso(jefeVaras);
 
     // Bloques por EQ.MADEREO
     renderTablaDiariaEqm();
@@ -774,10 +783,16 @@ function poblarProcesadores(jefe) {
 // BLOQUE 2: PRODUCCIÓN
 // ══════════════════════════════════════════════════════════════════════════
 function renderProduccion() {
-  const { prod, meta, inicio, desde, hasta } = G;
+  const { prod, prodEqm, meta, inicio, desde, hasta } = G;
 
-  // ── KPI cards ──
-  const volReal = prod.reduce((s,d)=>s+(parseFloat(d.totalGlobal)||0),0);
+  // ── KPI cards: volReal desde prodEqm (filtro Eq.Madereo) para que cuadre con tabla ──
+  // Suma volumen solo de cartolas de equipos seleccionados
+  const volReal = prodEqm.reduce((s,d) => {
+    return s + (d.cartolas||[]).reduce((sc,c) => {
+      let v=0; (c.productos||[]).forEach(p=>v+=parseFloat(p.vol)||0);
+      return sc+v;
+    },0);
+  }, 0);
   const metaTotal = Object.values(meta).reduce((s,v)=>s+v,0);
   const cumpl = metaTotal>0 ? (volReal/metaTotal)*100 : NaN;
 
@@ -1648,6 +1663,7 @@ function renderCambioLinea(jefe) {
   const cuerda   = {'SÍ':0,'NO':0,'INCOMPLETA':0};
   const soportes = {'SÍ':0,'NO':0};
   const preInst  = {'SÍ':0,'NO':0};
+  const perfil   = {'SÍ':0,'NO':0};  // cumplePerfil
 
   jefe.forEach(d => (d.equipos||[]).forEach(eq => {
     const tipo=(eq.tipo||'').toUpperCase();
@@ -1666,7 +1682,12 @@ function renderCambioLinea(jefe) {
       const pi=(eq.preInstalado||'').toUpperCase();
       if(pi==='SÍ') preInst['SÍ']++;
       else if(pi==='NO') preInst['NO']++;
+      else preInst['Sin dato']++;
     }
+    // cumplePerfil: SÍ = cumple perfil, cualquier otro valor = NO (pidió modificación)
+    const cp=(eq.cumplePerfil||'').trim();
+    if(cp==='SÍ') perfil['SÍ']++;
+    else if(cp) perfil['NO']++;
   }));
 
   if(totalCambios===0) {
@@ -1718,7 +1739,11 @@ function renderCambioLinea(jefe) {
     </div>
     <div class="cl-cond">
       <div class="cl-cond-label">⚡ Preinstalado <span style="font-size:10px;font-weight:400;color:var(--text3)">(de ${totalConSop} cambio${totalConSop!==1?'s':''} con soportes)</span></div>
-      ${totalConSop>0?segBar(preInst,['#3B6D11','#A32D2D']):'<div style="font-size:12px;color:var(--text3)">Sin cambios con soportes</div>'}
+      ${totalConSop>0?segBar(preInst,['#3B6D11','#A32D2D','#888888']):'<div style="font-size:12px;color:var(--text3)">Sin cambios con soportes</div>'}
+    </div>
+    <div class="cl-cond">
+      <div class="cl-cond-label">📐 Asertividad del perfil <span style="font-size:10px;font-weight:400;color:var(--text3)">(de ${totalCambios} cambio${totalCambios!==1?'s':''})</span></div>
+      ${(perfil['SÍ']+perfil['NO'])>0?segBar(perfil,['#3B6D11','#A32D2D']):'<div style="font-size:12px;color:var(--text3)">Sin datos de perfil registrados</div>'}
     </div>`;
 }
 
