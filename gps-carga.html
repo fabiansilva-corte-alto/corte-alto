@@ -636,30 +636,70 @@ function asignarArchivo(file, tipo) {
 ══════════════════════════════════════ */
 function leerCSV(file) {
   return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = e => {
-      try {
-        const txt = e.target.result;
-        const lineas = txt.split('\n').map(l => l.trim()).filter(Boolean);
-        if (lineas.length === 0) { res([]); return; }
-
-        // Detectar separador automáticamente: ; o ,
-        const primeraLinea = lineas[0];
-        const sep = primeraLinea.includes(';') ? ';' : ',';
-
-        const cabecera = primeraLinea.split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
-        const filas = lineas.slice(1).map(l => {
-          const vals = l.split(sep).map(v => v.trim().replace(/^"|"$/g, ''));
-          const obj = {};
-          cabecera.forEach((k, i) => obj[k] = vals[i] ?? '');
-          return obj;
-        });
-        res(filas);
-      } catch(err) { rej(err); }
+    const intentarLeer = (encoding) => {
+      const r = new FileReader();
+      r.onload = e => {
+        try {
+          const txt = e.target.result;
+          const filas = parsearCSVRobusto(txt);
+          res(filas);
+        } catch(err) {
+          if (encoding === 'utf-8') {
+            // Reintentar con latin-1 si UTF-8 falla
+            intentarLeer('iso-8859-1');
+          } else {
+            rej(new Error('Error leyendo ' + file.name + ': ' + err.message));
+          }
+        }
+      };
+      r.onerror = () => {
+        if (encoding === 'utf-8') intentarLeer('iso-8859-1');
+        else rej(new Error('Error leyendo ' + file.name));
+      };
+      r.readAsText(file, encoding);
     };
-    r.onerror = () => rej(new Error('Error leyendo ' + file.name));
-    r.readAsText(file, 'utf-8');
+    intentarLeer('utf-8');
   });
+}
+
+// Parser CSV robusto: maneja campos entre comillas, separadores ; o ,
+// y campos con comas o saltos de línea dentro de comillas
+function parsearCSVRobusto(txt) {
+  // Detectar separador: si la primera línea tiene ; úsalo, si no usa ,
+  const primeraLinea = txt.split('\n')[0] || '';
+  const sep = primeraLinea.includes(';') ? ';' : ',';
+
+  // Parser de campos que respeta comillas
+  function parsearLinea(linea) {
+    const campos = [];
+    let campo = '';
+    let enComillas = false;
+    for (let i = 0; i < linea.length; i++) {
+      const c = linea[i];
+      if (c === '"') {
+        if (enComillas && linea[i+1] === '"') { campo += '"'; i++; } // "" → "
+        else enComillas = !enComillas;
+      } else if (c === sep && !enComillas) {
+        campos.push(campo.trim());
+        campo = '';
+      } else {
+        campo += c;
+      }
+    }
+    campos.push(campo.trim());
+    return campos;
+  }
+
+  const lineas = txt.split('\n').map(l => l.replace(/\r$/, '')).filter(l => l.trim());
+  if (lineas.length === 0) return [];
+
+  const cabecera = parsearLinea(lineas[0]);
+  return lineas.slice(1).map(l => {
+    const vals = parsearLinea(l);
+    const obj = {};
+    cabecera.forEach((k, i) => obj[k] = (vals[i] ?? '').trim());
+    return obj;
+  }).filter(obj => Object.values(obj).some(v => v !== ''));
 }
 
 function parseNum(s) {
@@ -719,21 +759,67 @@ async function analizarArchivos() {
       archivos.pick ? leerCSV(archivos.pick) : Promise.resolve([]),
     ]);
 
-    // Construir mapa de excesos en ruta por patente + velocidad máxima + límite
-    const excRuta = {};
-    const velMaxRuta = {};   // velocidad máxima registrada en ruta por patente
-    const velLimRuta = {};   // velocidad límite en ruta por patente
+    // ── Parseo nuevo formato de velocidad (una fila por evento) ──
+    // Columnas: Placa Patente, Nombre Movil, Parametro Velocidad [km/h],
+    //           Fecha Evento [dd-mm-aaaa], Hora Evento [hh-mm-ss], Hora Fin [hh:mm:ss],
+    //           Velocidad Maxima [km/h], Ubicacion [geotexto]
+    const excRuta    = {};   // conteo de eventos por patente
+    const velMaxRuta = {};   // vel. máxima registrada por patente
+    const velLimRuta = {};   // vel. límite por patente
+    const eventosVel = {};   // array de eventos detallados por patente
+
+    function calcularDuracion(horaIni, horaFin) {
+      // horaIni / horaFin en formato HH:MM:SS
+      try {
+        const toSeg = h => {
+          const p = h.split(':').map(Number);
+          return p[0]*3600 + p[1]*60 + (p[2]||0);
+        };
+        const diff = toSeg(horaFin) - toSeg(horaIni);
+        if (diff <= 0) return null;
+        if (diff < 60) return diff + ' seg';
+        const m = Math.floor(diff/60), s = diff%60;
+        return s > 0 ? `${m} min ${s} seg` : `${m} min`;
+      } catch(e) { return null; }
+    }
+
     [...rowsCam, ...rowsFur, ...rowsPick].forEach(r => {
-      const pat = (r['Placa patente'] || r['Patente'] || '').trim().toUpperCase();
+      // Patente
+      const pat = (r['Placa Patente'] || r['Placa patente'] || r['Patente'] || '').trim().toUpperCase();
       if (!pat) return;
-      const n = parseInt(r['Numero excesos'] || r['Número excesos'] || 0) || 0;
-      excRuta[pat] = (excRuta[pat] || 0) + n;
-      // Velocidad máxima alcanzada (campo puede variar por proveedor)
-      const vmax = parseNum(r['Velocidad maxima (km/h)'] || r['Vel. Maxima'] || r['Velocidad Maxima'] || r['velocidad_maxima'] || 0);
+
+      // Conteo — cada fila es un evento
+      excRuta[pat] = (excRuta[pat] || 0) + 1;
+
+      // Vel. máxima
+      const vmax = parseNum(r['Velocidad Maxima [km/h]'] || r['Velocidad maxima (km/h)'] || r['Vel. Maxima'] || 0);
       if (vmax > (velMaxRuta[pat] || 0)) velMaxRuta[pat] = vmax;
-      // Velocidad límite de la vía
-      const vlim = parseNum(r['Velocidad Limite (km/h)'] || r['Vel. Limite'] || r['Velocidad Limite'] || 0);
+
+      // Vel. límite
+      const vlim = parseNum(r['Parametro Velocidad [km/h]'] || r['Velocidad Limite (km/h)'] || r['Vel. Limite'] || 0);
       if (vlim > 0 && !velLimRuta[pat]) velLimRuta[pat] = vlim;
+
+      // Evento detallado
+      const horaIni = (r['Hora Evento [hh-mm-ss]'] || r['Hora Evento [hh:mm:ss]'] || '').trim();
+      const horaFin = (r['Hora Fin [hh:mm:ss]'] || '').trim();
+      const duracion = calcularDuracion(horaIni, horaFin);
+      const nombreMovil = r['Nombre Movil'] || r['Nombre Móvil'] || '';
+      // Conductor: quitar la patente del inicio del nombre
+      const conductor = nombreMovil.replace(new RegExp('^' + pat + '\\s*', 'i'), '').trim();
+      const ubicacion = (r['Ubicacion [geotexto]'] || r['Ubicación [geotexto]'] || '').trim();
+      const fechaEv   = (r['Fecha Evento [dd-mm-aaaa]'] || '').trim();
+
+      if (!eventosVel[pat]) eventosVel[pat] = [];
+      eventosVel[pat].push({
+        fecha:     fechaEv,
+        horaIni:   horaIni,
+        horaFin:   horaFin,
+        duracion:  duracion || '—',
+        ubicacion: ubicacion,
+        velMax:    vmax,
+        velLim:    vlim,
+        conductor: conductor,
+      });
     });
 
     // Construir mapa de excesos en geocerca por patente
@@ -817,7 +903,7 @@ async function analizarArchivos() {
     console.log('GPS geocercas procesadas:', Object.keys(eventosGeo).length,
       'patentes, total eventos:', Object.values(eventosGeo).reduce((s,v)=>s+v.length,0));
 
-    datosAnalizados = { fecha, moviles, eventosGeo, excRuta };
+    datosAnalizados = { fecha, moviles, eventosGeo, excRuta, eventosVel };
     renderizarRevision();
 
   } catch(err) {
@@ -934,16 +1020,16 @@ async function guardarEnFirestore() {
     `;
     document.getElementById('btn-confirmar-dup').onclick = () => {
       cerrarModal('modal-dup');
-      ejecutarGuardado(docRef, fecha, moviles, eventosGeo);
+      ejecutarGuardado(docRef, fecha, moviles, eventosGeo, datosAnalizados.eventosVel || {});
     };
     document.getElementById('modal-dup').classList.add('vis');
     return;
   }
 
-  ejecutarGuardado(docRef, fecha, moviles, eventosGeo);
+  ejecutarGuardado(docRef, fecha, moviles, eventosGeo, datosAnalizados.eventosVel || {});
 }
 
-async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo) {
+async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo, eventosVel={}) {
   const barra = document.getElementById('barra-prog');
   const fill  = document.getElementById('prog-fill');
   const txt   = document.getElementById('txt-prog');
@@ -994,6 +1080,7 @@ async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo) {
         velLimRuta: m.velLimRuta || 0,
         sinGPS: m.sinGPS,
         eventosGeo: eventosGeo[m.patente] || [],
+        eventosVel: eventosVel[m.patente] || [],
       });
     });
     await batch.commit();
@@ -1018,6 +1105,31 @@ async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo) {
         fecha,
         totalEventos: todosEventos.length,
         eventos: todosEventos,
+      });
+    }
+
+    // Guardar eventos de velocidad en colección separada gps_velocidades
+    const todosEventosVel = [];
+    Object.entries(eventosVel).forEach(([pat, evs]) => {
+      evs.forEach(ev => {
+        todosEventosVel.push({
+          patente:   pat,
+          conductor: ev.conductor || '',
+          fecha:     ev.fecha || '',
+          horaIni:   ev.horaIni || '',
+          horaFin:   ev.horaFin || '',
+          duracion:  ev.duracion || '—',
+          ubicacion: ev.ubicacion || '',
+          velMax:    ev.velMax || 0,
+          velLim:    ev.velLim || 0,
+        });
+      });
+    });
+    if (todosEventosVel.length > 0) {
+      await db.collection('gps_velocidades').doc(fecha).set({
+        fecha,
+        totalEventos: todosEventosVel.length,
+        eventos: todosEventosVel,
       });
     }
 
