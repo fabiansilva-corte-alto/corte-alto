@@ -9,7 +9,7 @@
    alguien abre la app.
    ============================================================ */
 
-const CACHE_VERSION = 'v21';
+const CACHE_VERSION = 'v22';
 const CACHE_NAME = `corte-alto-${CACHE_VERSION}`;
 
 /* Archivos que se guardan para que la app funcione más rápido
@@ -31,6 +31,7 @@ const ARCHIVOS_CACHE = [
   './documentos.html',
   './comparador-volumenes.html',
   './controles-mininco.html',
+  './huinche.html',
   './manifest.json',
   './logo.png'
 ];
