@@ -629,7 +629,7 @@ window.agregarAperoRow = function(apero, num) {
   const rows = document.getElementById('aperos-config-rows');
   const n = num || rows.children.length + 1;
   const a = apero || {};
-  const rupturaVal = a.ruptura !== undefined ? a.ruptura : calcularRuptura(a.cargaSeg, a.factorSeg);
+  const rupturaVal = calcularRuptura(a.cargaSeg, a.factorSeg);
   const div = document.createElement('div');
   div.className = 'apero-config-row';
   div.innerHTML = `
