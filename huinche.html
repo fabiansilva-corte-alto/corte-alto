@@ -364,7 +364,8 @@
       </div>
       <div>
         <label>Fundo donde se realizó</label>
-        <select id="mc-fundo"><option value="">Seleccionar fundo...</option></select>
+        <select id="mc-fundo" onchange="toggleFundoOtro()"><option value="">Seleccionar fundo...</option></select>
+        <input type="text" id="mc-fundo-otro" placeholder="Escribe el nombre del fundo..." style="display:none;margin-top:-8px;">
       </div>
     </div>
     <div>
@@ -543,7 +544,8 @@ async function cargarFundosJefesOperadores() {
   // poblar también el select de fundo en modal cambio
   const mc = document.getElementById('mc-fundo');
   mc.innerHTML = '<option value="">Seleccionar fundo...</option>' +
-    fundosCache.map(f => `<option value="${f.nombre}">${f.nombre}</option>`).join('');
+    fundosCache.map(f => `<option value="${f.nombre}">${f.nombre}</option>`).join('') +
+    '<option value="__otro__">✏️ Otro (escribir manualmente)</option>';
 }
 
 function poblarSelectHuinches() {
@@ -776,6 +778,18 @@ window.eliminarEquipo = async function(id) {
 };
 
 // ===== MODAL CAMBIO APERO =====
+window.toggleFundoOtro = function() {
+  const sel = document.getElementById('mc-fundo');
+  const txt = document.getElementById('mc-fundo-otro');
+  if (sel.value === '__otro__') {
+    txt.style.display = 'block';
+    txt.focus();
+  } else {
+    txt.style.display = 'none';
+    txt.value = '';
+  }
+};
+
 window.abrirModalCambio = function(eqId, aperoOrden, aperoNombre) {
   document.getElementById('mc-equipo-id').value = eqId;
   document.getElementById('mc-apero-orden').value = aperoOrden;
@@ -783,6 +797,8 @@ window.abrirModalCambio = function(eqId, aperoOrden, aperoNombre) {
   document.getElementById('mc-horometro').value = '';
   document.getElementById('mc-fecha').value = new Date().toISOString().split('T')[0];
   document.getElementById('mc-fundo').value = '';
+  document.getElementById('mc-fundo-otro').value = '';
+  document.getElementById('mc-fundo-otro').style.display = 'none';
   document.getElementById('mc-operador').value = '';
   document.getElementById('mc-hrs-reemplazo').value = '';
 
@@ -799,7 +815,8 @@ window.guardarCambioApero = async function() {
   const aperoOrden  = parseInt(document.getElementById('mc-apero-orden').value);
   const horometro   = parseFloat(document.getElementById('mc-horometro').value);
   const fecha       = document.getElementById('mc-fecha').value;
-  const fundo       = document.getElementById('mc-fundo').value;
+  const fundoSel    = document.getElementById('mc-fundo').value;
+  const fundo       = fundoSel === '__otro__' ? document.getElementById('mc-fundo-otro').value.trim() : fundoSel;
   const operador    = document.getElementById('mc-operador').value.trim();
   const hrsReemplazo = parseFloat(document.getElementById('mc-hrs-reemplazo').value)||null;
 
