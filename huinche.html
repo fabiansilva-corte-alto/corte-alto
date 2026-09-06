@@ -12,6 +12,7 @@
     --gris-fondo:#F9FAFB; --blanco:#FFFFFF;
     --ambar:#D97706; --rojo:#DC2626; --verde-ok:#16A34A;
     --ambar-bg:#FFFBEB; --rojo-bg:#FEF2F2; --verde-bg:#F0FDF4;
+    --azul-bg:#EFF6FF; --azul:#1D4ED8;
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Inter',sans-serif;background:var(--gris-fondo);color:var(--gris-txt);min-height:100vh;}
@@ -24,7 +25,7 @@
   .tab-btn{background:none;border:none;color:rgba(255,255,255,0.6);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;padding:10px 18px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:color 0.15s,border-color 0.15s;}
   .tab-btn.active{color:white;border-bottom-color:var(--verde-claro);}
   .tab-btn:hover:not(.active){color:rgba(255,255,255,0.85);}
-  .tab-panel{display:none;padding:16px;max-width:960px;margin:0 auto;}
+  .tab-panel{display:none;padding:16px;max-width:980px;margin:0 auto;}
   .tab-panel.active{display:block;}
   .card{background:var(--blanco);border:1px solid var(--gris-borde);border-radius:10px;padding:16px;margin-bottom:14px;}
   .card-title{font-size:13px;font-weight:700;color:var(--verde);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--verde-claro);}
@@ -39,6 +40,7 @@
   .btn-primary{background:var(--verde);color:white;}
   .btn-secondary{background:var(--gris-fondo);color:var(--gris-txt);border:1px solid var(--gris-borde);}
   .btn-danger{background:var(--rojo);color:white;}
+  .btn-azul{background:var(--azul);color:white;}
   .btn-sm{padding:5px 12px;font-size:12px;}
   .btn-pdf{background:#7C3AED;color:white;}
   .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
@@ -50,6 +52,7 @@
   .table-wrap{overflow-x:auto;}
   table{width:100%;border-collapse:collapse;font-size:12px;}
   th{background:var(--verde);color:white;padding:8px 10px;text-align:left;font-weight:600;white-space:nowrap;}
+  th.th-asistido{background:#1a5276;}
   td{padding:7px 10px;border-bottom:1px solid var(--gris-borde);vertical-align:middle;}
   tr:last-child td{border-bottom:none;}
   tr:nth-child(even) td{background:var(--gris-fondo);}
@@ -60,6 +63,9 @@
   .estado-obs{background:#DBEAFE;color:#1D4ED8;}
   .estado-adv{background:#FEF9C3;color:#92400E;}
   .estado-fuera{background:#FEE2E2;color:#B91C1C;}
+  .ref-badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;}
+  .ref-base{background:#DCFCE7;color:#15803D;}
+  .ref-asistido{background:#DBEAFE;color:#1D4ED8;}
   .hist-card{background:var(--blanco);border:1px solid var(--gris-borde);border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s;}
   .hist-card:hover{border-color:var(--verde-med);box-shadow:0 2px 8px rgba(27,67,50,0.12);}
   .hist-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;}
@@ -77,15 +83,15 @@
   .alert-adv{background:var(--ambar-bg);border:1px solid #FDE68A;color:#92400E;}
   .alert-fuera{background:var(--rojo-bg);border:1px solid #FECACA;color:#B91C1C;}
   .alert-ok{background:var(--verde-bg);border:1px solid #BBF7D0;color:#15803D;}
-  /* CONFIG APERO */
-  .apero-config-row{display:grid;grid-template-columns:24px 2.5fr 0.7fr 0.8fr 0.7fr 0.7fr 0.8fr 0.8fr 0.8fr 36px;gap:5px;align-items:center;margin-bottom:7px;}
-  .apero-config-row input{margin-bottom:0;padding:6px 7px;font-size:12px;}
-  .apero-num{font-size:13px;font-weight:700;color:var(--verde-med);text-align:center;}
-  .ruptura-calc{background:var(--gris-fondo);border:1px solid var(--gris-borde);border-radius:6px;padding:6px 7px;font-size:12px;font-weight:600;color:var(--verde-med);text-align:center;min-width:60px;}
+  /* CONFIG APERO — ahora con columna refHorometro */
+  .apero-config-row{display:grid;grid-template-columns:22px 2fr 0.6fr 0.7fr 0.6fr 0.6fr 0.7fr 0.7fr 0.7fr 1fr 32px;gap:4px;align-items:center;margin-bottom:7px;}
+  .apero-config-row input,.apero-config-row select{margin-bottom:0;padding:5px 6px;font-size:11px;}
+  .apero-num{font-size:12px;font-weight:700;color:var(--verde-med);text-align:center;}
+  .ruptura-calc{background:var(--gris-fondo);border:1px solid var(--gris-borde);border-radius:6px;padding:5px 6px;font-size:11px;font-weight:600;color:var(--verde-med);text-align:center;}
   /* MODAL */
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;padding:16px;}
   .modal-overlay.open{display:flex;}
-  .modal-box{background:white;border-radius:12px;padding:20px;width:100%;max-width:820px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+  .modal-box{background:white;border-radius:12px;padding:20px;width:100%;max-width:860px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
   .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
   .modal-title{font-size:15px;font-weight:700;color:var(--verde);}
   .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--gris-sub);line-height:1;}
@@ -100,16 +106,20 @@
   .equipo-config-item{background:var(--gris-fondo);border:1px solid var(--gris-borde);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;}
   .equipo-config-nombre{font-weight:600;font-size:14px;color:var(--verde);}
   .equipo-config-sub{font-size:12px;color:var(--gris-sub);margin-top:2px;}
-  /* IMAGEN EQUIPO */
   .img-upload-area{border:2px dashed var(--gris-borde);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:border-color 0.15s;margin-bottom:12px;}
   .img-upload-area:hover{border-color:var(--verde-med);}
-  .img-upload-area img{max-height:120px;max-width:100%;border-radius:6px;margin-top:8px;}
   .img-upload-area p{font-size:12px;color:var(--gris-sub);margin-top:4px;}
-  /* EQUIPO CONFIG THUMBNAIL */
   .equipo-thumb{width:44px;height:36px;object-fit:contain;border-radius:4px;background:var(--gris-fondo);border:1px solid var(--gris-borde);}
+  /* CAMBIO APERO MODAL */
+  .cambio-apero-row{background:var(--gris-fondo);border:1px solid var(--gris-borde);border-radius:8px;padding:12px;margin-bottom:8px;}
+  .cambio-apero-nombre{font-weight:600;font-size:13px;color:var(--verde);margin-bottom:8px;}
+  .cambio-hist-item{font-size:11px;color:var(--gris-sub);padding:4px 0;border-bottom:1px solid var(--gris-borde);}
+  .cambio-hist-item:last-child{border-bottom:none;}
+  /* INFO CALCULADO */
+  .info-calc{background:var(--azul-bg);border:1px solid #BFDBFE;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:600;color:var(--azul);text-align:center;white-space:nowrap;}
   @media(max-width:600px){
     .grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}
-    .apero-config-row{grid-template-columns:20px 1fr 1fr 36px;}
+    .apero-config-row{grid-template-columns:20px 1fr 1fr 32px;}
     .apero-config-row .hide-mob{display:none;}
   }
 </style>
@@ -119,7 +129,7 @@
 <header class="app-header">
   <a href="index.html">← Volver</a>
   <h1>Revisión Huinches de Asistencia</h1>
-  <span class="header-badge">v2.0</span>
+  <span class="header-badge">v3.0</span>
 </header>
 
 <div class="tabs-bar">
@@ -133,7 +143,7 @@
 <div id="tab-config" class="tab-panel active">
   <div class="card">
     <div class="card-title">Equipos registrados</div>
-    <p style="font-size:13px;color:var(--gris-sub);margin-bottom:14px;">Selecciona un equipo para editar sus aperos de fábrica, o agrega uno nuevo.</p>
+    <p style="font-size:13px;color:var(--gris-sub);margin-bottom:14px;">Selecciona un equipo para editar sus aperos, registrar cambios o agregar uno nuevo.</p>
     <div id="lista-equipos-config" class="equipo-config-list"><div class="loading">Cargando equipos...</div></div>
     <div style="margin-top:14px;"><button class="btn btn-primary" onclick="abrirModalEquipo(null)">+ Agregar equipo</button></div>
   </div>
@@ -188,11 +198,7 @@
         </select>
       </div>
     </div>
-    <div class="grid-3">
-      <div>
-        <label>Operador Huinche</label>
-        <input type="text" id="nf-operador" placeholder="Nombre operador huinche">
-      </div>
+    <div class="grid-2">
       <div>
         <label>Supervisor de Faena</label>
         <input type="text" id="nf-supervisor" placeholder="Nombre supervisor">
@@ -204,18 +210,14 @@
         </select>
       </div>
     </div>
-    <div class="grid-4">
+    <div class="grid-3">
       <div>
         <label>Horómetro Máq. Base (h)</label>
-        <input type="number" id="nf-horo-base" placeholder="0">
-      </div>
-      <div>
-        <label>Horas Uso Cable (h)</label>
-        <input type="number" id="nf-horo-cable" placeholder="0">
+        <input type="number" id="nf-horo-base" placeholder="0" oninput="recalcHorasUso()">
       </div>
       <div>
         <label id="lbl-horo-asistido">Horómetro Eq. Asistido (h)</label>
-        <input type="number" id="nf-horo-asistido" placeholder="0">
+        <input type="number" id="nf-horo-asistido" placeholder="0" oninput="recalcHorasUso()">
       </div>
       <div>
         <label>N° Informe</label>
@@ -234,19 +236,24 @@
 
   <div class="card">
     <div class="card-title">Aparejo — Mediciones Reales</div>
-    <p id="aperos-hint" style="font-size:13px;color:var(--gris-sub);margin-bottom:12px;">Selecciona un huinche para cargar los aperos de fábrica.</p>
+    <p id="aperos-hint" style="font-size:13px;color:var(--gris-sub);margin-bottom:8px;">Selecciona un huinche para cargar los aperos.</p>
+    <div style="font-size:11px;margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap;">
+      <span><span class="ref-badge ref-base">BASE</span> Horas calculadas vs horómetro máq. base</span>
+      <span><span class="ref-badge ref-asistido">ASISTIDO</span> Horas calculadas vs horómetro equipo asistido</span>
+    </div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>#</th><th>Aparejo</th><th>Ø Fab.(mm)</th><th>C.Seg(t)</th><th>F.Seg</th><th>Pto.Rupt.(t)</th>
+            <th>#</th><th>Aparejo</th><th>Ref.</th><th>Ø Fab.(mm)</th><th>C.Seg(t)</th><th>F.Seg</th><th>Pto.Rupt.(t)</th>
             <th>Proveedor</th><th>Marca</th><th>Modelo</th>
-            <th>Horo.Cambio(h)</th><th>Fecha Cambio</th><th>Hrs Uso</th>
+            <th>Horo.Cambio(h)</th><th>Fecha Cambio</th><th>Fundo Cambio</th><th>Op.Cambio</th>
+            <th>Hrs Uso</th><th>Durac.Anterior</th>
             <th>Med.Real(mm)</th><th>Desg.%</th><th>Estado</th><th>Observación</th>
           </tr>
         </thead>
         <tbody id="tbody-aperos">
-          <tr><td colspan="16" style="text-align:center;color:var(--gris-sub);padding:20px;">Sin aperos cargados</td></tr>
+          <tr><td colspan="20" style="text-align:center;color:var(--gris-sub);padding:20px;">Sin aperos cargados</td></tr>
         </tbody>
       </table>
     </div>
@@ -254,7 +261,7 @@
 
   <div class="card">
     <div class="card-title">Observaciones y Recomendaciones Generales</div>
-    <textarea id="nf-obs" placeholder="Ingresa observaciones adicionales, recomendaciones o instrucciones de trabajo..." style="min-height:100px;"></textarea>
+    <textarea id="nf-obs" placeholder="Ingresa observaciones adicionales..." style="min-height:90px;"></textarea>
   </div>
 
   <div class="btn-row">
@@ -278,7 +285,7 @@
 <div id="tab-seguimiento" class="tab-panel">
   <div class="kpi-row">
     <div class="kpi-card"><div class="kpi-val" id="kpi-total">—</div><div class="kpi-label">Revisiones totales</div></div>
-    <div class="kpi-card"><div class="kpi-val" style="color:var(--rojo)" id="kpi-fuera">—</div><div class="kpi-label">Aperos fuera de estándar</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--rojo)" id="kpi-fuera">—</div><div class="kpi-label">Fuera de estándar</div></div>
     <div class="kpi-card"><div class="kpi-val" style="color:var(--ambar)" id="kpi-adv">—</div><div class="kpi-label">En advertencia</div></div>
     <div class="kpi-card"><div class="kpi-val" style="color:var(--verde-ok)" id="kpi-ok">—</div><div class="kpi-label">En buen estado</div></div>
   </div>
@@ -288,14 +295,13 @@
   </div>
 </div>
 
-<!-- ===== MODAL EQUIPO ===== -->
+<!-- ===== MODAL EQUIPO (Config + Cambios) ===== -->
 <div class="modal-overlay" id="modal-equipo">
   <div class="modal-box">
     <div class="modal-header">
       <span class="modal-title" id="modal-equipo-titulo">Agregar equipo</span>
       <button class="modal-close" onclick="cerrarModal('modal-equipo')">✕</button>
     </div>
-
     <div class="grid-2">
       <div>
         <label>Nombre del equipo</label>
@@ -306,26 +312,29 @@
       <div>
         <label>Imagen del equipo</label>
         <div class="img-upload-area" onclick="document.getElementById('me-img-input').click()">
-          <div id="me-img-preview">
-            <div style="font-size:28px;">📷</div>
-            <p>Toca para subir imagen</p>
-          </div>
+          <div id="me-img-preview"><div style="font-size:28px;">📷</div><p>Toca para subir imagen</p></div>
         </div>
         <input type="file" id="me-img-input" accept="image/*" style="display:none" onchange="previewImagen(event)">
         <input type="hidden" id="me-img-b64">
-        <button class="btn btn-secondary btn-sm" onclick="limpiarImagen()" style="margin-top:-8px;margin-bottom:8px;" id="btn-limpiar-img" style="display:none">✕ Quitar imagen</button>
+        <button class="btn btn-secondary btn-sm" id="btn-limpiar-img" onclick="limpiarImagen()" style="display:none;margin-top:-8px;margin-bottom:8px;">✕ Quitar imagen</button>
       </div>
     </div>
     <input type="hidden" id="me-id">
 
     <div class="card-title" style="margin-top:4px;">Aperos de fábrica</div>
-    <p style="font-size:12px;color:var(--gris-sub);margin-bottom:8px;">El Pto. de Ruptura se calcula automáticamente: Carga Seg. × Factor numérico.</p>
-
-    <div style="display:grid;grid-template-columns:24px 2.5fr 0.7fr 0.8fr 0.7fr 0.7fr 0.8fr 0.8fr 0.8fr 36px;gap:5px;font-size:10px;font-weight:700;color:var(--gris-sub);padding:0 2px 4px;text-transform:uppercase;">
-      <span>#</span><span>Nombre aparejo</span><span>Ø(mm)</span><span>C.Seg(t)</span><span>F.Seg</span><span>Pto.Rupt.</span><span>Proveedor</span><span>Marca</span><span>Modelo</span><span></span>
+    <p style="font-size:11px;color:var(--gris-sub);margin-bottom:6px;">Pto. Ruptura se calcula solo. <strong>Ref. Horómetro</strong>: ¿con qué horómetro se calculan las horas de uso de este apero?</p>
+    <div style="display:grid;grid-template-columns:22px 2fr 0.6fr 0.7fr 0.6fr 0.6fr 0.7fr 0.7fr 0.7fr 1fr 32px;gap:4px;font-size:10px;font-weight:700;color:var(--gris-sub);padding:0 2px 4px;text-transform:uppercase;">
+      <span>#</span><span>Nombre</span><span>Ø(mm)</span><span>C.Seg(t)</span><span>F.Seg</span><span>Rupt.</span><span>Proveedor</span><span>Marca</span><span>Modelo</span><span>Ref.Horómetro</span><span></span>
     </div>
     <div id="aperos-config-rows"></div>
     <button class="btn btn-secondary btn-sm" onclick="agregarAperoRow()" style="margin-top:6px;">+ Agregar apero</button>
+
+    <!-- SECCIÓN REGISTRO DE CAMBIOS -->
+    <div id="seccion-cambios" style="display:none;margin-top:20px;">
+      <div class="card-title">Registrar cambio de apero</div>
+      <p style="font-size:12px;color:var(--gris-sub);margin-bottom:10px;">Cuando se cambia un apero, registra aquí los datos del momento del cambio. El sistema calculará las horas de uso automáticamente en el informe.</p>
+      <div id="cambios-aperos-container"></div>
+    </div>
 
     <div class="btn-row" style="margin-top:16px;">
       <button class="btn btn-primary" onclick="guardarEquipoConfig()">Guardar equipo</button>
@@ -334,9 +343,50 @@
   </div>
 </div>
 
+<!-- ===== MODAL REGISTRAR CAMBIO APERO ===== -->
+<div class="modal-overlay" id="modal-cambio">
+  <div class="modal-box" style="max-width:560px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-cambio-titulo">Registrar cambio de apero</span>
+      <button class="modal-close" onclick="cerrarModal('modal-cambio')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--gris-sub);margin-bottom:14px;">Ingresa los datos del momento en que se realizó el cambio de este apero.</p>
+    <input type="hidden" id="mc-equipo-id">
+    <input type="hidden" id="mc-apero-orden">
+    <div>
+      <label>Horómetro al momento del cambio (h)</label>
+      <input type="number" id="mc-horometro" placeholder="Ej: 5852">
+    </div>
+    <div class="grid-2">
+      <div>
+        <label>Fecha del cambio</label>
+        <input type="date" id="mc-fecha">
+      </div>
+      <div>
+        <label>Fundo donde se realizó</label>
+        <select id="mc-fundo"><option value="">Seleccionar fundo...</option></select>
+      </div>
+    </div>
+    <div>
+      <label>Operador que realizó el cambio</label>
+      <input type="text" id="mc-operador" placeholder="Nombre del operador">
+    </div>
+    <div>
+      <label>Hrs de reemplazo programadas (opcional)</label>
+      <input type="number" id="mc-hrs-reemplazo" placeholder="Ej: 2000">
+    </div>
+    <p style="font-size:11px;color:var(--gris-sub);margin-bottom:12px;">Historial de cambios anteriores:</p>
+    <div id="mc-historial" style="max-height:140px;overflow-y:auto;"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-primary" onclick="guardarCambioApero()">Guardar cambio</button>
+      <button class="btn btn-secondary" onclick="cerrarModal('modal-cambio')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL VER INFORME ===== -->
 <div class="modal-overlay" id="modal-ver">
-  <div class="modal-box" style="max-width:900px;">
+  <div class="modal-box" style="max-width:960px;">
     <div class="modal-header">
       <span class="modal-title" id="modal-ver-titulo">Informe de Revisión</span>
       <button class="modal-close" onclick="cerrarModal('modal-ver')">✕</button>
@@ -352,7 +402,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, addDoc, getDocs, deleteDoc, setDoc, query, orderBy, Timestamp }
+import { getFirestore, collection, doc, addDoc, getDocs, deleteDoc, setDoc, getDoc, query, orderBy, where, Timestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -364,21 +414,24 @@ const firebaseConfig = {
   appId: "1:962534414054:web:fa43371d31413fc0524d27"
 };
 
-const app  = initializeApp(firebaseConfig);
-const db   = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
 
-const COL_EQUIPOS_HUI = "config_aperos_huinche";
-const COL_INFORMES    = "revisiones_huinche";
-const COL_FUNDOS      = "config_fundos";
-const COL_JEFES       = "config_jefes_faena";
-const COL_OPERADORES  = "config_operadores";
+const COL_HUI      = "config_aperos_huinche";
+const COL_INFORMES = "revisiones_huinche";
+const COL_FUNDOS   = "config_fundos";
+const COL_JEFES    = "config_jefes_faena";
+const COL_OPERADORES = "config_operadores";
+// subcol: config_aperos_huinche/{eqId}/cambios_aperos/{aperoOrden_timestamp}
 
 let equiposCache    = [];
 let informesCache   = [];
 let fundosCache     = [];
 let jefesCache      = [];
 let operadoresCache = [];
+let cambiosCache    = {};  // { equipoId: { ordenApero: [cambios ordenados desc] } }
 let informeActualId = null;
+let aperosCargados  = [];  // aperos del equipo seleccionado en nuevo informe
 
 const CHECKLIST_ITEMS = [
   "Cartilla autocontrol de máquina (huinche)",
@@ -395,24 +448,19 @@ const CHECKLIST_ITEMS = [
 ];
 
 const ESTADOS = [
-  { val:"ok",    label:"Buen estado",           cls:"estado-ok"   },
-  { val:"obs",   label:"Buen estado c/obs.",     cls:"estado-obs"  },
-  { val:"adv",   label:"Advertencia",            cls:"estado-adv"  },
-  { val:"fuera", label:"Fuera de estándar",      cls:"estado-fuera"}
+  {val:"ok",    label:"Buen estado",        cls:"estado-ok"   },
+  {val:"obs",   label:"Buen estado c/obs.", cls:"estado-obs"  },
+  {val:"adv",   label:"Advertencia",        cls:"estado-adv"  },
+  {val:"fuera", label:"Fuera de estándar",  cls:"estado-fuera"}
 ];
 
-// Mapa función operador por tipo equipo asistido
 const FUNCION_POR_TIPO = { SKIDDER:"MADEREO SKIDDER", SHOVEL:"VOLTEO" };
 
 // ===== INIT =====
 window.addEventListener('DOMContentLoaded', async () => {
   setFechaHoy();
   renderChecklist();
-  await Promise.all([
-    cargarEquipos(),
-    cargarFundosJefesOperadores(),
-    cargarInformes()
-  ]);
+  await Promise.all([cargarEquipos(), cargarFundosJefesOperadores(), cargarInformes()]);
   renderSeguimiento();
   await calcularNumeroCorrelativo();
 });
@@ -421,7 +469,6 @@ function setFechaHoy() {
   document.getElementById('nf-fecha').value = new Date().toISOString().split('T')[0];
 }
 
-// ===== TABS =====
 window.switchTab = function(id, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -447,19 +494,43 @@ function leerChecklist() {
   });
 }
 
-// ===== CARGA DATOS DESDE FIRESTORE =====
+// ===== CARGA DATOS =====
 async function cargarEquipos() {
   try {
-    const snap = await getDocs(query(collection(db, COL_EQUIPOS_HUI), orderBy('nombre')));
+    const snap = await getDocs(query(collection(db, COL_HUI), orderBy('nombre')));
     equiposCache = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    // cargar cambios de cada equipo
+    for (const eq of equiposCache) {
+      await cargarCambiosEquipo(eq.id);
+    }
   } catch(e) { equiposCache = []; }
   renderListaEquiposConfig();
   poblarSelectHuinches();
 }
 
+async function cargarCambiosEquipo(eqId) {
+  try {
+    const snap = await getDocs(query(
+      collection(db, COL_HUI, eqId, 'cambios_aperos'),
+      orderBy('horometro','desc')
+    ));
+    const cambios = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    if (!cambiosCache[eqId]) cambiosCache[eqId] = {};
+    cambios.forEach(c => {
+      const ord = String(c.aperoOrden);
+      if (!cambiosCache[eqId][ord]) cambiosCache[eqId][ord] = [];
+      cambiosCache[eqId][ord].push(c);
+    });
+    // ordenar desc por horómetro
+    Object.keys(cambiosCache[eqId]).forEach(k => {
+      cambiosCache[eqId][k].sort((a,b) => (b.horometro||0) - (a.horometro||0));
+    });
+  } catch(e) {}
+}
+
 async function cargarFundosJefesOperadores() {
   try {
-    const [sf, sj, so] = await Promise.all([
+    const [sf,sj,so] = await Promise.all([
       getDocs(query(collection(db, COL_FUNDOS), orderBy('nombre'))),
       getDocs(query(collection(db, COL_JEFES), orderBy('nombre'))),
       getDocs(query(collection(db, COL_OPERADORES), orderBy('nombre')))
@@ -469,81 +540,70 @@ async function cargarFundosJefesOperadores() {
     operadoresCache = so.docs.map(d => ({ id:d.id, ...d.data() }));
   } catch(e) {}
   poblarSelectFundosJefes();
+  // poblar también el select de fundo en modal cambio
+  const mc = document.getElementById('mc-fundo');
+  mc.innerHTML = '<option value="">Seleccionar fundo...</option>' +
+    fundosCache.map(f => `<option value="${f.nombre}">${f.nombre}</option>`).join('');
 }
 
 function poblarSelectHuinches() {
-  const sel  = document.getElementById('nf-equipo');
-  const selH = document.getElementById('hist-equipo');
   const opts = equiposCache.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
-  sel.innerHTML  = '<option value="">Seleccionar huinche...</option>' + opts;
-  selH.innerHTML = '<option value="">Todos los equipos</option>' + opts;
+  document.getElementById('nf-equipo').innerHTML = '<option value="">Seleccionar huinche...</option>' + opts;
+  document.getElementById('hist-equipo').innerHTML = '<option value="">Todos los equipos</option>' + opts;
 }
 
 function poblarSelectFundosJefes() {
-  const sf = document.getElementById('nf-fundo');
-  sf.innerHTML = '<option value="">Seleccionar fundo...</option>' +
+  document.getElementById('nf-fundo').innerHTML = '<option value="">Seleccionar fundo...</option>' +
     fundosCache.map(f => `<option value="${f.nombre}">${f.nombre}</option>`).join('');
-
-  const sj = document.getElementById('nf-jefe');
-  sj.innerHTML = '<option value="">Seleccionar jefe...</option>' +
+  document.getElementById('nf-jefe').innerHTML = '<option value="">Seleccionar jefe...</option>' +
     jefesCache.map(j => `<option value="${j.nombre}">${j.nombre}</option>`).join('');
 }
 
-// ===== EQUIPO ASISTIDO — filtra operadores =====
+// ===== EQUIPO ASISTIDO =====
 window.actualizarEquipoAsistido = function() {
   const tipo = document.getElementById('nf-tipo-asistido').value;
-  const lblOp   = document.getElementById('lbl-operador-asistido');
-  const selOp   = document.getElementById('nf-operador-asistido');
-  const lblHoro = document.getElementById('lbl-horo-asistido');
-
-  if (!tipo) {
-    selOp.innerHTML = '<option value="">Primero selecciona equipo asistido...</option>';
-    lblHoro.textContent = 'Horómetro Eq. Asistido (h)';
-    return;
-  }
-
-  lblOp.textContent   = `Operador ${tipo}`;
-  lblHoro.textContent = `Horómetro ${tipo} (h)`;
-
-  const funcion = FUNCION_POR_TIPO[tipo];
-  const filtrados = operadoresCache.filter(o => (o.funciones||[]).includes(funcion));
-  selOp.innerHTML = '<option value="">Seleccionar operador...</option>' +
-    filtrados.map(o => `<option value="${o.nombre}">${o.nombre}</option>`).join('');
+  document.getElementById('lbl-operador-asistido').textContent = tipo ? `Operador ${tipo}` : 'Operador del Equipo Asistido';
+  document.getElementById('lbl-horo-asistido').textContent = tipo ? `Horómetro ${tipo} (h)` : 'Horómetro Eq. Asistido (h)';
+  const funcion = tipo ? FUNCION_POR_TIPO[tipo] : null;
+  const filtrados = funcion ? operadoresCache.filter(o => (o.funciones||[]).includes(funcion)) : [];
+  document.getElementById('nf-operador-asistido').innerHTML = tipo
+    ? '<option value="">Seleccionar operador...</option>' + filtrados.map(o => `<option value="${o.nombre}">${o.nombre}</option>`).join('')
+    : '<option value="">Primero selecciona equipo asistido...</option>';
+  recalcHorasUso();
 };
 
-// ===== NÚMERO CORRELATIVO AUTOMÁTICO =====
+// ===== CORRELATIVO =====
 async function calcularNumeroCorrelativo() {
   try {
     const snap = await getDocs(collection(db, COL_INFORMES));
-    const numeros = snap.docs.map(d => d.data().numeroInforme || 0).filter(n => n > 0);
-    const siguiente = numeros.length ? Math.max(...numeros) + 1 : 1;
+    const nums = snap.docs.map(d => d.data().numeroInforme||0).filter(n => n > 0);
+    const sig = nums.length ? Math.max(...nums) + 1 : 1;
     const campo = document.getElementById('nf-num');
-    if (!campo.value) campo.value = siguiente;
+    if (!campo.value) campo.value = sig;
   } catch(e) {}
 }
 
-// ===== LISTA EQUIPOS CONFIG =====
+// ===== CONFIG EQUIPOS =====
 function renderListaEquiposConfig() {
   const c = document.getElementById('lista-equipos-config');
   if (!equiposCache.length) {
-    c.innerHTML = '<div class="empty-state"><div class="icon">🔧</div><p>No hay equipos configurados aún.</p></div>';
+    c.innerHTML = '<div class="empty-state"><div class="icon">🔧</div><p>No hay equipos configurados.</p></div>';
     return;
   }
   c.innerHTML = equiposCache.map(e => {
-    const imgHtml = e.imagenB64
-      ? `<img src="${e.imagenB64}" class="equipo-thumb" style="margin-right:10px;">`
-      : `<span style="font-size:24px;margin-right:10px;">🔩</span>`;
+    const imgH = e.imagenB64 ? `<img src="${e.imagenB64}" class="equipo-thumb" style="margin-right:10px;">` : `<span style="font-size:24px;margin-right:10px;">🔩</span>`;
+    const numCambios = Object.values(cambiosCache[e.id]||{}).flat().length;
     return `
     <div class="equipo-config-item">
-      <div style="display:flex;align-items:center;">
-        ${imgHtml}
+      <div style="display:flex;align-items:center;">${imgH}
         <div>
           <div class="equipo-config-nombre">${e.nombre}</div>
-          <div class="equipo-config-sub">${e.modelo||'—'} · ${(e.aperos||[]).length} aperos</div>
+          <div class="equipo-config-sub">${e.modelo||'—'} · ${(e.aperos||[]).length} aperos · ${numCambios} cambios registrados</div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="btn btn-secondary btn-sm" onclick="abrirModalEquipo('${e.id}')">✏️ Editar</button>
+        <button class="btn btn-azul btn-sm" onclick="abrirModalEquipo('${e.id}',true)">🔄 Cambios</button>
         <button class="btn btn-danger btn-sm" onclick="eliminarEquipo('${e.id}')">🗑</button>
       </div>
     </div>`;
@@ -558,8 +618,7 @@ window.previewImagen = function(e) {
   reader.onload = ev => {
     document.getElementById('me-img-b64').value = ev.target.result;
     document.getElementById('me-img-preview').innerHTML =
-      `<img src="${ev.target.result}" style="max-height:110px;max-width:100%;border-radius:6px;">
-       <p style="margin-top:4px;">Toca para cambiar</p>`;
+      `<img src="${ev.target.result}" style="max-height:110px;max-width:100%;border-radius:6px;"><p style="margin-top:4px;">Toca para cambiar</p>`;
     document.getElementById('btn-limpiar-img').style.display = 'inline-flex';
   };
   reader.readAsDataURL(file);
@@ -573,35 +632,55 @@ window.limpiarImagen = function() {
 };
 
 // ===== MODAL EQUIPO =====
-window.abrirModalEquipo = function(id) {
+window.abrirModalEquipo = function(id, verCambios=false) {
   const eq = id ? equiposCache.find(e => e.id === id) : null;
   document.getElementById('modal-equipo-titulo').textContent = eq ? 'Editar equipo' : 'Agregar equipo';
   document.getElementById('me-nombre').value = eq ? eq.nombre : '';
   document.getElementById('me-modelo').value = eq ? (eq.modelo||'') : '';
   document.getElementById('me-id').value     = eq ? eq.id : '';
 
-  // Imagen
   const b64 = eq?.imagenB64 || '';
   document.getElementById('me-img-b64').value = b64;
   document.getElementById('me-img-input').value = '';
-  if (b64) {
-    document.getElementById('me-img-preview').innerHTML =
-      `<img src="${b64}" style="max-height:110px;max-width:100%;border-radius:6px;">
-       <p style="margin-top:4px;">Toca para cambiar</p>`;
-    document.getElementById('btn-limpiar-img').style.display = 'inline-flex';
-  } else {
-    document.getElementById('me-img-preview').innerHTML = '<div style="font-size:28px;">📷</div><p>Toca para subir imagen</p>';
-    document.getElementById('btn-limpiar-img').style.display = 'none';
-  }
+  document.getElementById('me-img-preview').innerHTML = b64
+    ? `<img src="${b64}" style="max-height:110px;max-width:100%;border-radius:6px;"><p style="margin-top:4px;">Toca para cambiar</p>`
+    : '<div style="font-size:28px;">📷</div><p>Toca para subir imagen</p>';
+  document.getElementById('btn-limpiar-img').style.display = b64 ? 'inline-flex' : 'none';
 
   const rows = document.getElementById('aperos-config-rows');
   rows.innerHTML = '';
   const aperos = eq ? (eq.aperos||[]) : [];
-  aperos.forEach((a, i) => agregarAperoRow(a, i+1));
-  if (!aperos.length) agregarAperoRow(null, 1);
+  aperos.forEach((a,i) => agregarAperoRow(a,i+1));
+  if (!aperos.length) agregarAperoRow(null,1);
+
+  // Sección de cambios
+  const secCambios = document.getElementById('seccion-cambios');
+  if (eq && aperos.length) {
+    secCambios.style.display = 'block';
+    renderCambiosEnModal(eq.id, aperos);
+    if (verCambios) setTimeout(() => secCambios.scrollIntoView({behavior:'smooth'}), 200);
+  } else {
+    secCambios.style.display = 'none';
+  }
 
   document.getElementById('modal-equipo').classList.add('open');
 };
+
+function renderCambiosEnModal(eqId, aperos) {
+  const c = document.getElementById('cambios-aperos-container');
+  c.innerHTML = aperos.map(a => {
+    const ord = String(a.orden);
+    const cambios = (cambiosCache[eqId]||{})[ord] || [];
+    const ultimo = cambios[0];
+    return `
+    <div class="cambio-apero-row">
+      <div class="cambio-apero-nombre">${a.nombre} <span class="ref-badge ${a.refHorometro==='asistido'?'ref-asistido':'ref-base'}">${a.refHorometro==='asistido'?'ASISTIDO':'BASE'}</span></div>
+      ${ultimo ? `<div style="font-size:12px;color:var(--gris-sub);margin-bottom:6px;">Último cambio: Horo. <strong>${ultimo.horometro}h</strong> · ${formatFecha(ultimo.fecha)} · ${ultimo.fundo||'—'} · ${ultimo.operador||'—'}</div>` : '<div style="font-size:12px;color:var(--gris-sub);margin-bottom:6px;">Sin cambios registrados</div>'}
+      ${cambios.slice(1).map(c2 => `<div class="cambio-hist-item">Horo. ${c2.horometro}h · ${formatFecha(c2.fecha)} · ${c2.fundo||'—'} · ${c2.operador||'—'}</div>`).join('')}
+      <button class="btn btn-azul btn-sm" style="margin-top:8px;" onclick="abrirModalCambio('${eqId}',${a.orden},'${a.nombre.replace(/'/g,"\\'")}')">+ Registrar nuevo cambio</button>
+    </div>`;
+  }).join('');
+}
 
 window.cerrarModal = function(id) {
   document.getElementById(id).classList.remove('open');
@@ -611,38 +690,40 @@ window.cerrarModal = function(id) {
 function calcularRuptura(cargaSeg, factorSeg) {
   const c = parseFloat(cargaSeg);
   if (!c && c !== 0) return 'sin info';
-  if (!factorSeg || factorSeg.trim() === '') return c.toString(); // sin factor → 1:1
-  const partes = factorSeg.trim().split(':');
-  const num = parseFloat(partes[0]);
+  if (!factorSeg || factorSeg.trim() === '') return c.toString();
+  const num = parseFloat(factorSeg.trim().split(':')[0]);
   if (!num || num <= 0) return c.toString();
-  const resultado = (c * num).toFixed(2).replace(/\.00$/, '');
-  return resultado;
+  return (c * num).toFixed(2).replace(/\.00$/,'');
 }
 
 window.recalcRuptura = function(rowEl) {
   const c = rowEl.querySelector('[data-campo="cargaSeg"]').value;
   const f = rowEl.querySelector('[data-campo="factorSeg"]').value;
-  rowEl.querySelector('.ruptura-calc').textContent = calcularRuptura(c, f);
+  rowEl.querySelector('.ruptura-calc').textContent = calcularRuptura(c,f);
 };
 
 window.agregarAperoRow = function(apero, num) {
   const rows = document.getElementById('aperos-config-rows');
   const n = num || rows.children.length + 1;
   const a = apero || {};
-  const rupturaVal = calcularRuptura(a.cargaSeg, a.factorSeg);
+  const ref = a.refHorometro || 'base';
   const div = document.createElement('div');
   div.className = 'apero-config-row';
   div.innerHTML = `
     <span class="apero-num">${n}</span>
-    <input type="text"   placeholder="Nombre aparejo"  value="${a.nombre||''}"    data-campo="nombre"     oninput="">
-    <input type="number" placeholder="mm"               value="${a.diametro||''}" data-campo="diametro">
-    <input type="number" placeholder="t"                value="${a.cargaSeg||''}" data-campo="cargaSeg"   oninput="recalcRuptura(this.closest('.apero-config-row'))">
-    <input type="text"   placeholder="4:1"              value="${a.factorSeg||''}"data-campo="factorSeg"  oninput="recalcRuptura(this.closest('.apero-config-row'))">
-    <div class="ruptura-calc">${rupturaVal||'sin info'}</div>
-    <input type="text"   placeholder="Proveedor"        value="${a.proveedor||''}"data-campo="proveedor">
-    <input type="text"   placeholder="Marca"            value="${a.marca||''}"    data-campo="marca">
-    <input type="text"   placeholder="Modelo"           value="${a.modeloApero||''}"data-campo="modeloApero">
-    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove();renumerarAperos()" style="padding:5px 8px;">✕</button>
+    <input type="text"   placeholder="Nombre"    value="${a.nombre||''}"     data-campo="nombre">
+    <input type="number" placeholder="mm"         value="${a.diametro||''}"  data-campo="diametro">
+    <input type="number" placeholder="t"          value="${a.cargaSeg||''}"  data-campo="cargaSeg"  oninput="recalcRuptura(this.closest('.apero-config-row'))">
+    <input type="text"   placeholder="4:1"        value="${a.factorSeg||''}" data-campo="factorSeg" oninput="recalcRuptura(this.closest('.apero-config-row'))">
+    <div class="ruptura-calc">${calcularRuptura(a.cargaSeg,a.factorSeg)||'sin info'}</div>
+    <input type="text"   placeholder="Proveedor"  value="${a.proveedor||''}" data-campo="proveedor">
+    <input type="text"   placeholder="Marca"      value="${a.marca||''}"     data-campo="marca">
+    <input type="text"   placeholder="Modelo"     value="${a.modeloApero||''}" data-campo="modeloApero">
+    <select data-campo="refHorometro">
+      <option value="base"     ${ref==='base'    ?'selected':''}>🟢 Máq. Base</option>
+      <option value="asistido" ${ref==='asistido'?'selected':''}>🔵 Eq. Asistido</option>
+    </select>
+    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove();renumerarAperos()" style="padding:5px 7px;">✕</button>
   `;
   rows.appendChild(div);
 };
@@ -659,73 +740,152 @@ window.guardarEquipoConfig = async function() {
   if (!nombre) { alert('El nombre del equipo es obligatorio.'); return; }
 
   const aperos = [];
-  document.querySelectorAll('#aperos-config-rows .apero-config-row').forEach((row, i) => {
+  document.querySelectorAll('#aperos-config-rows .apero-config-row').forEach((row,i) => {
     const get = campo => row.querySelector(`[data-campo="${campo}"]`)?.value?.trim() || '';
     if (get('nombre')) {
-      const cS = parseFloat(get('cargaSeg')) || null;
-      const fS = get('factorSeg') || null;
+      const cS = parseFloat(get('cargaSeg'))||null;
+      const fS = get('factorSeg')||null;
       aperos.push({
-        orden: i+1,
-        nombre: get('nombre'),
-        diametro: parseFloat(get('diametro')) || null,
-        cargaSeg: cS,
-        factorSeg: fS,
-        ruptura: cS ? parseFloat(calcularRuptura(cS, fS)) || null : null,
-        proveedor: get('proveedor'),
-        marca: get('marca'),
-        modeloApero: get('modeloApero'),
+        orden: i+1, nombre: get('nombre'),
+        diametro: parseFloat(get('diametro'))||null,
+        cargaSeg: cS, factorSeg: fS,
+        ruptura: cS ? parseFloat(calcularRuptura(cS,fS))||null : null,
+        proveedor: get('proveedor'), marca: get('marca'), modeloApero: get('modeloApero'),
+        refHorometro: get('refHorometro') || 'base',
       });
     }
   });
 
-  const data = { nombre, modelo, aperos, ...(imgB64 ? { imagenB64: imgB64 } : { imagenB64: null }) };
+  const data = { nombre, modelo, aperos, imagenB64: imgB64 || null };
   const btn = document.querySelector('#modal-equipo .btn-primary');
   const txt = btn.textContent;
   btn.textContent = 'Guardando...'; btn.disabled = true;
   try {
-    id ? await setDoc(doc(db, COL_EQUIPOS_HUI, id), data)
-       : await addDoc(collection(db, COL_EQUIPOS_HUI), data);
+    id ? await setDoc(doc(db, COL_HUI, id), data)
+       : await addDoc(collection(db, COL_HUI), data);
     cerrarModal('modal-equipo');
     await cargarEquipos();
-  } catch(e) {
-    alert('Error al guardar: ' + e.message);
-  } finally { btn.textContent = txt; btn.disabled = false; }
+  } catch(e) { alert('Error al guardar: '+e.message); }
+  finally { btn.textContent = txt; btn.disabled = false; }
 };
 
 window.eliminarEquipo = async function(id) {
   if (!confirm('¿Eliminar este equipo y su configuración?')) return;
-  await deleteDoc(doc(db, COL_EQUIPOS_HUI, id));
+  await deleteDoc(doc(db, COL_HUI, id));
   await cargarEquipos();
 };
 
+// ===== MODAL CAMBIO APERO =====
+window.abrirModalCambio = function(eqId, aperoOrden, aperoNombre) {
+  document.getElementById('mc-equipo-id').value = eqId;
+  document.getElementById('mc-apero-orden').value = aperoOrden;
+  document.getElementById('modal-cambio-titulo').textContent = `Cambio — ${aperoNombre}`;
+  document.getElementById('mc-horometro').value = '';
+  document.getElementById('mc-fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('mc-fundo').value = '';
+  document.getElementById('mc-operador').value = '';
+  document.getElementById('mc-hrs-reemplazo').value = '';
+
+  const cambios = (cambiosCache[eqId]||{})[String(aperoOrden)] || [];
+  document.getElementById('mc-historial').innerHTML = cambios.length
+    ? cambios.map(c => `<div class="cambio-hist-item">Horo. <strong>${c.horometro}h</strong> · ${formatFecha(c.fecha)} · ${c.fundo||'—'} · Op: ${c.operador||'—'}${c.hrsReemplazo?' · Rep: '+c.hrsReemplazo+'h':''}</div>`).join('')
+    : '<div style="font-size:12px;color:var(--gris-sub);padding:8px 0;">Sin cambios previos registrados.</div>';
+
+  document.getElementById('modal-cambio').classList.add('open');
+};
+
+window.guardarCambioApero = async function() {
+  const eqId       = document.getElementById('mc-equipo-id').value;
+  const aperoOrden  = parseInt(document.getElementById('mc-apero-orden').value);
+  const horometro   = parseFloat(document.getElementById('mc-horometro').value);
+  const fecha       = document.getElementById('mc-fecha').value;
+  const fundo       = document.getElementById('mc-fundo').value;
+  const operador    = document.getElementById('mc-operador').value.trim();
+  const hrsReemplazo = parseFloat(document.getElementById('mc-hrs-reemplazo').value)||null;
+
+  if (!horometro || !fecha) { alert('Completa al menos horómetro y fecha.'); return; }
+
+  // Calcular duración anterior
+  const histPrevio = (cambiosCache[eqId]||{})[String(aperoOrden)] || [];
+  const anterior = histPrevio[0];
+  const duracionAnterior = anterior ? Math.round(horometro - anterior.horometro) : null;
+
+  const data = { aperoOrden, horometro, fecha, fundo, operador, hrsReemplazo, duracionAnterior, creadoEn: Timestamp.now() };
+
+  const btn = document.querySelector('#modal-cambio .btn-primary');
+  const txt = btn.textContent;
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+  try {
+    await addDoc(collection(db, COL_HUI, eqId, 'cambios_aperos'), data);
+    cerrarModal('modal-cambio');
+    // refrescar cache
+    if (!cambiosCache[eqId]) cambiosCache[eqId] = {};
+    if (!cambiosCache[eqId][String(aperoOrden)]) cambiosCache[eqId][String(aperoOrden)] = [];
+    cambiosCache[eqId][String(aperoOrden)].unshift(data);
+    renderListaEquiposConfig();
+    // refrescar sección cambios del modal equipo si sigue abierto
+    const eq = equiposCache.find(e => e.id === eqId);
+    if (eq) renderCambiosEnModal(eqId, eq.aperos||[]);
+  } catch(e) { alert('Error: '+e.message); }
+  finally { btn.textContent = txt; btn.disabled = false; }
+};
+
 // ===== CARGAR APEROS EN NUEVO INFORME =====
-window.cargarAperosFabrica = function() {
+window.cargarAperosFabrica = async function() {
   const eqId  = document.getElementById('nf-equipo').value;
   const equipo = equiposCache.find(e => e.id === eqId);
   const tbody  = document.getElementById('tbody-aperos');
   const hint   = document.getElementById('aperos-hint');
+  aperosCargados = [];
 
   if (!equipo || !equipo.aperos?.length) {
-    tbody.innerHTML = '<tr><td colspan="16" style="text-align:center;color:var(--gris-sub);padding:20px;">Sin aperos configurados para este equipo</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="20" style="text-align:center;color:var(--gris-sub);padding:20px;">Sin aperos configurados para este equipo</td></tr>';
     hint.textContent = equipo ? 'Este equipo no tiene aperos. Ve a ⚙️ Configuración.' : 'Selecciona un huinche para cargar los aperos.';
     return;
   }
-  hint.textContent = `${equipo.aperos.length} aperos cargados — ${equipo.nombre}.`;
-  tbody.innerHTML = equipo.aperos.map((a, i) => `
-    <tr>
+
+  // Asegurar cambios cargados
+  if (!cambiosCache[eqId]) await cargarCambiosEquipo(eqId);
+
+  aperosCargados = equipo.aperos;
+  hint.textContent = `${equipo.aperos.length} aperos cargados — ${equipo.nombre}. Las horas de uso se calculan automáticamente.`;
+
+  const horoBase     = parseFloat(document.getElementById('nf-horo-base').value)||0;
+  const horoAsistido = parseFloat(document.getElementById('nf-horo-asistido').value)||0;
+
+  tbody.innerHTML = equipo.aperos.map((a, i) => {
+    const ord = String(a.orden);
+    const cambios = (cambiosCache[eqId]||{})[ord] || [];
+    const ultimo  = cambios[0];
+    const anterior = cambios[1];
+    const ref = a.refHorometro || 'base';
+    const horoRef = ref === 'asistido' ? horoAsistido : horoBase;
+    const horasUso = (ultimo && horoRef) ? Math.max(0, Math.round(horoRef - ultimo.horometro)) : null;
+    const durAnterior = ultimo?.duracionAnterior ?? (anterior ? Math.round((ultimo?.horometro||0) - anterior.horometro) : null);
+
+    return `<tr>
       <td><strong>${a.orden||i+1}</strong></td>
-      <td>${a.nombre}</td>
-      <td style="text-align:center;color:var(--gris-sub);font-weight:600;">${a.diametro??'—'}</td>
-      <td style="text-align:center;color:var(--gris-sub);">${a.cargaSeg??'—'}</td>
-      <td style="text-align:center;color:var(--gris-sub);">${a.factorSeg??'—'}</td>
-      <td style="text-align:center;color:var(--gris-sub);">${a.ruptura??'sin info'}</td>
-      <td style="font-size:11px;color:var(--gris-sub);">${a.proveedor||'—'}</td>
-      <td style="font-size:11px;color:var(--gris-sub);">${a.marca||'—'}</td>
-      <td style="font-size:11px;color:var(--gris-sub);">${a.modeloApero||'—'}</td>
-      <td><input type="number" id="ap-horo-${i}" placeholder="hrs"></td>
-      <td><input type="date" id="ap-fecha-${i}"></td>
-      <td><input type="number" id="ap-horauso-${i}" placeholder="hrs"></td>
-      <td><input type="number" id="ap-medreal-${i}" placeholder="mm" oninput="calcDesgaste(${i},${a.diametro||0})"></td>
+      <td style="white-space:nowrap;">${a.nombre}</td>
+      <td><span class="ref-badge ${ref==='asistido'?'ref-asistido':'ref-base'}">${ref==='asistido'?'ASISTIDO':'BASE'}</span></td>
+      <td style="text-align:center;font-weight:600;">${a.diametro??'—'}</td>
+      <td style="text-align:center;">${a.cargaSeg??'—'}</td>
+      <td style="text-align:center;">${a.factorSeg??'—'}</td>
+      <td style="text-align:center;">${a.ruptura??'sin info'}</td>
+      <td style="font-size:11px;">${a.proveedor||'—'}</td>
+      <td style="font-size:11px;">${a.marca||'—'}</td>
+      <td style="font-size:11px;">${a.modeloApero||'—'}</td>
+      <td style="text-align:center;${ultimo?'':'color:var(--gris-sub);'}">${ultimo?ultimo.horometro:'sin registro'}</td>
+      <td style="text-align:center;font-size:11px;">${ultimo?formatFecha(ultimo.fecha):'—'}</td>
+      <td style="text-align:center;font-size:11px;">${ultimo?.fundo||'—'}</td>
+      <td style="text-align:center;font-size:11px;">${ultimo?.operador||'—'}</td>
+      <td>
+        ${horasUso !== null
+          ? `<div class="info-calc" id="ap-horauso-disp-${i}">${horasUso} h</div><input type="hidden" id="ap-horauso-${i}" value="${horasUso}">`
+          : `<input type="number" id="ap-horauso-${i}" placeholder="hrs" style="min-width:60px;">`
+        }
+      </td>
+      <td style="text-align:center;font-size:11px;color:var(--gris-sub);">${durAnterior!=null?durAnterior+' h':'—'}</td>
+      <td><input type="number" id="ap-medreal-${i}" placeholder="mm" oninput="calcDesgaste(${i},${a.diametro||0})" style="min-width:60px;"></td>
       <td><span id="ap-desg-${i}" style="font-weight:600;color:var(--gris-sub);">—</span></td>
       <td>
         <select id="ap-estado-${i}">
@@ -735,17 +895,39 @@ window.cargarAperosFabrica = function() {
           <option value="fuera">🔴 Fuera de estándar</option>
         </select>
       </td>
-      <td><input type="text" id="ap-obs-${i}" placeholder="Observación..."></td>
-    </tr>`).join('');
+      <td><input type="text" id="ap-obs-${i}" placeholder="Observación..." style="min-width:90px;"></td>
+    </tr>`;
+  }).join('');
+};
+
+// Recalcula horas de uso al cambiar horómetros
+window.recalcHorasUso = function() {
+  const eqId = document.getElementById('nf-equipo').value;
+  if (!eqId || !aperosCargados.length) return;
+  const horoBase     = parseFloat(document.getElementById('nf-horo-base').value)||0;
+  const horoAsistido = parseFloat(document.getElementById('nf-horo-asistido').value)||0;
+
+  aperosCargados.forEach((a, i) => {
+    const ord = String(a.orden);
+    const cambios = (cambiosCache[eqId]||{})[ord] || [];
+    const ultimo = cambios[0];
+    if (!ultimo) return;
+    const ref = a.refHorometro || 'base';
+    const horoRef = ref === 'asistido' ? horoAsistido : horoBase;
+    const horasUso = Math.max(0, Math.round(horoRef - ultimo.horometro));
+    const disp = document.getElementById(`ap-horauso-disp-${i}`);
+    const hidden = document.getElementById(`ap-horauso-${i}`);
+    if (disp) { disp.textContent = horasUso + ' h'; hidden.value = horasUso; }
+  });
 };
 
 window.calcDesgaste = function(i, dFab) {
   const medReal = parseFloat(document.getElementById(`ap-medreal-${i}`).value);
   const span = document.getElementById(`ap-desg-${i}`);
-  if (!medReal || !dFab) { span.textContent = '—'; span.style.color = 'var(--gris-sub)'; return; }
-  const d = ((dFab - medReal) / dFab * 100).toFixed(1);
-  span.textContent = d + '%';
-  span.style.color = d > 10 ? 'var(--rojo)' : d > 5 ? 'var(--ambar)' : 'var(--verde-ok)';
+  if (!medReal || !dFab) { span.textContent='—'; span.style.color='var(--gris-sub)'; return; }
+  const d = ((dFab - medReal)/dFab*100).toFixed(1);
+  span.textContent = d+'%';
+  span.style.color = d>10?'var(--rojo)':d>5?'var(--ambar)':'var(--verde-ok)';
 };
 
 // ===== GUARDAR INFORME =====
@@ -756,20 +938,32 @@ window.guardarInforme = async function() {
   const fecha  = document.getElementById('nf-fecha').value;
   const fundo  = document.getElementById('nf-fundo').value;
   if (!eqId || !evalua || !fecha || !fundo) {
-    alert('Completa los campos obligatorios: Evaluador, Fecha, Huinche y Fundo.'); return;
+    alert('Completa: Evaluador, Fecha, Huinche y Fundo.'); return;
   }
 
   const tipoAsistido = document.getElementById('nf-tipo-asistido').value;
-  const aperosMedidos = (equipo?.aperos||[]).map((a, i) => {
+  const horoBase     = parseFloat(document.getElementById('nf-horo-base').value)||null;
+  const horoAsistido = parseFloat(document.getElementById('nf-horo-asistido').value)||null;
+
+  const aperosMedidos = aperosCargados.map((a, i) => {
     const medReal = document.getElementById(`ap-medreal-${i}`)?.value;
-    const desg = (medReal && a.diametro) ? ((a.diametro - parseFloat(medReal)) / a.diametro * 100).toFixed(1) : null;
+    const desg = (medReal && a.diametro) ? ((a.diametro-parseFloat(medReal))/a.diametro*100).toFixed(1) : null;
+    const horasUso = parseFloat(document.getElementById(`ap-horauso-${i}`)?.value)||null;
+
+    const ord = String(a.orden);
+    const cambios = (cambiosCache[eqId]||{})[ord]||[];
+    const ultimo = cambios[0];
+
     return {
-      orden: a.orden||i+1, nombre: a.nombre,
+      orden: a.orden||i+1, nombre: a.nombre, refHorometro: a.refHorometro||'base',
       diametroFab: a.diametro, cargaSeg: a.cargaSeg, factorSeg: a.factorSeg, ruptura: a.ruptura,
       proveedor: a.proveedor||'', marca: a.marca||'', modeloApero: a.modeloApero||'',
-      horoMetroCambio: parseFloat(document.getElementById(`ap-horo-${i}`)?.value)||null,
-      fechaCambio: document.getElementById(`ap-fecha-${i}`)?.value||'',
-      horasUso: parseFloat(document.getElementById(`ap-horauso-${i}`)?.value)||null,
+      horoMetroCambio: ultimo?.horometro||null,
+      fechaCambio: ultimo?.fecha||'',
+      fundoCambio: ultimo?.fundo||'',
+      operadorCambio: ultimo?.operador||'',
+      duracionAnterior: ultimo?.duracionAnterior??null,
+      horasUso,
       medicionReal: parseFloat(medReal)||null,
       desgastePct: desg ? parseFloat(desg) : null,
       estado: document.getElementById(`ap-estado-${i}`)?.value||'ok',
@@ -784,12 +978,9 @@ window.guardarInforme = async function() {
     evaluador: evalua, fecha, fundo,
     tipoAsistido,
     operadorAsistido: document.getElementById('nf-operador-asistido').value,
-    operadorHuinche: document.getElementById('nf-operador').value.trim(),
     supervisor: document.getElementById('nf-supervisor').value.trim(),
     jefeFaena: document.getElementById('nf-jefe').value,
-    horoBase: parseFloat(document.getElementById('nf-horo-base').value)||null,
-    horoCable: parseFloat(document.getElementById('nf-horo-cable').value)||null,
-    horoAsistido: parseFloat(document.getElementById('nf-horo-asistido').value)||null,
+    horoBase, horoAsistido,
     checklist: leerChecklist(),
     aperos: aperosMedidos,
     observaciones: document.getElementById('nf-obs').value.trim(),
@@ -803,19 +994,20 @@ window.guardarInforme = async function() {
     await cargarInformes();
     renderSeguimiento();
     await calcularNumeroCorrelativo();
-  } catch(e) { alert('Error al guardar: ' + e.message); }
+  } catch(e) { alert('Error al guardar: '+e.message); }
 };
 
 window.limpiarFormulario = function() {
   ['nf-evaluador','nf-equipo','nf-fundo','nf-tipo-asistido','nf-operador-asistido',
-   'nf-operador','nf-supervisor','nf-jefe','nf-horo-base','nf-horo-cable','nf-horo-asistido','nf-obs']
+   'nf-supervisor','nf-jefe','nf-horo-base','nf-horo-asistido','nf-obs']
     .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('nf-num').value = '';
   document.getElementById('tbody-aperos').innerHTML =
-    '<tr><td colspan="16" style="text-align:center;color:var(--gris-sub);padding:20px;">Sin aperos cargados</td></tr>';
+    '<tr><td colspan="20" style="text-align:center;color:var(--gris-sub);padding:20px;">Sin aperos cargados</td></tr>';
   document.getElementById('aperos-hint').textContent = 'Selecciona un huinche para cargar los aperos.';
   document.getElementById('lbl-horo-asistido').textContent = 'Horómetro Eq. Asistido (h)';
   document.getElementById('lbl-operador-asistido').textContent = 'Operador del Equipo Asistido';
+  aperosCargados = [];
   setFechaHoy();
   renderChecklist();
   calcularNumeroCorrelativo();
@@ -833,14 +1025,13 @@ async function cargarInformes() {
 function renderHistorial(lista) {
   const c = document.getElementById('lista-historial');
   if (!lista.length) {
-    c.innerHTML = '<div class="empty-state"><div class="icon">📁</div><p>No hay informes registrados aún.</p></div>';
-    return;
+    c.innerHTML = '<div class="empty-state"><div class="icon">📁</div><p>No hay informes registrados aún.</p></div>'; return;
   }
   c.innerHTML = lista.map(inf => {
-    const adv   = (inf.aperos||[]).filter(a => a.estado==='adv').length;
-    const fuera = (inf.aperos||[]).filter(a => a.estado==='fuera').length;
-    const obs   = (inf.aperos||[]).filter(a => a.estado==='obs').length;
-    const ok    = (inf.aperos||[]).filter(a => a.estado==='ok').length;
+    const adv   = (inf.aperos||[]).filter(a=>a.estado==='adv').length;
+    const fuera = (inf.aperos||[]).filter(a=>a.estado==='fuera').length;
+    const obs   = (inf.aperos||[]).filter(a=>a.estado==='obs').length;
+    const ok    = (inf.aperos||[]).filter(a=>a.estado==='ok').length;
     return `
     <div class="hist-card" onclick="verInforme('${inf.id}')">
       <div class="hist-card-header">
@@ -892,38 +1083,41 @@ window.verInforme = function(id) {
     <td style="text-align:center">${cl.valor==='na'?'—':''}</td></tr>`).join('');
 
   const aperosHtml = (inf.aperos||[]).map(a => {
-    const e = ESTADOS.find(s => s.val===a.estado)||ESTADOS[0];
+    const e = ESTADOS.find(s=>s.val===a.estado)||ESTADOS[0];
+    const ref = a.refHorometro||'base';
     return `<tr>
-      <td><strong>${a.orden}</strong></td><td>${a.nombre}</td>
+      <td><strong>${a.orden}</strong></td><td style="white-space:nowrap;">${a.nombre}</td>
+      <td><span class="ref-badge ${ref==='asistido'?'ref-asistido':'ref-base'}">${ref==='asistido'?'ASISTIDO':'BASE'}</span></td>
       <td style="text-align:center">${a.diametroFab??'—'}</td>
       <td style="text-align:center">${a.cargaSeg??'—'}</td>
       <td style="text-align:center">${a.factorSeg??'—'}</td>
-      <td style="text-align:center">${a.ruptura??'sin info'}</td>
+      <td style="text-align:center;font-weight:600">${a.ruptura??'sin info'}</td>
       <td>${a.proveedor||'—'}</td><td>${a.marca||'—'}</td><td>${a.modeloApero||'—'}</td>
       <td style="text-align:center">${a.horoMetroCambio??'—'}</td>
-      <td style="text-align:center">${a.fechaCambio?formatFecha(a.fechaCambio):'—'}</td>
-      <td style="text-align:center">${a.horasUso??'—'}</td>
+      <td style="text-align:center;font-size:11px">${a.fechaCambio?formatFecha(a.fechaCambio):'—'}</td>
+      <td style="text-align:center;font-size:11px">${a.fundoCambio||'—'}</td>
+      <td style="text-align:center;font-size:11px">${a.operadorCambio||'—'}</td>
+      <td style="text-align:center;font-weight:600;color:var(--azul)">${a.horasUso!=null?a.horasUso+' h':'—'}</td>
+      <td style="text-align:center;font-size:11px;color:var(--gris-sub)">${a.duracionAnterior!=null?a.duracionAnterior+' h':'—'}</td>
       <td style="text-align:center;font-weight:600">${a.medicionReal??'—'}</td>
       <td style="text-align:center;font-weight:600">${a.desgastePct!=null?a.desgastePct+'%':'—'}</td>
       <td><span class="estado-badge ${e.cls}">${e.label}</span></td>
-      <td style="font-size:12px;color:var(--gris-sub)">${a.observacion||'—'}</td></tr>`;
+      <td style="font-size:11px;color:var(--gris-sub)">${a.observacion||'—'}</td></tr>`;
   }).join('');
 
   const lblHoro = inf.tipoAsistido ? `Horómetro ${inf.tipoAsistido}` : 'Horómetro Eq. Asistido';
 
   document.getElementById('modal-ver-contenido').innerHTML = `
-    ${inf.equipoImagenB64 ? `<img src="${inf.equipoImagenB64}" style="max-height:80px;border-radius:8px;margin-bottom:12px;">` : ''}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 20px;font-size:13px;margin-bottom:14px;">
+    ${inf.equipoImagenB64?`<img src="${inf.equipoImagenB64}" style="max-height:70px;border-radius:6px;margin-bottom:10px;">`:''}
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 16px;font-size:13px;margin-bottom:14px;">
       <div><strong>Equipo:</strong> ${inf.equipoNombre} (${inf.equipoModelo||'—'})</div>
       <div><strong>Fecha:</strong> ${formatFecha(inf.fecha)}</div>
       <div><strong>Fundo:</strong> ${inf.fundo}</div>
       <div><strong>Evaluador:</strong> ${inf.evaluador}</div>
-      <div><strong>Eq. Asistido:</strong> ${inf.tipoAsistido||'—'} · Op: ${inf.operadorAsistido||'—'}</div>
-      <div><strong>Op. Huinche:</strong> ${inf.operadorHuinche||'—'}</div>
+      <div><strong>Eq. Asistido:</strong> ${inf.tipoAsistido||'—'} · ${inf.operadorAsistido||'—'}</div>
       <div><strong>Supervisor:</strong> ${inf.supervisor||'—'}</div>
       <div><strong>Jefe de Faena:</strong> ${inf.jefeFaena||'—'}</div>
-      <div><strong>Horómetro Base:</strong> ${inf.horoBase??'—'} h</div>
-      <div><strong>Hrs Uso Cable:</strong> ${inf.horoCable??'—'} h</div>
+      <div><strong>Horo. Base:</strong> ${inf.horoBase??'—'} h</div>
       <div><strong>${lblHoro}:</strong> ${inf.horoAsistido??'—'} h</div>
     </div>
     <div class="card-title" style="margin-bottom:8px;">Checklist</div>
@@ -934,21 +1128,21 @@ window.verInforme = function(id) {
     <div class="card-title" style="margin-bottom:8px;">Aparejo — Mediciones</div>
     <div class="table-wrap" style="margin-bottom:14px;">
       <table><thead><tr>
-        <th>#</th><th>Aparejo</th><th>Ø Fab.</th><th>C.Seg(t)</th><th>F.Seg</th><th>Rupt.(t)</th>
+        <th>#</th><th>Aparejo</th><th>Ref.</th><th>Ø Fab.</th><th>C.Seg</th><th>F.Seg</th><th>Rupt.</th>
         <th>Proveedor</th><th>Marca</th><th>Modelo</th>
-        <th>Horo.Cambio</th><th>F.Cambio</th><th>Hrs Uso</th>
+        <th>Horo.Cambio</th><th>F.Cambio</th><th>Fundo Cambio</th><th>Op.Cambio</th>
+        <th>Hrs Uso</th><th>Durac.Ant.</th>
         <th>Med.Real</th><th>Desg%</th><th>Estado</th><th>Obs.</th>
       </tr></thead>
-      <tbody>${aperosHtml||'<tr><td colspan="16" style="text-align:center;padding:14px;color:var(--gris-sub)">Sin aperos</td></tr>'}</tbody></table>
+      <tbody>${aperosHtml||'<tr><td colspan="20" style="text-align:center;padding:14px;color:var(--gris-sub)">Sin aperos</td></tr>'}</tbody></table>
     </div>
-    ${inf.observaciones?`<div class="card-title" style="margin-bottom:6px;">Observaciones Generales</div>
-    <div style="font-size:13px;padding:10px 12px;background:var(--gris-fondo);border-radius:6px;">${inf.observaciones}</div>`:''}
+    ${inf.observaciones?`<div class="card-title" style="margin-bottom:6px;">Observaciones</div><div style="font-size:13px;padding:10px 12px;background:var(--gris-fondo);border-radius:6px;">${inf.observaciones}</div>`:''}
   `;
   document.getElementById('modal-ver').classList.add('open');
 };
 
 window.eliminarInformeActual = async function() {
-  if (!informeActualId || !confirm('¿Eliminar este informe? No se puede deshacer.')) return;
+  if (!informeActualId || !confirm('¿Eliminar este informe?')) return;
   await deleteDoc(doc(db, COL_INFORMES, informeActualId));
   cerrarModal('modal-ver');
   informeActualId = null;
@@ -967,9 +1161,9 @@ function renderSeguimiento() {
   Object.values(ultimas).forEach(inf => {
     (inf.aperos||[]).forEach(a => {
       if (a.estado==='fuera') { totalFuera++;
-        alertasHtml += `<div class="alert-row alert-fuera">🔴 <strong>${inf.equipoNombre}</strong> — ${a.nombre}: Fuera de estándar (${inf.fundo}, ${formatFecha(inf.fecha)})${a.observacion?' · '+a.observacion:''}</div>`;
+        alertasHtml += `<div class="alert-row alert-fuera">🔴 <strong>${inf.equipoNombre}</strong> — ${a.nombre}: Fuera de estándar · ${inf.fundo} · ${formatFecha(inf.fecha)}${a.observacion?' · '+a.observacion:''}</div>`;
       } else if (a.estado==='adv') { totalAdv++;
-        alertasHtml += `<div class="alert-row alert-adv">⚠️ <strong>${inf.equipoNombre}</strong> — ${a.nombre}: Advertencia (${inf.fundo}, ${formatFecha(inf.fecha)})${a.observacion?' · '+a.observacion:''}</div>`;
+        alertasHtml += `<div class="alert-row alert-adv">⚠️ <strong>${inf.equipoNombre}</strong> — ${a.nombre}: Advertencia · ${inf.fundo} · ${formatFecha(inf.fecha)}${a.observacion?' · '+a.observacion:''}</div>`;
       } else totalOk++;
     });
   });
@@ -989,49 +1183,56 @@ window.generarPDF = function() {
   const lblHoro = inf.tipoAsistido ? `Horómetro ${inf.tipoAsistido}` : 'Horómetro Eq. Asistido';
 
   const clRows = (inf.checklist||[]).map(cl => `<tr>
-    <td style="padding:4px 8px;font-size:10px;">${cl.item}</td>
-    <td style="text-align:center;padding:4px;">${cl.valor==='cumple'?'X':''}</td>
-    <td style="text-align:center;padding:4px;">${cl.valor==='nocumple'?'X':''}</td>
-    <td style="text-align:center;padding:4px;">${cl.valor==='na'?'X':''}</td></tr>`).join('');
+    <td style="padding:3px 7px;font-size:9px;">${cl.item}</td>
+    <td style="text-align:center;padding:3px;">${cl.valor==='cumple'?'X':''}</td>
+    <td style="text-align:center;padding:3px;">${cl.valor==='nocumple'?'X':''}</td>
+    <td style="text-align:center;padding:3px;">${cl.valor==='na'?'X':''}</td></tr>`).join('');
 
-  const aperosRows = (inf.aperos||[]).map(a => `<tr>
-    <td style="text-align:center;font-weight:bold;padding:3px 5px;">${a.orden}</td>
-    <td style="padding:3px 5px;font-size:10px;">${a.nombre}</td>
-    <td style="text-align:center;padding:3px 5px;">${a.diametroFab??'—'}</td>
-    <td style="text-align:center;padding:3px 5px;">${a.cargaSeg??'—'}</td>
-    <td style="text-align:center;padding:3px 5px;">${a.factorSeg??'—'}</td>
-    <td style="text-align:center;padding:3px 5px;font-weight:600;">${a.ruptura??'sin info'}</td>
-    <td style="padding:3px 5px;font-size:10px;">${a.proveedor||'—'}</td>
-    <td style="padding:3px 5px;font-size:10px;">${a.marca||'—'}</td>
-    <td style="padding:3px 5px;font-size:10px;">${a.modeloApero||'—'}</td>
-    <td style="text-align:center;padding:3px 5px;">${a.horoMetroCambio??'—'}</td>
-    <td style="text-align:center;padding:3px 5px;font-size:10px;">${a.fechaCambio?formatFecha(a.fechaCambio):'—'}</td>
-    <td style="text-align:center;padding:3px 5px;">${a.horasUso??'—'}</td>
-    <td style="text-align:center;padding:3px 5px;font-weight:bold;">${a.medicionReal??'—'}</td>
-    <td style="text-align:center;padding:3px 5px;">${a.desgastePct!=null?a.desgastePct+'%':'—'}</td>
-    <td style="text-align:center;padding:3px 5px;font-size:9px;font-weight:bold;color:${
+  const aperosRows = (inf.aperos||[]).map(a => {
+    const ref = a.refHorometro||'base';
+    return `<tr>
+    <td style="text-align:center;font-weight:bold;padding:2px 4px;">${a.orden}</td>
+    <td style="padding:2px 4px;font-size:9px;">${a.nombre}</td>
+    <td style="text-align:center;padding:2px 4px;font-size:8px;font-weight:700;color:${ref==='asistido'?'#1D4ED8':'#15803D'};">${ref==='asistido'?'ASISTIDO':'BASE'}</td>
+    <td style="text-align:center;padding:2px 4px;">${a.diametroFab??'—'}</td>
+    <td style="text-align:center;padding:2px 4px;">${a.cargaSeg??'—'}</td>
+    <td style="text-align:center;padding:2px 4px;">${a.factorSeg??'—'}</td>
+    <td style="text-align:center;padding:2px 4px;font-weight:600;">${a.ruptura??'sin info'}</td>
+    <td style="padding:2px 4px;font-size:9px;">${a.proveedor||'—'}</td>
+    <td style="padding:2px 4px;font-size:9px;">${a.marca||'—'}</td>
+    <td style="text-align:center;padding:2px 4px;">${a.horoMetroCambio??'—'}</td>
+    <td style="text-align:center;padding:2px 4px;font-size:9px;">${a.fechaCambio?formatFecha(a.fechaCambio):'—'}</td>
+    <td style="text-align:center;padding:2px 4px;font-size:9px;">${a.fundoCambio||'—'}</td>
+    <td style="text-align:center;padding:2px 4px;font-size:9px;">${a.operadorCambio||'—'}</td>
+    <td style="text-align:center;padding:2px 4px;font-weight:bold;color:#1D4ED8;">${a.horasUso!=null?a.horasUso+' h':'—'}</td>
+    <td style="text-align:center;padding:2px 4px;font-size:9px;">${a.duracionAnterior!=null?a.duracionAnterior+' h':'—'}</td>
+    <td style="text-align:center;padding:2px 4px;font-weight:bold;">${a.medicionReal??'—'}</td>
+    <td style="text-align:center;padding:2px 4px;">${a.desgastePct!=null?a.desgastePct+'%':'—'}</td>
+    <td style="text-align:center;padding:2px 4px;font-size:8px;font-weight:bold;color:${
       a.estado==='fuera'?'#B91C1C':a.estado==='adv'?'#92400E':a.estado==='obs'?'#1D4ED8':'#15803D'
     };">${eL(a.estado)}</td>
-    <td style="padding:3px 5px;font-size:9px;">${a.observacion||''}</td></tr>`).join('');
+    <td style="padding:2px 4px;font-size:8px;">${a.observacion||''}</td></tr>`;
+  }).join('');
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <style>
-    body{font-family:Arial,sans-serif;font-size:10px;color:#1a1a1a;margin:15px;}
-    .header-block{display:flex;align-items:center;gap:16px;margin-bottom:6px;}
-    .header-block img{max-height:60px;max-width:100px;object-fit:contain;}
-    h2{color:#1B4332;font-size:14px;margin:0 0 2px;}
-    .sub{font-size:11px;color:#374151;margin-bottom:10px;}
-    h3{color:#1B4332;font-size:11px;margin:10px 0 4px;border-bottom:2px solid #95D5B2;padding-bottom:2px;}
-    table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:9px;}
-    th{background:#1B4332;color:white;padding:5px 6px;text-align:left;font-size:9px;}
+    body{font-family:Arial,sans-serif;font-size:9px;color:#1a1a1a;margin:12px;}
+    .header-block{display:flex;align-items:center;gap:14px;margin-bottom:6px;}
+    .header-block img{max-height:55px;max-width:90px;object-fit:contain;}
+    h2{color:#1B4332;font-size:13px;margin:0 0 2px;}
+    .sub{font-size:10px;color:#374151;margin-bottom:8px;}
+    h3{color:#1B4332;font-size:10px;margin:8px 0 4px;border-bottom:2px solid #95D5B2;padding-bottom:2px;}
+    table{width:100%;border-collapse:collapse;margin-bottom:8px;}
+    th{background:#1B4332;color:white;padding:4px 5px;text-align:left;font-size:8px;}
     td{border:1px solid #D1D5DB;vertical-align:middle;}
     tr:nth-child(even) td{background:#F9FAFB;}
-    .datos-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px 16px;margin-bottom:10px;}
-    .dato{font-size:10px;} .dato strong{color:#1B4332;}
-    .obs-box{background:#F9FAFB;border:1px solid #D1D5DB;border-radius:4px;padding:8px;font-size:10px;}
-    .firma-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-top:24px;}
-    .firma-item{border-top:1px solid #374151;padding-top:4px;text-align:center;font-size:9px;color:#6B7280;}
-    @media print{body{margin:8px;}}
+    .datos-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px 14px;margin-bottom:8px;}
+    .dato{font-size:9px;} .dato strong{color:#1B4332;}
+    .obs-box{background:#F9FAFB;border:1px solid #D1D5DB;border-radius:4px;padding:7px;font-size:9px;}
+    .nota-ref{font-size:8px;color:#6B7280;margin-bottom:4px;}
+    .firma-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:20px;}
+    .firma-item{border-top:1px solid #374151;padding-top:4px;text-align:center;font-size:8px;color:#6B7280;}
+    @media print{body{margin:6px;}}
   </style></head><body>
   <div class="header-block">
     ${inf.equipoImagenB64?`<img src="${inf.equipoImagenB64}">`:''}
@@ -1045,30 +1246,28 @@ window.generarPDF = function() {
     <div class="dato"><strong>Evaluador:</strong> ${inf.evaluador}</div>
     <div class="dato"><strong>Fundo:</strong> ${inf.fundo}</div>
     <div class="dato"><strong>Fecha:</strong> ${formatFecha(inf.fecha)}</div>
-    <div class="dato"><strong>Eq. Asistido:</strong> ${inf.tipoAsistido||'—'}</div>
-    <div class="dato"><strong>Op. ${inf.tipoAsistido||'Asistido'}:</strong> ${inf.operadorAsistido||'—'}</div>
-    <div class="dato"><strong>Op. Huinche:</strong> ${inf.operadorHuinche||'—'}</div>
+    <div class="dato"><strong>Eq. Asistido:</strong> ${inf.tipoAsistido||'—'} · Op: ${inf.operadorAsistido||'—'}</div>
     <div class="dato"><strong>Supervisor:</strong> ${inf.supervisor||'—'}</div>
     <div class="dato"><strong>Jefe de Faena:</strong> ${inf.jefeFaena||'—'}</div>
     <div class="dato"><strong>Horómetro Base:</strong> ${inf.horoBase??'—'} h</div>
-    <div class="dato"><strong>Hrs Cable:</strong> ${inf.horoCable??'—'} h</div>
     <div class="dato"><strong>${lblHoro}:</strong> ${inf.horoAsistido??'—'} h</div>
   </div>
   <h3>Checklist de Procedimientos</h3>
-  <table><thead><tr><th>Ítem</th><th style="width:50px;text-align:center">Cumple</th><th style="width:60px;text-align:center">No Cumple</th><th style="width:36px;text-align:center">N/A</th></tr></thead>
+  <table><thead><tr><th>Ítem</th><th style="width:45px;text-align:center">Cumple</th><th style="width:55px;text-align:center">No Cumple</th><th style="width:32px;text-align:center">N/A</th></tr></thead>
   <tbody>${clRows}</tbody></table>
-  <h3>Aparejo — Mediciones Reales vs. Fábrica</h3>
+  <h3>Aparejo — Medidas de Fábrica y Mediciones Reales</h3>
+  <div class="nota-ref">🟢 BASE = hrs calculadas vs horómetro máquina base &nbsp;|&nbsp; 🔵 ASISTIDO = hrs calculadas vs horómetro equipo asistido</div>
   <table><thead><tr>
-    <th style="width:18px">#</th><th>Aparejo</th><th>Ø Fab.</th><th>C.Seg(t)</th><th>F.Seg</th><th>Rupt.(t)</th>
-    <th>Proveedor</th><th>Marca</th><th>Modelo</th>
-    <th>Horo.Cambio</th><th>F.Cambio</th><th>Hrs Uso</th>
+    <th>#</th><th>Aparejo</th><th>Ref.</th><th>Ø Fab.</th><th>C.Seg(t)</th><th>F.Seg</th><th>Rupt.(t)</th>
+    <th>Proveedor</th><th>Marca</th>
+    <th>Horo.Cambio</th><th>F.Cambio</th><th>Fundo Cambio</th><th>Op.Cambio</th>
+    <th>Hrs Uso</th><th>Durac.Ant.</th>
     <th>Med.Real</th><th>Desg%</th><th>Estado</th><th>Observación</th>
   </tr></thead>
-  <tbody>${aperosRows||'<tr><td colspan="16" style="text-align:center;padding:10px;">Sin aperos</td></tr>'}</tbody></table>
+  <tbody>${aperosRows||'<tr><td colspan="19" style="text-align:center;padding:8px;">Sin aperos</td></tr>'}</tbody></table>
   ${inf.observaciones?`<h3>Observaciones y Recomendaciones</h3><div class="obs-box">${inf.observaciones}</div>`:''}
   <div class="firma-row">
     <div class="firma-item">${inf.evaluador}<br>Evaluador</div>
-    <div class="firma-item">${inf.operadorHuinche||'Op. Huinche'}<br>Operador Huinche</div>
     <div class="firma-item">${inf.operadorAsistido||'Op. Asistido'}<br>Op. ${inf.tipoAsistido||'Asistido'}</div>
     <div class="firma-item">${inf.supervisor||'Supervisor'}<br>Supervisor de Faena</div>
   </div>
@@ -1093,7 +1292,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     reg.addEventListener('updatefound', () => {
       const nw = reg.installing;
       nw.addEventListener('statechange', () => {
-        if (nw.state === 'installed' && navigator.serviceWorker.controller)
+        if (nw.state==='installed' && navigator.serviceWorker.controller)
           if (confirm('Hay una actualización disponible. ¿Recargar ahora?')) location.reload();
       });
     });
