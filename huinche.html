@@ -248,12 +248,12 @@
             <th>#</th><th>Aparejo</th><th>Ref.</th><th>Ø Fab.(mm)</th><th>C.Seg(t)</th><th>F.Seg</th><th>Pto.Rupt.(t)</th>
             <th>Proveedor</th><th>Marca</th><th>Modelo</th>
             <th>Horo.Cambio(h)</th><th>Fecha Cambio</th><th>Fundo Cambio</th><th>Op.Cambio</th>
-            <th>Hrs Uso</th><th>Durac.Anterior</th>
+            <th>Hrs Uso</th>
             <th>Med.Real(mm)</th><th>Desg.%</th><th>Estado</th><th>Observación</th>
           </tr>
         </thead>
         <tbody id="tbody-aperos">
-          <tr><td colspan="20" style="text-align:center;color:var(--gris-sub);padding:20px;">Sin aperos cargados</td></tr>
+          <tr><td colspan="19" style="text-align:center;color:var(--gris-sub);padding:20px;">Sin aperos cargados</td></tr>
         </tbody>
       </table>
     </div>
@@ -896,12 +896,9 @@ window.cargarAperosFabrica = async function() {
       <td style="text-align:center;font-size:11px;">${ultimo?.fundo||'—'}</td>
       <td style="text-align:center;font-size:11px;">${ultimo?.operador||'—'}</td>
       <td>
-        ${horasUso !== null
-          ? `<div class="info-calc" id="ap-horauso-disp-${i}">${horasUso} h</div><input type="hidden" id="ap-horauso-${i}" value="${horasUso}">`
-          : `<input type="number" id="ap-horauso-${i}" placeholder="hrs" style="min-width:60px;">`
-        }
+        <div class="info-calc" id="ap-horauso-disp-${i}">${horasUso!=null?horasUso+' h':'sin registro'}</div>
+        <input type="hidden" id="ap-horauso-${i}" value="${horasUso??''}">
       </td>
-      <td style="text-align:center;font-size:11px;color:var(--gris-sub);">${durAnterior!=null?durAnterior+' h':'—'}</td>
       <td><input type="number" id="ap-medreal-${i}" placeholder="mm" oninput="calcDesgaste(${i},${a.diametro||0})" style="min-width:60px;"></td>
       <td><span id="ap-desg-${i}" style="font-weight:600;color:var(--gris-sub);">—</span></td>
       <td>
@@ -940,11 +937,21 @@ window.recalcHorasUso = function() {
 
 window.calcDesgaste = function(i, dFab) {
   const medReal = parseFloat(document.getElementById(`ap-medreal-${i}`).value);
-  const span = document.getElementById(`ap-desg-${i}`);
-  if (!medReal || !dFab) { span.textContent='—'; span.style.color='var(--gris-sub)'; return; }
-  const d = ((dFab - medReal)/dFab*100).toFixed(1);
-  span.textContent = d+'%';
-  span.style.color = d>10?'var(--rojo)':d>5?'var(--ambar)':'var(--verde-ok)';
+  const span    = document.getElementById(`ap-desg-${i}`);
+  const selEst  = document.getElementById(`ap-estado-${i}`);
+  if (!medReal || !dFab) {
+    span.textContent = '—'; span.style.color = 'var(--gris-sub)'; return;
+  }
+  const d = ((dFab - medReal) / dFab * 100);
+  span.textContent = d.toFixed(1) + '%';
+  // Color del % mostrado
+  span.style.color = d >= 9.6 ? 'var(--rojo)' : d >= 7.1 ? 'var(--ambar)' : 'var(--verde-ok)';
+  // Estado automático (siempre sobreescribe, pero el usuario puede cambiarlo después)
+  if (selEst) {
+    if (d >= 9.6)      selEst.value = 'fuera';
+    else if (d >= 7.1) selEst.value = 'adv';
+    else               selEst.value = 'ok';
+  }
 };
 
 // ===== GUARDAR INFORME =====
@@ -1020,7 +1027,7 @@ window.limpiarFormulario = function() {
     .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('nf-num').value = '';
   document.getElementById('tbody-aperos').innerHTML =
-    '<tr><td colspan="20" style="text-align:center;color:var(--gris-sub);padding:20px;">Sin aperos cargados</td></tr>';
+    '<tr><td colspan="19" style="text-align:center;color:var(--gris-sub);padding:20px;">Sin aperos cargados</td></tr>';
   document.getElementById('aperos-hint').textContent = 'Selecciona un huinche para cargar los aperos.';
   document.getElementById('lbl-horo-asistido').textContent = 'Horómetro Eq. Asistido (h)';
   document.getElementById('lbl-operador-asistido').textContent = 'Operador del Equipo Asistido';
@@ -1050,7 +1057,7 @@ function renderHistorial(lista) {
     const obs   = (inf.aperos||[]).filter(a=>a.estado==='obs').length;
     const ok    = (inf.aperos||[]).filter(a=>a.estado==='ok').length;
     return `
-    <div class="hist-card" onclick="verInforme('${inf.id}')">
+    <div class="hist-card">
       <div class="hist-card-header">
         <div>
           <div class="hist-card-equipo">${inf.equipoNombre}${inf.numeroInforme?' · Inf. #'+inf.numeroInforme:''}</div>
@@ -1060,7 +1067,14 @@ function renderHistorial(lista) {
             <span class="hist-meta-item">· Evaluó: <strong>${inf.evaluador||'—'}</strong></span>
           </div>
         </div>
-        <div class="hist-card-fecha">${formatFecha(inf.fecha)}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="hist-card-fecha">${formatFecha(inf.fecha)}</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-secondary btn-sm" onclick="verInforme('${inf.id}')">👁 Ver</button>
+            <button class="btn btn-azul btn-sm" onclick="editarInforme('${inf.id}')">✏️ Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="eliminarInformeDirecto('${inf.id}')">🗑 Eliminar</button>
+          </div>
+        </div>
       </div>
       <div class="hist-indicadores">
         ${fuera?`<span class="estado-badge estado-fuera">🔴 ${fuera} fuera estándar</span>`:''}
@@ -1099,7 +1113,7 @@ window.verInforme = function(id) {
     <td style="text-align:center">${cl.valor==='nocumple'?'❌':''}</td>
     <td style="text-align:center">${cl.valor==='na'?'—':''}</td></tr>`).join('');
 
-  const aperosHtml = (inf.aperos||[]).map(a => {
+  const aperosHtml = (inf.aperos||[]).map((a,i) => {
     const e = ESTADOS.find(s=>s.val===a.estado)||ESTADOS[0];
     const ref = a.refHorometro||'base';
     return `<tr>
@@ -1116,10 +1130,10 @@ window.verInforme = function(id) {
       <td style="text-align:center;font-size:11px">${a.operadorCambio||'—'}</td>
       <td style="text-align:center;font-weight:600;color:var(--azul)">${a.horasUso!=null?a.horasUso+' h':'—'}</td>
       <td style="text-align:center;font-size:11px;color:var(--gris-sub)">${a.duracionAnterior!=null?a.duracionAnterior+' h':'—'}</td>
-      <td style="text-align:center;font-weight:600">${a.medicionReal??'—'}</td>
-      <td style="text-align:center;font-weight:600">${a.desgastePct!=null?a.desgastePct+'%':'—'}</td>
-      <td><span class="estado-badge ${e.cls}">${e.label}</span></td>
-      <td style="font-size:11px;color:var(--gris-sub)">${a.observacion||'—'}</td></tr>`;
+      <td id="ver-med-${i}" style="text-align:center;font-weight:600">${a.medicionReal??'—'}</td>
+      <td id="edit-desg-${i}" style="text-align:center;font-weight:600">${a.desgastePct!=null?a.desgastePct+'%':'—'}</td>
+      <td id="ver-estado-${i}"><span class="estado-badge ${e.cls}">${e.label}</span></td>
+      <td id="ver-obs-${i}" style="font-size:11px;color:var(--gris-sub)">${a.observacion||'—'}</td></tr>`;
   }).join('');
 
   const lblHoro = inf.tipoAsistido ? `Horómetro ${inf.tipoAsistido}` : 'Horómetro Eq. Asistido';
@@ -1160,11 +1174,108 @@ window.verInforme = function(id) {
 
 window.eliminarInformeActual = async function() {
   if (!informeActualId || !confirm('¿Eliminar este informe?')) return;
-  await deleteDoc(doc(db, COL_INFORMES, informeActualId));
+  await eliminarInformeById(informeActualId);
   cerrarModal('modal-ver');
   informeActualId = null;
-  await cargarInformes();
-  renderSeguimiento();
+};
+
+window.eliminarInformeDirecto = async function(id) {
+  if (!confirm('¿Eliminar este informe? No se puede deshacer.')) return;
+  await eliminarInformeById(id);
+};
+
+async function eliminarInformeById(id) {
+  try {
+    await deleteDoc(doc(db, COL_INFORMES, id));
+    await cargarInformes();
+    renderSeguimiento();
+  } catch(e) { alert('Error al eliminar: '+e.message); }
+}
+
+// ===== EDITAR INFORME =====
+window.editarInforme = function(id) {
+  const inf = informesCache.find(i => i.id === id);
+  if (!inf) return;
+  informeActualId = id;
+
+  // Abrir modal ver con modo edición
+  verInforme(id);
+  // Añadir aviso de edición al titulo
+  document.getElementById('modal-ver-titulo').textContent =
+    `✏️ Editando Inf. #${inf.numeroInforme||'—'} — ${inf.equipoNombre}`;
+
+  // Reemplazar botones del modal
+  const btnRow = document.querySelector('#modal-ver .btn-row');
+  btnRow.innerHTML = `
+    <button class="btn btn-primary" onclick="guardarEdicionInforme()">💾 Guardar cambios</button>
+    <button class="btn btn-secondary" onclick="cancelarEdicion()">Cancelar</button>
+  `;
+
+  // Hacer editables los campos de estado y observación en la tabla de aperos
+  const inf2 = informesCache.find(i => i.id === id);
+  (inf2.aperos||[]).forEach((a,i) => {
+    const estadoCell = document.getElementById(`ver-estado-${i}`);
+    const obsCell    = document.getElementById(`ver-obs-${i}`);
+    const desgCell   = document.getElementById(`ver-desg-${i}`);
+    const medCell    = document.getElementById(`ver-med-${i}`);
+    if (estadoCell) estadoCell.innerHTML = `
+      <select id="edit-estado-${i}">
+        <option value="ok"    ${a.estado==='ok'   ?'selected':''}>✅ Buen estado</option>
+        <option value="obs"   ${a.estado==='obs'  ?'selected':''}>🔵 Buen estado c/obs.</option>
+        <option value="adv"   ${a.estado==='adv'  ?'selected':''}>⚠️ Advertencia</option>
+        <option value="fuera" ${a.estado==='fuera'?'selected':''}>🔴 Fuera de estándar</option>
+      </select>`;
+    if (obsCell)  obsCell.innerHTML  = `<input type="text" id="edit-obs-${i}" value="${a.observacion||''}" style="min-width:100px;">`;
+    if (medCell)  medCell.innerHTML  = `<input type="number" id="edit-med-${i}" value="${a.medicionReal??''}" placeholder="mm" style="min-width:60px;" oninput="calcDesgasteEdicion(${i},${a.diametroFab||0})">`;
+    if (desgCell) desgCell.id = `edit-desg-${i}`;
+  });
+};
+
+window.calcDesgasteEdicion = function(i, dFab) {
+  const medReal = parseFloat(document.getElementById(`edit-med-${i}`)?.value);
+  const span    = document.getElementById(`edit-desg-${i}`);
+  const sel     = document.getElementById(`edit-estado-${i}`);
+  if (!span) return;
+  if (!medReal || !dFab) { span.textContent = '—'; span.style.color='var(--gris-sub)'; return; }
+  const d = ((dFab - medReal)/dFab*100);
+  span.textContent = d.toFixed(1)+'%';
+  span.style.color = d>=9.6?'var(--rojo)':d>=7.1?'var(--ambar)':'var(--verde-ok)';
+  if (sel) {
+    if (d >= 9.6)      sel.value = 'fuera';
+    else if (d >= 7.1) sel.value = 'adv';
+    else               sel.value = 'ok';
+  }
+};
+
+window.cancelarEdicion = function() {
+  cerrarModal('modal-ver');
+  informeActualId = null;
+};
+
+window.guardarEdicionInforme = async function() {
+  const inf = informesCache.find(i => i.id === informeActualId);
+  if (!inf) return;
+
+  const aperoActualizados = (inf.aperos||[]).map((a,i) => {
+    const nuevoEstado = document.getElementById(`edit-estado-${i}`)?.value || a.estado;
+    const nuevaObs    = document.getElementById(`edit-obs-${i}`)?.value ?? a.observacion;
+    const nuevaMed    = parseFloat(document.getElementById(`edit-med-${i}`)?.value) || a.medicionReal;
+    const nuevaDesg   = (nuevaMed && a.diametroFab) ? parseFloat(((a.diametroFab-nuevaMed)/a.diametroFab*100).toFixed(1)) : a.desgastePct;
+    return { ...a, estado: nuevoEstado, observacion: nuevaObs, medicionReal: nuevaMed, desgastePct: nuevaDesg };
+  });
+
+  const btn = document.querySelector('#modal-ver .btn-primary');
+  const txt = btn.textContent;
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+  try {
+    await setDoc(doc(db, COL_INFORMES, informeActualId), { ...inf, aperos: aperoActualizados }, { merge: true });
+    cerrarModal('modal-ver');
+    informeActualId = null;
+    await cargarInformes();
+    renderSeguimiento();
+    alert('✅ Informe actualizado correctamente.');
+  } catch(e) { alert('Error al guardar: '+e.message); }
+  finally { btn.textContent = txt; btn.disabled = false; }
 };
 
 // ===== SEGUIMIENTO =====
