@@ -190,6 +190,23 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 /* PIE % en leyenda */
 .pie-legend .leg-pct{font-size:10px;font-weight:700;color:var(--text3);margin-left:2px}
 
+/* BLOQUE ÁRBOLES */
+.arb-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.5rem}
+.arb-card{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.875rem 1rem}
+.arb-card-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;display:flex;align-items:center;gap:5px}
+.arb-total{font-size:28px;font-weight:900;line-height:1;margin-bottom:4px}
+.arb-unit{font-size:11px;color:var(--text3)}
+.arb-desglose{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+.arb-row{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.arb-row-label{color:var(--text2)}
+.arb-row-val{font-weight:700;color:var(--text)}
+.arb-eq-list{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+.arb-eq-row{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.arb-eq-name{color:var(--text2)}
+.arb-eq-val{font-weight:700;color:var(--text)}
+.arb-bar{height:4px;background:var(--border);border-radius:2px;margin-top:3px;overflow:hidden}
+.arb-bar-fill{height:100%;border-radius:2px}
+
 /* VARAS EN PISO */
 .varas-grid{display:flex;flex-direction:column;gap:.75rem}
 .varas-card{border-radius:var(--radius-sm);padding:.875rem 1rem;border:2px solid transparent}
@@ -239,6 +256,44 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 .oee-equipo-row{display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap}
 .oee-equipo-row label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
 .oee-equipo-row select{flex:1;min-width:160px}
+
+/* ═══ LAYOUT ESCRITORIO (≥900px) ═══ */
+@media(min-width:900px){
+  .app{max-width:1200px;padding:1.25rem}
+
+  /* Filtros en una sola fila */
+  .filters-row{flex-wrap:nowrap}
+
+  /* KPI grid: 3 columnas reales */
+  .kpi-grid{grid-template-columns:repeat(3,1fr)}
+
+  /* Layout 2 columnas para bloques principales */
+  .desktop-2col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+  .desktop-full{grid-column:1/-1}
+
+  /* Pie charts lado a lado ya están bien */
+  .pie-row{grid-template-columns:1fr 1fr}
+
+  /* Tabla producción más cómoda */
+  .prod-table{font-size:12px}
+  .prod-table td{padding:5px 9px}
+
+  /* Varas en piso: 2 columnas */
+  .varas-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+
+  /* Árboles: 3 columnas */
+  .arb-grid{grid-template-columns:1fr 1fr 1fr}
+  .arb-card[style*="grid-column"]{grid-column:auto}
+
+  /* Causales: más ancho */
+  .causal-bar-wrap{min-width:120px}
+
+  /* OEE números más grandes */
+  .oee-num-val{font-size:44px}
+
+  /* Header más compacto */
+  .header-title{font-size:18px}
+}
 
 @media(max-width:520px){
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
@@ -368,6 +423,9 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
     </div>
   </div>
 
+  <!-- ═══ BLOQUES OEE + UTILIZACIÓN (2 col en escritorio) ═══ -->
+  <div class="desktop-2col">
+
   <!-- ═══ BLOQUE 3: PRODUCTIVIDAD OEE ═══ -->
   <div class="section" id="seccion-oee">
     <div class="section-title"><i class="ti ti-settings-2"></i> Productividad OEE</div>
@@ -405,6 +463,8 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
     </div>
   </div>
 
+  </div><!-- /desktop-2col OEE+Utilización -->
+
   <!-- ═══ BLOQUE 7: VARAS EN PISO ═══ -->
   <div class="section">
     <div class="section-title"><i class="ti ti-stack-2"></i> Varas en piso por fundo</div>
@@ -420,6 +480,22 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
       <div class="loading-block"><div class="spinner"></div> Cargando...</div>
     </div>
   </div>
+
+  <!-- ═══ BLOQUES ÁRBOLES + CAMBIOS LÍNEA (2 col en escritorio) ═══ -->
+  <div class="desktop-2col">
+
+  <!-- ═══ BLOQUE ÁRBOLES ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-trees"></i> Árboles por tipo de equipo</div>
+    <div id="arb-wrap">
+      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+
+  </div><!-- /desktop-2col árboles+cambios -->
+
+  <!-- ═══ BLOQUES CAUSALES (2 col en escritorio) ═══ -->
+  <div class="desktop-2col">
 
   <!-- ═══ BLOQUE MADEREO: CAUSALES TORRE/SKIDDER ═══ -->
   <div class="section">
@@ -448,6 +524,8 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
       <div class="loading-block"><div class="spinner"></div> Cargando...</div>
     </div>
   </div>
+
+  </div><!-- /desktop-2col causales -->
 
   <!-- ═══ BLOQUE 4: RENDIMIENTO POR EQUIPO ═══ -->
   <div class="section">
@@ -712,6 +790,7 @@ window.consultar = async function() {
     window._jefeData = jefeEqm;
     poblarSelectorEquipo(jefeEqm, ['TORRE','ALPINE','SKIDDER'], 'f-madereo');
     poblarSelectorEquipo(jefeEqm, ['SHOVEL'], 'f-volteo');
+    renderArboles(jefeEqm, jefeLinea);
     renderCausalesTipo(jefeEqm, ['TORRE','ALPINE','SKIDDER'], 'causal-madereo-wrap', '');
     renderCausalesTipo(jefeLinea, ['SHOVEL'], 'causal-volteo-wrap', '');
     renderRendimiento();
@@ -1914,6 +1993,97 @@ window.eqModalOK = function() {
 document.getElementById('eq-modal-overlay').addEventListener('click', function(e) {
   if(e.target === this) eqModalCancelar();
 });
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUE ÁRBOLES POR TIPO DE EQUIPO
+// ══════════════════════════════════════════════════════════════════════════
+function renderArboles(jefeEqm, jefeLinea) {
+  // ── Torre + Skidder (filtro Eq.Madereo) ──
+  const torre = { total:0, bereuter:0, wyssen:0, equipos:{} };
+  const skidder = { total:0, equipos:{} };
+  jefeEqm.forEach(d => (d.equipos||[]).forEach(eq => {
+    const tipo = (eq.tipo||'').toUpperCase();
+    const nombre = eq.equipo||'—';
+    if(tipo==='TORRE'||tipo==='ALPINE') {
+      const arb = parseInt(eq.arboles)||0;
+      const ber = parseInt(eq.arbolesBereuter)||0;
+      const wys = parseInt(eq.arbolesWyssen)||0;
+      torre.total += arb;
+      torre.bereuter += ber;
+      torre.wyssen += wys;
+      torre.equipos[nombre] = (torre.equipos[nombre]||0) + arb;
+    }
+    if(tipo==='SKIDDER') {
+      const arb = parseInt(eq.arboles)||0;
+      skidder.total += arb;
+      skidder.equipos[nombre] = (skidder.equipos[nombre]||0) + arb;
+    }
+  }));
+
+  // ── Procesador (filtro Línea) ──
+  const proc = { total:0, equipos:{} };
+  jefeLinea.forEach(d => (d.equipos||[]).forEach(eq => {
+    const tipo = (eq.tipo||'').toUpperCase();
+    if(tipo==='PROCESADOR') {
+      const nombre = eq.equipo||'—';
+      const arb = parseInt(eq.arboles)||0;
+      proc.total += arb;
+      proc.equipos[nombre] = (proc.equipos[nombre]||0) + arb;
+    }
+  }));
+
+  const fmt0loc = n => Math.round(n).toLocaleString('es-CL');
+
+  // Función para renderizar desglose de equipos con barra proporcional
+  const desglose = (equipos, color) => {
+    const entries = Object.entries(equipos).sort((a,b)=>b[1]-a[1]);
+    const max = entries[0]?.[1] || 1;
+    return entries.map(([nombre, arb]) => `
+      <div class="arb-eq-row">
+        <span class="arb-eq-name">${nombre}</span>
+        <span class="arb-eq-val">${fmt0loc(arb)}</span>
+      </div>
+      <div class="arb-bar"><div class="arb-bar-fill" style="width:${(arb/max*100).toFixed(1)}%;background:${color}"></div></div>
+    `).join('');
+  };
+
+  document.getElementById('arb-wrap').innerHTML = `
+    <div class="arb-grid">
+
+      <!-- Torre / Alpine -->
+      <div class="arb-card">
+        <div class="arb-card-title" style="color:var(--blue)"><i class="ti ti-stack-3"></i> Torre / Alpine</div>
+        <div class="arb-total" style="color:var(--blue)">${fmt0loc(torre.total)}</div>
+        <div class="arb-unit">árboles madereados</div>
+        ${torre.bereuter>0||torre.wyssen>0?`
+        <div class="arb-desglose">
+          ${torre.bereuter>0?`<div class="arb-row"><span class="arb-row-label">🟠 Bereuter</span><span class="arb-row-val">${fmt0loc(torre.bereuter)}</span></div>`:''}
+          ${torre.wyssen>0?`<div class="arb-row"><span class="arb-row-label">🔵 Wyssen</span><span class="arb-row-val">${fmt0loc(torre.wyssen)}</span></div>`:''}
+        </div>`:''}
+        <div class="arb-eq-list">${desglose(torre.equipos,'#1D5FAD')}</div>
+      </div>
+
+      <!-- Skidder -->
+      <div class="arb-card">
+        <div class="arb-card-title" style="color:var(--amber)"><i class="ti ti-truck"></i> Skidder</div>
+        <div class="arb-total" style="color:var(--amber)">${fmt0loc(skidder.total)}</div>
+        <div class="arb-unit">árboles madereados</div>
+        <div class="arb-eq-list">${desglose(skidder.equipos,'#854F0B')}</div>
+      </div>
+
+      <!-- Procesador -->
+      <div class="arb-card" style="grid-column:1/-1">
+        <div class="arb-card-title" style="color:var(--green)"><i class="ti ti-cut"></i> Procesador</div>
+        <div class="arb-total" style="color:var(--green)">${fmt0loc(proc.total)}</div>
+        <div class="arb-unit">árboles trozados</div>
+        <div class="arb-eq-list">${desglose(proc.equipos,'#3B6D11')}</div>
+      </div>
+
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:4px">
+      * Torre/Skidder filtro Eq.Madereo · Procesador filtro Línea
+    </div>`;
+}
 
 window.addEventListener('DOMContentLoaded', () => consultar());
 </script>
