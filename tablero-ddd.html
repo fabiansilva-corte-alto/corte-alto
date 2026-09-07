@@ -459,7 +459,7 @@ table.tabla-ddd tr.div-bloque td{
   </div>
 
   <select id="sel-procesador">
-    <option value="">Procesador…</option>
+    <option value="">Procesador (todos)</option>
   </select>
 
   <span class="sep">Desde</span>
@@ -480,7 +480,7 @@ table.tabla-ddd tr.div-bloque td{
   <!-- ESTADO VACÍO -->
   <div id="estado-vacio">
     <div class="icono">🌲</div>
-    <p>Selecciona línea, procesador y rango de fechas, luego presiona <strong>Cargar</strong>.</p>
+    <p>Selecciona línea, fundo y rango de fechas, luego presiona <strong>Cargar</strong>.</p>
   </div>
 
   <!-- HEADER DESTACADO -->
@@ -838,6 +838,7 @@ window.cargarDatos=async function(){
 
     const segPorDia={};
     const oeePorDia={},fdPorDia={},fePorDia={},tobPorDia={},tocPorDia={},tpPorDia={};
+    const procPorDia={}; // { fecha: Set(nombres procesadores que reportaron OEE) }
     const causalesPorDia={}; // { motivo: { fecha: horas } }
 
     docsJefe.forEach(d=>{
@@ -853,6 +854,9 @@ window.cargarDatos=async function(){
         if(procesador && eq.equipo!==procesador)return;
         if(eq.tipo!=='PROCESADOR')return;
         if(eq.reportaOEE !== true)return;
+        // Registrar qué procesador reportó OEE este día
+        if(!procPorDia[f])procPorDia[f]=new Set();
+        procPorDia[f].add(eq.equipo);
         if(eq.fd!=null){fdPorDia[f]=fdPorDia[f]||[];fdPorDia[f].push(eq.fd);}
         if(eq.fe!=null){fePorDia[f]=fePorDia[f]||[];fePorDia[f].push(eq.fe);}
         if(eq.oee!=null){oeePorDia[f]=oeePorDia[f]||[];oeePorDia[f].push(eq.oee);}
@@ -909,7 +913,7 @@ window.cargarDatos=async function(){
     // ── RENDER ──
     renderHeader(linea,fundoStr,desde,hasta);
     renderTablaDdd({
-      dias,procesador,
+      dias,procesador,procPorDia,
       segPorDia,volRealPorDia,metaPorDia,
       oeePorDia,fdPorDia,fePorDia,tobPorDia,tocPorDia,tpPorDia,
       causalesPorDia,rodalMap,stock
@@ -964,7 +968,7 @@ function claseAlertaVsMeta(dif,pct){
 }
 
 function renderTablaDdd(ctx){
-  const{dias,procesador,segPorDia,volRealPorDia,metaPorDia,
+  const{dias,procesador,procPorDia,segPorDia,volRealPorDia,metaPorDia,
         oeePorDia,fdPorDia,fePorDia,tobPorDia,tocPorDia,tpPorDia,
         causalesPorDia,rodalMap,stock}=ctx;
 
@@ -975,14 +979,19 @@ function renderTablaDdd(ctx){
   // ── Encabezado ──
   const diasCortos=dias.map(fmtDiaCorto);
   const rangoLabel=`${fmtDiaCorto(dias[0])} al ${fmtDiaCorto(dias[dias.length-1])}`;
-  // 3 columnas fijas: grupo | subgrupo | KPI
+  // Fila secundaria con el procesador que reportó OEE cada día (solo si no hay filtro fijo)
+  const filaProcDia=!procesador?`<tr style="font-size:9px;color:#6a8a5a;background:#f0f4ec">
+    <td></td><td></td><td style="font-size:9px;color:#888;padding:2px 6px">Proc. OEE</td>
+    ${dias.map(f=>{const s=procPorDia[f];return `<td style="text-align:center;font-size:9px;color:#2d6a10;font-weight:600">${s?[...s].join('/'):'—'}</td>`;}).join('')}
+    <td></td>
+  </tr>`:''  ;
   $id('thead-ddd').innerHTML=`<tr>
     <th class="lbl" style="min-width:28px;max-width:34px"></th>
     <th class="lbl" style="min-width:28px;max-width:34px"></th>
     <th class="lbl">KPI</th>
     ${diasCortos.map(d=>`<th>${d}</th>`).join('')}
     <th class="resumen">${rangoLabel}</th>
-  </tr>`;
+  </tr>${filaProcDia}`;
 
   // Helper: celda vacía de grupo (cuando la fila no es la primera del grupo)
   const GV=''; // sin celda — manejado con rowspan
@@ -1065,7 +1074,9 @@ function renderTablaDdd(ctx){
   const nCausales=Math.max(motivos.length,1);
   const nProc=nIndicadores+nCausales;
 
-  const procNombre=procesador||'Procesador';
+  // Nombre del procesador: el seleccionado, o los que reportaron OEE en el período
+  const procsUnicos=new Set(Object.values(procPorDia).flatMap(s=>[...s]));
+  const procNombre=procesador||(procsUnicos.size?[...procsUnicos].join(' / '):'Procesador');
 
   // Indicadores (5 filas)
   const indicFilas=[
