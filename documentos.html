@@ -1201,10 +1201,12 @@ window.subirDocumentosBandeja = async function(){
     }
   }
 
-  let ok = 0, conError = 0;
-  for(let i = 0; i < bandejaArchivos.length; i++){
-    const a = bandejaArchivos[i];
-    boton.textContent = `Subiendo ${i + 1}/${bandejaArchivos.length}…`;
+  let ok = 0, conError = 0, terminados = 0;
+  const CONCURRENCIA = 4; // subir varios archivos en paralelo en vez de uno por uno
+  const total = bandejaArchivos.length;
+  boton.textContent = `Subiendo 0/${total}…`;
+
+  async function subirUno(a){
     try{
       const nombreSeguro = a.nombre.replace(/[^a-zA-Z0-9._-]/g, "_");
       const rutaStorage = `documentos_rrhh/${centroCarpeta}/${t.id}/${a.tipo}/${Date.now()}_${nombreSeguro}`;
@@ -1228,7 +1230,19 @@ window.subirDocumentosBandeja = async function(){
     }catch(e){
       conError++;
     }
+    terminados++;
+    boton.textContent = `Subiendo ${terminados}/${total}…`;
   }
+
+  let siguiente = 0;
+  async function trabajador(){
+    while(siguiente < total){
+      const a = bandejaArchivos[siguiente];
+      siguiente++;
+      await subirUno(a);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCIA, total) }, trabajador));
 
   boton.disabled = false;
   boton.textContent = "Subir documentos";
