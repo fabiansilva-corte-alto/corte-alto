@@ -365,10 +365,17 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
         </div>
       </div>
 
-      <div id="boveda-busqueda-wrap" class="bandeja-busqueda-wrap" style="max-width:520px">
-        <label class="field-label" for="boveda-busqueda-input">Buscar trabajador por nombre o RUT</label>
-        <input class="field-input" id="boveda-busqueda-input" type="text" placeholder="Escribe para buscar..." oninput="bovedaBuscarTrabajador()">
-        <div id="boveda-busqueda-resultados"></div>
+      <div id="boveda-lista-wrap">
+        <input class="field-input buscar-desktop" id="boveda-busqueda-input" type="text" placeholder="Buscar por nombre o RUT..." oninput="renderBovedaLista()" style="max-width:420px;margin-bottom:14px">
+        <div class="contador-desktop" id="boveda-lista-contador">Cargando…</div>
+        <div class="tabla-wrap">
+          <table class="tabla">
+            <thead>
+              <tr><th>Trabajador</th><th>RUT</th><th>Centro</th><th>Documentos</th></tr>
+            </thead>
+            <tbody id="boveda-lista-tabla-body"></tbody>
+          </table>
+        </div>
       </div>
 
       <div id="boveda-revision" class="hidden" style="margin-top:1.2rem">
@@ -595,8 +602,13 @@ window.mostrarSeccion = function(id){
     fetchDotacionTodos().catch(()=>{});
   }
   if(id === "boveda"){
-    if(dotDatosTodos === null) fetchDotacionTodos().catch(()=>{});
+    if(dotDatosTodos === null){
+      fetchDotacionTodos().then(renderBovedaLista).catch(()=>{});
+    }else{
+      renderBovedaLista();
+    }
     if(!tiposDocumentoCargados) fetchTiposDocumento().catch(()=>{});
+    if(bovedaConteos === null) fetchBovedaConteos().catch(()=>{});
   }
   if(id === "configuracion"){
     if(!tiposDocumentoCargados){
@@ -1265,6 +1277,7 @@ window.subirDocumentosBandeja = async function(){
   boton.disabled = false;
   boton.textContent = "Subir documentos";
   resultadoBox.innerHTML = `<div class="status-note" style="color:${conError ? "var(--red)" : "var(--green2)"}">Subidos: ${ok}. Con error: ${conError}.</div>`;
+  if(ok > 0) bovedaConteos = null; // se recalcula la próxima vez que se entre a la Bóveda
 
   if(conError === 0){
     setTimeout(() => { window.cancelarBandeja(); }, 1800);
@@ -1275,27 +1288,52 @@ window.subirDocumentosBandeja = async function(){
 
 let bovedaTrabajadorSeleccionado = null;
 let bovedaDocumentos = [];
+let bovedaConteos = null; // { trabajadorId: cantidadDeDocumentos }
 
-window.bovedaBuscarTrabajador = function(){
+async function fetchBovedaConteos(){
+  const snap = await getDocs(collection(db, "documentos"));
+  const conteos = {};
+  snap.forEach(d => {
+    const tId = d.data().trabajadorId;
+    conteos[tId] = (conteos[tId] || 0) + 1;
+  });
+  bovedaConteos = conteos;
+  renderBovedaLista();
+}
+
+window.renderBovedaLista = function(){
+  const cuerpo = document.getElementById("boveda-lista-tabla-body");
+  if(!cuerpo) return;
   const term = normalizar(document.getElementById("boveda-busqueda-input").value);
-  const cont = document.getElementById("boveda-busqueda-resultados");
-  if(term.length < 2){ cont.innerHTML = ""; return; }
-  const candidatos = (dotDatosTodos || [])
-    .filter(t => normalizar(t.nombre).includes(term) || normalizar(t.rut).includes(term))
-    .slice(0, 8);
-  cont.innerHTML = candidatos.length ? candidatos.map(t => `
-    <div class="bandeja-sugerencia" onclick="bovedaElegirTrabajador('${t.id}')">
-      <strong>${escapeHtml(t.nombre)}</strong>
-      <span>${escapeHtml(t.rut || "—")} · ${escapeHtml(t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente")}</span>
-    </div>
-  `).join("") : '<div class="bandeja-sugerencia-vacio">Sin resultados.</div>';
+  const datos = (dotDatosTodos || [])
+    .filter(t => !term || normalizar(t.nombre).includes(term) || normalizar(t.rut).includes(term))
+    .slice()
+    .sort((a,b) => a.nombre.localeCompare(b.nombre, "es"));
+
+  document.getElementById("boveda-lista-contador").textContent = dotDatosTodos === null
+    ? "Cargando…"
+    : `${datos.length} trabajador${datos.length === 1 ? "" : "es"}`;
+
+  cuerpo.innerHTML = datos.length ? datos.map(t => {
+    const n = bovedaConteos ? (bovedaConteos[t.id] || 0) : null;
+    const etiquetaCentro = t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente de asignar";
+    const docsTexto = n === null ? "…" : (n ? `${n} documento${n === 1 ? "" : "s"}` : "Sin documentos");
+    return `
+      <tr onclick="bovedaElegirTrabajador('${t.id}')" style="cursor:pointer">
+        <td class="nombre-cell">${escapeHtml(t.nombre)}</td>
+        <td>${escapeHtml(t.rut || "—")}</td>
+        <td><span class="badge-centro${t.centro ? "" : " pendiente"}">${escapeHtml(etiquetaCentro)}</span></td>
+        <td>${docsTexto}</td>
+      </tr>
+    `;
+  }).join("") : `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Sin resultados.</td></tr>`;
 };
 
 window.bovedaElegirTrabajador = function(id){
   const t = (dotDatosTodos || []).find(x => x.id === id);
   if(!t) return;
   bovedaTrabajadorSeleccionado = t;
-  document.getElementById("boveda-busqueda-wrap").classList.add("hidden");
+  document.getElementById("boveda-lista-wrap").classList.add("hidden");
   document.getElementById("boveda-revision").classList.remove("hidden");
   renderBovedaMatch();
   cargarDocumentosBoveda();
@@ -1305,9 +1343,8 @@ window.bovedaCambiarTrabajador = function(){
   bovedaTrabajadorSeleccionado = null;
   bovedaDocumentos = [];
   document.getElementById("boveda-revision").classList.add("hidden");
-  document.getElementById("boveda-busqueda-wrap").classList.remove("hidden");
-  document.getElementById("boveda-busqueda-input").value = "";
-  document.getElementById("boveda-busqueda-resultados").innerHTML = "";
+  document.getElementById("boveda-lista-wrap").classList.remove("hidden");
+  renderBovedaLista();
 };
 
 function renderBovedaMatch(){
@@ -1412,6 +1449,10 @@ window.bovedaEliminarDocumento = async function(docId, storagePath, nombreArchiv
     await deleteDoc(doc(db, "documentos", docId));
     bovedaDocumentos = bovedaDocumentos.filter(d => d.id !== docId);
     renderDocumentosBoveda();
+    if(bovedaConteos && bovedaTrabajadorSeleccionado){
+      const tId = bovedaTrabajadorSeleccionado.id;
+      bovedaConteos[tId] = Math.max(0, (bovedaConteos[tId] || 1) - 1);
+    }
   }catch(e){
     alert("No se pudo eliminar el documento. Intenta de nuevo.");
   }
