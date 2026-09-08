@@ -138,6 +138,10 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 .doc-item-meta{font-size:11.5px;color:var(--text3);margin-top:2px}
 .doc-item-acciones{display:flex;gap:8px;flex-shrink:0}
 .badge-vigente{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--green-light);color:var(--green2);margin-left:8px}
+.estado-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:8px;vertical-align:middle}
+.estado-dot.verde{background:var(--green2)}
+.estado-dot.rojo{background:var(--red)}
+.estado-dot.gris{background:#bbb}
 .accion-editar{border:1px solid var(--border);background:#fff;border-radius:8px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;color:var(--text2);cursor:pointer}
 .contador-desktop{font-size:12px;color:var(--text3);font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
 
@@ -500,7 +504,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 
     <button class="btn-primary full" onclick="guardarTrabajador()">Guardar</button>
     <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModales()">Cancelar</button>
-    <button class="btn-eliminar hidden" id="mt-btn-eliminar" onclick="eliminarTrabajadorActual()">Eliminar trabajador</button>
+    <p class="status-note" style="margin-top:10px">Un trabajador nunca se elimina de la dotación — cuando deja la empresa, márcalo como Inactivo (arriba) y conserva su documentación en la Bóveda.</p>
   </div>
 </div>
 
@@ -602,6 +606,11 @@ window.mostrarSeccion = function(id){
     fetchDotacionTodos().catch(()=>{});
   }
   if(id === "boveda"){
+    // entrar a la Bóveda (incluso re-hacer clic estando ya adentro) siempre vuelve a la lista completa
+    bovedaTrabajadorSeleccionado = null;
+    bovedaDocumentos = [];
+    document.getElementById("boveda-revision").classList.add("hidden");
+    document.getElementById("boveda-lista-wrap").classList.remove("hidden");
     if(dotDatosTodos === null){
       fetchDotacionTodos().then(renderBovedaLista).catch(()=>{});
     }else{
@@ -627,6 +636,22 @@ function normalizar(str){
 }
 function limpiarRut(r){
   return String(r||"").replace(/\./g,"").replace(/\s+/g,"").toUpperCase();
+}
+function formatRut(rut){
+  const limpio = limpiarRut(rut);
+  if(!limpio) return "";
+  const guionIdx = limpio.indexOf("-");
+  let cuerpo, dv;
+  if(guionIdx === -1){
+    cuerpo = limpio.slice(0, -1);
+    dv = limpio.slice(-1);
+  }else{
+    cuerpo = limpio.slice(0, guionIdx);
+    dv = limpio.slice(guionIdx + 1);
+  }
+  if(!cuerpo || !/^\d+$/.test(cuerpo)) return limpio;
+  const conPuntos = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return `${conPuntos}-${dv}`;
 }
 
 window.iniciarSesion = async function(){
@@ -777,7 +802,7 @@ window.renderTablaDotacion = function(){
     return `
     <tr>
       <td class="nombre-cell">${escapeHtml(t.nombre || "—")}</td>
-      <td>${escapeHtml(t.rut || "—")}</td>
+      <td>${escapeHtml(formatRut(t.rut) || "—")}</td>
       <td><span class="badge-centro${pendiente ? ' pendiente' : ''}">${escapeHtml(etiquetaCentro)}</span></td>
       <td class="empresa-cell">${escapeHtml(t.empresa || "—")}</td>
       <td>${(t.subarea && normalizar(t.subarea) !== normalizar(NOMBRES_CENTRO[t.centro]||"")) ? escapeHtml(t.subarea) : "—"}</td>
@@ -821,7 +846,6 @@ window.abrirModalTrabajador = function(id){
     document.getElementById("mt-rutempresa").value = t.rutEmpresa || "";
     document.getElementById("mt-subarea").value = t.subarea || "";
     document.getElementById("mt-activo").checked = t.activo !== false;
-    document.getElementById("mt-btn-eliminar").classList.remove("hidden");
   }else{
     document.getElementById("modal-trabajador-titulo").textContent = "Agregar trabajador(a)";
     document.getElementById("mt-id").value = "";
@@ -838,7 +862,6 @@ window.abrirModalTrabajador = function(id){
     }
     document.getElementById("mt-subarea").value = "";
     document.getElementById("mt-activo").checked = true;
-    document.getElementById("mt-btn-eliminar").classList.add("hidden");
   }
   document.getElementById("modal-trabajador").classList.remove("hidden");
 };
@@ -874,21 +897,6 @@ window.guardarTrabajador = async function(){
   }catch(e){
     errorBox.textContent = "No se pudo guardar. Intenta de nuevo.";
     errorBox.classList.add("show");
-  }
-};
-
-window.eliminarTrabajadorActual = async function(){
-  const id = document.getElementById("mt-id").value;
-  if(!id) return;
-  if(!confirm("¿Eliminar este trabajador de la dotación? Esta acción no se puede deshacer.")) return;
-  try{
-    await deleteDoc(doc(db, "dotacion", id));
-    cerrarModales();
-    dotDatosTodos = null;
-    await fetchDotacionTodos();
-    renderTablaDotacion();
-  }catch(e){
-    alert("No se pudo eliminar. Intenta de nuevo.");
   }
 };
 
@@ -1277,7 +1285,7 @@ window.subirDocumentosBandeja = async function(){
   boton.disabled = false;
   boton.textContent = "Subir documentos";
   resultadoBox.innerHTML = `<div class="status-note" style="color:${conError ? "var(--red)" : "var(--green2)"}">Subidos: ${ok}. Con error: ${conError}.</div>`;
-  if(ok > 0) bovedaConteos = null; // se recalcula la próxima vez que se entre a la Bóveda
+  if(ok > 0){ bovedaConteos = null; bovedaFiniquitos = null; bovedaFallbackInfo = null; } // se recalcula la próxima vez que se entre a la Bóveda
 
   if(conError === 0){
     setTimeout(() => { window.cancelarBandeja(); }, 1800);
@@ -1289,50 +1297,104 @@ window.subirDocumentosBandeja = async function(){
 let bovedaTrabajadorSeleccionado = null;
 let bovedaDocumentos = [];
 let bovedaConteos = null; // { trabajadorId: cantidadDeDocumentos }
+let bovedaFiniquitos = null; // { trabajadorId: true } si tiene al menos un documento tipo "finiquito"
+let bovedaFallbackInfo = null; // { trabajadorId: {nombre, centro} } por si el documento quedó sin match en Dotación
 
 async function fetchBovedaConteos(){
   const snap = await getDocs(collection(db, "documentos"));
   const conteos = {};
+  const finiquitos = {};
+  const fallback = {};
   snap.forEach(d => {
-    const tId = d.data().trabajadorId;
+    const data = d.data();
+    const tId = data.trabajadorId;
     conteos[tId] = (conteos[tId] || 0) + 1;
+    if(data.tipo === "finiquito") finiquitos[tId] = true;
+    if(!fallback[tId]) fallback[tId] = { nombre: data.trabajadorNombre || "", centro: data.centro || "" };
   });
   bovedaConteos = conteos;
+  bovedaFiniquitos = finiquitos;
+  bovedaFallbackInfo = fallback;
   renderBovedaLista();
 }
 
 window.renderBovedaLista = function(){
   const cuerpo = document.getElementById("boveda-lista-tabla-body");
   if(!cuerpo) return;
+
+  if(dotDatosTodos === null || bovedaConteos === null){
+    document.getElementById("boveda-lista-contador").textContent = "Cargando…";
+    cuerpo.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Cargando…</td></tr>`;
+    return;
+  }
+
   const term = normalizar(document.getElementById("boveda-busqueda-input").value);
-  const datos = (dotDatosTodos || [])
-    .filter(t => !term || normalizar(t.nombre).includes(term) || normalizar(t.rut).includes(term))
-    .slice()
-    .sort((a,b) => a.nombre.localeCompare(b.nombre, "es"));
+  const dotPorId = {};
+  dotDatosTodos.forEach(t => dotPorId[t.id] = t);
 
-  document.getElementById("boveda-lista-contador").textContent = dotDatosTodos === null
-    ? "Cargando…"
-    : `${datos.length} trabajador${datos.length === 1 ? "" : "es"}`;
+  let filas = Object.keys(bovedaConteos).map(id => ({
+    id,
+    t: dotPorId[id] || null,
+    n: bovedaConteos[id] || 0
+  }));
 
-  cuerpo.innerHTML = datos.length ? datos.map(t => {
-    const n = bovedaConteos ? (bovedaConteos[t.id] || 0) : null;
-    const etiquetaCentro = t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente de asignar";
-    const docsTexto = n === null ? "…" : (n ? `${n} documento${n === 1 ? "" : "s"}` : "Sin documentos");
+  filas = filas.filter(f => {
+    if(!term) return true;
+    const nombre = f.t ? f.t.nombre : (bovedaFallbackInfo[f.id] || {}).nombre || "";
+    const rut = f.t ? f.t.rut : "";
+    return (normalizar(nombre) + " " + normalizar(rut)).includes(term);
+  });
+
+  filas.sort((a,b) => {
+    const inactA = a.t && a.t.activo === false ? 1 : 0;
+    const inactB = b.t && b.t.activo === false ? 1 : 0;
+    if(inactA !== inactB) return inactA - inactB;
+    const nombreA = a.t ? a.t.nombre : (bovedaFallbackInfo[a.id] || {}).nombre || "";
+    const nombreB = b.t ? b.t.nombre : (bovedaFallbackInfo[b.id] || {}).nombre || "";
+    return String(nombreA).localeCompare(String(nombreB), "es");
+  });
+
+  document.getElementById("boveda-lista-contador").textContent =
+    `${filas.length} trabajador${filas.length === 1 ? "" : "es"} con documentos`;
+
+  cuerpo.innerHTML = filas.length ? filas.map(f => {
+    const t = f.t;
+    const fb = bovedaFallbackInfo[f.id] || {};
+    const nombre = t ? t.nombre : (fb.nombre || "(sin nombre)");
+    const rut = t ? (formatRut(t.rut) || "—") : "—";
+    const etiquetaCentro = t
+      ? (t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente de asignar")
+      : (fb.centro ? (NOMBRES_CENTRO[fb.centro] || fb.centro) : "—");
+    const inactivo = !!(t && t.activo === false);
+    const tieneFiniquito = !!(bovedaFiniquitos && bovedaFiniquitos[f.id]);
+
+    let dotClase = "verde", dotTitulo = "Activo";
+    let badgeExtra = "";
+    if(!t){
+      dotClase = "rojo";
+      dotTitulo = "No encontrado en Dotación de personal";
+      badgeExtra = '<span class="badge-inactivo">No en Dotación</span>';
+    }else if(inactivo){
+      badgeExtra = '<span class="badge-inactivo">Inactivo</span>';
+      if(tieneFiniquito){ dotClase = "gris"; dotTitulo = "Inactivo — con Finiquito"; }
+      else{ dotClase = "rojo"; dotTitulo = "Inactivo — falta Finiquito"; }
+    }
+
     return `
-      <tr onclick="bovedaElegirTrabajador('${t.id}')" style="cursor:pointer">
-        <td class="nombre-cell">${escapeHtml(t.nombre)}</td>
-        <td>${escapeHtml(t.rut || "—")}</td>
-        <td><span class="badge-centro${t.centro ? "" : " pendiente"}">${escapeHtml(etiquetaCentro)}</span></td>
-        <td>${docsTexto}</td>
+      <tr onclick="bovedaElegirTrabajador('${f.id}')" style="cursor:pointer">
+        <td class="nombre-cell">${escapeHtml(nombre)}${badgeExtra}</td>
+        <td>${escapeHtml(rut)}</td>
+        <td><span class="badge-centro${t && t.centro ? "" : " pendiente"}">${escapeHtml(etiquetaCentro)}</span></td>
+        <td>${f.n} documento${f.n === 1 ? "" : "s"} <span class="estado-dot ${dotClase}" title="${escapeHtml(dotTitulo)}"></span></td>
       </tr>
     `;
-  }).join("") : `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Sin resultados.</td></tr>`;
+  }).join("") : `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">${term ? "Sin resultados." : "Todavía no hay documentos subidos — sube desde la Bandeja de clasificación."}</td></tr>`;
 };
 
 window.bovedaElegirTrabajador = function(id){
   const t = (dotDatosTodos || []).find(x => x.id === id);
-  if(!t) return;
-  bovedaTrabajadorSeleccionado = t;
+  const fb = (bovedaFallbackInfo && bovedaFallbackInfo[id]) || {};
+  bovedaTrabajadorSeleccionado = t || { id, nombre: fb.nombre || "(sin nombre)", rut: "", centro: fb.centro || "", empresa: "", __sinDotacion: true };
   document.getElementById("boveda-lista-wrap").classList.add("hidden");
   document.getElementById("boveda-revision").classList.remove("hidden");
   renderBovedaMatch();
@@ -1344,17 +1406,24 @@ window.bovedaCambiarTrabajador = function(){
   bovedaDocumentos = [];
   document.getElementById("boveda-revision").classList.add("hidden");
   document.getElementById("boveda-lista-wrap").classList.remove("hidden");
+  if(bovedaConteos === null){
+    fetchBovedaConteos().catch(()=>{});
+  }
   renderBovedaLista();
 };
 
 function renderBovedaMatch(){
   const t = bovedaTrabajadorSeleccionado;
   const etiquetaCentro = t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente de asignar";
+  const avisoSinDotacion = t.__sinDotacion
+    ? `<div class="status-note" style="color:var(--red);margin-top:6px">Este trabajador ya no se encuentra en Dotación de personal.</div>`
+    : "";
   document.getElementById("boveda-match-card").innerHTML = `
     <div class="bandeja-match-ok">
       <div>
         <div class="bandeja-match-nombre">${escapeHtml(t.nombre)}</div>
-        <div class="bandeja-match-detalle">${escapeHtml(t.rut || "—")} · ${escapeHtml(etiquetaCentro)} · ${escapeHtml(t.empresa || "—")}</div>
+        <div class="bandeja-match-detalle">${escapeHtml(formatRut(t.rut) || "—")} · ${escapeHtml(etiquetaCentro)} · ${escapeHtml(t.empresa || "—")}</div>
+        ${avisoSinDotacion}
       </div>
       <button class="btn-secondary" onclick="bovedaCambiarTrabajador()">Cambiar trabajador</button>
     </div>
@@ -1449,10 +1518,10 @@ window.bovedaEliminarDocumento = async function(docId, storagePath, nombreArchiv
     await deleteDoc(doc(db, "documentos", docId));
     bovedaDocumentos = bovedaDocumentos.filter(d => d.id !== docId);
     renderDocumentosBoveda();
-    if(bovedaConteos && bovedaTrabajadorSeleccionado){
-      const tId = bovedaTrabajadorSeleccionado.id;
-      bovedaConteos[tId] = Math.max(0, (bovedaConteos[tId] || 1) - 1);
-    }
+    // se invalida el caché de conteos/finiquitos — se recalcula la próxima vez que se muestre la lista
+    bovedaConteos = null;
+    bovedaFiniquitos = null;
+    bovedaFallbackInfo = null;
   }catch(e){
     alert("No se pudo eliminar el documento. Intenta de nuevo.");
   }
