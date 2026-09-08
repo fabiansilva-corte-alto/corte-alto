@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuadrilla diaria — Corte Alto</title>
+<style>
+  :root{
+    --verde: #1b5e20;
+    --verde2: #2e7d32;
+    --verde-claro: #e8f5e9;
+    --texto: #212121;
+    --texto2: #616161;
+    --texto3: #9e9e9e;
+    --borde: #e0e0e0;
+    --rojo: #c62828;
+    --fondo: #fafafa;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--fondo);color:var(--texto)}
+  .hidden{display:none!important}
+
+  /* ---- Pantalla de clave ---- */
+  #pantalla-clave{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--verde) 0%,var(--verde2) 100%);padding:20px}
+  .clave-card{background:#fff;border-radius:16px;padding:36px 32px;max-width:360px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.25);text-align:center}
+  .clave-card h1{font-size:20px;margin:0 0 6px}
+  .clave-card p{color:var(--texto2);font-size:14px;margin:0 0 20px}
+  .clave-card input{width:100%;padding:12px 14px;border:1.5px solid var(--borde);border-radius:10px;font-size:16px;text-align:center;letter-spacing:2px}
+  .clave-card button{width:100%;margin-top:14px;padding:12px;border:none;border-radius:10px;background:var(--verde);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+  .clave-card button:hover{background:var(--verde2)}
+  .clave-error{color:var(--rojo);font-size:13px;margin-top:10px;min-height:16px}
+  .clave-volver{display:inline-block;margin-top:18px;color:var(--texto2);font-size:13px;text-decoration:none}
+
+  /* ---- App ---- */
+  header{background:linear-gradient(135deg,var(--verde) 0%,var(--verde2) 100%);color:#fff;padding:18px 20px}
+  header .titulo-app{font-size:19px;font-weight:700;margin:0}
+  header .subtitulo-app{font-size:13px;opacity:.9;margin:3px 0 0}
+  main{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+
+  .card{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:20px;margin-bottom:18px}
+  .card h2{font-size:15px;margin:0 0 14px;color:var(--verde)}
+  .campo{margin-bottom:14px}
+  .campo label{display:block;font-size:13px;font-weight:600;color:var(--texto2);margin-bottom:6px}
+  .campo select, .campo input[type=date], .campo input[type=text]{
+    width:100%;padding:11px 12px;border:1.5px solid var(--borde);border-radius:9px;font-size:15px;background:#fff;color:var(--texto)
+  }
+  .fila-dos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:520px){ .fila-dos{grid-template-columns:1fr} }
+
+  .btn{padding:11px 18px;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer}
+  .btn-primario{background:var(--verde);color:#fff}
+  .btn-primario:hover{background:var(--verde2)}
+  .btn-primario:disabled{background:#bdbdbd;cursor:not-allowed}
+  .btn-secundario{background:#fff;color:var(--verde);border:1.5px solid var(--verde)}
+  .btn-secundario:hover{background:var(--verde-claro)}
+
+  .aviso-precarga{background:var(--verde-claro);border:1px solid #a5d6a7;border-radius:9px;padding:10px 12px;font-size:13px;color:var(--verde);margin-bottom:12px}
+  .aviso-editando{background:#fff3e0;border:1px solid #ffcc80;border-radius:9px;padding:10px 12px;font-size:13px;color:#e65100;margin-bottom:12px}
+
+  .lista-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+  .contador-sel{font-size:13px;color:var(--texto2);font-weight:600}
+  .lista-trab{max-height:420px;overflow-y:auto;border:1px solid var(--borde);border-radius:10px}
+  .fila-trab{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid #f0f0f0;cursor:pointer}
+  .fila-trab:last-child{border-bottom:none}
+  .fila-trab:hover{background:var(--verde-claro)}
+  .fila-trab input[type=checkbox]{width:18px;height:18px;flex-shrink:0;accent-color:var(--verde)}
+  .fila-trab .nombre{font-size:14px;font-weight:600}
+  .fila-trab .meta{font-size:12px;color:var(--texto3)}
+  .badge-centro-mini{display:inline-block;font-size:11px;background:#eeeeee;color:var(--texto2);padding:2px 7px;border-radius:20px;margin-left:6px}
+  .sin-resultados{padding:24px;text-align:center;color:var(--texto3);font-size:13px}
+
+  .tabla-historial{width:100%;border-collapse:collapse;font-size:13px}
+  .tabla-historial th{text-align:left;color:var(--texto2);font-weight:600;padding:8px 10px;border-bottom:2px solid var(--borde)}
+  .tabla-historial td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
+  .tabla-historial tr:last-child td{border-bottom:none}
+
+  .estado-guardado{font-size:13px;margin-top:12px;min-height:18px}
+  .estado-guardado.ok{color:var(--verde)}
+  .estado-guardado.error{color:var(--rojo)}
+
+  .cargando{padding:20px;text-align:center;color:var(--texto3);font-size:13px}
+</style>
+</head>
+<body>
+
+<div id="pantalla-clave">
+  <div class="clave-card">
+    <h1>Cuadrilla diaria</h1>
+    <p>Ingresa la clave para registrar tu cuadrilla del día.</p>
+    <input type="password" id="input-clave" inputmode="numeric" placeholder="Clave de acceso" maxlength="10">
+    <button onclick="intentarAcceso()">Ingresar</button>
+    <div class="clave-error" id="clave-error"></div>
+    <a class="clave-volver" href="index.html">← Volver al menú principal</a>
+  </div>
+</div>
+
+<div id="pantalla-app" class="hidden">
+  <header>
+    <p class="titulo-app">🌲 Cuadrilla diaria</p>
+    <p class="subtitulo-app">Registra qué trabajadores tienes a cargo hoy y en qué fundo</p>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>1. Datos del día</h2>
+      <div class="fila-dos">
+        <div class="campo">
+          <label for="sel-jefe">Jefe de faena</label>
+          <select id="sel-jefe" onchange="onCambioContexto()"><option value="">Cargando…</option></select>
+        </div>
+        <div class="campo">
+          <label for="sel-fecha">Fecha</label>
+          <input type="date" id="sel-fecha" onchange="onCambioContexto()">
+        </div>
+      </div>
+      <div class="campo">
+        <label for="sel-fundo">Fundo</label>
+        <select id="sel-fundo" onchange="onCambioContexto()"><option value="">Cargando…</option></select>
+      </div>
+    </div>
+
+    <div class="card" id="card-trabajadores">
+      <h2>2. Trabajadores a cargo</h2>
+      <div id="trabajadores-cont">
+        <p class="sin-resultados">Elige jefe, fecha y fundo para ver la lista de trabajadores.</p>
+      </div>
+    </div>
+
+    <div class="card" id="card-historial">
+      <h2>Mis últimos registros</h2>
+      <div id="historial-cont"><p class="cargando">Elige tu nombre para ver tu historial.</p></div>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeFirestore, persistentLocalCache, collection, doc, getDoc, getDocs, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const CLAVE_ACCESO = "7734"; // clave provisoria — cámbiala aquí cuando definan la definitiva
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+  authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
+  projectId: "reporte-inicio-faena-forestal",
+  storageBucket: "reporte-inicio-faena-forestal.firebasestorage.app",
+  messagingSenderId: "962534414054",
+  appId: "1:962534414054:web:fa43371d31413fc0524d27"
+};
+const app = initializeApp(firebaseConfig);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+
+const NOMBRES_CENTRO = { "FORMIN 1": "FORMIN 1", "FORMIN 2": "FORMIN 2", "FORMIN 3": "FORMIN 3", TALLER_COIHUE: "Taller Coihue", ROTATIVO: "Rotativo" };
+
+function normalizar(s){ return (s||"").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim(); }
+function slugify(s){ return normalizar(s).replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"") || "x"; }
+function escapeHtml(s){ return (s||"").toString().replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function formatRut(rut){
+  const limpio = (rut||"").toString().replace(/[^0-9kK-]/g,"");
+  if(!limpio) return "";
+  const guionIdx = limpio.indexOf("-");
+  let cuerpo, dv;
+  if(guionIdx === -1){ cuerpo = limpio.slice(0,-1); dv = limpio.slice(-1); }
+  else{ cuerpo = limpio.slice(0,guionIdx); dv = limpio.slice(guionIdx+1); }
+  if(!cuerpo || !/^\d+$/.test(cuerpo)) return limpio;
+  const conPuntos = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return `${conPuntos}-${dv}`;
+}
+function fechaLegible(iso){
+  const [a,m,d] = (iso||"").split("-");
+  if(!a||!m||!d) return iso || "—";
+  return `${d}-${m}-${a}`;
+}
+
+window.intentarAcceso = function(){
+  const val = document.getElementById("input-clave").value.trim();
+  if(val === CLAVE_ACCESO){
+    document.getElementById("pantalla-clave").classList.add("hidden");
+    document.getElementById("pantalla-app").classList.remove("hidden");
+    iniciarApp();
+  }else{
+    document.getElementById("clave-error").textContent = "Clave incorrecta.";
+  }
+};
+document.getElementById("input-clave").addEventListener("keydown", e => { if(e.key === "Enter") window.intentarAcceso(); });
+
+let jefesDatos = [];
+let fundosDatos = [];
+let dotDatos = null;
+let seleccionados = new Set();
+let contextoActual = null; // {jefe, fecha, fundo, docId}
+let docExistenteActual = null; // doc que ya existía para el contexto (edición) o null
+
+function hoyISO(){
+  const d = new Date();
+  const tz = new Date(d.getTime() - d.getTimezoneOffset()*60000);
+  return tz.toISOString().slice(0,10);
+}
+
+async function iniciarApp(){
+  document.getElementById("sel-fecha").value = hoyISO();
+  await Promise.all([cargarJefes(), cargarFundos()]);
+}
+
+async function cargarJefes(){
+  const sel = document.getElementById("sel-jefe");
+  try{
+    const snap = await getDocs(collection(db, "config_jefes_faena"));
+    jefesDatos = [];
+    snap.forEach(d => jefesDatos.push({ id: d.id, nombre: d.data().nombre || d.id }));
+    jefesDatos.sort((a,b) => a.nombre.localeCompare(b.nombre, "es"));
+    sel.innerHTML = `<option value="">Selecciona tu nombre…</option>` + jefesDatos.map(j => `<option value="${escapeHtml(j.nombre)}">${escapeHtml(j.nombre)}</option>`).join("");
+  }catch(e){
+    sel.innerHTML = `<option value="">No se pudo cargar</option>`;
+  }
+}
+
+async function cargarFundos(){
+  const sel = document.getElementById("sel-fundo");
+  try{
+    const snap = await getDocs(collection(db, "config_fundos"));
+    fundosDatos = [];
+    snap.forEach(d => fundosDatos.push({ id: d.id, nombre: d.data().nombre || d.data().fundo || d.id }));
+    fundosDatos.sort((a,b) => a.nombre.localeCompare(b.nombre, "es"));
+    sel.innerHTML = `<option value="">Selecciona el fundo…</option>` + fundosDatos.map(f => `<option value="${escapeHtml(f.nombre)}">${escapeHtml(f.nombre)}</option>`).join("");
+  }catch(e){
+    sel.innerHTML = `<option value="">No se pudo cargar</option>`;
+  }
+}
+
+async function asegurarDotacion(){
+  if(dotDatos !== null) return;
+  const cont = document.getElementById("trabajadores-cont");
+  cont.innerHTML = `<p class="cargando">Cargando lista de trabajadores…</p>`;
+  const snap = await getDocs(collection(db, "dotacion"));
+  const datos = [];
+  snap.forEach(d => datos.push({ id: d.id, ...d.data() }));
+  datos.sort((a,b) => (a.nombre||"").localeCompare(b.nombre||"", "es"));
+  dotDatos = datos;
+}
+
+window.onCambioContexto = async function(){
+  const jefe = document.getElementById("sel-jefe").value;
+  const fecha = document.getElementById("sel-fecha").value;
+  const fundo = document.getElementById("sel-fundo").value;
+  if(!jefe || !fecha || !fundo){
+    document.getElementById("trabajadores-cont").innerHTML = `<p class="sin-resultados">Elige jefe, fecha y fundo para ver la lista de trabajadores.</p>`;
+    document.getElementById("historial-cont").innerHTML = jefe ? `<p class="cargando">Elige fecha y fundo para continuar.</p>` : `<p class="cargando">Elige tu nombre para ver tu historial.</p>`;
+    contextoActual = null;
+    return;
+  }
+  const docId = `${slugify(jefe)}_${fecha}_${slugify(fundo)}`;
+  contextoActual = { jefe, fecha, fundo, docId };
+  await asegurarDotacion();
+  await cargarContextoYPreseleccion();
+  await cargarHistorial(jefe);
+};
+
+async function cargarContextoYPreseleccion(){
+  const cont = document.getElementById("trabajadores-cont");
+  cont.innerHTML = `<p class="cargando">Buscando registro…</p>`;
+  seleccionados = new Set();
+  docExistenteActual = null;
+  let avisoHtml = "";
+  try{
+    const snapExistente = await getDoc(doc(db, "cuadrilla_diaria", contextoActual.docId));
+    if(snapExistente.exists()){
+      docExistenteActual = snapExistente.data();
+      (docExistenteActual.trabajadorIds || []).forEach(id => seleccionados.add(id));
+      avisoHtml = `<div class="aviso-editando">✏️ Ya registraste tu cuadrilla para este día y fundo. Puedes ajustarla y guardar de nuevo.</div>`;
+    }else{
+      const previa = await buscarUltimaCuadrilla(contextoActual.jefe, contextoActual.fundo, contextoActual.fecha);
+      if(previa){
+        (previa.trabajadorIds || []).forEach(id => seleccionados.add(id));
+        avisoHtml = `<div class="aviso-precarga">Precargado desde tu última cuadrilla en este fundo (${fechaLegible(previa.fecha)}). Revisa y ajusta antes de guardar.</div>`;
+      }
+    }
+  }catch(e){ /* sin registro previo o sin conexión — se sigue con lista vacía */ }
+  renderListaTrabajadores(avisoHtml);
+}
+
+async function buscarUltimaCuadrilla(jefe, fundo, antesDe){
+  try{
+    const q = query(collection(db, "cuadrilla_diaria"), where("jefeFaena", "==", jefe));
+    const snap = await getDocs(q);
+    let mejor = null;
+    snap.forEach(d => {
+      const data = d.data();
+      if(data.fundo === fundo && data.fecha < antesDe){
+        if(!mejor || data.fecha > mejor.fecha) mejor = data;
+      }
+    });
+    return mejor;
+  }catch(e){ return null; }
+}
+
+function renderListaTrabajadores(avisoHtml){
+  const cont = document.getElementById("trabajadores-cont");
+  const busquedaPrevia = document.getElementById("buscar-trab") ? document.getElementById("buscar-trab").value : "";
+  cont.innerHTML = `
+    ${avisoHtml || ""}
+    <div class="lista-header">
+      <input type="text" id="buscar-trab" placeholder="Buscar por nombre o RUT…" style="max-width:260px" oninput="filtrarListaTrabajadores()">
+      <span class="contador-sel" id="contador-sel"></span>
+    </div>
+    <div class="lista-trab" id="lista-trab-body"></div>
+    <div class="estado-guardado" id="estado-guardado"></div>
+    <button class="btn btn-primario" style="margin-top:10px;width:100%" onclick="guardarCuadrilla()" id="btn-guardar">
+      ${docExistenteActual ? "Actualizar cuadrilla" : "Guardar cuadrilla"}
+    </button>
+  `;
+  document.getElementById("buscar-trab").value = busquedaPrevia;
+  renderFilasTrabajadores();
+}
+
+window.filtrarListaTrabajadores = function(){ renderFilasTrabajadores(); };
+
+function renderFilasTrabajadores(){
+  const body = document.getElementById("lista-trab-body");
+  if(!body) return;
+  const term = normalizar(document.getElementById("buscar-trab").value);
+  const filas = (dotDatos || []).filter(t => {
+    if(!term) return true;
+    return (normalizar(t.nombre) + " " + normalizar(t.rut)).includes(term);
+  });
+  body.innerHTML = filas.length ? filas.map(t => {
+    const marcado = seleccionados.has(t.id);
+    const centroTxt = t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente";
+    return `<div class="fila-trab" onclick="toggleTrabajador('${t.id}')">
+      <input type="checkbox" ${marcado ? "checked" : ""} onclick="event.stopPropagation();toggleTrabajador('${t.id}')">
+      <div>
+        <div class="nombre">${escapeHtml(t.nombre)}<span class="badge-centro-mini">${escapeHtml(centroTxt)}</span></div>
+        <div class="meta">${escapeHtml(formatRut(t.rut) || "—")}</div>
+      </div>
+    </div>`;
+  }).join("") : `<div class="sin-resultados">Sin resultados.</div>`;
+  actualizarContadorSel();
+}
+
+window.toggleTrabajador = function(id){
+  if(seleccionados.has(id)) seleccionados.delete(id);
+  else seleccionados.add(id);
+  renderFilasTrabajadores();
+};
+
+function actualizarContadorSel(){
+  const el = document.getElementById("contador-sel");
+  if(el) el.textContent = `${seleccionados.size} trabajador${seleccionados.size === 1 ? "" : "es"} seleccionado${seleccionados.size === 1 ? "" : "s"}`;
+}
+
+window.guardarCuadrilla = async function(){
+  if(!contextoActual) return;
+  const boton = document.getElementById("btn-guardar");
+  const estado = document.getElementById("estado-guardado");
+  boton.disabled = true;
+  estado.className = "estado-guardado";
+  estado.textContent = "Guardando…";
+  try{
+    const idsArr = Array.from(seleccionados);
+    const nombresPorId = {}; (dotDatos||[]).forEach(t => nombresPorId[t.id] = t.nombre);
+    await setDoc(doc(db, "cuadrilla_diaria", contextoActual.docId), {
+      jefeFaena: contextoActual.jefe,
+      fecha: contextoActual.fecha,
+      fundo: contextoActual.fundo,
+      trabajadorIds: idsArr,
+      trabajadorNombres: idsArr.map(id => nombresPorId[id] || ""),
+      actualizadoEn: new Date().toISOString()
+    });
+    estado.classList.add("ok");
+    estado.textContent = "✓ Cuadrilla guardada.";
+    docExistenteActual = { trabajadorIds: idsArr };
+    boton.textContent = "Actualizar cuadrilla";
+    await cargarHistorial(contextoActual.jefe);
+  }catch(e){
+    estado.classList.add("error");
+    estado.textContent = "No se pudo guardar. Revisa tu conexión e intenta de nuevo.";
+  }
+  boton.disabled = false;
+};
+
+async function cargarHistorial(jefe){
+  const cont = document.getElementById("historial-cont");
+  cont.innerHTML = `<p class="cargando">Cargando historial…</p>`;
+  try{
+    const q = query(collection(db, "cuadrilla_diaria"), where("jefeFaena", "==", jefe));
+    const snap = await getDocs(q);
+    const filas = [];
+    snap.forEach(d => filas.push(d.data()));
+    filas.sort((a,b) => b.fecha.localeCompare(a.fecha));
+    const top = filas.slice(0, 10);
+    cont.innerHTML = top.length ? `<table class="tabla-historial"><thead><tr><th>Fecha</th><th>Fundo</th><th>Trabajadores</th></tr></thead><tbody>
+      ${top.map(f => `<tr><td>${fechaLegible(f.fecha)}</td><td>${escapeHtml(f.fundo)}</td><td>${(f.trabajadorIds||[]).length}</td></tr>`).join("")}
+    </tbody></table>` : `<p class="sin-resultados">Aún no tienes registros.</p>`;
+  }catch(e){
+    cont.innerHTML = `<p class="sin-resultados">No se pudo cargar el historial.</p>`;
+  }
+}
+</script>
+</body>
+</html>

@@ -55,6 +55,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .mod-desc{font-size:11px;color:var(--text3);line-height:1.4}
 
 .footer{text-align:center;padding:1.5rem 1rem .5rem;font-size:11px;color:var(--text3)}
+
+/* ---- DESKTOP (>= 900px): layout ancho ---- */
+@media (min-width:900px){
+  .app{max-width:1200px}
+  .header{border-radius:0 0 24px 24px;padding:1.5rem 2rem 2rem}
+  .header-title{font-size:32px}
+  .section-wrap{padding:0 1.5rem}
+  .section-label{font-size:11px;margin-top:1.75rem;margin-bottom:1rem}
+  .grid2{grid-template-columns:repeat(4,1fr);gap:1rem}
+  .mod-title{font-size:14px}
+  .mod-desc{font-size:12px}
+  .mod-icon{width:48px;height:48px;font-size:24px}
+  .mod-card{padding:1.25rem}
+}
 </style>
 </head>
 <body>
@@ -203,6 +217,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
         <div>
           <div class="mod-title">Documentos &amp; RRHH</div>
           <div class="mod-desc">Acceso restringido · RRHH</div>
+        </div>
+      </a>
+
+      <a class="mod-card" href="cuadrilla-diaria.html">
+        <span class="mod-badge badge-activo">Activo</span>
+        <div class="mod-icon icon-green">👷</div>
+        <div>
+          <div class="mod-title">Cuadrilla diaria</div>
+          <div class="mod-desc">Registro de personas en faena por jefe · RRHH</div>
         </div>
       </a>
 
