@@ -171,9 +171,28 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 
 /* VOLUMEN POR FUNDO */
 .fundo-section{margin-bottom:.75rem}
-.fundo-header{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--green);border-radius:var(--radius-sm);margin-bottom:6px}
+.fundo-header{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:var(--green);border-radius:var(--radius-sm);margin-bottom:6px;gap:10px;flex-wrap:wrap}
 .fundo-header-name{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em}
-.fundo-header-vol{font-size:13px;font-weight:800;color:#fff}
+.fundo-header-vol{font-size:13px;font-weight:800;color:#fff;white-space:nowrap}
+/* VMA summary en header fundo */
+.fundo-header-vma{display:flex;gap:14px;align-items:center}
+.fundo-hvma-item{display:flex;flex-direction:column;align-items:center}
+.fundo-hvma-label{font-size:8px;color:rgba(255,255,255,.7);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}
+.fundo-hvma-val-row{display:flex;align-items:center;gap:4px}
+.fundo-hvma-val{font-size:12px;font-weight:800;color:#fff}
+.fundo-hvma-badge{font-size:9px;font-weight:800;padding:1px 5px;border-radius:6px;white-space:nowrap}
+.fundo-hvma-badge.pos{background:rgba(100,180,255,.35);color:#d0eeff}
+.fundo-hvma-badge.neg{background:rgba(255,80,80,.3);color:#ffd0d0}
+.fundo-hvma-badge.neu{background:rgba(255,255,255,.15);color:rgba(255,255,255,.75)}
+/* VMA comparación en tarjeta rodal */
+.vma-row{display:flex;gap:6px;margin-top:6px;padding-top:5px;border-top:1px solid var(--border)}
+.vma-cell{flex:1;text-align:center}
+.vma-cell-label{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+.vma-cell-val{font-size:13px;font-weight:800;line-height:1}
+.vma-diff{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin-top:4px;padding:2px 6px;border-radius:10px}
+.vma-diff.pos{background:#E0F0FF;color:#1255A0}
+.vma-diff.neg{background:var(--red-bg);color:var(--red)}
+.vma-diff.neu{background:#f0f0f0;color:var(--text3)}
 .fundo-rodales{display:flex;flex-wrap:wrap;gap:6px}
 .fundo-rodal-item{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 10px;min-width:110px}
 .fundo-rodal-num{font-size:11px;font-weight:700;color:var(--text2)}
@@ -662,6 +681,9 @@ const MS_SEL = { fundo: null, eqm: null }; // null=todos, Set=filtro activo
         <input type="checkbox" class="ms-chk-fundo" value="${nombre}" onchange="msItemChange('fundo')">
         ${nombre}
       </label>`;
+      (d.data().rodales||[]).forEach(r => {
+        if(r.rodal && r.vma) VMA_MININCO[String(r.rodal)] = parseFloat(r.vma)||0;
+      });
     });
   } catch(e) {}
 
@@ -743,6 +765,7 @@ function getEqmFiltro()   { return MS_SEL.eqm; }
 // ── ESTADO GLOBAL ─────────────────────────────────────────────────────────
 let G = { prod:[], jefe:[], meta:{}, inicio:[], desde:'', hasta:'' };
 let chartInst = null;
+let VMA_MININCO = {};
 
 // ── CONSULTAR ─────────────────────────────────────────────────────────────
 window.consultar = async function() {
@@ -822,7 +845,7 @@ window.consultar = async function() {
 
     // Bloques por EQ.MADEREO
     renderTablaDiariaEqm();
-    renderRodalesFundoEqm();
+    renderRodalesFundoEqm(jefeLinea);
     renderUtilizacion(jefeEqm);
     renderCambioLinea(jefeEqm);
     window._jefeData = jefeEqm;
@@ -1095,9 +1118,10 @@ function renderTablaDiariaEqm() {
 }
 
 // ── RODALES/FUNDO (filtro EQ.MADEREO) ───────────────────────────────────
-function renderRodalesFundoEqm() {
+function renderRodalesFundoEqm(jefeLinea) {
   const { prodEqm:prod } = G;
-  // ── Volumen por fundo y rodal ──
+
+  // ── Volumen + árb procesador por fundo y rodal ─────────────────────
   const fundoMap = {};
   prod.forEach(d => {
     (d.cartolas||[]).forEach(cc => {
@@ -1107,33 +1131,124 @@ function renderRodalesFundoEqm() {
       let v = 0;
       (cc.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
       fundoMap[fundo].vol += v;
-      fundoMap[fundo].rodales[cc.rodal] = (fundoMap[fundo].rodales[cc.rodal]||0) + v;
+      if(!fundoMap[fundo].rodales[cc.rodal])
+        fundoMap[fundo].rodales[cc.rodal] = { vol:0, arbProc:0 };
+      fundoMap[fundo].rodales[cc.rodal].vol += v;
     });
   });
+
+  // ── Árboles por rodal desde PROCESADORES ──────────────────────────
+  (jefeLinea||[]).forEach(d => (d.equipos||[]).forEach(eq => {
+    if((eq.tipo||'').toUpperCase()!=='PROCESADOR') return;
+    const fundo = d.fundo || '—';
+    (eq.rodales||[]).forEach(r => {
+      const rodal = String(r.rodal||'').trim();
+      const arb   = parseInt(r.arboles)||0;
+      if(!rodal||!arb) return;
+      const fundoKey = fundoMap[fundo] ? fundo :
+        Object.keys(fundoMap).find(f => fundoMap[f].rodales[rodal]) || fundo;
+      if(!fundoMap[fundoKey]) return;
+      if(!fundoMap[fundoKey].rodales[rodal])
+        fundoMap[fundoKey].rodales[rodal] = { vol:0, arbProc:0 };
+      fundoMap[fundoKey].rodales[rodal].arbProc += arb;
+    });
+  }));
+
+  // ── Helper badge ──────────────────────────────────────────────────
+  const badge = (vmaReal, vmaMini, inline=false) => {
+    if(vmaMini===null||vmaReal===null) return '';
+    const diff = vmaReal - vmaMini;
+    const pctD = (diff/vmaMini*100);
+    const neu  = Math.abs(diff)<0.02;
+    const cls  = neu?'neu':diff>0?'pos':'neg';
+    const icon = neu?'=':diff>0?'▲':'▼';
+    if(inline) return `<span class="fundo-hvma-badge ${cls}">${icon} ${Math.abs(pctD).toFixed(1)}%</span>`;
+    return `<div class="vma-diff ${cls}">${icon} ${Math.abs(pctD).toFixed(1)}%</div>`;
+  };
+
   const fundosOrden = Object.entries(fundoMap).sort((a,b)=>b[1].vol-a[1].vol);
+
   const fundoHTML = fundosOrden.length ? fundosOrden.map(([fundo, datos]) => {
-    const rodalesOrden = Object.entries(datos.rodales).sort((a,b)=>b[1]-a[1]);
-    const rodalItems = rodalesOrden.map(([num, vol]) => {
-      const pct = datos.vol>0 ? (vol/datos.vol*100) : 0;
-      return `<div class="fundo-rodal-item">
+    const rodalesOrden = Object.entries(datos.rodales).sort((a,b)=>b[1].vol-a[1].vol);
+
+    // ── Promedios ponderados del fundo ────────────────────────────
+    let volConMini=0, sumMiniPond=0, volConReal=0, arbConReal=0;
+    rodalesOrden.forEach(([num, rd]) => {
+      const vm = VMA_MININCO[String(num)];
+      if(vm) { sumMiniPond += vm * rd.vol; volConMini += rd.vol; }
+      if(rd.arbProc>0 && rd.vol>0) { volConReal += rd.vol; arbConReal += rd.arbProc; }
+    });
+    const vmaMiniFundo = volConMini>0 ? sumMiniPond/volConMini : null;
+    const vmaRealFundo = arbConReal>0 ? volConReal/arbConReal  : null;
+
+    // ── Header fundo — VMA inline, compacto ──────────────────────
+    let headerVmaHTML = '';
+    if(vmaMiniFundo!==null || vmaRealFundo!==null) {
+      headerVmaHTML = `<div class="fundo-header-vma">
+        ${vmaMiniFundo!==null?`<div class="fundo-hvma-item">
+          <div class="fundo-hvma-label">VMA Mininco</div>
+          <div class="fundo-hvma-val-row"><div class="fundo-hvma-val">${vmaMiniFundo.toFixed(3)}</div></div>
+        </div>`:''}
+        ${vmaRealFundo!==null?`<div class="fundo-hvma-item">
+          <div class="fundo-hvma-label">VMA Real</div>
+          <div class="fundo-hvma-val-row">
+            <div class="fundo-hvma-val">${vmaRealFundo.toFixed(3)}</div>
+            ${badge(vmaRealFundo, vmaMiniFundo, true)}
+          </div>
+        </div>`:''}
+      </div>`;
+    }
+
+    // ── Tarjetas rodal ────────────────────────────────────────────
+    const rodalItems = rodalesOrden.map(([num, rd]) => {
+      const pct     = datos.vol>0 ? (rd.vol/datos.vol*100) : 0;
+      const vmaMini = VMA_MININCO[String(num)] || null;
+      const vmaReal = (rd.arbProc>0 && rd.vol>0) ? rd.vol/rd.arbProc : null;
+
+      let vmaHTML = '';
+      if(vmaMini!==null || vmaReal!==null) {
+        vmaHTML = `
+          <div class="vma-row">
+            <div class="vma-cell">
+              <div class="vma-cell-label">VMA Mininco</div>
+              <div class="vma-cell-val" style="color:var(--amber)">${vmaMini!==null?vmaMini.toFixed(3):'—'}</div>
+            </div>
+            <div class="vma-cell">
+              <div class="vma-cell-label">VMA Real</div>
+              <div class="vma-cell-val" style="color:var(--blue)">${vmaReal!==null?vmaReal.toFixed(3):'—'}</div>
+            </div>
+          </div>
+          ${badge(vmaReal, vmaMini, false)}`;
+      }
+
+      return `<div class="fundo-rodal-item" style="min-width:140px">
         <div class="fundo-rodal-num">Rodal ${num}</div>
-        <div class="fundo-rodal-vol">${fmt2(vol)} <span style="font-size:10px;font-weight:400;color:var(--text3)">m³</span></div>
+        <div class="fundo-rodal-vol">${fmt2(rd.vol)} <span style="font-size:10px;font-weight:400;color:var(--text3)">m³</span></div>
         <div class="fundo-rodal-pct">${pct.toFixed(1)}% del fundo</div>
         <div class="fundo-rodal-bar"><div class="fundo-rodal-bar-fill" style="width:${Math.min(pct,100).toFixed(1)}%"></div></div>
+        ${vmaHTML}
       </div>`;
     }).join('');
+
     return `<div class="fundo-section">
       <div class="fundo-header">
         <div class="fundo-header-name">📍 ${fundo}</div>
+        ${headerVmaHTML}
         <div class="fundo-header-vol">${fmt2(datos.vol)} m³</div>
       </div>
       <div class="fundo-rodales">${rodalItems}</div>
     </div>`;
   }).join('') : '<div style="font-size:12px;color:var(--text3)">Sin datos de rodales</div>';
+
   document.getElementById('rodal-card').innerHTML =
     `<div class="kpi-label"><i class="ti ti-trees"></i> Volumen por fundo y rodal</div>
-     <div style="margin-top:8px">${fundoHTML}</div>`;
-
+     <div style="font-size:10px;color:var(--text3);margin:4px 0 8px">
+       <span style="color:var(--amber);font-weight:700">■</span> VMA Mininco = tarifa que pagan &nbsp;·&nbsp;
+       <span style="color:var(--blue);font-weight:700">■</span> VMA Real = procesadores del período &nbsp;·&nbsp;
+       <span style="background:#E0F0FF;color:#1255A0;font-weight:700;padding:0 4px;border-radius:4px">▲</span> real mayor &nbsp;
+       <span style="background:#FCEBEB;color:#A32D2D;font-weight:700;padding:0 4px;border-radius:4px">▼</span> real menor
+     </div>
+     <div style="margin-top:4px">${fundoHTML}</div>`;
 }
 
 // ── GRÁFICO ───────────────────────────────────────────────────────────────
