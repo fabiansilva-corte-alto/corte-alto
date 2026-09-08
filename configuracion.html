@@ -325,6 +325,16 @@
     <input type="text" id="fundo-codigo" placeholder="Ej: 729" inputmode="numeric">
     <label>Código de cancha</label>
     <input type="text" id="fundo-codigo-cancha" placeholder="Ej: 45" inputmode="numeric">
+
+    <div style="margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <label style="margin:0;font-size:13px;font-weight:600;color:var(--texto-suave)">Rodales y VMA <span style="font-weight:400;font-size:12px;color:#aaa">(opcional)</span></label>
+        <button type="button" onclick="agregarFilaRodal()" style="background:var(--verde-oscuro);color:#fff;border:none;border-radius:7px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer">+ Rodal</button>
+      </div>
+      <div id="tabla-rodales" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div id="rodales-vacio" style="font-size:12px;color:#aaa;text-align:center;padding:8px 0">Sin rodales cargados — puedes agregar después</div>
+    </div>
+
     <div class="modal-acciones">
       <button class="btn-cancelar" onclick="cerrarModal('modal-fundo')">Cancelar</button>
       <button class="btn-primario" onclick="guardarFundo()">Guardar</button>
@@ -567,7 +577,7 @@ function renderFundos(){
     <div class="item-card">
       <div class="item-info">
         <div class="item-titulo">${f.nombre}</div>
-        <div class="item-sub">Código ${f.codigo}${f.codigoCancha ? ' · Cancha '+f.codigoCancha : ''}</div>
+        <div class="item-sub">Código ${f.codigo}${f.codigoCancha ? ' · Cancha '+f.codigoCancha : ''}${f.rodales && f.rodales.length ? ' · '+f.rodales.length+' rodal'+(f.rodales.length>1?'es':'') : ''}</div>
       </div>
       <div class="item-acciones">
         <button class="icon-editar" onclick="editarFundo('${f.id}')">✏️</button>
@@ -583,6 +593,7 @@ window.abrirModalFundo = function(){
   document.getElementById('fundo-nombre').value = '';
   document.getElementById('fundo-codigo').value = '';
   document.getElementById('fundo-codigo-cancha').value = '';
+  renderTablaRodales([]);
   document.getElementById('modal-fundo').classList.add('activo');
 };
 
@@ -594,6 +605,7 @@ window.editarFundo = function(id){
   document.getElementById('fundo-nombre').value = f.nombre;
   document.getElementById('fundo-codigo').value = f.codigo;
   document.getElementById('fundo-codigo-cancha').value = f.codigoCancha||'';
+  renderTablaRodales(f.rodales||[]);
   document.getElementById('modal-fundo').classList.add('activo');
 };
 
@@ -603,12 +615,22 @@ window.guardarFundo = async function(){
   const codigo = document.getElementById('fundo-codigo').value.trim();
   const codigoCancha = document.getElementById('fundo-codigo-cancha').value.trim();
   if(!nombre || !codigo){ toast('Completa nombre y código'); return; }
+  // Leer rodales de la tabla
+  const filas = document.querySelectorAll('#tabla-rodales .fila-rodal');
+  const rodales = [];
+  for(const fila of filas){
+    const rodal = fila.querySelector('.input-rodal').value.trim();
+    const vma = fila.querySelector('.input-vma').value.trim().replace(',','.');
+    if(rodal && vma && !isNaN(parseFloat(vma))){
+      rodales.push({ rodal, vma: parseFloat(parseFloat(vma).toFixed(4)) });
+    }
+  }
   try{
     if(id){
-      await updateDoc(doc(db, COL_FUNDOS, id), { nombre, codigo, codigoCancha });
+      await updateDoc(doc(db, COL_FUNDOS, id), { nombre, codigo, codigoCancha, rodales });
       toast('Fundo actualizado');
     } else {
-      await addDoc(collection(db, COL_FUNDOS), { nombre, codigo, codigoCancha });
+      await addDoc(collection(db, COL_FUNDOS), { nombre, codigo, codigoCancha, rodales });
       toast('Fundo agregado');
     }
     cerrarModal('modal-fundo');
@@ -616,6 +638,51 @@ window.guardarFundo = async function(){
     toast('Error al guardar: ' + e.message);
   }
 };
+
+/* ── Tabla dinámica de rodales en modal fundo ── */
+function renderTablaRodales(lista){
+  const cont = document.getElementById('tabla-rodales');
+  const vacio = document.getElementById('rodales-vacio');
+  cont.innerHTML = '';
+  if(lista.length === 0){
+    vacio.style.display = 'block';
+    return;
+  }
+  vacio.style.display = 'none';
+  lista.forEach((r, i) => {
+    cont.appendChild(crearFilaRodal(r.rodal, r.vma));
+  });
+}
+
+function crearFilaRodal(rodal='', vma=''){
+  const fila = document.createElement('div');
+  fila.className = 'fila-rodal';
+  fila.style.cssText = 'display:flex;gap:8px;align-items:center';
+  fila.innerHTML = `
+    <input class="input-rodal" type="text" placeholder="Rodal (ej: 199201)" inputmode="numeric"
+      style="flex:1.5;padding:8px 10px;border:1.5px solid var(--borde);border-radius:8px;font-size:14px" value="${rodal}">
+    <input class="input-vma" type="text" placeholder="VMA (ej: 1,14)" inputmode="decimal"
+      style="flex:1;padding:8px 10px;border:1.5px solid var(--borde);border-radius:8px;font-size:14px" value="${vma}">
+    <button type="button" onclick="this.closest('.fila-rodal').remove(); actualizarVacioRodales()"
+      style="background:#fee2e2;border:none;border-radius:7px;padding:6px 10px;cursor:pointer;font-size:14px;color:#b91c1c;flex-shrink:0">✕</button>
+  `;
+  return fila;
+}
+
+window.agregarFilaRodal = function(){
+  const cont = document.getElementById('tabla-rodales');
+  const vacio = document.getElementById('rodales-vacio');
+  cont.appendChild(crearFilaRodal());
+  vacio.style.display = 'none';
+  // foco en el campo rodal de la última fila
+  cont.lastChild.querySelector('.input-rodal').focus();
+};
+
+function actualizarVacioRodales(){
+  const cont = document.getElementById('tabla-rodales');
+  const vacio = document.getElementById('rodales-vacio');
+  vacio.style.display = cont.children.length === 0 ? 'block' : 'none';
+}
 
 window.eliminarFundo = async function(id, nombre){
   if(!confirm(`¿Eliminar el fundo "${nombre}"?`)) return;
