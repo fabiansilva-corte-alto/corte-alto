@@ -119,6 +119,17 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 .pie-legend .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .pie-legend .leg-name{font-size:10px;color:var(--text2);white-space:nowrap}
 
+/* COMPARADOR RENDIMIENTO */
+.comp-table{width:100%;border-collapse:collapse;font-size:12px}
+.comp-table th{padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;text-align:center;border:1px solid rgba(255,255,255,.2)}
+.comp-table th:first-child{background:#f5f5f5;color:var(--text3);text-align:left;border-color:var(--border)}
+.comp-table td{padding:8px 10px;border:1px solid var(--border);text-align:center;font-size:13px;font-weight:600;color:var(--text)}
+.comp-table td:first-child{text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;background:#fafafa}
+.comp-best{color:var(--green);font-weight:800}
+.comp-worst{color:var(--red)}
+.comp-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;user-select:none}
+.comp-chip.selected{border-color:var(--text)!important;box-shadow:0 0 0 1px var(--text)}
+
 /* MODAL MULTI-SELECT FILTROS */
 .ms-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:flex-end;justify-content:center}
 .ms-overlay.open{display:flex}
@@ -281,9 +292,8 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
   /* Varas en piso: 2 columnas */
   .varas-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
 
-  /* Árboles: 3 columnas */
-  .arb-grid{grid-template-columns:1fr 1fr 1fr}
-  .arb-card[style*="grid-column"]{grid-column:auto}
+  /* Árboles: siempre 2×2 */
+  .arb-grid{grid-template-columns:1fr 1fr}
 
   /* Causales: más ancho */
   .causal-bar-wrap{min-width:120px}
@@ -481,18 +491,13 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
     </div>
   </div>
 
-  <!-- ═══ BLOQUES ÁRBOLES + CAMBIOS LÍNEA (2 col en escritorio) ═══ -->
-  <div class="desktop-2col">
-
-  <!-- ═══ BLOQUE ÁRBOLES ═══ -->
+  <!-- ═══ BLOQUE ÁRBOLES (ancho completo) ═══ -->
   <div class="section">
     <div class="section-title"><i class="ti ti-trees"></i> Árboles por tipo de equipo</div>
     <div id="arb-wrap">
       <div class="loading-block"><div class="spinner"></div> Cargando...</div>
     </div>
   </div>
-
-  </div><!-- /desktop-2col árboles+cambios -->
 
   <!-- ═══ BLOQUES CAUSALES (2 col en escritorio) ═══ -->
   <div class="desktop-2col">
@@ -529,12 +534,45 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 
   <!-- ═══ BLOQUE 4: RENDIMIENTO POR EQUIPO ═══ -->
   <div class="section">
-    <div class="section-title" style="justify-content:space-between">
+    <div class="section-title" style="justify-content:space-between;flex-wrap:wrap;gap:6px">
       <span><i class="ti ti-table"></i> Rendimiento por equipo</span>
-      <button onclick="abrirModalEquipos()" style="background:var(--blue-bg);color:var(--blue);border:1px solid #C0D5F0;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font)">
-        <i class="ti ti-filter"></i> <span id="rend-eq-label">Todos los equipos</span>
-      </button>
+      <div style="display:flex;gap:6px">
+        <button onclick="abrirModalEquipos()" style="background:var(--blue-bg);color:var(--blue);border:1px solid #C0D5F0;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font)">
+          <i class="ti ti-filter"></i> <span id="rend-eq-label">Todos los equipos</span>
+        </button>
+        <button onclick="toggleComparador()" id="btn-comparador" style="background:#f0f0f0;color:var(--text2);border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font)">
+          <i class="ti ti-columns"></i> Comparar
+        </button>
+      </div>
     </div>
+    <div id="comparador-wrap" style="display:none;margin-bottom:.75rem;padding:.75rem;background:#f8f8f8;border-radius:var(--radius-sm);border:1px solid var(--border)">
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button id="comp-mode-eq" onclick="setComparadorModo('equipo')"
+          style="flex:1;padding:5px 8px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);border:1px solid var(--border);background:var(--text);color:#fff">
+          ⚙ Por equipo
+        </button>
+        <button id="comp-mode-op" onclick="setComparadorModo('operador')"
+          style="flex:1;padding:5px 8px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);border:1px solid var(--border);background:#f0f0f0;color:var(--text2)">
+          👤 Por operador
+        </button>
+      </div>
+      <div id="comp-panel-equipo">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px">Selecciona equipos del mismo tipo para comparar:</div>
+        <div id="comparador-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+        <button onclick="renderComparador()" style="background:var(--text);color:#fff;border:none;padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)">Ver comparación</button>
+      </div>
+      <div id="comp-panel-operador" style="display:none">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">Selecciona un equipo para comparar sus operadores:</div>
+        <select id="comp-eq-selector" onchange="renderComparadorOperadores()"
+          style="width:100%;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font)">
+          <option value="">— Elige un equipo —</option>
+        </select>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:10px;text-align:center">
+        Presiona <strong>Comparar</strong> nuevamente para cerrar este panel
+      </div>
+    </div>
+    <div id="comparador-result" style="display:none;margin-bottom:.75rem;overflow-x:auto"></div>
     <div id="rend-wrap">
       <div class="loading-block"><div class="spinner"></div> Cargando...</div>
     </div>
@@ -1742,7 +1780,7 @@ function renderCambioLinea(jefe) {
   const cuerda   = {'SÍ':0,'NO':0,'INCOMPLETA':0};
   const soportes = {'SÍ':0,'NO':0};
   const preInst  = {'SÍ':0,'NO':0};
-  const perfil   = {'SÍ':0,'NO':0};  // cumplePerfil
+  const perfil   = {'Según perfil':0,'Con modificación':0};
 
   jefe.forEach(d => (d.equipos||[]).forEach(eq => {
     const tipo=(eq.tipo||'').toUpperCase();
@@ -1763,10 +1801,13 @@ function renderCambioLinea(jefe) {
       else if(pi==='NO') preInst['NO']++;
       else preInst['Sin dato']++;
     }
-    // cumplePerfil: SÍ = cumple perfil, cualquier otro valor = NO (pidió modificación)
-    const cp=(eq.cumplePerfil||'').trim();
-    if(cp==='SÍ') perfil['SÍ']++;
-    else if(cp) perfil['NO']++;
+    // cumplePerfil: detección flexible — normaliza tildes y mayúsculas
+    const cpRaw=(eq.cumplePerfil||'').trim();
+    const cp=cpRaw.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    if(cp==='SI'||cp.startsWith('SI ')||cp.startsWith('SEGUN'))
+      perfil['Según perfil']++;
+    else if(cpRaw)
+      perfil['Con modificación']++;
   }));
 
   if(totalCambios===0) {
@@ -1781,7 +1822,7 @@ function renderCambioLinea(jefe) {
     const total=Object.values(data).reduce((s,v)=>s+v,0);
     if(!total) return '<div style="font-size:12px;color:var(--text3)">Sin datos</div>';
     const segs=Object.entries(data).filter(([,v])=>v>0)
-      .map(([k,v],i)=>`<div class="seg" style="width:${(v/total*100).toFixed(1)}%;background:${colors[i]}"><span>${k.length>5?k.slice(0,4)+'…':k} · ${v}</span></div>`).join('');
+      .map(([k,v],i)=>`<div class="seg" style="width:${(v/total*100).toFixed(1)}%;background:${colors[i]}"><span>${v}</span></div>`).join('');
     const legs=Object.entries(data).filter(([,v])=>v>0)
       .map(([k,v],i)=>`<div class="seg-leg"><div class="seg-dot" style="background:${colors[i]}"></div>${k} (${v} cambio${v!==1?'s':''})</div>`).join('');
     return `<div class="seg-bar">${segs}</div><div class="seg-legend">${legs}</div>`;
@@ -1821,8 +1862,16 @@ function renderCambioLinea(jefe) {
       ${totalConSop>0?segBar(preInst,['#3B6D11','#A32D2D','#888888']):'<div style="font-size:12px;color:var(--text3)">Sin cambios con soportes</div>'}
     </div>
     <div class="cl-cond">
-      <div class="cl-cond-label">📐 Asertividad del perfil <span style="font-size:10px;font-weight:400;color:var(--text3)">(de ${totalCambios} cambio${totalCambios!==1?'s':''})</span></div>
-      ${(perfil['SÍ']+perfil['NO'])>0?segBar(perfil,['#3B6D11','#A32D2D']):'<div style="font-size:12px;color:var(--text3)">Sin datos de perfil registrados</div>'}
+      <div class="cl-cond-label">📐 Asertividad del perfil
+        ${(perfil['Según perfil']+perfil['Con modificación'])>0
+          ? `<span style="font-size:10px;font-weight:700;color:var(--green);margin-left:6px">
+              ${Math.round(perfil['Según perfil']/(perfil['Según perfil']+perfil['Con modificación'])*100)}% según perfil
+             </span>`
+          : ''}
+      </div>
+      ${(perfil['Según perfil']+perfil['Con modificación'])>0
+        ? segBar({'✅ Según perfil':perfil['Según perfil'],'🔧 Con modificación':perfil['Con modificación']},['#3B6D11','#A32D2D'])
+        : '<div style="font-size:12px;color:var(--text3)">Sin datos de perfil registrados</div>'}
     </div>`;
 }
 
@@ -1998,92 +2047,305 @@ document.getElementById('eq-modal-overlay').addEventListener('click', function(e
 // BLOQUE ÁRBOLES POR TIPO DE EQUIPO
 // ══════════════════════════════════════════════════════════════════════════
 function renderArboles(jefeEqm, jefeLinea) {
-  // ── Torre + Skidder (filtro Eq.Madereo) ──
-  const torre = { total:0, bereuter:0, wyssen:0, equipos:{} };
-  const skidder = { total:0, equipos:{} };
+  // Torre + Skidder → jefeEqm (filtro Eq.Madereo)
+  const torre   = {}; // equipo → { total, operadores:{op→arb} }
+  const skidder = {};
   jefeEqm.forEach(d => (d.equipos||[]).forEach(eq => {
     const tipo = (eq.tipo||'').toUpperCase();
     const nombre = eq.equipo||'—';
+    const op = eq.operador||'Sin op.';
+    const arb = parseInt(eq.arboles)||0;
     if(tipo==='TORRE'||tipo==='ALPINE') {
-      const arb = parseInt(eq.arboles)||0;
-      const ber = parseInt(eq.arbolesBereuter)||0;
-      const wys = parseInt(eq.arbolesWyssen)||0;
-      torre.total += arb;
-      torre.bereuter += ber;
-      torre.wyssen += wys;
-      torre.equipos[nombre] = (torre.equipos[nombre]||0) + arb;
+      if(!torre[nombre]) torre[nombre]={total:0,ops:{}};
+      torre[nombre].total += arb;
+      torre[nombre].ops[op] = (torre[nombre].ops[op]||0) + arb;
     }
     if(tipo==='SKIDDER') {
-      const arb = parseInt(eq.arboles)||0;
-      skidder.total += arb;
-      skidder.equipos[nombre] = (skidder.equipos[nombre]||0) + arb;
+      if(!skidder[nombre]) skidder[nombre]={total:0,ops:{}};
+      skidder[nombre].total += arb;
+      skidder[nombre].ops[op] = (skidder[nombre].ops[op]||0) + arb;
     }
   }));
 
-  // ── Procesador (filtro Línea) ──
-  const proc = { total:0, equipos:{} };
+  // Procesador + Shovel → jefeLinea (filtro Línea)
+  const proc   = {};
+  const shovel = {};
   jefeLinea.forEach(d => (d.equipos||[]).forEach(eq => {
     const tipo = (eq.tipo||'').toUpperCase();
+    const nombre = eq.equipo||'—';
+    const op = eq.operador||'Sin op.';
     if(tipo==='PROCESADOR') {
-      const nombre = eq.equipo||'—';
       const arb = parseInt(eq.arboles)||0;
-      proc.total += arb;
-      proc.equipos[nombre] = (proc.equipos[nombre]||0) + arb;
+      if(!proc[nombre]) proc[nombre]={total:0,ops:{}};
+      proc[nombre].total += arb;
+      proc[nombre].ops[op] = (proc[nombre].ops[op]||0) + arb;
+    }
+    if(tipo==='SHOVEL') {
+      // árboles volteados desde volteos[]
+      (eq.volteos||[]).forEach(v => {
+        const arb = parseInt(v.arboles)||0;
+        if(!shovel[nombre]) shovel[nombre]={total:0,ops:{}};
+        shovel[nombre].total += arb;
+        shovel[nombre].ops[op] = (shovel[nombre].ops[op]||0) + arb;
+      });
     }
   }));
 
   const fmt0loc = n => Math.round(n).toLocaleString('es-CL');
+  const totalEqs = obj => Object.values(obj).reduce((s,e)=>s+e.total,0);
 
-  // Función para renderizar desglose de equipos con barra proporcional
-  const desglose = (equipos, color) => {
-    const entries = Object.entries(equipos).sort((a,b)=>b[1]-a[1]);
-    const max = entries[0]?.[1] || 1;
-    return entries.map(([nombre, arb]) => `
-      <div class="arb-eq-row">
-        <span class="arb-eq-name">${nombre}</span>
-        <span class="arb-eq-val">${fmt0loc(arb)}</span>
-      </div>
-      <div class="arb-bar"><div class="arb-bar-fill" style="width:${(arb/max*100).toFixed(1)}%;background:${color}"></div></div>
-    `).join('');
+  // Render de una tarjeta con desglose equipo → operadores
+  const tarjeta = (titulo, icono, color, data) => {
+    const total = totalEqs(data);
+    const entries = Object.entries(data).sort((a,b)=>b[1].total-a[1].total);
+    const maxTotal = entries[0]?.[1].total || 1;
+    const filas = entries.map(([eq, d]) => {
+      const pctEq = (d.total/maxTotal*100).toFixed(1);
+      const ops = Object.entries(d.ops).sort((a,b)=>b[1]-a[1]);
+      return `
+        <div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text)">
+            <span>${eq}</span><span>${fmt0loc(d.total)}</span>
+          </div>
+          <div class="arb-bar" style="margin-bottom:4px">
+            <div class="arb-bar-fill" style="width:${pctEq}%;background:${color}"></div>
+          </div>
+          ${ops.map(([op,arb])=>`
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);padding-left:8px">
+              <span>↳ ${op}</span><span>${fmt0loc(arb)}</span>
+            </div>`).join('')}
+        </div>`;
+    }).join('');
+    return `
+      <div class="arb-card">
+        <div class="arb-card-title" style="color:${color}">${icono} ${titulo}</div>
+        <div class="arb-total" style="color:${color}">${fmt0loc(total)}</div>
+        <div class="arb-unit" style="margin-bottom:10px">árboles</div>
+        ${entries.length ? filas : '<div style="font-size:12px;color:var(--text3)">Sin datos</div>'}
+      </div>`;
   };
 
   document.getElementById('arb-wrap').innerHTML = `
     <div class="arb-grid">
-
-      <!-- Torre / Alpine -->
-      <div class="arb-card">
-        <div class="arb-card-title" style="color:var(--blue)"><i class="ti ti-stack-3"></i> Torre / Alpine</div>
-        <div class="arb-total" style="color:var(--blue)">${fmt0loc(torre.total)}</div>
-        <div class="arb-unit">árboles madereados</div>
-        ${torre.bereuter>0||torre.wyssen>0?`
-        <div class="arb-desglose">
-          ${torre.bereuter>0?`<div class="arb-row"><span class="arb-row-label">🟠 Bereuter</span><span class="arb-row-val">${fmt0loc(torre.bereuter)}</span></div>`:''}
-          ${torre.wyssen>0?`<div class="arb-row"><span class="arb-row-label">🔵 Wyssen</span><span class="arb-row-val">${fmt0loc(torre.wyssen)}</span></div>`:''}
-        </div>`:''}
-        <div class="arb-eq-list">${desglose(torre.equipos,'#1D5FAD')}</div>
-      </div>
-
-      <!-- Skidder -->
-      <div class="arb-card">
-        <div class="arb-card-title" style="color:var(--amber)"><i class="ti ti-truck"></i> Skidder</div>
-        <div class="arb-total" style="color:var(--amber)">${fmt0loc(skidder.total)}</div>
-        <div class="arb-unit">árboles madereados</div>
-        <div class="arb-eq-list">${desglose(skidder.equipos,'#854F0B')}</div>
-      </div>
-
-      <!-- Procesador -->
-      <div class="arb-card" style="grid-column:1/-1">
-        <div class="arb-card-title" style="color:var(--green)"><i class="ti ti-cut"></i> Procesador</div>
-        <div class="arb-total" style="color:var(--green)">${fmt0loc(proc.total)}</div>
-        <div class="arb-unit">árboles trozados</div>
-        <div class="arb-eq-list">${desglose(proc.equipos,'#3B6D11')}</div>
-      </div>
-
+      ${tarjeta('Torre / Alpine','🏔','#1D5FAD', torre)}
+      ${tarjeta('Skidder','🚜','#854F0B', skidder)}
+      ${tarjeta('Procesador','⚙️','#3B6D11', proc)}
+      ${tarjeta('Shovel','🪵','#3C3489', shovel)}
     </div>
     <div style="font-size:10px;color:var(--text3);margin-top:4px">
-      * Torre/Skidder filtro Eq.Madereo · Procesador filtro Línea
+      * Torre/Skidder filtro Eq.Madereo · Procesador/Shovel filtro Línea · Desglose: equipo total → operadores
     </div>`;
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// COMPARADOR DE RENDIMIENTO
+// ══════════════════════════════════════════════════════════════════════════
+let COMPARADOR_ABIERTO = false;
+let COMPARADOR_MODO = 'equipo';
+
+const COMP_COLOR = {TORRE:'#1D5FAD',ALPINE:'#1D5FAD',SKIDDER:'#854F0B',PROCESADOR:'#3B6D11',SHOVEL:'#3C3489'};
+const COMP_BG    = {TORRE:'#E8F0FB',ALPINE:'#E8F0FB',SKIDDER:'#FAEEDA',PROCESADOR:'#EAF3DE',SHOVEL:'#EEEDFE'};
+
+window.toggleComparador = function() {
+  COMPARADOR_ABIERTO = !COMPARADOR_ABIERTO;
+  const wrap = document.getElementById('comparador-wrap');
+  const result = document.getElementById('comparador-result');
+  const btn = document.getElementById('btn-comparador');
+  wrap.style.display = COMPARADOR_ABIERTO ? 'block' : 'none';
+  result.style.display = 'none';
+  btn.style.background = COMPARADOR_ABIERTO ? 'var(--text)' : '#f0f0f0';
+  btn.style.color = COMPARADOR_ABIERTO ? '#fff' : 'var(--text2)';
+  if(COMPARADOR_ABIERTO) setComparadorModo(COMPARADOR_MODO);
+};
+
+window.setComparadorModo = function(modo) {
+  COMPARADOR_MODO = modo;
+  const btnEq = document.getElementById('comp-mode-eq');
+  const btnOp = document.getElementById('comp-mode-op');
+  btnEq.style.background = modo==='equipo'   ? 'var(--text)' : '#f0f0f0';
+  btnEq.style.color      = modo==='equipo'   ? '#fff'        : 'var(--text2)';
+  btnOp.style.background = modo==='operador' ? 'var(--text)' : '#f0f0f0';
+  btnOp.style.color      = modo==='operador' ? '#fff'        : 'var(--text2)';
+  document.getElementById('comp-panel-equipo').style.display   = modo==='equipo'   ? 'block' : 'none';
+  document.getElementById('comp-panel-operador').style.display = modo==='operador' ? 'block' : 'none';
+  document.getElementById('comparador-result').style.display = 'none';
+  if(modo==='equipo') poblarComparadorSelector();
+  else poblarComparadorOperadorSelector();
+};
+
+// ── Acumulador unificado: Shovel usa volteos[], resto eq.arboles ───────────
+function mkAcc() { return {tipo:'',ciclos:0,arboles:0,horas:0,oees:[],fds:[],fes:[]}; }
+
+function acumularEq(acc, eq) {
+  const tipo=(eq.tipo||'').toUpperCase();
+  if(!acc.tipo) acc.tipo=tipo;
+  acc.ciclos += parseInt(eq.ciclos)||0;
+  acc.horas  += parseFloat(eq.horasTrabajo)||0;
+  const toP=v=>{const n=parseFloat(String(v||'').replace('%',''));return isNaN(n)?NaN:(n<=1?n*100:n);};
+  if(toP(eq.oee)>0) acc.oees.push(toP(eq.oee));
+  if(toP(eq.fd)>0)  acc.fds.push(toP(eq.fd));
+  if(toP(eq.fe)>0)  acc.fes.push(toP(eq.fe));
+  if(tipo==='SHOVEL') {
+    (eq.volteos||[]).forEach(v=>{acc.arboles+=parseInt(v.arboles)||0;});
+  } else {
+    acc.arboles+=parseInt(eq.arboles)||0;
+  }
+}
+
+// ── Indicadores por tipo ───────────────────────────────────────────────────
+function getIndicadores(tipo, volEq) {
+  const esTorre=tipo==='TORRE'||tipo==='ALPINE';
+  const esSkidder=tipo==='SKIDDER';
+  const esProcesador=tipo==='PROCESADOR';
+  if(esTorre||esSkidder) return [
+    {key:'arbCiclo',label:'Árb/Ciclo',    fn:(e,n)=>e.ciclos>0?e.arboles/e.ciclos:NaN},
+    {key:'m3Ciclo', label:'M³/Ciclo',     fn:(e,n)=>e.ciclos>0&&(volEq[n]||0)>0?volEq[n]/e.ciclos:NaN},
+    {key:'vma',     label:'VMA (m³/árb)', fn:(e,n)=>e.arboles>0&&(volEq[n]||0)>0?volEq[n]/e.arboles:NaN},
+    {key:'arbH',    label:'Árb/Hr',       fn:(e,n)=>e.horas>0?e.arboles/e.horas:NaN},
+    {key:'m3H',     label:'M³/Hr',        fn:(e,n)=>e.horas>0&&(volEq[n]||0)>0?volEq[n]/e.horas:NaN},
+    {key:'cicH',    label:'Ciclo/Hr',     fn:(e,n)=>e.horas>0&&e.ciclos>0?e.ciclos/e.horas:NaN},
+  ];
+  if(esProcesador) return [
+    {key:'vma', label:'VMA (m³/árb)', fn:(e,n)=>e.arboles>0&&(volEq[n]||0)>0?volEq[n]/e.arboles:NaN},
+    {key:'arbH',label:'Árb/Hr',       fn:(e,n)=>e.horas>0?e.arboles/e.horas:NaN},
+    {key:'m3H', label:'M³/Hr',        fn:(e,n)=>e.horas>0&&(volEq[n]||0)>0?volEq[n]/e.horas:NaN},
+    {key:'oee', label:'OEE %',        fn:(e,n)=>e.oees.length?e.oees.reduce((s,v)=>s+v,0)/e.oees.length:NaN,pct:true},
+    {key:'fd',  label:'FD %',         fn:(e,n)=>e.fds.length?e.fds.reduce((s,v)=>s+v,0)/e.fds.length:NaN,pct:true},
+    {key:'fe',  label:'FE %',         fn:(e,n)=>e.fes.length?e.fes.reduce((s,v)=>s+v,0)/e.fes.length:NaN,pct:true},
+  ];
+  return [{key:'arbH',label:'Árb Volt./Hr',fn:(e,n)=>e.horas>0?e.arboles/e.horas:NaN}];
+}
+
+// ── Tabla comparativa genérica ─────────────────────────────────────────────
+function tablaComparativa(nombres, accs, indics, color, volEq, subtitulo) {
+  const vals={};
+  indics.forEach(ind=>{vals[ind.key]={};nombres.forEach(n=>{vals[ind.key][n]=ind.fn(accs[n],n);});});
+  let html=subtitulo?`<div style="font-size:12px;font-weight:700;color:${color};margin-bottom:6px">${subtitulo}</div>`:'';
+  html+=`<table class="comp-table"><thead><tr>
+    <th style="background:#f5f5f5;color:var(--text3)">Indicador</th>
+    ${nombres.map(n=>`<th style="background:${color}">${n}</th>`).join('')}
+  </tr></thead><tbody>
+  <tr style="background:#fafafa">
+    <td style="font-size:10px;color:var(--text3)">Árboles</td>
+    ${nombres.map(n=>`<td style="font-size:11px;font-weight:700;color:var(--text2)">${Math.round(accs[n].arboles).toLocaleString('es-CL')}</td>`).join('')}
+  </tr>
+  <tr style="background:#fafafa">
+    <td style="font-size:10px;color:var(--text3)">Horas</td>
+    ${nombres.map(n=>`<td style="font-size:11px;color:var(--text2)">${fmt2(accs[n].horas)} h</td>`).join('')}
+  </tr>`;
+  indics.forEach(ind=>{
+    const rowVals=nombres.map(n=>vals[ind.key][n]);
+    const valid=rowVals.filter(v=>!isNaN(v));
+    const maxV=valid.length?Math.max(...valid):NaN;
+    const minV=valid.length?Math.min(...valid):NaN;
+    html+=`<tr><td>${ind.label}</td>`;
+    rowVals.forEach(v=>{
+      if(isNaN(v)){html+=`<td style="color:var(--text3)">—</td>`;return;}
+      const best=v===maxV&&valid.length>1;
+      const worst=v===minV&&valid.length>1&&maxV!==minV;
+      const display=ind.pct?Math.round(v)+'%':fmt2(v);
+      html+=`<td class="${best?'comp-best':worst?'comp-worst':''}">${display}${best?' ●':''}</td>`;
+    });
+    html+=`</tr>`;
+  });
+  html+=`</tbody></table><div style="font-size:10px;color:var(--text3);margin-top:6px">● = mejor valor del grupo</div>`;
+  return html;
+}
+
+// ── Modo: Por equipo ───────────────────────────────────────────────────────
+function poblarComparadorSelector() {
+  const {jefe}=G;
+  const eqsData={};
+  jefe.forEach(d=>(d.equipos||[]).forEach(eq=>{
+    const nombre=eq.equipo||'—';
+    if(!eqsData[nombre]) eqsData[nombre]=(eq.tipo||'').toUpperCase();
+  }));
+  document.getElementById('comparador-selector').innerHTML=
+    Object.entries(eqsData).sort((a,b)=>a[0].localeCompare(b[0])).map(([nombre,tipo])=>`
+      <label class="comp-chip" id="chip-${nombre}"
+        style="background:${COMP_BG[tipo]||'#f0f0f0'};color:${COMP_COLOR[tipo]||'#555'}"
+        onclick="toggleChip('${nombre}')">${nombre}</label>`).join('');
+}
+
+window.toggleChip = function(nombre) {
+  document.getElementById(`chip-${nombre}`).classList.toggle('selected');
+};
+
+window.renderComparador = function() {
+  const selChips=[...document.querySelectorAll('.comp-chip.selected')].map(ch=>ch.id.replace('chip-',''));
+  if(selChips.length<2){showToast('⚠️ Selecciona al menos 2 equipos');return;}
+  const {jefe,prodEqm}=G;
+  const accs={};
+  jefe.forEach(d=>(d.equipos||[]).forEach(eq=>{
+    const nombre=eq.equipo||'—';
+    if(!selChips.includes(nombre)) return;
+    if(!accs[nombre]) accs[nombre]=mkAcc();
+    acumularEq(accs[nombre],eq);
+  }));
+  const volEq={};
+  prodEqm.forEach(d=>(d.cartolas||[]).forEach(c=>{
+    let v=0;(c.productos||[]).forEach(p=>v+=parseFloat(p.vol)||0);
+    volEq[c.equipo||'—']=(volEq[c.equipo||'—']||0)+v;
+  }));
+  const tipo=Object.values(accs)[0]?.tipo||'';
+  const color=COMP_COLOR[tipo]||'#555';
+  const nombres=selChips.filter(n=>accs[n]);
+  const result=document.getElementById('comparador-result');
+  result.style.display='block';
+  result.innerHTML=tablaComparativa(nombres,accs,getIndicadores(tipo,volEq),color,volEq,null);
+};
+
+// ── Modo: Por operador ─────────────────────────────────────────────────────
+function poblarComparadorOperadorSelector() {
+  const {jefe}=G;
+  const eqOps={};
+  jefe.forEach(d=>(d.equipos||[]).forEach(eq=>{
+    const nombre=eq.equipo||'—';
+    const op=(eq.operador||'').trim();
+    if(!op) return;
+    if(!eqOps[nombre]) eqOps[nombre]=new Set();
+    eqOps[nombre].add(op);
+  }));
+  const sel=document.getElementById('comp-eq-selector');
+  sel.innerHTML='<option value="">— Elige un equipo —</option>';
+  Object.entries(eqOps).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([nombre,ops])=>{
+    const o=document.createElement('option');
+    o.value=nombre;
+    o.textContent=`${nombre}  (${ops.size} operador${ops.size!==1?'es':''})`;
+    sel.appendChild(o);
+  });
+  document.getElementById('comparador-result').style.display='none';
+}
+
+window.renderComparadorOperadores = function() {
+  const eqNombre=document.getElementById('comp-eq-selector').value;
+  if(!eqNombre) return;
+  const {jefe,prodEqm}=G;
+  let tipo_eq='';
+  outer:for(const d of jefe) for(const eq of (d.equipos||[])){
+    if((eq.equipo||'')===eqNombre){tipo_eq=(eq.tipo||'').toUpperCase();break outer;}
+  }
+  const opAcc={};
+  jefe.forEach(d=>(d.equipos||[]).forEach(eq=>{
+    if((eq.equipo||'')!==eqNombre) return;
+    const op=(eq.operador||'Sin op.').trim();
+    if(!opAcc[op]) opAcc[op]=mkAcc();
+    acumularEq(opAcc[op],eq);
+  }));
+  let volTotal=0;
+  prodEqm.forEach(d=>(d.cartolas||[]).forEach(c=>{
+    if((c.equipo||'')===eqNombre)(c.productos||[]).forEach(p=>volTotal+=parseFloat(p.vol)||0);
+  }));
+  const arbTotal=Object.values(opAcc).reduce((s,o)=>s+o.arboles,0);
+  const vmaG=arbTotal>0&&volTotal>0?volTotal/arbTotal:0;
+  const volOp={};
+  Object.entries(opAcc).forEach(([op,o])=>{volOp[op]=vmaG*o.arboles;});
+  const color=COMP_COLOR[tipo_eq]||'#555';
+  const nombres=Object.keys(opAcc).sort();
+  const result=document.getElementById('comparador-result');
+  result.style.display='block';
+  result.innerHTML=tablaComparativa(nombres,opAcc,getIndicadores(tipo_eq,volOp),color,volOp,`👤 Operadores de ${eqNombre}`);
+};
 
 window.addEventListener('DOMContentLoaded', () => consultar());
 </script>
