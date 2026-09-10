@@ -627,9 +627,6 @@ const DETENCIONES_POR_TIPO = {
   "SKIDDER": [...DET_BASE,
     [23,"FALLA Y/O COLCHADO DE CABLE"],[24,"TRASLADO DENTRO FAENA"],
     [31,"HUELLAS DE MADEREO HABILITACIÓN O LIMPIEZA DE CANCHA"],
-    [100,"LIMPIEZA DE CAMINO Y/O CANCHA"],
-    [200,"Remadereo Torre"],
-    [300,"Acercamiento madera con asistido"],
     [99,"OTRO"]],
   "PROCESADOR": [...DET_BASE,
     [24,"TRASLADO DENTRO FAENA"],[25,"DETENIDO POR FALTA DE MADEREO"],
@@ -638,11 +635,32 @@ const DETENCIONES_POR_TIPO = {
   "SHOVEL": [...DET_BASE,
     [24,"TRASLADO DENTRO FAENA"],
     [26,"CAMBIO DE CADENA O ESPADA"],
-    [100,"Problema señal asistido"],
-    [200,"Traslado y/o Instalación asistencia"],
-    [300,"Recorrido por perfil antes de volteo"],
-    [400,"Revisión cable y/o aperos"],
     [99,"OTRO"]]
+};
+
+/* ==== Subcódigos del código 99 (OTRO) por tipo de equipo ==== */
+const SUBCODIGOS_99 = {
+  "TORRE": [
+    "Esperar luz día madereo wyssen",
+    "Esperar llegada/salida estroberos"
+  ],
+  "SKIDDER": [
+    "Instalar Huinche Asistencia",
+    "Traslado huinche asistencia",
+    "Apoyo madereo torre",
+    "Falla Huinche Asistencia"
+  ],
+  "PROCESADOR": [
+    "Calibración timbeter",
+    "Carga adblue"
+  ],
+  "SHOVEL": [
+    "Problema señal Huinche Asistencia",
+    "Instalar Huinche Asistencia",
+    "Traslado huinche asistencia",
+    "Recorrido infantería por perfil",
+    "Revisión cable y/o aperos"
+  ]
 };
 function etiquetaDet(cod, desc) { return `(${cod}) ${desc}`; }
 function catalogoDet(tipo) { return DETENCIONES_POR_TIPO[tipo] || []; }
@@ -1202,9 +1220,22 @@ function htmlDetenciones(eq) {
     </div>
     ${String(d.codigo) === "99" ? `
     <div class="sub-item">
-      <input type="text" id="in-${eq.id}-det-${i}-motivoOtro" placeholder="Especifique el motivo" value="${esc(d.motivoOtro || "")}"
+      <select id="in-${eq.id}-det-${i}-subcodigo"
+        onchange="setDetencion('${eq.id}',${i},'subcodigo',this.value)">
+        <option value="">— Seleccionar subcódigo —</option>
+        ${(SUBCODIGOS_99[eq.tipo] || []).map(s =>
+          `<option value="${esc(s)}" ${d.subcodigo === s ? "selected" : ""}>${esc(s)}</option>`
+        ).join("")}
+        <option value="__escribir__" ${d.subcodigo === "__escribir__" ? "selected" : ""}>✏️ Escribir motivo</option>
+      </select>
+    </div>
+    ${d.subcodigo === "__escribir__" || !d.subcodigo ? `
+    <div class="sub-item">
+      <input type="text" id="in-${eq.id}-det-${i}-motivoOtro"
+        placeholder="${d.subcodigo === "__escribir__" ? "Escriba el motivo" : "Especifique el motivo"}"
+        value="${esc(d.motivoOtro || "")}"
         oninput="setDetencion('${eq.id}',${i},'motivoOtro',this.value)">
-    </div>` : ""}
+    </div>` : ""}` : ""}
     ${String(d.codigo) === "14" ? `
     <div class="sub-item">
       <input type="text" id="in-${eq.id}-det-${i}-motivoFalla" placeholder="Describa el motivo de la falla" value="${esc(d.motivoFalla || "")}"
@@ -1216,7 +1247,7 @@ function htmlDetenciones(eq) {
 window.agregarDetencion = function (id) {
   const eq = equipos.find(e => e.id === id);
   if (!eq.tipo) { mostrarToast("⚠️ Primero seleccione el tipo de equipo"); return; }
-  eq.detenciones.push({ codigo: "", resp: "", horas: "", motivoOtro: "", motivoFalla: "" });
+  eq.detenciones.push({ codigo: "", resp: "", horas: "", motivoOtro: "", motivoFalla: "", subcodigo: "" });
   refrescarSubListas(eq);
   guardarBorrador();
 };
@@ -1229,7 +1260,7 @@ window.eliminarDetencion = function (id, i) {
 window.setDetencion = function (id, i, campo, valor) {
   const eq = equipos.find(e => e.id === id);
   eq.detenciones[i][campo] = valor;
-  if (campo === "codigo") refrescarSubListas(eq);
+  if (campo === "codigo" || campo === "subcodigo") refrescarSubListas(eq);
   const tot = document.getElementById("totdet-" + id);
   if (tot) tot.innerHTML = textoTotalDet(eq);
   actualizarOEE(eq);
@@ -1510,7 +1541,11 @@ function validar() {
       marca(`in-${eq.id}-det-${i}-codigo`, null, !d.codigo);
       if (eq.tipo !== "SHOVEL" && !(eq.tipo === "PROCESADOR" && eq.reportaOEE === "NO")) marca(`in-${eq.id}-det-${i}-resp`, null, !d.resp);
       marca(`in-${eq.id}-det-${i}-horas`, null, !esNum(d.horas));
-      if (String(d.codigo) === "99") marca(`in-${eq.id}-det-${i}-motivoOtro`, null, !String(d.motivoOtro || "").trim());
+      if (String(d.codigo) === "99") {
+        marca(`in-${eq.id}-det-${i}-subcodigo`, null, !d.subcodigo);
+        if (d.subcodigo === "__escribir__" || !d.subcodigo)
+          marca(`in-${eq.id}-det-${i}-motivoOtro`, null, !String(d.motivoOtro || "").trim());
+      }
       if (String(d.codigo) === "14") marca(`in-${eq.id}-det-${i}-motivoFalla`, null, !String(d.motivoFalla || "").trim());
     });
 
@@ -1590,6 +1625,27 @@ function num(v) {
   return parseFloat(String(v).replace(",", ".")) || 0;
 }
 
+
+/* ==== Consolida filas de detención con mismo código sumando horas ====
+   Excepción: código 99 con distinto subcodigo/motivoOtro NO se consolida */
+function consolidarDetenciones(dets) {
+  const mapa = new Map();
+  dets.forEach(d => {
+    const cod = String(d.codigo);
+    // Para código 99, la clave incluye el subcódigo o motivo para no mezclar distintos
+    const clave = cod === "99"
+      ? `99__${d.subcodigo || ""}__${(d.motivoOtro || "").trim()}`
+      : `${cod}__${d.resp || ""}`;
+    if (mapa.has(clave)) {
+      const prev = mapa.get(clave);
+      prev.horas = Math.round((prev.horas + (parseDec(d.horas) || 0)) * 100) / 100;
+    } else {
+      mapa.set(clave, { ...d, horas: parseDec(d.horas) || 0 });
+    }
+  });
+  return [...mapa.values()];
+}
+
 function armarDocumento() {
   return {
     fecha: document.getElementById("fecha").value,
@@ -1609,14 +1665,16 @@ function armarDocumento() {
         horometroInicial: num(eq.horometroInicial),
         horometroFinal: num(eq.horometroFinal),
         horasTrabajo: horasTrabajo(eq),
-        detenciones: eq.detenciones
-          .filter(d => d.codigo && esNum(d.horas))
+        detenciones: consolidarDetenciones(eq.detenciones
+          .filter(d => d.codigo && esNum(d.horas)))
           .map(d => {
             const desc = (cat.find(([c]) => String(c) === String(d.codigo)) || [0, ""])[1];
             const det = {
               codigo: parseInt(d.codigo),
               motivo: String(d.codigo) === "99"
-                ? `(99) OTRO: ${(d.motivoOtro || "").trim()}`
+                ? (d.subcodigo && d.subcodigo !== "__escribir__"
+                    ? `(99) ${d.subcodigo}`
+                    : `(99) OTRO: ${(d.motivoOtro || "").trim()}`)
                 : String(d.codigo) === "14"
                   ? `(14) FALLA EQUIPO: ${(d.motivoFalla || "").trim()}`
                   : etiquetaDet(d.codigo, desc),
@@ -2198,8 +2256,11 @@ window.editarReporte = function (id) {
         codigo: d.codigo !== undefined ? String(d.codigo) : "",
         resp: d.resp || "",
         horas: d.horas !== undefined ? fmtComa(d.horas) : "",
-        motivoOtro: String(d.codigo) === "99" && d.motivo
+        motivoOtro: String(d.codigo) === "99" && d.motivo && d.motivo.includes("OTRO:")
           ? d.motivo.replace(/^\(99\)\s*OTRO:\s*/, "") : "",
+        subcodigo: String(d.codigo) === "99" && d.motivo && !d.motivo.includes("OTRO:")
+          ? d.motivo.replace(/^\(99\)\s*/, "")
+          : (String(d.codigo) === "99" && d.motivo && d.motivo.includes("OTRO:") ? "__escribir__" : ""),
         motivoFalla: String(d.codigo) === "14" && d.motivo
           ? d.motivo.replace(/^\(14\)\s*FALLA EQUIPO:\s*/, "") : ""
       })),
