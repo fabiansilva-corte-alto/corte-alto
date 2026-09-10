@@ -421,7 +421,7 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
   <!-- TABS: RANKING / POR MÓVIL / POR CONDUCTOR -->
   <div class="card" id="sec-tabs" style="display:none;">
     <div class="tabs">
-      <button class="tab-btn on" onclick="cambiarTab(this,'tab-ranking')">🏆 Ranking excesos</button>
+      <button class="tab-btn on" onclick="cambiarTab(this,'tab-ranking')">🏆 Vel. en ruta</button>
       <button class="tab-btn" onclick="cambiarTab(this,'tab-movil')">🚙 Por móvil</button>
       <button class="tab-btn" onclick="cambiarTab(this,'tab-conductor')">👤 Por conductor</button>
       <button class="tab-btn" onclick="cambiarTab(this,'tab-geocerca')">📍 Detalle geocerca</button>
@@ -487,28 +487,14 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
 
     <!-- TAB: DETALLE GEOCERCA -->
     <div class="tab-panel" id="tab-geocerca">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-        <div class="fg">
-          <label>Móvil:</label>
-          <select id="sel-geo-movil" onchange="renderDetalleGeo()">
-            <option value="">Todos</option>
-          </select>
-        </div>
-        <div class="fg">
-          <label>Geocerca:</label>
-          <select id="sel-geo-zona" onchange="renderDetalleGeo()">
-            <option value="">Todas</option>
-          </select>
-        </div>
-        <span style="font-size:11px;color:var(--ts);margin-left:auto;" id="lbl-geo-total"></span>
-      </div>
       <div style="overflow-x:auto;">
-        <div id="detalle-geo-wrap">
-          <div class="empty">
-            <h3>Consulta el período primero</h3>
-            <p>Aparecerá el detalle de cada evento de velocidad en geocercas.</p>
-          </div>
-        </div>
+        <table class="tabla-rank" id="tabla-ranking-geo">
+          <thead><tr>
+            <th>#</th><th>Patente</th><th>Tipo</th><th>Conductor(es)</th>
+            <th class="r">N° Eventos</th><th class="r">Vel. Máx.</th><th></th>
+          </tr></thead>
+          <tbody id="tbody-ranking-geo"></tbody>
+        </table>
       </div>
     </div>
 
@@ -637,7 +623,6 @@ async function consultar() {
     poblarMultiMovil();
     renderConductores();
     await cargarEventosGeo();
-    poblarFiltrosGeo();
     renderDetalleGeo();
     verificar5Dias();
 
@@ -1494,77 +1479,225 @@ function renderMovilMulti() {
 async function cargarEventosGeo() {
   eventosGeoCache = [];
   try {
-    // Leer un doc por fecha desde gps_geocercas (ID = YYYY-MM-DD)
     const fechas = datos.map(d => d.fecha);
     const docs = await Promise.all(fechas.map(f => db.collection('gps_geocercas').doc(f).get()));
     docs.forEach(d => {
       if (!d.exists) return;
       (d.data().eventos || []).forEach(ev => {
         eventosGeoCache.push({
-          fecha: d.id,
-          patente: ev.patente || '',
-          nombreMovil: ev.nombreMovil || '',
-          geocerca: ev.geocerca || '',
-          velLimite: ev.velLimite || 0,
-          velEvento: ev.velEvento || 0,
-          hora: ev.fechaEvento || '',
+          fecha:      d.id,
+          patente:    ev.patente    || '',
+          conductor:  ev.nombreMovil ? ev.nombreMovil.replace(new RegExp('^'+(ev.patente||'')+'\s*','i'),'').trim() : '',
+          geocerca:   ev.geocerca   || '',
+          velLimite:  ev.velLimite  || 0,
+          velEvento:  ev.velEvento  || 0,
+          hora:       ev.fechaEvento|| '',
         });
       });
     });
   } catch(e) { console.warn('cargarEventosGeo:', e.message); }
 }
 
-function poblarFiltrosGeo() {
-  const patentes = new Set(eventosGeoCache.map(e=>e.patente).filter(Boolean));
-  const geocercas = new Set(eventosGeoCache.map(e=>e.geocerca).filter(Boolean));
-  document.getElementById('sel-geo-movil').innerHTML =
-    '<option value="">Todos</option>' +
-    [...patentes].sort().map(p=>`<option value="${p}">${p}</option>`).join('');
-  document.getElementById('sel-geo-zona').innerHTML =
-    '<option value="">Todas</option>' +
-    [...geocercas].sort().map(z=>`<option value="${escH(z)}">${escH(z)}</option>`).join('');
+function renderDetalleGeo() {
+  const tbody = document.getElementById('tbody-ranking-geo');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (eventosGeoCache.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--ts);">
+      Sin datos de geocerca en este período.</td></tr>`;
+    return;
+  }
+
+  // Agrupar por patente
+  const porPat = {};
+  eventosGeoCache.forEach(ev => {
+    const p = ev.patente;
+    if (!p) return;
+    if (!porPat[p]) porPat[p] = { patente:p, tipo:flotaDe(p), conductores:new Set(), eventos:[] };
+    porPat[p].eventos.push(ev);
+    if (ev.conductor) porPat[p].conductores.add(ev.conductor);
+  });
+
+  const sorted = Object.values(porPat).sort((a,b) => b.eventos.length - a.eventos.length);
+
+  sorted.forEach((m, i) => {
+    const conductores = [...m.conductores].join(', ') || '—';
+    const n = m.eventos.length;
+    const clsN = n > 20 ? 'exc-alto' : n > 5 ? 'exc-medio' : n > 0 ? 'exc-bajo' : 'exc-ok';
+    const velMax = Math.max(...m.eventos.map(e => Number(e.velEvento)||0));
+    const clsVel = velMax > 80 ? 'exc-alto' : velMax > 50 ? 'exc-medio' : velMax > 0 ? 'exc-bajo' : 'exc-ok';
+
+    // ── Fila resumen ──
+    const tr = document.createElement('tr');
+    tr.className = 'fila-rank';
+    tr.dataset.pat = m.patente;
+    tr.innerHTML = `
+      <td><span class="num-rank ${i < 3 && n > 0 ? 'top' : ''}">${i+1}</span></td>
+      <td><strong>${m.patente}</strong></td>
+      <td>${badgeTipo(m.tipo)}</td>
+      <td style="font-size:11px;color:var(--ts);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${conductores}">${conductores}</td>
+      <td class="r"><span class="${clsN}">${n}</span></td>
+      <td class="r"><span class="${clsVel}">${velMax > 0 ? velMax+' km/h' : '—'}</span></td>
+      <td style="color:var(--ts);font-size:11px;">▾ ver detalle</td>`;
+    tbody.appendChild(tr);
+
+    // ── Fila detalle (oculta) ──
+    const trDet = document.createElement('tr');
+    trDet.className = 'fila-detalle';
+    trDet.style.display = 'none';
+    trDet.dataset.pat = m.patente;
+
+    const evsOrd = [...m.eventos].sort((a,b) =>
+      (a.fecha||'').localeCompare(b.fecha||'') || (a.hora||'').localeCompare(b.hora||''));
+
+    const filasHTML = evsOrd.map(e => {
+      const vel = Number(e.velEvento)||0;
+      const cv  = vel > 80 ? 'exc-alto' : vel > 50 ? 'exc-medio' : 'exc-bajo';
+      return `<tr>
+        <td>${fmtFecha(e.fecha)||'—'}</td>
+        <td>${e.hora||'—'}</td>
+        <td>${escH(e.conductor||'—')}</td>
+        <td style="font-size:11px;">${escH(e.geocerca||'—')}</td>
+        <td class="r" style="color:var(--ts);">${e.velLimite > 0 ? e.velLimite+' km/h' : '—'}</td>
+        <td class="r"><span class="${cv}">${vel > 0 ? vel+' km/h' : '—'}</span></td>
+      </tr>`;
+    }).join('');
+
+    trDet.innerHTML = `<td colspan="7">
+      <div class="detalle-inner">
+        <div class="det-acciones">
+          <button class="btn-exp pdf" onclick='exportarPDFGeo("${m.patente}","${m.tipo}",${JSON.stringify(evsOrd)})'>
+            📄 PDF
+          </button>
+          <button class="btn-exp xls" onclick='exportarExcelGeo("${m.patente}","${m.tipo}",${JSON.stringify(evsOrd)})'>
+            📊 Excel
+          </button>
+        </div>
+        <div class="det-titulo">📍 Detalle geocerca — ${m.patente} (${evsOrd.length} evento${evsOrd.length>1?'s':''})</div>
+        <div style="overflow-x:auto;">
+          <table class="tabla-detalle-vel">
+            <thead><tr>
+              <th>Fecha</th><th>Hora</th><th>Conductor</th><th>Geocerca</th>
+              <th class="r">Límite</th><th class="r">Vel. evento</th>
+            </tr></thead>
+            <tbody>${filasHTML}</tbody>
+          </table>
+        </div>
+      </div>
+    </td>`;
+    tbody.appendChild(trDet);
+
+    // Toggle
+    tr.addEventListener('click', () => {
+      const abierto = trDet.style.display !== 'none';
+      tbody.querySelectorAll('.fila-detalle').forEach(r => r.style.display = 'none');
+      tbody.querySelectorAll('.fila-rank').forEach(r => r.classList.remove('expandida'));
+      if (!abierto) { trDet.style.display = ''; tr.classList.add('expandida'); }
+    });
+  });
 }
 
-function renderDetalleGeo() {
-  const filtMovil = document.getElementById('sel-geo-movil').value;
-  const filtZona  = document.getElementById('sel-geo-zona').value;
+// ── Exportar PDF geocerca ──
+function exportarPDFGeo(patente, tipo, evs) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const hoy = new Date();
+  const fechaGen = hoy.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
 
-  const filtrados = eventosGeoCache.filter(e =>
-    (!filtMovil || e.patente === filtMovil) &&
-    (!filtZona  || e.geocerca === filtZona)
-  ).sort((a,b) => a.fecha.localeCompare(b.fecha) || (a.hora||'').localeCompare(b.hora||''));
+  // Encabezado
+  try { doc.addImage(LOGO_B64, 'PNG', 10, 6, 28, 22); } catch(e){}
+  doc.setFillColor(26,58,26);
+  doc.rect(42, 6, W-52, 16, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(12);
+  const bx = 42, bw = W-52;
+  doc.text('INFORME DE EXCESOS DE VELOCIDAD EN GEOCERCAS', bx+bw/2, 13, {align:'center'});
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.text('Forestal Corte Alto Ltda.', bx+bw/2, 19, {align:'center'});
 
-  document.getElementById('lbl-geo-total').textContent =
-    `${filtrados.length} evento(s)`;
+  // Resumen
+  const velMax = evs.length > 0 ? Math.max(...evs.map(e=>Number(e.velEvento)||0)) : 0;
+  const conductor = evs.length > 0 ? (evs[0].conductor||'—') : '—';
+  const fechas = [...new Set(evs.map(e=>e.fecha||''))].filter(Boolean).sort();
+  const periodo = fechas.length > 1 ? `${fechas[0]} al ${fechas[fechas.length-1]}` : (fechas[0]||'—');
 
-  const wrap = document.getElementById('detalle-geo-wrap');
-  if (eventosGeoCache.length === 0) {
-    wrap.innerHTML = `<div class="empty"><h3>Sin datos de geocerca en este período</h3>
-      <p>Solo los días cargados con la versión actual tienen este detalle.</p></div>`;
-    return;
+  let y = 35;
+  doc.setFillColor(232,240,232);
+  doc.rect(10, y-4, W-20, 22, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(26,58,26);
+  doc.text(patente, 16, y+2);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(40,40,40);
+  doc.text(`Conductor: ${conductor}   |   Tipo: ${tipo}   |   Período: ${periodo}`, 16, y+9);
+  doc.setFont('helvetica','bold'); doc.setTextColor(192,57,43);
+  doc.text(`${evs.length} evento${evs.length!==1?'s':''} de velocidad en geocercas registrado${evs.length!==1?'s':''}`, 16, y+15);
+
+  // Texto
+  y += 28;
+  doc.setFontSize(8.5); doc.setTextColor(60,60,60);
+  const txt = `El vehículo ${patente} registró ${evs.length} exceso${evs.length!==1?'s':''} de velocidad en zonas de geocerca durante el período consultado, alcanzando una velocidad máxima de ${velMax} km/h. Las geocercas no son simples límites administrativos: establecen velocidades máximas para protegerlo a usted, a sus compañeros de trabajo y a terceros en zonas sensibles de operación forestal. Se hace un llamado a mantener una conducción defensiva, anticipar las condiciones del entorno y respetar los límites establecidos en cada zona de trabajo.`;
+  const lineas = doc.splitTextToSize(txt, W-20);
+  doc.text(lineas, 10, y);
+  y += lineas.length * 4.5 + 4;
+
+  // Tabla
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(26,58,26);
+  doc.text('Detalle de eventos en geocerca', 10, y);
+  y += 3;
+
+  const filas = evs.map(e => [
+    fmtFecha(e.fecha)||'—', e.hora||'—', e.conductor||'—',
+    e.geocerca||'—',
+    e.velLimite > 0 ? `${e.velLimite} km/h` : '—',
+    `${Number(e.velEvento)||0} km/h`,
+  ]);
+
+  doc.autoTable({
+    startY: y,
+    head: [['Fecha','Hora','Conductor','Geocerca','Límite','Vel. evento']],
+    body: filas,
+    styles: { fontSize:8, cellPadding:3 },
+    headStyles: { fillColor:[26,58,26], textColor:255, fontStyle:'bold' },
+    alternateRowStyles: { fillColor:[242,245,242] },
+    columnStyles: {
+      0:{cellWidth:28}, 1:{cellWidth:26}, 2:{cellWidth:34},
+      3:{cellWidth:'auto'},
+      4:{cellWidth:26,halign:'center'}, 5:{cellWidth:26,halign:'center'},
+    },
+    tableWidth: 'wrap',
+    margin: {left:10, right:10},
+  });
+
+  // Pie
+  const pags = doc.internal.getNumberOfPages();
+  for (let i=1; i<=pags; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7); doc.setTextColor(150,150,150);
+    doc.text(`Forestal Corte Alto Ltda. — Dashboard GPS Corte Alto (Módulo Geocercas) · Proveedor GPS: RastreoSat · Generado: ${fechaGen}`, 10, doc.internal.pageSize.getHeight()-6);
+    doc.text(`Pág. ${i} / ${pags}`, W-10, doc.internal.pageSize.getHeight()-6, {align:'right'});
   }
-  if (filtrados.length === 0) {
-    wrap.innerHTML = `<div class="empty"><h3>Sin resultados con el filtro actual</h3></div>`;
-    return;
-  }
+  doc.save(`Excesos_Geocerca_${patente}_${fechaGen.replace(/\//g,'-')}.pdf`);
+}
 
-  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="tabla-geo">
-    <thead><tr>
-      <th>Fecha</th><th>Patente</th><th>Nombre Móvil</th><th>Geocerca</th>
-      <th class="r">Vel. límite</th><th class="r">Vel. evento</th><th>Hora</th>
-    </tr></thead>
-    <tbody>
-      ${filtrados.map(e=>`<tr>
-        <td>${fmtFecha(e.fecha)}</td>
-        <td><strong>${e.patente}</strong></td>
-        <td style="font-size:11px;color:var(--ts)">${escH(e.nombreMovil)}</td>
-        <td style="font-size:11px">${escH(e.geocerca)}</td>
-        <td class="r">${e.velLimite||'—'} km/h</td>
-        <td class="r"><span class="vel-alta">${e.velEvento} km/h</span></td>
-        <td style="font-size:11px;color:var(--ts)">${e.hora||'—'}</td>
-      </tr>`).join('')}
-    </tbody>
-  </table></div>`;
+// ── Exportar Excel geocerca ──
+function exportarExcelGeo(patente, tipo, evs) {
+  const filas = evs.map(e => ({
+    'Fecha':          fmtFecha(e.fecha)||'—',
+    'Hora':           e.hora||'—',
+    'Conductor':      e.conductor||'—',
+    'Geocerca':       e.geocerca||'—',
+    'Límite (km/h)':  e.velLimite||'—',
+    'Vel. evento (km/h)': Number(e.velEvento)||0,
+  }));
+  const ws = XLSX.utils.json_to_sheet(filas);
+  ws['!cols'] = [{wch:12},{wch:12},{wch:22},{wch:40},{wch:14},{wch:18}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Geocercas');
+  const hoy = new Date().toLocaleDateString('es-CL').replace(/\//g,'-');
+  XLSX.writeFile(wb, `Excesos_Geocerca_${patente}_${hoy}.xlsx`);
 }
 
 
