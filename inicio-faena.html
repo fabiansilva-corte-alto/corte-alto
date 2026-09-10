@@ -649,7 +649,12 @@ async function cargarConfiguracionCentralizada(){
   }catch(e){ /* sin conexión a config_equipos: se mantienen los equipos fijos */ }
 }
 let configListaPromise=null;
-document.addEventListener('DOMContentLoaded',()=>{configListaPromise=cargarConfiguracionCentralizada();});
+document.addEventListener('DOMContentLoaded',()=>{
+  configListaPromise=cargarConfiguracionCentralizada();
+  // Fecha de hoy por defecto si la casilla está vacía
+  const fechaEl=document.getElementById('fecha');
+  if(fechaEl&&!fechaEl.value)fechaEl.value=new Date().toISOString().split('T')[0];
+});
 
 let rodalCount=0,eqCount=0,causCount=0,procCount=0;
 let editandoId=null,editandoVersion=0;
@@ -1117,37 +1122,34 @@ window.verificarPreLlenado=function(){
   const linea=document.getElementById('linea').value;
   document.getElementById('prellenado-bar').style.display='none';_preDatos=null;
   if(!fundo||!linea)return;
-  // Fecha de búsqueda = ayer (independiente de la fecha del reporte)
+  // Mostrar spinner de búsqueda
+  const bar=document.getElementById('prellenado-bar');
+  bar.style.display='block';
+  bar.innerHTML=`<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)"><div class="spinner" style="width:16px;height:16px;margin:0"></div> Buscando datos del día anterior...</div>`;
+  // Fecha de búsqueda = ayer
   const ayer=new Date();ayer.setDate(ayer.getDate()-1);
   const fechaBusqueda=ayer.toISOString().split('T')[0];
-  console.log('[PreLlenado] trigger — fundo:',fundo,'linea:',linea,'buscando fecha:',fechaBusqueda);
   if(_preTimer)clearTimeout(_preTimer);
   _preTimer=setTimeout(()=>_buscarPreDatos(fundo,linea,fechaBusqueda),600);
 };
 
 async function _buscarPreDatos(fundo,linea,fecha){
-  console.log('[PreLlenado] iniciando búsqueda — fecha:',fecha,'fundo:',fundo,'linea:',linea);
   const fuentes=[];const datos={};
   // 1. Volumen meta desde config_volumen_meta
   try{
     const [anio,mes,dia]=fecha.split('-').map(Number);
     const mesStr=String(mes).padStart(2,'0');
     const snapM=await getDoc(doc(db,'config_volumen_meta',`${linea}_${anio}-${mesStr}`));
-    console.log('[PreLlenado] config_volumen_meta — doc existe:',snapM.exists());
-    if(snapM.exists()){const vals=snapM.data().valores||[];const meta=vals[dia-1];if(meta!=null&&meta!==''){datos.volMeta=meta;fuentes.push('Volumen meta');console.log('[PreLlenado] meta encontrada:',meta);}}
-  }catch(e){console.error('[PreLlenado] ERROR config_volumen_meta:',e.message);}
+    if(snapM.exists()){const vals=snapM.data().valores||[];const meta=vals[dia-1];if(meta!=null&&meta!==''){datos.volMeta=meta;fuentes.push('Volumen meta');}}
+  }catch(e){}
 
   // 2. Producción diaria — sin índice compuesto, filtro en cliente
   try{
     const lineaNorm=(linea||'').trim().toUpperCase();
     const snap=await getDocs(collection(db,'reportes_produccion'));
-    console.log('[PreLlenado] reportes_produccion — docs:',snap.size);
     if(!snap.empty){
       const docs=snap.docs.map(d=>d.data());
-      console.log('[PreLlenado] prod primeros docs:',docs.slice(0,5).map(x=>JSON.stringify({f:x.fundo,l:x.linea,fecha:x.fecha})));
-      console.log('[PreLlenado] buscando fundo:',JSON.stringify(fundo),'linea:',JSON.stringify(lineaNorm),'fecha:',JSON.stringify(fecha));
       const d=docs.find(d=>d.fecha===fecha&&(d.fundo||'')===fundo&&(d.linea||'').trim().toUpperCase()===lineaNorm);
-      console.log('[PreLlenado] produccion match:',!!d);
     if(d){
       datos.volReal=d.totalGlobal;
 
@@ -1208,14 +1210,10 @@ async function _buscarPreDatos(fundo,linea,fecha){
   // 3. Productividad jefe — sin índice compuesto, filtro en cliente
   try{
     const snap=await getDocs(collection(db,'productividad_jefe'));
-    console.log('[PreLlenado] productividad_jefe — docs:',snap.size);
     if(!snap.empty){
       const lineaNorm=(linea||'').trim().toUpperCase();
       const docs=snap.docs.map(d=>d.data());
-      console.log('[PreLlenado] prod-jefe primeros docs:',docs.slice(0,5).map(x=>JSON.stringify({f:x.fundo,l:x.linea,fecha:x.fecha})));
-      console.log('[PreLlenado] buscando productividad fundo:',JSON.stringify(fundo),'linea:',JSON.stringify(lineaNorm),'fecha:',JSON.stringify(fecha));
       const d=docs.find(d=>d.fecha===fecha&&(d.fundo||'')===fundo&&(d.linea||'').trim().toUpperCase()===lineaNorm);
-      console.log('[PreLlenado] productividad match:',!!d);
       if(d){
         const procArboles={};
         (d.equipos||[]).filter(e=>e.tipo==='PROCESADOR').forEach(e=>{
@@ -1235,19 +1233,16 @@ async function _buscarPreDatos(fundo,linea,fecha){
   // 4. Disponibilidad equipos — sin índice compuesto, filtro en cliente
   try{
     const snap=await getDocs(collection(db,COL));
-    console.log('[PreLlenado] reportes_v3 — docs:',snap.size);
     if(!snap.empty){
       const d=snap.docs.map(d=>d.data()).find(d=>(d.fundo||'')===fundo);
-      console.log('[PreLlenado] equipos match:',!!d,d?.equipos?.length);
       if(d?.equipos?.length){datos.equipos=d.equipos;fuentes.push('Equipos (último reporte)');}
     }
   }catch(e){}
-
-  console.log('[PreLlenado] fuentes encontradas:',fuentes,'datos keys:',Object.keys(datos));
-  if(!fuentes.length)return;
+  if(!fuentes.length){document.getElementById('prellenado-bar').style.display='none';return;}
   _preDatos=datos;
-  document.getElementById('prellenado-fuentes').textContent='Fuentes: '+fuentes.join(' · ');
-  document.getElementById('prellenado-bar').style.display='block';
+  const bar=document.getElementById('prellenado-bar');
+  bar.innerHTML=`<div style="font-weight:600;color:#27500A;margin-bottom:4px"><i class="ti ti-database-import"></i> Hay datos disponibles del día</div><div id="prellenado-fuentes" style="font-size:11px;color:#3B6D11;margin-bottom:8px">Fuentes: ${fuentes.join(' · ')}</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="aplicarPreLlenado()"><i class="ti ti-bolt"></i> Pre-llenar formulario</button><button class="btn-secondary" style="font-size:12px;padding:6px 14px" onclick="document.getElementById('prellenado-bar').style.display='none'">Continuar vacío</button></div>`;
+  bar.style.display='block';
 }
 
 function _aplicarOEE(proc){
