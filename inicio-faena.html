@@ -1144,8 +1144,10 @@ async function _buscarPreDatos(fundo,linea,fecha){
     console.log('[PreLlenado] reportes_produccion — docs:',snap.size);
     if(!snap.empty){
       const docs=snap.docs.map(d=>d.data());
+      console.log('[PreLlenado] prod primeros docs:',docs.slice(0,5).map(x=>JSON.stringify({f:x.fundo,l:x.linea,fecha:x.fecha})));
+      console.log('[PreLlenado] buscando fundo:',JSON.stringify(fundo),'linea:',JSON.stringify(lineaNorm),'fecha:',JSON.stringify(fecha));
       const d=docs.find(d=>d.fecha===fecha&&(d.fundo||'')===fundo&&(d.linea||'').trim().toUpperCase()===lineaNorm);
-      console.log('[PreLlenado] produccion match:',!!d,docs.slice(0,3).map(x=>x.fecha+'|'+x.fundo+'|'+x.linea));
+      console.log('[PreLlenado] produccion match:',!!d);
     if(d){
       datos.volReal=d.totalGlobal;
 
@@ -1210,7 +1212,8 @@ async function _buscarPreDatos(fundo,linea,fecha){
     if(!snap.empty){
       const lineaNorm=(linea||'').trim().toUpperCase();
       const docs=snap.docs.map(d=>d.data());
-      console.log('[PreLlenado] prod primeros 3:',docs.slice(0,3).map(x=>x.fecha+'|'+x.fundo+'|'+x.linea));
+      console.log('[PreLlenado] prod-jefe primeros docs:',docs.slice(0,5).map(x=>JSON.stringify({f:x.fundo,l:x.linea,fecha:x.fecha})));
+      console.log('[PreLlenado] buscando productividad fundo:',JSON.stringify(fundo),'linea:',JSON.stringify(lineaNorm),'fecha:',JSON.stringify(fecha));
       const d=docs.find(d=>d.fecha===fecha&&(d.fundo||'')===fundo&&(d.linea||'').trim().toUpperCase()===lineaNorm);
       console.log('[PreLlenado] productividad match:',!!d);
       if(d){
