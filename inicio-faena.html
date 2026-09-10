@@ -771,7 +771,7 @@ let turnoPendId=null;
 window.onProcEqChange=function(id){const eq=document.getElementById('proc-eq-'+id).value;if(!eq){document.getElementById('proc-turno-'+id).value='';actualizarTurnoLbl(id);return;}abrirTurnoModal(id);}
 window.abrirTurnoModal=function(id){turnoPendId=id;document.getElementById('turno-eq-nombre').textContent=document.getElementById('proc-eq-'+id)?.value||'';document.getElementById('modal-turno').style.display='block';}
 window.elegirTurno=function(t){if(turnoPendId==null)return;const inp=document.getElementById('proc-turno-'+turnoPendId);if(inp)inp.value=t;actualizarTurnoLbl(turnoPendId);turnoPendId=null;document.getElementById('modal-turno').style.display='none';guardarBorrador();}
-window.actualizarTurnoLbl=function(id){const t=document.getElementById('proc-turno-'+id)?.value;const lbl=document.getElementById('proc-turno-lbl-'+id);if(!lbl)return;if(!t){lbl.style.display='none';lbl.textContent='';lbl.className='turno-lbl';return;}lbl.style.display='inline-flex';lbl.textContent=(t==='Día'?'☀️ Día':'🌙 Noche')+' · tocar para cambiar';lbl.className='turno-lbl '+(t==='Día'?'turno-dia':'turno-noche');}
+window.actualizarTurnoLbl=function(id){const t=document.getElementById('proc-turno-'+id)?.value;const lbl=document.getElementById('proc-turno-lbl-'+id);if(!lbl)return;if(!t){lbl.style.display='none';lbl.textContent='';lbl.className='turno-lbl';return;}const esDia=/^d[ií]a$/i.test(t.trim());lbl.style.display='inline-flex';lbl.textContent=(esDia?'☀️ Día':'🌙 Noche')+' · tocar para cambiar';lbl.className='turno-lbl '+(esDia?'turno-dia':'turno-noche');}
 window.handleProcVol=function(inp){let v=inp.value.replace('.',',');const p=v.split(',');if(p.length>1)v=p[0]+','+p[1].slice(0,3);inp.value=v;}
 window.addCausalTOB=function(){
   const div=document.getElementById('causales-list');
@@ -1153,11 +1153,11 @@ async function _buscarPreDatos(fundo,linea,fecha){
     if(d){
       datos.volReal=d.totalGlobal;
 
-      // Agrupar cartolas por procesador+turno (una fila por combinación única)
+      const normTurnoC=t=>(t||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
       const procMap={};
       (d.cartolas||[]).forEach(c=>{
         if(!c.procesador)return;
-        const turno=(c.turno||'').toUpperCase().trim();
+        const turno=normTurnoC(c.turno);
         const key=c.procesador+'|'+(turno||'SIN_TURNO');
         if(!procMap[key])procMap[key]={equipo:c.procesador,turno:c.turno||'',volumen:0};
         procMap[key].volumen+=c.total||0;
@@ -1215,12 +1215,10 @@ async function _buscarPreDatos(fundo,linea,fecha){
       const docs=snap.docs.map(d=>d.data());
       const d=docs.find(d=>d.fecha===fecha&&(d.fundo||'')===fundo&&(d.linea||'').trim().toUpperCase()===lineaNorm);
       if(d){
-        const procArboles={};
+        const normTurno=t=>(t||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
         (d.equipos||[]).filter(e=>e.tipo==='PROCESADOR').forEach(e=>{
-          // guardar por equipo+turno para cruzar con cartolas del calibrador
-          const turnoKey=(e.turno||'').toUpperCase().trim();
+          const turnoKey=normTurno(e.turno);
           procArboles[e.equipo+'|'+(turnoKey||'SIN_TURNO')]=e.arboles||0;
-          // fallback solo por nombre de equipo
           procArboles[e.equipo]=e.arboles||0;
         });
         datos.procArboles=procArboles;
@@ -1299,7 +1297,8 @@ window.aplicarPreLlenado=async function(){
       document.getElementById(`proc-turno-${id}`).value=p.turno||'';actualizarTurnoLbl(id);
       const volStr=p.volumen?p.volumen.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}):'0,000';
       sv(`proc-vol-${id}`,volStr);
-      const turnoKey=(p.turno||'').toUpperCase().trim();
+      const normT=t=>(t||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+      const turnoKey=normT(p.turno);
       const arboles=d.procArboles?.[p.equipo+'|'+(turnoKey||'SIN_TURNO')]??d.procArboles?.[p.equipo]??0;
       const arbEl=document.getElementById(`proc-arb-${id}`);if(arbEl)arbEl.value=arboles;
       calcVMA(id);
