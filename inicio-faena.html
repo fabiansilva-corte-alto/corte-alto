@@ -417,6 +417,12 @@ textarea{resize:vertical;min-height:60px}
       <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-lock"></i> Equipos del reporte de inicio — solo cambia sus estados</div>
       <div id="cequipos-list"></div>
     </div>
+    <div class="section">
+      <div class="section-title"><i class="ti ti-message-2"></i> Comentarios y observaciones</div>
+      <div class="field">
+        <textarea id="c-observaciones" rows="4" placeholder="Escriba aquí si tiene algo adicional que informar: visita de personal externo, incidentes menores, condiciones del camino, acuerdos del día, etc." style="width:100%;resize:vertical;font-size:14px;padding:10px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-family:inherit;box-sizing:border-box"></textarea>
+      </div>
+    </div>
     <div class="section-fin">
       <div class="fin-divider"><span>Fin reporte cierre jornada</span></div>
       <div class="field">
@@ -1369,7 +1375,7 @@ window.abrirCierre=async function(firebaseId){
     <div style="color:var(--text2)">${r.linea||'—'} · ${r.fecha||'—'} · Cosecha en: ${r.cosecha||'—'}</div>
     <div style="color:var(--text2)">Sup. EESS: ${r.supervisor||'—'} · Ing. Op.: ${r.ingeniero||'—'}</div>
     <div style="font-size:11px;color:var(--text3);margin-top:4px"><i class="ti ti-lock"></i> Datos del reporte de inicio — no editables</div>`;
-  document.getElementById('c-clima').value='';sincClima('c-clima');document.getElementById('c-acceso').value='';document.getElementById('c-firma').value='';
+  document.getElementById('c-clima').value='';sincClima('c-clima');document.getElementById('c-acceso').value='';document.getElementById('c-firma').value='';document.getElementById('c-observaciones').value='';
   ['c-clima','c-acceso','c-firma'].forEach(id=>document.getElementById(id).classList.remove('campo-error'));
   document.getElementById('cequipos-list').innerHTML='';ceqCount=0;
   const c=r.cierre;
@@ -1377,6 +1383,7 @@ window.abrirCierre=async function(firebaseId){
     document.getElementById('c-clima').value=c.clima||'';sincClima('c-clima');
     document.getElementById('c-acceso').value=c.accesoCarguio||'';
     document.getElementById('c-firma').value=c.firma||'';
+    document.getElementById('c-observaciones').value=c.observaciones||'';
   }
   const srcEquipos=(c?.equipos?.length?c.equipos:r.equipos)||[];
   if(!srcEquipos.length){
@@ -1415,7 +1422,7 @@ function validarCierre(){let primer=null;const faltas=[];
   if(faltas.length){primer?.scrollIntoView({behavior:'smooth',block:'center'});showToast('⚠️ Falta: '+faltas[0]+(faltas.length>1?` (+${faltas.length-1} más)`:''));return false;}
   return true;}
 function recolectarCierre(){const equipos=[];document.querySelectorAll('[id^="csel-p-"]').forEach(sel=>{const id=sel.id.replace('csel-p-','');if(!document.getElementById('ceq-block-'+id))return;equipos.push({equipo:sel.value,cancha:document.getElementById(`ceq-cancha-${id}`)?.value||'',carro:document.getElementById(`csel-c-${id}`)?.value||'',apoyo:document.getElementById(`csel-a-${id}`)?.value||'',estado_principal:states[`${id}-principal`]||'op',estado_carro:states[`${id}-carro`]||'op',estado_apoyo:states[`${id}-apoyo`]||'op',obs_principal:document.getElementById(`eq-obs-txt-${id}-principal`)?.value||'',obs_carro:document.getElementById(`eq-obs-txt-${id}-carro`)?.value||'',obs_apoyo:document.getElementById(`eq-obs-txt-${id}-apoyo`)?.value||''});});
-  return{clima:document.getElementById('c-clima').value,accesoCarguio:document.getElementById('c-acceso').value,equipos,firma:document.getElementById('c-firma').value,guardadoEn:new Date().toISOString()};}
+  return{clima:document.getElementById('c-clima').value,accesoCarguio:document.getElementById('c-acceso').value,equipos,firma:document.getElementById('c-firma').value,observaciones:document.getElementById('c-observaciones')?.value?.trim()||'',guardadoEn:new Date().toISOString()};}
 window.guardarCierre=async function(){
   if(!cierreDocId){showToast('❌ Sin reporte asociado');return;}
   if(!validarCierre())return;
@@ -1480,6 +1487,7 @@ window.verCierre=async function(r,c){
     </div>
     <div class="modal-section"><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:6px">⚙️ Equipos al cierre</div>${eqHTML||'<div style="font-size:12px;color:var(--text3)">Sin equipos</div>'}</div>
     ${metaHTML}
+    ${c.observaciones?`<div class="modal-section" style="margin-top:8px"><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:4px">💬 Comentarios y observaciones</div><div style="font-size:13px;color:var(--text2);white-space:pre-wrap">${c.observaciones}</div></div>`:''}
     <div style="font-size:13px;color:var(--text2);margin-top:8px">Fin reporte cierre jornada · ATTE <strong>${c.firma||'—'}</strong></div>`;
   document.getElementById('modal-cierre').style.display='block';document.getElementById('modal-cierre').scrollTop=0;
 }
@@ -1528,6 +1536,7 @@ window.generarImagenCierre=async function(btnEl){
     </div>
     ${c.equipos?.length?`<div style="background:#f8f8f8;border-radius:9px;padding:9px 11px;margin-bottom:8px"><div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">⚙️ Equipos</div><div style="display:flex;gap:14px;align-items:center;margin-bottom:6px;font-size:10px;color:#333"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:${green};display:inline-block"></span>Operativo</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#D97706;display:inline-block"></span>En revisión</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:${red};display:inline-block"></span>No operativo</span></div>${eqHTML}</div>`:''}
     ${metaImgHTML}
+    ${c.observaciones?`<div style="background:#f8f8f8;border-radius:9px;padding:9px 11px;margin-bottom:8px"><div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">💬 Comentarios y observaciones</div><div style="font-size:11px;color:#333;white-space:pre-wrap;line-height:1.5">${c.observaciones}</div></div>`:''}
     <div style="background:linear-gradient(135deg,#1a3a1a 0%,#2d5a2d 100%);border-radius:9px;padding:7px 14px;text-align:center;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px">
       <span style="font-size:9px;opacity:.65;text-transform:uppercase;letter-spacing:.08em">Fin reporte cierre jornada · ATTE</span>
       <span style="font-size:13px;font-weight:800">${c.firma||'—'}</span>
