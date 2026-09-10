@@ -1115,31 +1115,37 @@ let _preDatos=null,_preTimer=null;
 window.verificarPreLlenado=function(){
   const fundo=document.getElementById('fundo').value;
   const linea=document.getElementById('linea').value;
-  const fecha=document.getElementById('fecha').value;
   document.getElementById('prellenado-bar').style.display='none';_preDatos=null;
-  if(!fundo||!linea||!fecha)return;
+  if(!fundo||!linea)return;
+  // Fecha de búsqueda = ayer (independiente de la fecha del reporte)
+  const ayer=new Date();ayer.setDate(ayer.getDate()-1);
+  const fechaBusqueda=ayer.toISOString().split('T')[0];
+  console.log('[PreLlenado] trigger — fundo:',fundo,'linea:',linea,'buscando fecha:',fechaBusqueda);
   if(_preTimer)clearTimeout(_preTimer);
-  _preTimer=setTimeout(()=>_buscarPreDatos(fundo,linea,fecha),600);
+  _preTimer=setTimeout(()=>_buscarPreDatos(fundo,linea,fechaBusqueda),600);
 };
 
 async function _buscarPreDatos(fundo,linea,fecha){
+  console.log('[PreLlenado] iniciando búsqueda — fecha:',fecha,'fundo:',fundo,'linea:',linea);
   const fuentes=[];const datos={};
-  const [anio,mes,dia]=fecha.split('-').map(Number);
-  const mesStr=String(mes).padStart(2,'0');
-
   // 1. Volumen meta desde config_volumen_meta
   try{
-    const snap=await getDoc(doc(db,'config_volumen_meta',`${linea}_${anio}-${mesStr}`));
-    if(snap.exists()){const vals=snap.data().valores||[];const meta=vals[dia-1];if(meta!=null&&meta!==''){datos.volMeta=meta;fuentes.push('Volumen meta');}}
-  }catch(e){}
+    const [anio,mes,dia]=fecha.split('-').map(Number);
+    const mesStr=String(mes).padStart(2,'0');
+    const snapM=await getDoc(doc(db,'config_volumen_meta',`${linea}_${anio}-${mesStr}`));
+    console.log('[PreLlenado] config_volumen_meta — doc existe:',snapM.exists());
+    if(snapM.exists()){const vals=snapM.data().valores||[];const meta=vals[dia-1];if(meta!=null&&meta!==''){datos.volMeta=meta;fuentes.push('Volumen meta');console.log('[PreLlenado] meta encontrada:',meta);}}
+  }catch(e){console.error('[PreLlenado] ERROR config_volumen_meta:',e.message);}
 
   // 2. Producción diaria — sin índice compuesto, filtro en cliente
   try{
     const lineaNorm=(linea||'').trim().toUpperCase();
     const snap=await getDocs(query(collection(db,'reportes_produccion'),orderBy('fecha','desc'),limit(60)));
+    console.log('[PreLlenado] reportes_produccion — docs:',snap.size);
     if(!snap.empty){
       const docs=snap.docs.map(d=>d.data());
       const d=docs.find(d=>d.fecha===fecha&&(d.fundo||'')===fundo&&(d.linea||'').trim().toUpperCase()===lineaNorm);
+      console.log('[PreLlenado] produccion match:',!!d,docs.slice(0,3).map(x=>x.fecha+'|'+x.fundo+'|'+x.linea));
     if(d){
       datos.volReal=d.totalGlobal;
 
@@ -1200,10 +1206,13 @@ async function _buscarPreDatos(fundo,linea,fecha){
   // 3. Productividad jefe — sin índice compuesto, filtro en cliente
   try{
     const snap=await getDocs(query(collection(db,'productividad_jefe'),orderBy('fecha','desc'),limit(60)));
+    console.log('[PreLlenado] productividad_jefe — docs:',snap.size);
     if(!snap.empty){
       const lineaNorm=(linea||'').trim().toUpperCase();
       const docs=snap.docs.map(d=>d.data());
+      console.log('[PreLlenado] prod primeros 3:',docs.slice(0,3).map(x=>x.fecha+'|'+x.fundo+'|'+x.linea));
       const d=docs.find(d=>d.fecha===fecha&&(d.fundo||'')===fundo&&(d.linea||'').trim().toUpperCase()===lineaNorm);
+      console.log('[PreLlenado] productividad match:',!!d);
       if(d){
         const procArboles={};
         (d.equipos||[]).filter(e=>e.tipo==='PROCESADOR').forEach(e=>{
@@ -1223,12 +1232,15 @@ async function _buscarPreDatos(fundo,linea,fecha){
   // 4. Disponibilidad equipos — sin índice compuesto, filtro en cliente
   try{
     const snap=await getDocs(query(collection(db,COL),orderBy('creadoEn','desc'),limit(60)));
+    console.log('[PreLlenado] reportes_v3 — docs:',snap.size);
     if(!snap.empty){
       const d=snap.docs.map(d=>d.data()).find(d=>(d.fundo||'')===fundo);
+      console.log('[PreLlenado] equipos match:',!!d,d?.equipos?.length);
       if(d?.equipos?.length){datos.equipos=d.equipos;fuentes.push('Equipos (último reporte)');}
     }
   }catch(e){}
 
+  console.log('[PreLlenado] fuentes encontradas:',fuentes,'datos keys:',Object.keys(datos));
   if(!fuentes.length)return;
   _preDatos=datos;
   document.getElementById('prellenado-fuentes').textContent='Fuentes: '+fuentes.join(' · ');
