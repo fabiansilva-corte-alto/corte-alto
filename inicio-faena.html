@@ -1133,20 +1133,24 @@ async function _buscarPreDatos(fundo,linea,fecha){
     if(snap.exists()){const vals=snap.data().valores||[];const meta=vals[dia-1];if(meta!=null&&meta!==''){datos.volMeta=meta;fuentes.push('Volumen meta');}}
   }catch(e){}
 
-  // 2. Producción diaria desde reportes_produccion
+  // 2. Producción diaria — sin índice compuesto, filtro en cliente
   try{
-    const snap=await getDocs(query(collection(db,'reportes_produccion'),where('fecha','==',fecha),where('fundo','==',fundo),where('linea','==',linea)));
+    const lineaNorm=(linea||'').trim().toUpperCase();
+    const snap=await getDocs(query(collection(db,'reportes_produccion'),orderBy('fecha','desc'),limit(60)));
     if(!snap.empty){
-      const d=snap.docs[0].data();
+      const docs=snap.docs.map(d=>d.data());
+      const d=docs.find(d=>d.fecha===fecha&&(d.fundo||'')===fundo&&(d.linea||'').trim().toUpperCase()===lineaNorm);
+    if(d){
       datos.volReal=d.totalGlobal;
 
-      // Agrupar cartolas por procesador — suma volúmenes
+      // Agrupar cartolas por procesador+turno (una fila por combinación única)
       const procMap={};
       (d.cartolas||[]).forEach(c=>{
         if(!c.procesador)return;
-        if(!procMap[c.procesador])procMap[c.procesador]={equipo:c.procesador,turno:c.turno||'',volumen:0};
-        procMap[c.procesador].volumen+=c.total||0;
-        if(!procMap[c.procesador].turno&&c.turno)procMap[c.procesador].turno=c.turno;
+        const turno=(c.turno||'').toUpperCase().trim();
+        const key=c.procesador+'|'+(turno||'SIN_TURNO');
+        if(!procMap[key])procMap[key]={equipo:c.procesador,turno:c.turno||'',volumen:0};
+        procMap[key].volumen+=c.total||0;
       });
       datos.procesadores=Object.values(procMap).map(p=>({...p,volumen:Math.round(p.volumen*1000)/1000}));
 
@@ -1190,26 +1194,39 @@ async function _buscarPreDatos(fundo,linea,fecha){
       });
       fuentes.push('Producción diaria');
     }
-  }catch(e){}
-
-  // 3. Productividad jefe desde productividad_jefe
-  try{
-    const snap=await getDocs(query(collection(db,'productividad_jefe'),where('fecha','==',fecha),where('fundo','==',fundo),where('linea','==',linea)));
-    if(!snap.empty){
-      const d=snap.docs[0].data();
-      const procArboles={};
-      (d.equipos||[]).filter(e=>e.tipo==='PROCESADOR').forEach(e=>{procArboles[e.equipo]=e.arboles||0;});
-      datos.procArboles=procArboles;
-      // FIX 3: guardar todos los procesadores con OEE — se elegirá al aplicar
-      datos.procOEEList=(d.equipos||[]).filter(e=>e.tipo==='PROCESADOR'&&e.tpProgramado!=null);
-      fuentes.push('Productividad jefe');
     }
   }catch(e){}
 
-  // 4. Disponibilidad equipos desde último reporte inicio del mismo fundo
+  // 3. Productividad jefe — sin índice compuesto, filtro en cliente
   try{
-    const snap=await getDocs(query(collection(db,COL),where('fundo','==',fundo),orderBy('creadoEn','desc')));
-    if(!snap.empty){const d=snap.docs[0].data();if(d.equipos?.length){datos.equipos=d.equipos;fuentes.push('Equipos (último reporte)');}}
+    const snap=await getDocs(query(collection(db,'productividad_jefe'),orderBy('fecha','desc'),limit(60)));
+    if(!snap.empty){
+      const lineaNorm=(linea||'').trim().toUpperCase();
+      const docs=snap.docs.map(d=>d.data());
+      const d=docs.find(d=>d.fecha===fecha&&(d.fundo||'')===fundo&&(d.linea||'').trim().toUpperCase()===lineaNorm);
+      if(d){
+        const procArboles={};
+        (d.equipos||[]).filter(e=>e.tipo==='PROCESADOR').forEach(e=>{
+          // guardar por equipo+turno para cruzar con cartolas del calibrador
+          const turnoKey=(e.turno||'').toUpperCase().trim();
+          procArboles[e.equipo+'|'+(turnoKey||'SIN_TURNO')]=e.arboles||0;
+          // fallback solo por nombre de equipo
+          procArboles[e.equipo]=e.arboles||0;
+        });
+        datos.procArboles=procArboles;
+        datos.procOEEList=(d.equipos||[]).filter(e=>e.tipo==='PROCESADOR'&&e.tpProgramado!=null&&e.reportaOEE!==false);
+        fuentes.push('Productividad jefe');
+      }
+    }
+  }catch(e){}
+
+  // 4. Disponibilidad equipos — sin índice compuesto, filtro en cliente
+  try{
+    const snap=await getDocs(query(collection(db,COL),orderBy('creadoEn','desc'),limit(60)));
+    if(!snap.empty){
+      const d=snap.docs.map(d=>d.data()).find(d=>(d.fundo||'')===fundo);
+      if(d?.equipos?.length){datos.equipos=d.equipos;fuentes.push('Equipos (último reporte)');}
+    }
   }catch(e){}
 
   if(!fuentes.length)return;
@@ -1272,7 +1289,8 @@ window.aplicarPreLlenado=async function(){
       document.getElementById(`proc-turno-${id}`).value=p.turno||'';actualizarTurnoLbl(id);
       const volStr=p.volumen?p.volumen.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}):'0,000';
       sv(`proc-vol-${id}`,volStr);
-      const arboles=d.procArboles?.[p.equipo]||0;
+      const turnoKey=(p.turno||'').toUpperCase().trim();
+      const arboles=d.procArboles?.[p.equipo+'|'+(turnoKey||'SIN_TURNO')]??d.procArboles?.[p.equipo]??0;
       const arbEl=document.getElementById(`proc-arb-${id}`);if(arbEl)arbEl.value=arboles;
       calcVMA(id);
     });
