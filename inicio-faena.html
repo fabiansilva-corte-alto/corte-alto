@@ -1140,7 +1140,7 @@ async function _buscarPreDatos(fundo,linea,fecha){
   // 2. Producción diaria — sin índice compuesto, filtro en cliente
   try{
     const lineaNorm=(linea||'').trim().toUpperCase();
-    const snap=await getDocs(query(collection(db,'reportes_produccion'),orderBy('fecha','desc'),limit(60)));
+    const snap=await getDocs(collection(db,'reportes_produccion'));
     console.log('[PreLlenado] reportes_produccion — docs:',snap.size);
     if(!snap.empty){
       const docs=snap.docs.map(d=>d.data());
@@ -1207,7 +1207,7 @@ async function _buscarPreDatos(fundo,linea,fecha){
 
   // 3. Productividad jefe — sin índice compuesto, filtro en cliente
   try{
-    const snap=await getDocs(query(collection(db,'productividad_jefe'),orderBy('fecha','desc'),limit(60)));
+    const snap=await getDocs(collection(db,'productividad_jefe'));
     console.log('[PreLlenado] productividad_jefe — docs:',snap.size);
     if(!snap.empty){
       const lineaNorm=(linea||'').trim().toUpperCase();
@@ -1234,7 +1234,7 @@ async function _buscarPreDatos(fundo,linea,fecha){
 
   // 4. Disponibilidad equipos — sin índice compuesto, filtro en cliente
   try{
-    const snap=await getDocs(query(collection(db,COL),orderBy('creadoEn','desc'),limit(60)));
+    const snap=await getDocs(collection(db,COL));
     console.log('[PreLlenado] reportes_v3 — docs:',snap.size);
     if(!snap.empty){
       const d=snap.docs.map(d=>d.data()).find(d=>(d.fundo||'')===fundo);
