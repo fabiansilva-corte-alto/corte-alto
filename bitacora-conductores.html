@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitácora de Conductores · Corte Alto</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+<style>
+:root{
+  --vd:#1a3a1a;--vm:#2d5a2d;--vc:#4a7c4a;
+  --vs:#e8f0e8;--vb:#c2d6c2;--ac:#7ab648;--ac2:#5f9a32;
+  --ts:#5a7a5a;--fon:#f2f5f2;--sup:#ffffff;
+  --rojo:#c0392b;--rojo-s:#fdecea;--naranja:#e67e22;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fon);color:#1a2e1a;min-height:100vh;}
+
+/* LOGIN */
+#pantalla-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.login-card{background:#fff;border-radius:12px;padding:36px 32px;box-shadow:0 4px 24px rgba(0,0,0,.1);width:100%;max-width:380px;}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
+.login-logo img{width:52px;}
+.login-logo .emp{font-size:13px;font-weight:700;color:var(--vd);}
+.login-logo .mod{font-size:11px;color:var(--ts);}
+.login-card h2{font-size:16px;color:var(--vd);margin-bottom:20px;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.fg label{font-size:12px;font-weight:600;color:var(--ts);}
+.fg input,.fg select,.fg textarea{border:1px solid var(--vb);border-radius:6px;padding:9px 11px;font-size:13px;font-family:inherit;background:#fff;transition:border .15s;width:100%;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--vc);}
+.btn-prim{width:100%;padding:10px;background:var(--vd);color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;}
+.btn-prim:hover{background:var(--vm);}
+.login-err{background:var(--rojo-s);border:1px solid #f5b7b1;border-radius:6px;padding:9px 12px;font-size:12px;color:var(--rojo);margin-top:12px;display:none;}
+
+/* APP */
+#pantalla-app{display:none;}
+.topbar{background:var(--vd);color:#fff;display:flex;align-items:center;gap:12px;padding:10px 16px;position:sticky;top:0;z-index:200;}
+.topbar img{width:32px;border-radius:4px;}
+.topbar .titulo{font-size:14px;font-weight:700;flex:1;}
+.topbar .subtitulo{font-size:11px;opacity:.7;}
+.btn-logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;}
+.btn-logout:hover{background:rgba(255,255,255,.25);}
+
+/* TABS */
+.tabs-bar{background:#fff;border-bottom:2px solid var(--vb);display:flex;gap:0;padding:0 16px;position:sticky;top:53px;z-index:100;}
+.tab-btn{background:none;border:none;border-bottom:3px solid transparent;padding:11px 16px;font-size:13px;font-weight:600;color:var(--ts);cursor:pointer;margin-bottom:-2px;transition:all .15s;white-space:nowrap;}
+.tab-btn:hover{color:var(--vd);}
+.tab-btn.on{color:var(--vd);border-bottom-color:var(--vd);}
+.tab-panel{display:none;}
+.tab-panel.on{display:block;}
+
+main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:12px;}
+
+/* CARDS */
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:hidden;}
+.card-header{background:var(--vs);border-bottom:1px solid var(--vb);padding:11px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.card-header h2{font-size:13px;font-weight:700;color:var(--vd);}
+.card-body{padding:16px;}
+
+/* NAV FECHA */
+.nav-fecha{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.nav-fecha input[type=date]{border:1px solid var(--vb);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;background:#fff;}
+.btn-hoy{background:var(--vs);border:1px solid var(--vb);border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--vd);cursor:pointer;}
+.btn-hoy:hover{background:var(--vb);}
+.lbl-registros{font-size:11px;color:var(--ts);}
+
+/* BANNER ALERTA */
+.banner-alerta{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;font-size:12px;color:#856404;display:flex;align-items:center;gap:8px;}
+
+/* TABLA FLOTA */
+.tabla-bit{width:100%;border-collapse:collapse;font-size:12px;}
+.tabla-bit thead{position:sticky;top:0;z-index:50;}
+.tabla-bit thead tr{background:var(--vd);color:#fff;}
+.tabla-bit thead th{padding:8px 10px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.3px;white-space:nowrap;}
+.tabla-bit tbody tr{border-bottom:1px solid var(--vb);transition:background .1s;}
+.tabla-bit tbody tr:hover:not(.fila-seccion):not(.fila-edicion){background:#f7fbf7;}
+.tabla-bit tbody td{padding:7px 10px;vertical-align:middle;}
+
+/* SECCIÓN TIPO */
+.fila-seccion td{background:#1a5276;color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:5px 10px !important;}
+
+/* FILA SIN ASIGNAR */
+.sin-asignar td:nth-child(4){color:#bbb;font-style:italic;}
+
+/* FILA EDICIÓN INLINE */
+.fila-edicion{background:#f0f7f0;}
+.fila-edicion td{padding:6px 8px !important;}
+.fila-edicion input[type=text],.fila-edicion input[type=time]{border:1px solid var(--vb);border-radius:5px;padding:5px 8px;font-size:12px;font-family:inherit;background:#fff;width:100%;}
+.fila-edicion input:focus{outline:none;border-color:var(--vc);}
+
+/* BOTONES */
+.btn-accion{border:none;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600;}
+.btn-accion:hover{opacity:.8;}
+.btn-del{background:var(--rojo-s);color:var(--rojo);}
+.btn-edit{background:var(--vs);color:var(--vd);}
+.btn-asignar{background:var(--vs);border:1px solid var(--vb);color:var(--vd);border-radius:5px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;}
+.btn-asignar:hover{background:var(--vb);}
+.btn-guardar-fila{background:var(--vd);color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;}
+.btn-guardar-fila:hover{background:var(--vm);}
+.btn-cancelar-fila{background:#fff;border:1px solid var(--vb);color:var(--ts);border-radius:5px;padding:4px 8px;font-size:11px;cursor:pointer;}
+.btn-sec{background:var(--vs);border:1px solid var(--vb);color:var(--vd);border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-guardar{background:var(--vd);color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-guardar:hover{background:var(--vm);}
+.btn-danger{background:var(--rojo-s);color:var(--rojo);border:1px solid #f5b7b1;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;}
+
+/* PUNTO CONDUCTOR FIJO */
+.punto-fijo{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ac2);margin-right:5px;flex-shrink:0;title:'Conductor fijo';}
+.fin-calc{color:var(--ts);font-style:italic;font-size:10px;}
+
+/* BADGES */
+.badge-tipo{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;color:#fff;}
+.t-fur{background:#2980b9;}.t-pick{background:#8e44ad;}.t-cam{background:#e67e22;}.t-otro{background:#888;}
+
+/* TABLA CONDUCTORES */
+.tabla-cond{width:100%;border-collapse:collapse;font-size:12px;}
+.tabla-cond thead tr{background:var(--vd);color:#fff;}
+.tabla-cond thead th{padding:8px 10px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.3px;}
+.tabla-cond tbody tr{border-bottom:1px solid var(--vb);}
+.tabla-cond tbody tr:hover{background:var(--vs);}
+.tabla-cond tbody td{padding:8px 10px;vertical-align:middle;}
+
+/* FORM GRID */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-grid .full{grid-column:1/-1;}
+@media(max-width:540px){.form-grid{grid-template-columns:1fr;}}
+
+/* DÍAS PENDIENTES */
+.dia-card{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--vb);cursor:pointer;transition:background .1s;}
+.dia-card:hover{background:var(--vs);}
+.dia-card:last-child{border-bottom:none;}
+.dia-fecha{font-weight:700;font-size:13px;min-width:90px;}
+.dia-barra-wrap{flex:1;background:var(--vb);border-radius:4px;height:8px;overflow:hidden;}
+.dia-barra{height:100%;border-radius:4px;transition:width .3s;}
+.dia-pct{font-size:12px;font-weight:600;min-width:40px;text-align:right;}
+.semaforo{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.s-verde{background:#27ae60;}.s-amarillo{background:#f39c12;}.s-rojo{background:var(--rojo);}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center;padding:16px;}
+.modal-bg.open{display:flex;}
+.modal{background:#fff;border-radius:10px;padding:24px;width:100%;max-width:460px;box-shadow:0 8px 32px rgba(0,0,0,.15);}
+.modal h3{font-size:14px;font-weight:700;color:var(--vd);margin-bottom:16px;}
+.modal-acciones{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+
+/* EMPTY */
+.empty-bit{text-align:center;padding:32px;color:var(--ts);}
+.empty-bit h3{font-size:14px;font-weight:600;margin-bottom:6px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;z-index:999;background:var(--vd);color:#fff;border-radius:8px;padding:10px 16px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.err{background:var(--rojo);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="pantalla-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="logo.png" alt="Corte Alto" onerror="this.style.display='none'">
+      <div><div class="emp">Forestal Corte Alto Ltda.</div><div class="mod">Bitácora de Conductores</div></div>
+    </div>
+    <h2>Iniciar sesión</h2>
+    <div class="fg"><label>Correo electrónico</label><input type="email" id="inp-email" placeholder="correo@ejemplo.com" autocomplete="username"></div>
+    <div class="fg"><label>Contraseña</label><input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn-prim" id="btn-login">Entrar</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="pantalla-app">
+  <div class="topbar">
+    <img src="logo.png" alt="" onerror="this.style.display='none'">
+    <div style="flex:1;"><div class="titulo">Bitácora de Conductores</div><div class="subtitulo">Forestal Corte Alto Ltda.</div></div>
+    <span id="lbl-usuario" style="font-size:11px;opacity:.8;margin-right:8px;"></span>
+    <button class="btn-logout" id="btn-logout">Cerrar sesión</button>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-bar">
+    <button class="tab-btn on" onclick="cambiarTab(this,'tab-asignacion')">📋 Asignación diaria</button>
+    <button class="tab-btn" onclick="cambiarTab(this,'tab-conductores')">👤 Conductores</button>
+    <button class="tab-btn" onclick="cambiarTab(this,'tab-pendientes')">⚠️ Días pendientes</button>
+  </div>
+
+  <main>
+
+    <!-- ══ TAB 1: ASIGNACIÓN DIARIA ══ -->
+    <div class="tab-panel on" id="tab-asignacion">
+      <div id="banner-alerta" style="display:none;" class="banner-alerta">
+        ⚠️ <span id="banner-texto"></span>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span>🚛</span><h2>Flota del día</h2>
+          <div class="nav-fecha">
+            <input type="date" id="hist-fecha">
+            <button class="btn-hoy" id="btn-hoy">Hoy</button>
+            <span class="lbl-registros" id="lbl-registros"></span>
+          </div>
+        </div>
+        <div id="tabla-wrap" style="overflow-x:auto;overflow-y:auto;max-height:70vh;">
+          <div class="empty-bit"><h3>Cargando...</h3></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB 2: CONDUCTORES ══ -->
+    <div class="tab-panel" id="tab-conductores">
+      <!-- Formulario agregar conductor -->
+      <div class="card">
+        <div class="card-header"><span>➕</span><h2>Agregar conductor</h2></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="fg"><label>Nombre conductor *</label><input type="text" id="nc-nombre" placeholder="Nombre del conductor" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+            <div class="fg">
+              <label>Móvil asignado fijo <span style="font-weight:400;color:var(--ts)">(opcional)</span></label>
+              <select id="nc-patente"><option value="">— Sin asignación fija —</option></select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+            <button class="btn-guardar" id="btn-add-cond">Agregar conductor</button>
+            <span id="nc-estado" style="font-size:12px;color:var(--ts);"></span>
+          </div>
+        </div>
+      </div>
+      <!-- Agregar móvil nuevo -->
+      <div class="card">
+        <div class="card-header"><span>🚗</span><h2>Agregar móvil nuevo</h2><span style="font-size:11px;color:var(--ts);margin-left:4px;">— para vehículos que aparecen en GPS pero no están en la flota</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="fg"><label>Patente *</label><input type="text" id="nm-patente" placeholder="Ej: ABCD-12" style="text-transform:uppercase;"></div>
+            <div class="fg"><label>Tipo *</label>
+              <select id="nm-tipo">
+                <option value="">— Selecciona —</option>
+                <option value="Furgón">Furgón</option>
+                <option value="PickUp">PickUp</option>
+                <option value="Camión">Camión</option>
+                <option value="Máquina">Máquina</option>
+              </select>
+            </div>
+            <div class="fg"><label>Modelo *</label><input type="text" id="nm-modelo" placeholder="Ej: Mitsubishi L-200" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+            <div class="fg"><label>Conductor fijo <span style="font-weight:400;color:var(--ts)">(opcional)</span></label>
+              <select id="nm-conductor-fijo"><option value="">— Sin asignación fija —</option></select>
+            </div>
+          </div>
+          <button class="btn-guardar" id="btn-add-movil">Agregar móvil</button>
+        </div>
+      </div>
+      <!-- Lista conductores -->
+      <div class="card">
+        <div class="card-header"><span>👥</span><h2>Conductores registrados</h2></div>
+        <div id="lista-conductores"><div class="empty-bit"><h3>Cargando...</h3></div></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB 3: DÍAS PENDIENTES ══ -->
+    <div class="tab-panel" id="tab-pendientes">
+      <div class="card">
+        <div class="card-header"><span>⚠️</span><h2>Días sin completar — últimos 30 días</h2></div>
+        <div id="lista-pendientes"><div class="empty-bit"><h3>Cargando...</h3></div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal editar conductor -->
+<div class="modal-bg" id="modal-cond">
+  <div class="modal">
+    <h3>✏️ Editar conductor</h3>
+    <input type="hidden" id="ec-id">
+    <div class="form-grid">
+      <div class="fg full"><label>Nombre conductor</label><input type="text" id="ec-nombre" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fg full"><label>Móvil asignado fijo</label><select id="ec-patente"><option value="">— Sin asignación fija —</option></select></div>
+    </div>
+    <div class="modal-acciones">
+      <button class="btn-danger" id="ec-eliminar">Eliminar</button>
+      <button class="btn-sec" id="ec-cancelar">Cancelar</button>
+      <button class="btn-guardar" id="ec-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal editar fila asignación -->
+<div class="modal-bg" id="modal-edit">
+  <div class="modal">
+    <h3>✏️ Editar registro</h3>
+    <input type="hidden" id="edit-id">
+    <input type="hidden" id="edit-fecha">
+    <div class="form-grid">
+      <div class="fg full"><label>Conductor</label><input type="text" id="edit-conductor" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fg"><label>Hora inicio</label><input type="time" id="edit-hora-ini"></div>
+      <div class="fg"><label>Hora fin</label><input type="time" id="edit-hora-fin"></div>
+      <div class="fg full"><label>Comentario</label><input type="text" id="edit-comentario"></div>
+    </div>
+    <div class="modal-acciones">
+      <button class="btn-sec" id="modal-cancelar">Cancelar</button>
+      <button class="btn-guardar" id="modal-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══ FIREBASE ══
+const firebaseConfig = {
+  apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+  authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
+  projectId: "reporte-inicio-faena-forestal",
+  storageBucket: "reporte-inicio-faena-forestal.firebasestorage.app",
+  appId: "1:962534414054:web:fa43371d31413fc0524d27"
+};
+firebase.initializeApp(firebaseConfig);
+const db   = firebase.firestore();
+const auth = firebase.auth();
+
+// ══ FLOTA BASE (fallback si Firestore no tiene datos aún) ══
+const FLOTA_BASE = {
+  'HCKS-45':{tipo:'Camión',modelo:'Canter 7.5'},
+  'KZHW-23':{tipo:'Camión',modelo:'Canter 815'},
+  'RHRV-53':{tipo:'Camión',modelo:'Constellation 17230'},
+  'VFGG-39':{tipo:'Camión',modelo:'NEW ACTROS 335'},
+  'JRFW-97':{tipo:'Furgón',modelo:'Sprinter 415'},
+  'RGJF-19':{tipo:'Furgón',modelo:'Sprinter 416'},
+  'SPZL99': {tipo:'Furgón',modelo:'Sprinter 416'},
+  'SZFH-90':{tipo:'Furgón',modelo:'Sprinter 417'},
+  'SZFH-91':{tipo:'Furgón',modelo:'Sprinter 417'},
+  'VFGD-83':{tipo:'Furgón',modelo:'Sprinter 417'},
+  'GDXH-55':{tipo:'PickUp',modelo:'Toyota Hilux'},
+  'GDXH-56':{tipo:'PickUp',modelo:'Toyota Hilux'},
+  'JBVR-17':{tipo:'PickUp',modelo:'Mitsubishi L-200'},
+  'JRFW-54':{tipo:'PickUp',modelo:'BT-50'},
+  'KLKJ-65':{tipo:'PickUp',modelo:'Mitsubishi L-200'},
+  'KSDC-28':{tipo:'PickUp',modelo:'BT-50'},
+  'LGVW-36':{tipo:'PickUp',modelo:'BT-50'},
+  'LRHV-61':{tipo:'PickUp',modelo:'Mitsubishi L-200'},
+  'LRHV-62':{tipo:'PickUp',modelo:'Mitsubishi L-200'},
+  'LRHV-63':{tipo:'PickUp',modelo:'Mitsubishi L-200'},
+  'LRYK-45':{tipo:'PickUp',modelo:'Mitsubishi L-200'},
+  'LRYK-46':{tipo:'PickUp',modelo:'Mitsubishi L-200'},
+  'RRZC-83':{tipo:'PickUp',modelo:'Chevrolet Colorado'},
+  'SFCP-18':{tipo:'PickUp',modelo:'Chevrolet Colorado'},
+  'SFCP-19':{tipo:'PickUp',modelo:'Chevrolet Colorado'},
+  'SLGB-66':{tipo:'PickUp',modelo:'Chevrolet Colorado'},
+  'STWW-57':{tipo:'PickUp',modelo:'Mitsubishi L-200'},
+  'STWW-61':{tipo:'PickUp',modelo:'Mitsubishi L-200'},
+  'STWW43': {tipo:'PickUp',modelo:'Mitsubishi L-200'},
+  'SZGB-73':{tipo:'PickUp',modelo:'Maxus T-60'},
+  'TSKK-30':{tipo:'PickUp',modelo:'Mitsubishi L-200'},
+  'VDSZ-52':{tipo:'PickUp',modelo:'Toyota Hilux'},
+  'VLGL-81':{tipo:'PickUp',modelo:'Mitsubishi L-200'},
+  'VPXT-63':{tipo:'PickUp',modelo:'Maxus T-60'},
+  'TWPT56': {tipo:'Máquina',modelo:'Skidder 625 N3'},
+};
+
+// Flota dinámica (se carga desde Firestore y puede crecer)
+let flotaActual = {...FLOTA_BASE};
+// Conductores desde config_conductores
+let conductoresLista = []; // [{id, nombre, patenteFija}]
+// Map patente → nombre conductor fijo
+let conductoresFijos = {};
+
+// ══ HELPERS ══
+function hoy(){ return new Date().toISOString().slice(0,10); }
+function fmtFecha(iso){
+  if(!iso)return'—';
+  const[y,m,d]=iso.split('-');
+  const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const nd=new Date(y,m-1,d).getDay();
+  return`${dias[nd]} ${d}/${m}/${y}`;
+}
+function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show'+(err?' err':'');
+  clearTimeout(t._to);t._to=setTimeout(()=>t.className='toast',3000);
+}
+function badgeTipo(tipo){
+  const cls=tipo==='Furgón'?'t-fur':tipo==='PickUp'?'t-pick':tipo==='Camión'?'t-cam':'t-otro';
+  return`<span class="badge-tipo ${cls}">${tipo}</span>`;
+}
+function ordenFlota(flota){
+  const ord=['Furgón','PickUp','Camión','Máquina'];
+  return Object.keys(flota).sort((a,b)=>{
+    const ta=flota[a].tipo, tb=flota[b].tipo;
+    if(ta!==tb) return ord.indexOf(ta)-ord.indexOf(tb);
+    return a.localeCompare(b);
+  });
+}
+
+// ══ TABS ══
+function cambiarTab(btn, panelId){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById(panelId).classList.add('on');
+  if(panelId==='tab-conductores') cargarConductores();
+  if(panelId==='tab-pendientes') cargarPendientes();
+}
+
+// ══ AUTH ══
+auth.onAuthStateChanged(async user=>{
+  if(!user){mostrarLogin();return;}
+  try{
+    const doc=await db.collection('usuarios').doc(user.uid).get();
+    if(!doc.exists){await auth.signOut();mostrarLogin('Sin acceso');return;}
+    const data=doc.data();
+    if(!data.activo||!['admin','bitacora'].includes(data.rol)){
+      await auth.signOut();mostrarLogin('No tienes permiso para acceder.');return;
+    }
+    await iniciarApp(data.nombre||user.email);
+  }catch(e){mostrarLogin('Error al verificar acceso.');}
+});
+
+function mostrarLogin(err=''){
+  document.getElementById('pantalla-login').style.display='flex';
+  document.getElementById('pantalla-app').style.display='none';
+  if(err){const el=document.getElementById('login-err');el.textContent=err;el.style.display='block';}
+}
+
+document.getElementById('btn-login').addEventListener('click',async()=>{
+  const email=document.getElementById('inp-email').value.trim();
+  const pass=document.getElementById('inp-pass').value;
+  const err=document.getElementById('login-err');
+  err.style.display='none';
+  if(!email||!pass){err.textContent='Completa todos los campos.';err.style.display='block';return;}
+  try{await auth.signInWithEmailAndPassword(email,pass);}
+  catch(e){err.textContent='Correo o contraseña incorrectos.';err.style.display='block';}
+});
+document.getElementById('inp-pass').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-login').click();});
+document.getElementById('btn-logout').addEventListener('click',()=>auth.signOut());
+
+// ══ INICIO APP ══
+async function iniciarApp(nombre){
+  document.getElementById('pantalla-login').style.display='none';
+  document.getElementById('pantalla-app').style.display='block';
+  document.getElementById('lbl-usuario').textContent=nombre;
+  // Cargar flota desde Firestore (config_flota_gps)
+  await cargarFlota();
+  // Cargar conductores
+  await cargarConductoresMemoria();
+  // Poblar selects
+  poblarSelectsPatente();
+  // Fecha por defecto
+  const h=hoy();
+  document.getElementById('hist-fecha').value=h;
+  cargarHistorial(h);
+  // Verificar patentes nuevas en GPS
+  verificarPatentesNuevas();
+}
+
+// ══ FLOTA DINÁMICA ══
+async function cargarFlota(){
+  try{
+    const snap=await db.collection('config_flota_gps').get();
+    if(!snap.empty){
+      snap.forEach(d=>{
+        flotaActual[d.id]={tipo:d.data().tipo||'Otro',modelo:d.data().modelo||'—'};
+      });
+    } else {
+      // Primera vez: inicializar desde FLOTA_BASE
+      const batch=db.batch();
+      Object.entries(FLOTA_BASE).forEach(([pat,v])=>{
+        batch.set(db.collection('config_flota_gps').doc(pat),v);
+      });
+      await batch.commit();
+    }
+  }catch(e){console.warn('cargarFlota:',e.message);}
+}
+
+// ══ CONDUCTORES EN MEMORIA ══
+async function cargarConductoresMemoria(){
+  try{
+    const snap=await db.collection('config_conductores').orderBy('nombre').get();
+    conductoresLista=snap.docs.map(d=>({id:d.id,...d.data()}));
+    conductoresFijos={};
+    conductoresLista.forEach(c=>{
+      if(c.patenteFija) conductoresFijos[c.patenteFija]=c.nombre;
+    });
+  }catch(e){console.warn('conductores:',e.message);}
+}
+
+function poblarSelectsPatente(){
+  const pats=ordenFlota(flotaActual);
+  const opts=pats.map(p=>`<option value="${p}">${p} — ${flotaActual[p].tipo}</option>`).join('');
+  ['nc-patente','nm-conductor-fijo','ec-patente'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML='<option value="">— Sin asignación fija —</option>'+opts;
+  });
+  // nm-conductor-fijo es select de conductores
+  const condOpts=conductoresLista.map(c=>`<option value="${escH(c.nombre)}">${escH(c.nombre)}</option>`).join('');
+  const nmcf=document.getElementById('nm-conductor-fijo');
+  if(nmcf) nmcf.innerHTML='<option value="">— Sin asignación fija —</option>'+condOpts;
+}
+
+// ══ VERIFICAR PATENTES NUEVAS EN GPS ══
+async function verificarPatentesNuevas(){
+  try{
+    // Revisar últimos 7 días en gps_registros
+    const snap=await db.collection('gps_registros').get();
+    const docs7=snap.docs.sort((a,b)=>b.id.localeCompare(a.id)).slice(0,7);
+    const nuevas=new Set();
+    docs7.forEach(d=>{
+      const movs=d.data().moviles||{};
+      Object.keys(movs).forEach(p=>{
+        if(!flotaActual[p]) nuevas.add(p);
+      });
+    });
+    if(nuevas.size>0){
+      const banner=document.getElementById('banner-alerta');
+      document.getElementById('banner-texto').innerHTML=
+        `<strong>${nuevas.size} patente(s) nueva(s)</strong> detectadas en GPS que no están en la flota: <strong>${[...nuevas].join(', ')}</strong>. Ve a la pestaña <em>Conductores</em> para agregarlas.`;
+      banner.style.display='flex';
+    }
+  }catch(e){console.warn('verificarPatentes:',e.message);}
+}
+
+// ══ ASIGNACIÓN DIARIA ══
+document.getElementById('hist-fecha').addEventListener('change',e=>cargarHistorial(e.target.value));
+document.getElementById('btn-hoy').addEventListener('click',()=>{
+  const h=hoy();
+  document.getElementById('hist-fecha').value=h;
+  cargarHistorial(h);
+});
+
+let filaAbierta=null;
+
+async function cargarHistorial(fecha){
+  filaAbierta=null;
+  const wrap=document.getElementById('tabla-wrap');
+  const lbl=document.getElementById('lbl-registros');
+  wrap.innerHTML='<div class="empty-bit"><h3>Cargando...</h3></div>';
+  await cargarConductoresMemoria();
+  try{
+    const snap=await db.collection('bitacora_conductores').doc(fecha).collection('registros').orderBy('horaIni').get();
+    const porPat={};
+    snap.forEach(d=>{
+      const r=d.data(),p=r.patente;
+      if(!porPat[p])porPat[p]=[];
+      porPat[p].push({id:d.id,...r});
+    });
+    const asignados=Object.keys(porPat).length;
+    const total=Object.keys(flotaActual).length;
+    lbl.textContent=`${asignados} / ${total} móviles asignados`;
+
+    let filas='',tipoActual='';
+    ordenFlota(flotaActual).forEach(pat=>{
+      const tipo=flotaActual[pat].tipo;
+      const modelo=flotaActual[pat].modelo||'—';
+      const esFijo=!!conductoresFijos[pat];
+
+      if(tipo!==tipoActual){
+        tipoActual=tipo;
+        const ico=tipo==='Furgón'?'🚐':tipo==='PickUp'?'🛻':tipo==='Camión'?'🚚':'⚙️';
+        filas+=`<tr class="fila-seccion"><td colspan="8">${ico} Flota ${tipo}</td></tr>`;
+      }
+
+      const regs=porPat[pat]||[];
+      const ultimo=regs.length>0?regs[regs.length-1]:null;
+      const puntoFijo=esFijo?'<span class="punto-fijo" title="Conductor fijo asignado"></span>':'';
+
+      if(ultimo){
+        const fin=ultimo.horaFin
+          ?`${ultimo.horaFin}${ultimo.horaFinCalculada?' <span class="fin-calc">(auto)</span>':''}`
+          :'<span class="fin-calc">pendiente</span>';
+        const histBtn=regs.length>1
+          ?`<button class="btn-accion btn-edit" style="font-size:10px;margin-right:2px;" onclick="verHistorial('${pat}','${fecha}')">+${regs.length} turnos</button>`:'';
+        filas+=`<tr class="asignado" id="fila-${pat}">
+          <td>${badgeTipo(tipo)}</td>
+          <td><strong>${pat}</strong></td>
+          <td style="font-size:11px;color:var(--ts);">${modelo}</td>
+          <td>${puntoFijo}<span style="font-weight:600;">${escH(ultimo.conductor)}</span></td>
+          <td style="font-size:12px;">${ultimo.horaIni||'—'}</td>
+          <td style="font-size:12px;">${fin}</td>
+          <td style="font-size:11px;color:var(--ts);">${escH(ultimo.comentario||'')}</td>
+          <td style="white-space:nowrap;display:flex;gap:3px;align-items:center;">
+            ${histBtn}
+            <button class="btn-accion btn-edit" onclick="abrirEditModal('${ultimo.id}','${fecha}','${escH(ultimo.conductor)}','${ultimo.horaIni||''}','${ultimo.horaFin||''}','${escH(ultimo.comentario||'')}')">✏️</button>
+            <button class="btn-accion btn-del" onclick="eliminarRegistro('${ultimo.id}','${fecha}')">🗑</button>
+            <button class="btn-asignar" onclick="toggleFila('${pat}','${fecha}','','','','')">+turno</button>
+          </td>
+        </tr>`;
+      } else {
+        // Sin asignar — pre-rellenar conductor fijo si existe
+        const condFijo=conductoresFijos[pat]||'';
+        const txtCelda=condFijo
+          ?`${puntoFijo}<span style="color:var(--ts);font-style:italic;">${escH(condFijo)} <span style="font-size:10px;opacity:.7;">(sugerido)</span></span>`
+          :`<span style="color:#bbb;font-style:italic;">Sin asignar</span>`;
+        filas+=`<tr class="sin-asignar" id="fila-${pat}">
+          <td>${badgeTipo(tipo)}</td>
+          <td><strong>${pat}</strong></td>
+          <td style="font-size:11px;">${modelo}</td>
+          <td>${txtCelda}</td>
+          <td colspan="3"></td>
+          <td><button class="btn-asignar" onclick="toggleFila('${pat}','${fecha}','${escH(condFijo)}','','','')">+ Asignar</button></td>
+        </tr>`;
+      }
+
+      // Fila edición inline
+      const condFijoDefault=conductoresFijos[pat]||'';
+      filas+=`<tr class="fila-edicion" id="edit-${pat}" style="display:none;">
+        <td colspan="2" style="font-size:11px;font-weight:700;color:var(--vd);">✏️ ${pat}</td>
+        <td><input type="text" id="inp-cond-${pat}" placeholder="Conductor *" list="list-conductores" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></td>
+        <td><input type="time" id="inp-ini-${pat}"></td>
+        <td><input type="time" id="inp-fin-${pat}"></td>
+        <td><input type="text" id="inp-com-${pat}" placeholder="Comentario"></td>
+        <td colspan="2" style="white-space:nowrap;">
+          <button class="btn-guardar-fila" onclick="guardarFila('${pat}','${fecha}')">💾 Guardar</button>
+          <button class="btn-cancelar-fila" onclick="cerrarFila('${pat}')">✕</button>
+        </td>
+      </tr>`;
+    });
+
+    // Datalist de conductores para autocompletado
+    const datalist=conductoresLista.map(c=>`<option value="${escH(c.nombre)}">`).join('');
+
+    wrap.innerHTML=`<datalist id="list-conductores">${datalist}</datalist><table class="tabla-bit">
+        <thead><tr>
+          <th>Tipo</th><th>Patente</th><th>Modelo</th>
+          <th>Conductor</th><th>H. inicio</th><th>H. fin</th>
+          <th>Comentario</th><th></th>
+        </tr></thead>
+        <tbody>${filas}</tbody>
+      </table>`;
+  }catch(e){
+    wrap.innerHTML=`<div class="empty-bit"><h3 style="color:var(--rojo)">Error: ${e.message}</h3></div>`;
+  }
+}
+
+function toggleFila(pat,fecha,conductor,horaIni,horaFin,comentario){
+  if(filaAbierta&&filaAbierta!==pat)cerrarFila(filaAbierta);
+  const fila=document.getElementById(`edit-${pat}`);
+  if(!fila)return;
+  if(fila.style.display!=='none'){cerrarFila(pat);return;}
+  document.getElementById(`inp-cond-${pat}`).value=conductor;
+  document.getElementById(`inp-ini-${pat}`).value=horaIni;
+  document.getElementById(`inp-fin-${pat}`).value=horaFin;
+  document.getElementById(`inp-com-${pat}`).value=comentario;
+  fila.style.display='';
+  filaAbierta=pat;
+  document.getElementById(`inp-cond-${pat}`).focus();
+}
+
+function cerrarFila(pat){
+  const fila=document.getElementById(`edit-${pat}`);
+  if(fila)fila.style.display='none';
+  if(filaAbierta===pat)filaAbierta=null;
+}
+
+async function guardarFila(patente,fecha){
+  const conductor=document.getElementById(`inp-cond-${patente}`).value.trim();
+  const horaIni=document.getElementById(`inp-ini-${patente}`).value;
+  const horaFin=document.getElementById(`inp-fin-${patente}`).value;
+  const comentario=document.getElementById(`inp-com-${patente}`).value.trim();
+  if(!conductor||!horaIni){toast('Conductor y hora inicio son obligatorios',true);return;}
+  const ref=db.collection('bitacora_conductores').doc(fecha).collection('registros');
+  // Calcular hora fin automática
+  const prevSnap=await ref.where('patente','==',patente).where('horaFin','==','').get();
+  const batch=db.batch();
+  prevSnap.forEach(d=>{
+    if(horaIni>(d.data().horaIni||''))batch.update(d.ref,{horaFin:horaIni,horaFinCalculada:true});
+  });
+  await batch.commit();
+  await ref.add({
+    patente,tipo:flotaActual[patente]?.tipo||'Otro',conductor,fecha,
+    horaIni,horaFin:horaFin||'',horaFinCalculada:false,
+    comentario,creadoEn:firebase.firestore.FieldValue.serverTimestamp(),
+  });
+  toast(`${patente} — asignado ✓`);
+  cargarHistorial(fecha);
+}
+
+async function verHistorial(pat,fecha){
+  const snap=await db.collection('bitacora_conductores').doc(fecha)
+    .collection('registros').where('patente','==',pat).orderBy('horaIni').get();
+  const lista=snap.docs.map(d=>{const r=d.data();return`${r.horaIni||'?'} → ${r.horaFin||'?'} · ${r.conductor}`;}).join('\n');
+  alert(`Turnos del día — ${pat}:\n\n${lista}`);
+}
+
+// Modal editar
+function abrirEditModal(id,fecha,conductor,horaIni,horaFin,comentario){
+  document.getElementById('edit-id').value=id;
+  document.getElementById('edit-fecha').value=fecha;
+  document.getElementById('edit-conductor').value=conductor;
+  document.getElementById('edit-hora-ini').value=horaIni;
+  document.getElementById('edit-hora-fin').value=horaFin;
+  document.getElementById('edit-comentario').value=comentario;
+  document.getElementById('modal-edit').classList.add('open');
+}
+document.getElementById('modal-cancelar').addEventListener('click',()=>document.getElementById('modal-edit').classList.remove('open'));
+document.getElementById('modal-guardar').addEventListener('click',async()=>{
+  const id=document.getElementById('edit-id').value;
+  const fecha=document.getElementById('edit-fecha').value;
+  const conductor=document.getElementById('edit-conductor').value.trim();
+  const horaIni=document.getElementById('edit-hora-ini').value;
+  const horaFin=document.getElementById('edit-hora-fin').value;
+  const comentario=document.getElementById('edit-comentario').value.trim();
+  if(!conductor||!horaIni){toast('Conductor y hora inicio son obligatorios',true);return;}
+  await db.collection('bitacora_conductores').doc(fecha).collection('registros').doc(id)
+    .update({conductor,horaIni,horaFin:horaFin||'',horaFinCalculada:false,comentario});
+  document.getElementById('modal-edit').classList.remove('open');
+  toast('Registro actualizado ✓');
+  cargarHistorial(fecha);
+});
+
+async function eliminarRegistro(id,fecha){
+  if(!confirm('¿Eliminar este registro?'))return;
+  await db.collection('bitacora_conductores').doc(fecha).collection('registros').doc(id).delete();
+  toast('Registro eliminado');
+  cargarHistorial(fecha);
+}
+
+// ══ TAB CONDUCTORES ══
+async function cargarConductores(){
+  await cargarConductoresMemoria();
+  poblarSelectsPatente();
+  const wrap=document.getElementById('lista-conductores');
+  if(conductoresLista.length===0){
+    wrap.innerHTML='<div class="empty-bit"><h3>Sin conductores registrados</h3><p>Agrega el primer conductor arriba.</p></div>';
+    return;
+  }
+  const filas=conductoresLista.map(c=>`<tr>
+    <td><strong>${escH(c.nombre)}</strong></td>
+    <td>${c.patenteFija?`<span style="font-weight:600;">${c.patenteFija}</span> — ${flotaActual[c.patenteFija]?.tipo||''}`:
+      '<span style="color:#bbb;">Sin fijo</span>'}</td>
+    <td>${c.patenteFija?`<span class="punto-fijo"></span> Fijo`:'—'}</td>
+    <td><button class="btn-accion btn-edit" onclick="abrirEditCond('${c.id}','${escH(c.nombre)}','${c.patenteFija||''}')">✏️ Editar</button></td>
+  </tr>`).join('');
+  wrap.innerHTML=`<table class="tabla-cond">
+    <thead><tr><th>Nombre</th><th>Móvil fijo</th><th>Tipo asignación</th><th></th></tr></thead>
+    <tbody>${filas}</tbody>
+  </table>`;
+}
+
+document.getElementById('btn-add-cond').addEventListener('click',async()=>{
+  const nombre=document.getElementById('nc-nombre').value.trim();
+  const patente=document.getElementById('nc-patente').value;
+  const estado=document.getElementById('nc-estado');
+  if(!nombre){estado.textContent='⚠ El nombre es obligatorio';estado.style.color='var(--rojo)';return;}
+  try{
+    await db.collection('config_conductores').add({nombre,patenteFija:patente||'',creadoEn:firebase.firestore.FieldValue.serverTimestamp()});
+    document.getElementById('nc-nombre').value='';
+    document.getElementById('nc-patente').value='';
+    estado.textContent='✓ Conductor agregado';estado.style.color='var(--ac2)';
+    toast('Conductor agregado ✓');
+    await cargarConductores();
+  }catch(e){estado.textContent='Error: '+e.message;estado.style.color='var(--rojo)';}
+});
+
+document.getElementById('btn-add-movil').addEventListener('click',async()=>{
+  const pat=document.getElementById('nm-patente').value.trim().toUpperCase();
+  const tipo=document.getElementById('nm-tipo').value;
+  const modelo=document.getElementById('nm-modelo').value.trim();
+  const condFijo=document.getElementById('nm-conductor-fijo').value;
+  if(!pat||!tipo||!modelo){toast('Patente, tipo y modelo son obligatorios',true);return;}
+  if(flotaActual[pat]){toast('Esa patente ya existe en la flota',true);return;}
+  await db.collection('config_flota_gps').doc(pat).set({tipo,modelo});
+  flotaActual[pat]={tipo,modelo};
+  if(condFijo){
+    // Buscar conductor y actualizar patenteFija
+    const c=conductoresLista.find(x=>x.nombre===condFijo);
+    if(c) await db.collection('config_conductores').doc(c.id).update({patenteFija:pat});
+  }
+  document.getElementById('nm-patente').value='';
+  document.getElementById('nm-tipo').value='';
+  document.getElementById('nm-modelo').value='';
+  document.getElementById('nm-conductor-fijo').value='';
+  toast(`Móvil ${pat} agregado ✓`);
+  poblarSelectsPatente();
+  await cargarConductores();
+  // Ocultar banner si era esa patente
+  verificarPatentesNuevas();
+});
+
+function abrirEditCond(id,nombre,patenteFija){
+  document.getElementById('ec-id').value=id;
+  document.getElementById('ec-nombre').value=nombre;
+  document.getElementById('ec-patente').value=patenteFija||'';
+  document.getElementById('modal-cond').classList.add('open');
+}
+document.getElementById('ec-cancelar').addEventListener('click',()=>document.getElementById('modal-cond').classList.remove('open'));
+document.getElementById('ec-guardar').addEventListener('click',async()=>{
+  const id=document.getElementById('ec-id').value;
+  const nombre=document.getElementById('ec-nombre').value.trim();
+  const patenteFija=document.getElementById('ec-patente').value;
+  if(!nombre){toast('El nombre es obligatorio',true);return;}
+  await db.collection('config_conductores').doc(id).update({nombre,patenteFija:patenteFija||''});
+  document.getElementById('modal-cond').classList.remove('open');
+  toast('Conductor actualizado ✓');
+  await cargarConductores();
+});
+document.getElementById('ec-eliminar').addEventListener('click',async()=>{
+  if(!confirm('¿Eliminar este conductor?'))return;
+  const id=document.getElementById('ec-id').value;
+  await db.collection('config_conductores').doc(id).delete();
+  document.getElementById('modal-cond').classList.remove('open');
+  toast('Conductor eliminado');
+  await cargarConductores();
+});
+
+// ══ TAB DÍAS PENDIENTES ══
+async function cargarPendientes(){
+  const wrap=document.getElementById('lista-pendientes');
+  wrap.innerHTML='<div class="empty-bit"><h3>Calculando...</h3></div>';
+  try{
+    // Últimos 30 días con datos GPS
+    const hace30=new Date();hace30.setDate(hace30.getDate()-30);
+    // Obtener todos los docs de gps_registros y tomar los últimos 30 por ID
+    const snap=await db.collection('gps_registros').get();
+
+    if(snap.empty){
+      wrap.innerHTML='<div class="empty-bit"><h3>Sin datos GPS en los últimos 30 días</h3></div>';
+      return;
+    }
+
+    const totalMoviles=Object.keys(flotaActual).length;
+    const dias=[];
+    // Ordenar por ID (fecha YYYY-MM-DD) desc y tomar últimos 30
+    const docsSorted=snap.docs.sort((a,b)=>b.id.localeCompare(a.id)).slice(0,30);
+
+    for(const d of docsSorted){
+      const fecha=d.id;
+      const bitSnap=await db.collection('bitacora_conductores').doc(fecha).collection('registros').get();
+      const asignados=new Set();
+      bitSnap.forEach(b=>asignados.add(b.data().patente));
+      const pct=Math.round((asignados.size/totalMoviles)*100);
+      dias.push({fecha,asignados:asignados.size,total:totalMoviles,pct});
+    }
+
+    dias.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+
+    const items=dias.map(d=>{
+      const cls=d.pct>=80?'s-verde':d.pct>=40?'s-amarillo':'s-rojo';
+      const color=d.pct>=80?'#27ae60':d.pct>=40?'#f39c12':'#c0392b';
+      return`<div class="dia-card" onclick="irAFecha('${d.fecha}')">
+        <div class="semaforo ${cls}"></div>
+        <div class="dia-fecha">${fmtFecha(d.fecha)}</div>
+        <div class="dia-barra-wrap"><div class="dia-barra" style="width:${d.pct}%;background:${color};"></div></div>
+        <div class="dia-pct" style="color:${color};">${d.pct}%</div>
+        <div style="font-size:11px;color:var(--ts);min-width:80px;">${d.asignados} / ${d.total}</div>
+      </div>`;
+    }).join('');
+
+    wrap.innerHTML=items||'<div class="empty-bit"><h3>Sin datos</h3></div>';
+  }catch(e){
+    wrap.innerHTML=`<div class="empty-bit"><h3 style="color:var(--rojo)">Error: ${e.message}</h3></div>`;
+  }
+}
+
+function irAFecha(fecha){
+  // Cambiar a tab asignación y navegar a esa fecha
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('on'));
+  document.querySelector('.tab-btn').classList.add('on');
+  document.getElementById('tab-asignacion').classList.add('on');
+  document.getElementById('hist-fecha').value=fecha;
+  cargarHistorial(fecha);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Cerrar modales al click fuera
+['modal-cond','modal-edit'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',e=>{
+    if(e.target===document.getElementById(id))document.getElementById(id).classList.remove('open');
+  });
+});
+</script>
+</body>
+</html>
