@@ -829,7 +829,7 @@ function agruparPorMovil() {
       map[p].excRuta += m.excRuta || 0;
       if ((m.velMaxRuta||0) > map[p].velMaxRuta) map[p].velMaxRuta = m.velMaxRuta||0;
       map[p].dias++;
-      const condReal = conductorBitacora(p, d.fecha, null) || m.conductor || '';
+      const condReal = conductorBitacora(p, dia.fecha, null) || m.conductor || '';
       if (condReal) map[p].conductores.add(condReal);
       // Acumular eventos detallados de velocidad
       if (Array.isArray(m.eventosVel)) map[p].eventosVel.push(...m.eventosVel);
