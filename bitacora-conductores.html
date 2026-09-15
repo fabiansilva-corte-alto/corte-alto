@@ -746,27 +746,25 @@ function onInputBorrador(pat){
 let estadosPendientes={}; // { pat: nuevoEstado }
 
 function ciclarEstado(pat){
+  // Solo permitir cambio de estado si el móvil NO tiene registro guardado ese día
+  if(_ultimoPorPat[pat]&&_ultimoPorPat[pat].length>0){
+    toast(`Para cambiar el estado de ${pat} usa el botón ✏️`,true);
+    return;
+  }
   const ciclo={operativo:'sinuso',sinuso:'panne',panne:'operativo'};
   const actual=flotaActual[pat]?.estado||'operativo';
   const siguiente=ciclo[actual]||'operativo';
-  // Actualizar en memoria
   flotaActual[pat].estado=siguiente;
-  // Registrar como pendiente para guardar junto con "Guardar día"
   estadosPendientes[pat]=siguiente;
-  // Re-renderizar solo esa fila para feedback inmediato
-  const regsActuales={}; // No conocemos porPat aquí, forzamos re-render completo
-  // Guardamos el estado de los inputs antes de re-renderizar
   const borradorActual={...borrador};
   renderTablaConBorrador(fechaActual,_ultimoPorPat,borradorActual);
 }
 
-// Guardar estados pendientes en Firestore al hacer "Guardar día"
+// El estado de días nuevos (sin registro) se guarda en el registro al hacer "Guardar día"
+// El estado global en config_flota_gps SOLO se actualiza desde el modal ✏️
 async function persistirEstadosPendientes(){
-  const batch=db.batch();
-  for(const [pat,estado] of Object.entries(estadosPendientes)){
-    batch.update(db.collection('config_flota_gps').doc(pat),{estado});
-  }
-  if(Object.keys(estadosPendientes).length>0) await batch.commit();
+  // Ya no actualizamos config_flota_gps desde aquí
+  // El estado queda guardado en cada registro de bitacora_conductores
   estadosPendientes={};
 }
 
