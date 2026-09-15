@@ -823,16 +823,26 @@ async function copiarDiaAnteriorDirecto(fecha,registrosAyer){
   btn.disabled=true;btn.textContent='Copiando...';
   try{
     const batch=db.batch();
-    // Solo copiar el último registro por patente (el conductor activo)
+    // Tomar el registro más reciente por patente
     const porPat={};
-    registrosAyer.forEach(r=>{if(!porPat[r.patente])porPat[r.patente]=r;else if(r.horaIni>porPat[r.patente].horaIni)porPat[r.patente]=r;});
+    registrosAyer.forEach(r=>{
+      if(!porPat[r.patente]) porPat[r.patente]=r;
+      else if((r.horaIni||'')>(porPat[r.patente].horaIni||'')) porPat[r.patente]=r;
+    });
     for(const [pat,r] of Object.entries(porPat)){
       const nuevoRef=db.collection('bitacora_conductores').doc(fecha).collection('registros').doc();
+      // Copiar exactamente: conductor, horas y todoDia del registro original
+      const todoDia=r.todoDia||false;
       batch.set(nuevoRef,{
-        patente:pat,tipo:flotaActual[pat]?.tipo||r.tipo||'Otro',
-        conductor:r.conductor,fecha,
-        horaIni:'',horaFin:'',horaFinCalculada:false,
-        todoDia:false,comentario:'',
+        patente:pat,
+        tipo:flotaActual[pat]?.tipo||r.tipo||'Otro',
+        conductor:r.conductor,
+        fecha,
+        horaIni:todoDia?'00:01':(r.horaIni||''),
+        horaFin:todoDia?'23:59':(r.horaFin||''),
+        horaFinCalculada:false,
+        todoDia,
+        comentario:r.comentario||'',
         creadoEn:firebase.firestore.FieldValue.serverTimestamp(),
       });
     }
@@ -842,27 +852,32 @@ async function copiarDiaAnteriorDirecto(fecha,registrosAyer){
     cargarHistorial(fecha);
   }catch(e){
     toast('Error al copiar: '+e.message,true);
-    btn.disabled=false;btn.textContent='✅ Sí, copiar igual y guardar';
+    btn.disabled=false;btn.textContent='✅ Copiar directo';
   }
 }
 
-// Modo revisión: carga datos de ayer en los inputs del borrador
+// Modo revisión: carga datos del día fuente en los inputs del borrador
 function activarModoRevision(fecha,registrosAyer){
   modoRevision=true;
   borrador={};
-  // Tomar último conductor por patente
+  // Tomar último registro por patente
   const porPat={};
   registrosAyer.forEach(r=>{
-    if(!porPat[r.patente])porPat[r.patente]=r;
-    else if(r.horaIni>porPat[r.patente].horaIni)porPat[r.patente]=r;
+    if(!porPat[r.patente]) porPat[r.patente]=r;
+    else if((r.horaIni||'')>(porPat[r.patente].horaIni||'')) porPat[r.patente]=r;
   });
-  // Poner en borrador (sin horas — ayer es ayer)
+  // Pre-llenar borrador con conductor, horas y todoDia del registro fuente
   Object.entries(porPat).forEach(([pat,r])=>{
-    // No sobrescribir conductores fijos — ya están
-    borrador[pat]={conductor:r.conductor,horaIni:'',horaFin:'',comentario:''};
+    const todoDia=r.todoDia||false;
+    borrador[pat]={
+      conductor:r.conductor,
+      horaIni:todoDia?'00:01':(r.horaIni||''),
+      horaFin:todoDia?'23:59':(r.horaFin||''),
+      comentario:r.comentario||'',
+      todoDia,
+    };
   });
   ocultarBannerCopia();
-  // Redibujar tabla con los inputs pre-llenados
   renderTablaConBorrador(fecha,{},borrador);
   actualizarBarraGuardar();
 }
@@ -1167,12 +1182,43 @@ async function buscarDiaAnterior(fecha){
 }
 
 async function buscarEnDireccion(fecha,dir,maxDias){
-  const d=new Date(fecha+'T12:00:00');
-  for(let i=0;i<maxDias;i++){
-    dir==='atras'?d.setDate(d.getDate()-1):d.setDate(d.getDate()+1);
-    const f=d.toISOString().slice(0,10);
-    const s=await db.collection('bitacora_conductores').doc(f).collection('registros').get();
-    if(!s.empty) return {fecha:f,regs:s.docs.map(d=>({id:d.id,...d.data()}))};
+  // Consulta eficiente: busca todos los docs de bitacora_conductores
+  // ordenados por fecha y filtra los cercanos al día dado
+  try{
+    let q;
+    if(dir==='atras'){
+      q=await db.collection('bitacora_conductores')
+        .where(firebase.firestore.FieldPath.documentId(),'<',fecha)
+        .orderBy(firebase.firestore.FieldPath.documentId(),'desc')
+        .limit(maxDias)
+        .get();
+    } else {
+      q=await db.collection('bitacora_conductores')
+        .where(firebase.firestore.FieldPath.documentId(),'>',fecha)
+        .orderBy(firebase.firestore.FieldPath.documentId(),'asc')
+        .limit(maxDias)
+        .get();
+    }
+    // Tomar el primer doc que tenga registros en su subcolección
+    for(const docFecha of q.docs){
+      const regsSnap=await db.collection('bitacora_conductores')
+        .doc(docFecha.id).collection('registros').limit(1).get();
+      if(!regsSnap.empty){
+        // Cargar registros completos
+        const todos=await db.collection('bitacora_conductores')
+          .doc(docFecha.id).collection('registros').get();
+        return {fecha:docFecha.id, regs:todos.docs.map(d=>({id:d.id,...d.data()}))};
+      }
+    }
+  }catch(e){
+    // Fallback: búsqueda secuencial si Firestore no tiene índice
+    const d=new Date(fecha+'T12:00:00');
+    for(let i=0;i<maxDias;i++){
+      dir==='atras'?d.setDate(d.getDate()-1):d.setDate(d.getDate()+1);
+      const f=d.toISOString().slice(0,10);
+      const s=await db.collection('bitacora_conductores').doc(f).collection('registros').get();
+      if(!s.empty) return {fecha:f,regs:s.docs.map(d=>({id:d.id,...d.data()}))};
+    }
   }
   return null;
 }
