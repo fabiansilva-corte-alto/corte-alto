@@ -449,7 +449,7 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
         <table class="tabla-rank" id="tabla-ranking">
           <thead>
             <tr>
-              <th>#</th><th>Patente</th><th>Tipo</th><th>Conductor(es)</th>
+              <th>#</th><th>Tipo</th><th>Conductor(es)</th>
               <th class="r">N° Excesos</th>
               <th class="r">Vel. Máx.</th>
               <th></th>
@@ -506,7 +506,7 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
       <div style="overflow-x:auto;">
         <table class="tabla-rank" id="tabla-ranking-geo">
           <thead><tr>
-            <th>#</th><th>Patente</th><th>Tipo</th><th>Conductor(es)</th>
+            <th>#</th><th>Tipo</th><th>Conductor(es)</th>
             <th class="r">N° Eventos</th><th class="r">Vel. Máx.</th><th></th>
           </tr></thead>
           <tbody id="tbody-ranking-geo"></tbody>
@@ -1009,9 +1009,8 @@ function renderRanking() {
     tr.dataset.pat = m.patente;
     tr.innerHTML = `
       <td><span class="num-rank ${i < 3 && n > 0 ? 'top' : ''}">${i+1}</span></td>
-      <td><strong>${m.patente}</strong></td>
       <td>${badgeTipo(m.tipo)}</td>
-      <td style="font-size:11px;color:var(--ts);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${conductores}">${conductores}</td>
+      <td style="font-size:11px;color:var(--ts);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${conductores}">${conductores}</td>
       <td class="r"><span class="${clsN}">${n > 0 ? n : '—'}</span></td>
       <td class="r"><span class="${clsVel}">${velMax > 0 ? velMax+' km/h' : '—'}</span></td>
       <td style="color:var(--ts);font-size:11px;">${tieneDetalle ? '▾ ver detalle' : ''}</td>`;
@@ -1682,9 +1681,8 @@ function renderDetalleGeo() {
     tr.dataset.pat = m.patente;
     tr.innerHTML = `
       <td><span class="num-rank ${i < 3 && n > 0 ? 'top' : ''}">${i+1}</span></td>
-      <td><strong>${m.patente}</strong></td>
       <td>${badgeTipo(m.tipo)}</td>
-      <td style="font-size:11px;color:var(--ts);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${conductores}">${conductores}</td>
+      <td style="font-size:11px;color:var(--ts);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${conductores}">${conductores}</td>
       <td class="r"><span class="${clsN}">${n}</span></td>
       <td class="r"><span class="${clsVel}">${velMax > 0 ? velMax+' km/h' : '—'}</span></td>
       <td style="color:var(--ts);font-size:11px;">▾ ver detalle</td>`;
