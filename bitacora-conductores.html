@@ -413,11 +413,48 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
     <h3>✏️ Editar registro</h3>
     <input type="hidden" id="edit-id">
     <input type="hidden" id="edit-fecha">
+    <input type="hidden" id="edit-pat">
     <div class="form-grid">
-      <div class="fg full"><label>Conductor</label><input type="text" id="edit-conductor" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
-      <div class="fg"><label>Hora inicio</label><input type="time" id="edit-hora-ini"></div>
-      <div class="fg"><label>Hora fin</label><input type="time" id="edit-hora-fin"></div>
+      <div class="fg full">
+        <label>Conductor</label>
+        <input type="text" id="edit-conductor" style="text-transform:uppercase;" 
+          oninput="this.value=this.value.toUpperCase()" 
+          list="list-conductores-modal" placeholder="Nombre del conductor *" autocomplete="off">
+        <datalist id="list-conductores-modal"></datalist>
+      </div>
+      <div class="fg" style="align-items:flex-start;">
+        <label>Hora inicio</label>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input type="time" id="edit-hora-ini">
+          <button type="button" id="edit-btn-todo-dia" onclick="toggleTodoDiaModal()"
+            title="Todo el día (00:01–23:59)"
+            style="background:none;border:1px solid var(--vb);border-radius:5px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--ts);">
+            ☀ Todo el día
+          </button>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Hora fin</label>
+        <input type="time" id="edit-hora-fin">
+      </div>
       <div class="fg full"><label>Comentario</label><input type="text" id="edit-comentario"></div>
+      <div class="fg full">
+        <label>Estado del móvil</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="btn-estado-modal" id="est-operativo" onclick="selEstadoModal('operativo')"
+            style="background:#e8f5e9;color:#2e7d32;border:2px solid #a5d6a7;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">
+            🟢 Operativo
+          </button>
+          <button type="button" class="btn-estado-modal" id="est-sinuso" onclick="selEstadoModal('sinuso')"
+            style="background:#fff3e0;color:#e65100;border:2px solid #ffcc80;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">
+            🟠 Sin uso
+          </button>
+          <button type="button" class="btn-estado-modal" id="est-panne" onclick="selEstadoModal('panne')"
+            style="background:#fdecea;color:#c0392b;border:2px solid #ef9a9a;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">
+            🔴 En panne
+          </button>
+        </div>
+      </div>
     </div>
     <div class="modal-acciones">
       <button class="btn-sec" id="modal-cancelar">Cancelar</button>
@@ -816,12 +853,14 @@ async function guardarDia(){
       await batchPrev.commit();
       const horaIniFinal=datos.todoDia?'00:01':(datos.horaIni||'');
       const horaFinFinal=datos.todoDia?'23:59':(datos.horaFin||'');
+      const estadoMovil=flotaActual[pat]?.estado||'operativo';
       const nuevoRef=db.collection('bitacora_conductores').doc(fecha).collection('registros').doc();
       batch.set(nuevoRef,{
         patente:pat,tipo:flotaActual[pat]?.tipo||'Otro',
         conductor:datos.conductor,fecha,
         horaIni:horaIniFinal,horaFin:horaFinFinal,
         horaFinCalculada:false,todoDia:datos.todoDia||false,
+        estado:estadoMovil,
         comentario:datos.comentario||'',
         creadoEn:firebase.firestore.FieldValue.serverTimestamp(),
       });
@@ -864,6 +903,7 @@ async function copiarDiaAnteriorDirecto(fecha,registrosAyer){
         horaFin:todoDia?'23:59':(r.horaFin||''),
         horaFinCalculada:false,
         todoDia,
+        estado:r.estado||flotaActual[pat]?.estado||'operativo',
         comentario:r.comentario||'',
         creadoEn:firebase.firestore.FieldValue.serverTimestamp(),
       });
@@ -1032,7 +1072,7 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
         ?`<button class="btn-accion btn-edit" style="font-size:10px;margin-right:2px;" onclick="verHistorial('${pat}','${fecha}')">+${regs.length} turnos</button>`:'';
       filas+=`<tr class="asignado fila-operativo" id="fila-vis-${pat}">
         <td>${badgeTipo(tipo)}</td>
-        <td>${patEstadoHtml(pat,estado)}</td>
+        <td>${patEstadoHtml(pat,ultimo.estado||estado)}</td>
         <td style="font-size:11px;color:var(--ts);">${modelo}</td>
         <td>${puntoFijo}<span style="font-weight:600;">${escH(ultimo.conductor)}</span></td>
         <td style="font-size:12px;">${ini}</td>
@@ -1040,7 +1080,7 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
         <td style="font-size:11px;color:var(--ts);">${escH(ultimo.comentario||'')}</td>
         <td style="white-space:nowrap;display:flex;gap:3px;align-items:center;">
           ${histBtn}
-          <button class="btn-accion btn-edit" onclick="abrirEditModal('${ultimo.id}','${fecha}','${escH(ultimo.conductor)}','${ultimo.horaIni||''}','${ultimo.horaFin||''}','${escH(ultimo.comentario||'')}')">✏️</button>
+          <button class="btn-accion btn-edit" onclick="abrirEditModal('${ultimo.id}','${fecha}','${escH(ultimo.conductor)}','${ultimo.horaIni||''}','${ultimo.horaFin||''}','${escH(ultimo.comentario||'')}','${pat}','${ultimo.estado||estado}')">✏️</button>
           <button class="btn-accion btn-del" onclick="eliminarRegistro('${ultimo.id}','${fecha}')">🗑</button>
           <button class="btn-asignar" onclick="mostrarFilaInline('${pat}','${fecha}')">+turno</button>
         </td>
@@ -1108,7 +1148,18 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
     }
   });
 
+  // Resumen de estados
+  const cntOp=ordenFlota(flotaActual).filter(p=>(flotaActual[p].estado||'operativo')==='operativo').length;
+  const cntSU=ordenFlota(flotaActual).filter(p=>flotaActual[p].estado==='sinuso').length;
+  const cntPN=ordenFlota(flotaActual).filter(p=>flotaActual[p].estado==='panne').length;
+  const bannerEstados=`<div style="display:flex;gap:14px;padding:6px 12px;background:#f8f9fa;border-bottom:1px solid var(--vb);font-size:12px;flex-wrap:wrap;">
+    <span>🟢 <strong>${cntOp}</strong> operativos</span>
+    ${cntSU>0?`<span>🟠 <strong>${cntSU}</strong> sin uso</span>`:''}
+    ${cntPN>0?`<span>🔴 <strong>${cntPN}</strong> en panne</span>`:''}
+  </div>`;
+
   wrap.innerHTML=`<datalist id="list-conductores">${datalist}</datalist>
+    ${bannerEstados}
     <table class="tabla-bit">
       <thead><tr>
         <th>Tipo</th><th>Patente</th><th>Modelo</th>
@@ -1264,26 +1315,91 @@ async function verHistorial(pat,fecha){
 }
 
 // Modal editar
-function abrirEditModal(id,fecha,conductor,horaIni,horaFin,comentario){
+let estadoModalSeleccionado='operativo';
+let todoDiaModalActivo=false;
+
+function selEstadoModal(estado){
+  estadoModalSeleccionado=estado;
+  ['operativo','sinuso','panne'].forEach(e=>{
+    const btn=document.getElementById(`est-${e}`);
+    btn.style.opacity=e===estado?'1':'0.45';
+    btn.style.transform=e===estado?'scale(1.05)':'scale(1)';
+  });
+}
+
+function toggleTodoDiaModal(){
+  todoDiaModalActivo=!todoDiaModalActivo;
+  const btn=document.getElementById('edit-btn-todo-dia');
+  const ini=document.getElementById('edit-hora-ini');
+  const fin=document.getElementById('edit-hora-fin');
+  if(todoDiaModalActivo){
+    ini.value='00:01'; fin.value='23:59';
+    ini.disabled=true; fin.disabled=true;
+    btn.style.background='#2980b9'; btn.style.color='#fff'; btn.style.borderColor='#2980b9';
+    btn.textContent='✔ Todo el día';
+  } else {
+    ini.value=''; fin.value='';
+    ini.disabled=false; fin.disabled=false;
+    btn.style.background='none'; btn.style.color='var(--ts)'; btn.style.borderColor='var(--vb)';
+    btn.textContent='☀ Todo el día';
+  }
+}
+
+function abrirEditModal(id,fecha,conductor,horaIni,horaFin,comentario,patente,estado){
   document.getElementById('edit-id').value=id;
   document.getElementById('edit-fecha').value=fecha;
+  document.getElementById('edit-pat').value=patente||'';
   document.getElementById('edit-conductor').value=conductor;
-  document.getElementById('edit-hora-ini').value=horaIni;
-  document.getElementById('edit-hora-fin').value=horaFin;
   document.getElementById('edit-comentario').value=comentario;
+
+  // Poblar datalist conductores
+  const dl=document.getElementById('list-conductores-modal');
+  dl.innerHTML=conductoresLista.map(c=>`<option value="${escH(c.nombre)}">`).join('');
+
+  // Detectar si es todo el día
+  const esTodoDia=horaIni==='00:01'&&horaFin==='23:59';
+  todoDiaModalActivo=false; // reset
+  const ini=document.getElementById('edit-hora-ini');
+  const fin=document.getElementById('edit-hora-fin');
+  const btnTD=document.getElementById('edit-btn-todo-dia');
+  ini.value=horaIni; fin.value=horaFin;
+  ini.disabled=false; fin.disabled=false;
+  btnTD.style.background='none'; btnTD.style.color='var(--ts)'; btnTD.style.borderColor='var(--vb)';
+  btnTD.textContent='☀ Todo el día';
+  if(esTodoDia) toggleTodoDiaModal(); // activa el toggle
+
+  // Estado
+  const estActual=estado||(patente?flotaActual[patente]?.estado||'operativo':'operativo');
+  selEstadoModal(estActual);
+
   document.getElementById('modal-edit').classList.add('open');
+  setTimeout(()=>document.getElementById('edit-conductor').focus(),100);
 }
+
 document.getElementById('modal-cancelar').addEventListener('click',()=>document.getElementById('modal-edit').classList.remove('open'));
 document.getElementById('modal-guardar').addEventListener('click',async()=>{
   const id=document.getElementById('edit-id').value;
   const fecha=document.getElementById('edit-fecha').value;
+  const pat=document.getElementById('edit-pat').value;
   const conductor=document.getElementById('edit-conductor').value.trim();
-  const horaIni=document.getElementById('edit-hora-ini').value;
-  const horaFin=document.getElementById('edit-hora-fin').value;
+  const horaIni=todoDiaModalActivo?'00:01':document.getElementById('edit-hora-ini').value;
+  const horaFin=todoDiaModalActivo?'23:59':document.getElementById('edit-hora-fin').value;
   const comentario=document.getElementById('edit-comentario').value.trim();
+  const todoDia=todoDiaModalActivo;
+
   if(!conductor||!horaIni){toast('Conductor y hora inicio son obligatorios',true);return;}
+
+  // Actualizar registro del día
   await db.collection('bitacora_conductores').doc(fecha).collection('registros').doc(id)
-    .update({conductor,horaIni,horaFin:horaFin||'',horaFinCalculada:false,comentario});
+    .update({conductor,horaIni,horaFin:horaFin||'',horaFinCalculada:false,
+      comentario,todoDia,estado:estadoModalSeleccionado});
+
+  // Actualizar estado global en config_flota_gps (hacia adelante)
+  if(pat && flotaActual[pat]){
+    await db.collection('config_flota_gps').doc(pat).update({estado:estadoModalSeleccionado});
+    flotaActual[pat].estado=estadoModalSeleccionado;
+  }
+
   document.getElementById('modal-edit').classList.remove('open');
   toast('Registro actualizado ✓');
   cargarHistorial(fecha);
