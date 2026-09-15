@@ -157,6 +157,22 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
 .tabla-rank thead th{padding:8px 10px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.4px;white-space:nowrap;}
 .tabla-rank thead th.r{text-align:right;}
 .tabla-rank tbody tr.fila-rank{border-bottom:1px solid var(--vb);transition:background .1s;cursor:pointer;}
+.fila-cond-rank{cursor:pointer;}
+.fila-cond-rank:hover td{background:var(--vs);}
+.fila-cond-rank.expandida td:first-child{border-left:3px solid var(--vd);}
+.fila-cond-det{background:#f7fbf7;}
+.fila-cond-det td{padding:0 !important;}
+.cond-det-inner{padding:8px 16px 12px 32px;}
+.cond-det-titulo{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--vd);margin-bottom:6px;}
+.tabla-cond-det{width:100%;border-collapse:collapse;font-size:11px;}
+.tabla-cond-det th{background:var(--vd);color:#fff;padding:5px 8px;text-align:left;font-weight:600;font-size:10px;white-space:nowrap;}
+.tabla-cond-det th.r{text-align:right;}
+.tabla-cond-det td{padding:5px 8px;border-bottom:1px solid var(--vb);vertical-align:middle;}
+.tabla-cond-det td.r{text-align:right;}
+.tabla-cond-det tr:last-child td{border-bottom:none;}
+.tabla-cond-det tr:hover td{background:#edf7ed;}
+.badge-bit{display:inline-block;font-size:9px;padding:1px 5px;border-radius:6px;background:#2980b9;color:#fff;margin-left:3px;}
+.badge-csv{display:inline-block;font-size:9px;padding:1px 5px;border-radius:6px;background:#888;color:#fff;margin-left:3px;}
 .tabla-rank tbody tr.fila-rank:hover{background:var(--vs);}
 .tabla-rank tbody tr.fila-rank.expandida{background:var(--vs);border-bottom:none;}
 .tabla-rank tbody tr.fila-rank.expandida td:first-child{border-left:3px solid var(--vd);}
@@ -542,6 +558,45 @@ let graficoActual = null;
 let modoGrafico = 'excesos_flota';
 let sinGPS5dias = new Set();
 let eventosGeoCache = [];
+let bitacoraCache = {};
+
+async function cargarBitacora(fechas) {
+  bitacoraCache = {};
+  try {
+    const docs = await Promise.all(fechas.map(f => db.collection('bitacora_conductores').doc(f).collection('registros').get()));
+    fechas.forEach((f, i) => {
+      bitacoraCache[f] = [];
+      docs[i].forEach(d => {
+        const r = d.data();
+        bitacoraCache[f].push({ patente:r.patente||'', conductor:r.conductor||'', horaIni:r.horaIni||'00:00', horaFin:r.horaFin||'23:59' });
+      });
+    });
+  } catch(e) { console.warn('cargarBitacora:', e.message); }
+}
+
+function conductorBitacora(patente, fecha, hora) {
+  if (!fecha) {
+    for (const f of Object.keys(bitacoraCache).sort().reverse()) {
+      const regs = (bitacoraCache[f]||[]).filter(r => r.patente === patente);
+      if (regs.length > 0) return regs[regs.length-1].conductor || null;
+    }
+    return null;
+  }
+  const regs = (bitacoraCache[fecha]||[]).filter(r => r.patente === patente);
+  if (regs.length === 0) return null;
+  if (!hora) return regs[regs.length-1].conductor || null;
+  const h = hora.slice(0,5);
+  for (const r of regs) {
+    const ini = (r.horaIni||'00:00').slice(0,5);
+    const fin = (r.horaFin||'23:59').slice(0,5);
+    if (h >= ini && h <= fin) return r.conductor || null;
+  }
+  return regs[regs.length-1].conductor || null;
+}
+
+function resolverConductor(patente, fecha, hora, conductorCSV) {
+  return conductorBitacora(patente, fecha, hora) || conductorCSV || '';
+}
 
 /* ─── MAPA FIJO PATENTES → FLOTA ─── */
 const MAPA_FLOTAS = {
@@ -609,16 +664,21 @@ async function consultar() {
 
     document.getElementById('f-desde').value = desde;
     document.getElementById('f-hasta').value = hasta;
-    document.getElementById('lbl-periodo').textContent =
-      `${snap.size} día(s) cargado(s): ${fmtFecha(desde)} → ${fmtFecha(hasta)}`;
+
 
     document.getElementById('sec-inicial').style.display = 'none';
     document.getElementById('sec-kpis').style.display = 'block';
     document.getElementById('sec-graficos').style.display = 'block';
     document.getElementById('sec-tabs').style.display = 'block';
 
+    await cargarBitacora(snap.docs.map(d => d.id));
+    const totalBit = Object.values(bitacoraCache).reduce((s,r)=>s+r.length,0);
+    const bitInfo = totalBit > 0 ? ` · 📋 ${totalBit} reg. bitácora` : '';
+    document.getElementById('lbl-periodo').textContent =
+      `${snap.size} día(s) cargado(s): ${fmtFecha(desde)} → ${fmtFecha(hasta)}${bitInfo}`;
     renderKPIs();
     renderGrafico();
+    renderRankingConductores();
     renderRanking();
     poblarMultiMovil();
     renderConductores();
@@ -705,13 +765,15 @@ function renderKPIs() {
     const peorVel = [...arr].filter(m=>m.excRuta>0).sort((a,b)=>b.excRuta-a.excRuta)[0];
     if (i>0) html += `<div class="kpi-sep-flota"></div>`;
     html += `<div class="kpi-grupo-flota">`;
+    const condPGeo = peorGeo ? (conductorBitacora(peorGeo.patente, null, null) || cond1(peorGeo) || peorGeo.patente) : '—';
+    const condPVel = peorVel ? (conductorBitacora(peorVel.patente, null, null) || cond1(peorVel) || peorVel.patente) : '—';
     html += peorGeo
       ? kpiB('peor',f.badge,f.label,'Peor geocerca',
-          peorGeo.patente, peorGeo.excGeo+' eventos · '+cond1(peorGeo))
+          condPGeo, peorGeo.excGeo+' eventos · '+peorGeo.patente)
       : kpiB('verde',f.badge,f.label,'Geocerca','—','Sin infracciones');
     html += peorVel
       ? kpiB('peor',f.badge,f.label,'Peor velocidad',
-          peorVel.patente, peorVel.excRuta+' excesos · '+cond1(peorVel))
+          condPVel, peorVel.excRuta+' excesos · '+peorVel.patente)
       : kpiB('verde',f.badge,f.label,'Velocidad','—','Sin infracciones');
     html += `</div>`;
   });
@@ -728,17 +790,19 @@ function renderKPIs() {
       || [...arr].sort((a,b)=>a.excRuta-b.excRuta)[0];
     if (i>0) html += `<div class="kpi-sep-flota"></div>`;
     html += `<div class="kpi-grupo-flota">`;
+    const condMGeo = sinGeo ? (conductorBitacora(sinGeo.patente, null, null) || cond1(sinGeo) || sinGeo.patente) : '—';
+    const condMVel = sinVel ? (conductorBitacora(sinVel.patente, null, null) || cond1(sinVel) || sinVel.patente) : '—';
     html += sinGeo
       ? kpiB('mejor',f.badge,f.label,'Comportamiento geocerca',
-          sinGeo.patente,
-          sinGeo.excGeo===0?'Sin eventos · '+Math.round(sinGeo.km)+' km'
-                           :sinGeo.excGeo+' eventos (menor) · '+cond1(sinGeo))
+          condMGeo,
+          sinGeo.excGeo===0?'Sin eventos · '+sinGeo.patente+' · '+Math.round(sinGeo.km)+' km'
+                           :sinGeo.excGeo+' eventos (menor) · '+sinGeo.patente)
       : kpiB('azul',f.badge,f.label,'Geocerca','—','Sin datos');
     html += sinVel
       ? kpiB('mejor',f.badge,f.label,'Comportamiento velocidad',
-          sinVel.patente,
-          sinVel.excRuta===0?'Sin excesos · '+Math.round(sinVel.km)+' km'
-                            :sinVel.excRuta+' excesos (menor) · '+cond1(sinVel))
+          condMVel,
+          sinVel.excRuta===0?'Sin excesos · '+sinVel.patente+' · '+Math.round(sinVel.km)+' km'
+                            :sinVel.excRuta+' excesos (menor) · '+sinVel.patente)
       : kpiB('azul',f.badge,f.label,'Velocidad','—','Sin datos');
     html += `</div>`;
   });
@@ -765,7 +829,8 @@ function agruparPorMovil() {
       map[p].excRuta += m.excRuta || 0;
       if ((m.velMaxRuta||0) > map[p].velMaxRuta) map[p].velMaxRuta = m.velMaxRuta||0;
       map[p].dias++;
-      if (m.conductor) map[p].conductores.add(m.conductor);
+      const condReal = conductorBitacora(p, d.fecha, null) || m.conductor || '';
+      if (condReal) map[p].conductores.add(condReal);
       // Acumular eventos detallados de velocidad
       if (Array.isArray(m.eventosVel)) map[p].eventosVel.push(...m.eventosVel);
     });
@@ -1037,12 +1102,95 @@ function renderRanking() {
 /* renderMovilMulti() está en la sección de selector múltiple */
 
 /* ─── DETALLE POR CONDUCTOR ─── */
+function renderRankingConductores() {
+  const mapCond = {};
+  datos.forEach(dia => {
+    (dia.moviles||[]).forEach(m => {
+      if (!m.patente) return;
+      const turnosBit = (bitacoraCache[dia.fecha]||[]).filter(r => r.patente === m.patente);
+      if (turnosBit.length > 0) {
+        turnosBit.forEach(t => {
+          const c = (t.conductor||'').trim() || 'Sin asignar';
+          if (!mapCond[c]) mapCond[c] = { nombre:c, km:0, excGeo:0, excRuta:0, moviles:new Set(), eventos:[], fuenteBit:true };
+          mapCond[c].km += m.km||0; mapCond[c].excGeo += m.excGeo||0; mapCond[c].excRuta += m.excRuta||0;
+          mapCond[c].moviles.add(m.patente);
+          if (Array.isArray(m.eventosVel)) {
+            m.eventosVel.forEach(ev => {
+              const hEv = (ev.horaIni||'00:00').slice(0,5);
+              const hIni = (t.horaIni||'00:00').slice(0,5);
+              const hFin = (t.horaFin||'23:59').slice(0,5);
+              if (hEv >= hIni && hEv <= hFin) mapCond[c].eventos.push({...ev, patente:m.patente, fecha:dia.fecha});
+            });
+          }
+        });
+      } else {
+        const c = (m.conductor||'').trim() || 'Sin asignar';
+        if (!mapCond[c]) mapCond[c] = { nombre:c, km:0, excGeo:0, excRuta:0, moviles:new Set(), eventos:[], fuenteBit:false };
+        mapCond[c].km += m.km||0; mapCond[c].excGeo += m.excGeo||0; mapCond[c].excRuta += m.excRuta||0;
+        mapCond[c].moviles.add(m.patente);
+        if (Array.isArray(m.eventosVel)) m.eventosVel.forEach(ev => mapCond[c].eventos.push({...ev, patente:m.patente, fecha:dia.fecha}));
+      }
+    });
+  });
+  const sorted = Object.values(mapCond).sort((a,b)=>(b.excGeo+b.excRuta)-(a.excGeo+a.excRuta));
+  const tbody = document.getElementById('tbody-cond-rank');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  sorted.forEach((cond, i) => {
+    const total = cond.excGeo+cond.excRuta;
+    const clsT = total>20?'exc-alto':total>5?'exc-medio':total>0?'exc-bajo':'exc-ok';
+    const clsR = cond.excRuta>0?(cond.excRuta>20?'exc-alto':'exc-medio'):'exc-ok';
+    const clsG = cond.excGeo>0?'exc-alto':'exc-ok';
+    const movStr = [...cond.moviles].sort().join(', ');
+    const fuenteIcon = cond.fuenteBit?'<span class="badge-bit">📋</span>':'<span class="badge-csv">📄</span>';
+    const tr = document.createElement('tr');
+    tr.className = 'fila-cond-rank';
+    tr.innerHTML = `
+      <td><span class="num-rank ${i<3&&total>0?'top':''}">${i+1}</span></td>
+      <td><strong>${escH(cond.nombre)}</strong>${fuenteIcon}</td>
+      <td style="font-size:11px;color:var(--ts);">${escH(movStr)}</td>
+      <td class="r"><span class="${clsR}">${cond.excRuta>0?cond.excRuta:'—'}</span></td>
+      <td class="r"><span class="${clsG}">${cond.excGeo>0?cond.excGeo:'—'}</span></td>
+      <td class="r"><span class="${clsT}">${total>0?total:'—'}</span></td>
+      <td class="r" style="font-size:11px;">${Math.round(cond.km).toLocaleString('es-CL')} km</td>
+      <td style="font-size:11px;color:var(--ts);">${cond.eventos.length>0?'▾ ver detalle':''}</td>`;
+    tbody.appendChild(tr);
+    const trDet = document.createElement('tr');
+    trDet.className = 'fila-cond-det';
+    trDet.style.display = 'none';
+    if (cond.eventos.length > 0) {
+      const evsOrd = [...cond.eventos].sort((a,b)=>{
+        const fa=(a.fecha||'').split('-').reverse().join('')+(a.horaIni||'');
+        const fb=(b.fecha||'').split('-').reverse().join('')+(b.horaIni||'');
+        return fa.localeCompare(fb);
+      });
+      const filasHTML = evsOrd.map(e => {
+        const vel=Number(e.velMax)||0;
+        const lim=limiteFlota(flotaDe(e.patente));
+        const cv=vel>140?'exc-alto':vel>100?'exc-medio':'exc-bajo';
+        return `<tr><td>${e.fecha||'—'}</td><td>${e.horaIni||'—'}</td><td>${escH(e.patente||'—')}</td><td>${badgeTipo(flotaDe(e.patente||''))}</td><td class="r" style="color:var(--ts);">${lim} km/h</td><td class="r"><span class="${cv}">${vel>0?vel+' km/h':'—'}</span></td><td class="c">${e.duracion||'—'}</td><td style="color:var(--ts);" title="${escH(e.ubicacion||'')}">${escH((e.ubicacion||'—').slice(0,45))}</td></tr>`;
+      }).join('');
+      trDet.innerHTML=`<td colspan="8"><div class="cond-det-inner"><div class="cond-det-titulo">📋 Detalle — ${escH(cond.nombre)} (${evsOrd.length} evento${evsOrd.length>1?'s':''})</div><div style="overflow-x:auto;"><table class="tabla-cond-det"><thead><tr><th>Fecha</th><th>Hora</th><th>Patente</th><th>Tipo</th><th class="r">Límite</th><th class="r">Vel.</th><th class="c">Duración</th><th>Ubicación</th></tr></thead><tbody>${filasHTML}</tbody></table></div></div></td>`;
+    } else {
+      trDet.innerHTML=`<td colspan="8"><div class="cond-det-inner" style="color:var(--ts);font-size:11px;">Sin eventos de velocidad disponibles.</div></td>`;
+    }
+    tbody.appendChild(trDet);
+    tr.addEventListener('click',()=>{
+      const abierto=trDet.style.display!=='none';
+      tbody.querySelectorAll('.fila-cond-det').forEach(r=>r.style.display='none');
+      tbody.querySelectorAll('.fila-cond-rank').forEach(r=>r.classList.remove('expandida'));
+      if(!abierto){trDet.style.display='';tr.classList.add('expandida');}
+    });
+  });
+}
+
 function renderConductores() {
   // Agrupar todos los registros por conductor
   const mapCond = {};
   datos.forEach(dia => {
     (dia.moviles||[]).forEach(m => {
-      const c = (m.conductor||'').trim() || 'Sin asignar';
+      const condReal2 = conductorBitacora(m.patente, dia.fecha, null) || m.conductor || '';
+      const c = condReal2.trim() || 'Sin asignar';
       if (!mapCond[c]) mapCond[c] = { nombre:c, km:0, excGeo:0, excRuta:0, dias:0, patentes:new Set() };
       mapCond[c].km      += m.km||0;
       mapCond[c].excGeo  += m.excGeo||0;
@@ -1122,12 +1270,9 @@ function cambiarTab(btn, panelId) {
   btn.classList.add('on');
   document.getElementById(panelId).classList.add('on');
   // Renderizar contenido del panel al activarlo
-  if (panelId === 'tab-geocerca' && datos.length > 0) {
-    renderDetalleGeo();
-  }
-  if (panelId === 'tab-movil' && datos.length > 0) {
-    poblarMultiMovil();
-  }
+  if (panelId === 'tab-geocerca' && datos.length > 0) { renderDetalleGeo(); }
+  if (panelId === 'tab-movil' && datos.length > 0) { poblarMultiMovil(); }
+  if (panelId === 'tab-cond-rank' && datos.length > 0) { renderRankingConductores(); }
 }
 
 /* ─── UTILS ─── */
@@ -1484,10 +1629,13 @@ async function cargarEventosGeo() {
     docs.forEach(d => {
       if (!d.exists) return;
       (d.data().eventos || []).forEach(ev => {
+        const _pat = ev.patente || '';
+        const _hora = ev.fechaEvento || '';
+        const _condCSV = ev.nombreMovil ? ev.nombreMovil.replace(new RegExp('^'+_pat+'\s*','i'),'').trim() : '';
         eventosGeoCache.push({
           fecha:      d.id,
-          patente:    ev.patente    || '',
-          conductor:  ev.nombreMovil ? ev.nombreMovil.replace(new RegExp('^'+(ev.patente||'')+'\s*','i'),'').trim() : '',
+          patente:    _pat,
+          conductor:  resolverConductor(_pat, d.id, _hora, _condCSV),
           geocerca:   ev.geocerca   || '',
           velLimite:  ev.velLimite  || 0,
           velEvento:  ev.velEvento  || 0,
