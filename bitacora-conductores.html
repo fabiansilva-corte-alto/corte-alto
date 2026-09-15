@@ -911,6 +911,9 @@ async function cargarHistorial(fecha){
   estadosPendientes={};
   patsGpsEnFecha=new Set();
   ocultarBannerCopia();
+  // Reset botones de copia
+  const btnSi=document.getElementById('btn-copia-si');
+  btnSi.disabled=false; btnSi.textContent='✅ Copiar directo';
   // Reset botón guardar (fix bug: quedaba en "Guardando..." al cambiar fecha)
   const btnG=document.getElementById('btn-guardar-dia');
   btnG.disabled=false; btnG.innerHTML='💾 Guardar día';
