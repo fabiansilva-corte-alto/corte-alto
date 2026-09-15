@@ -175,6 +175,12 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
 .fila-pendiente-guardar td{background:#fffde7 !important;}
 .fila-pendiente-guardar td:nth-child(4){color:#1a2e1a !important;font-style:normal !important;}
 
+/* BOTÓN TODO EL DÍA */
+.btn-todo-dia{background:#2980b9;color:#fff;border:none;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;line-height:1.4;}
+.btn-todo-dia:hover{background:#1a6fa8;}
+.btn-todo-dia.activo{background:#1a5276;box-shadow:inset 0 1px 3px rgba(0,0,0,.3);}
+.lbl-todo-dia{font-size:10px;color:#1a6fa8;font-weight:600;white-space:nowrap;}
+
 /* TOAST */
 .toast{position:fixed;bottom:20px;right:20px;z-index:999;background:var(--vd);color:#fff;border-radius:8px;padding:10px 16px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
 .toast.show{transform:translateY(0);opacity:1;}
@@ -602,11 +608,56 @@ function onInputBorrador(pat){
   const ini=document.getElementById(`inp-ini-${pat}`)?.value||'';
   const fin=document.getElementById(`inp-fin-${pat}`)?.value||'';
   const com=document.getElementById(`inp-com-${pat}`)?.value.trim()||'';
+  const todoDia=borrador[pat]?.todoDia||false;
   if(cond){
-    borrador[pat]={conductor:cond,horaIni:ini,horaFin:fin,comentario:com};
+    borrador[pat]={conductor:cond,horaIni:ini,horaFin:fin,comentario:com,todoDia};
   } else {
     delete borrador[pat];
   }
+  actualizarBarraGuardar();
+}
+
+// Activa/desactiva "Todo el día" para una patente
+function toggleTodoDia(pat){
+  const yaActivo=borrador[pat]?.todoDia||false;
+  const nuevoEstado=!yaActivo;
+  const cond=document.getElementById(`inp-cond-${pat}`)?.value.trim()||
+             (borrador[pat]?.conductor||'');
+  const com=document.getElementById(`inp-com-${pat}`)?.value.trim()||'';
+
+  // Actualizar borrador
+  if(cond||nuevoEstado){
+    borrador[pat]={
+      conductor:cond,
+      horaIni:nuevoEstado?'00:01':'',
+      horaFin:nuevoEstado?'23:59':'',
+      comentario:com,
+      todoDia:nuevoEstado,
+    };
+  }
+
+  // Actualizar celda H. inicio
+  const tdIni=document.getElementById(`td-ini-${pat}`);
+  const tdFin=document.getElementById(`td-fin-${pat}`);
+  if(nuevoEstado){
+    tdIni.innerHTML=`<span class="lbl-todo-dia">00:01</span>`;
+    tdFin.innerHTML=`<span class="lbl-todo-dia">23:59</span>`;
+  } else {
+    tdIni.innerHTML=`<input type="time" id="inp-ini-${pat}" value=""
+      style="border:1px solid var(--vb);border-radius:5px;padding:4px 6px;font-size:12px;"
+      onchange="onInputBorrador('${pat}')">`;
+    tdFin.innerHTML=`<input type="time" id="inp-fin-${pat}" value=""
+      style="border:1px solid var(--vb);border-radius:5px;padding:4px 6px;font-size:12px;"
+      onchange="onInputBorrador('${pat}')">`;
+  }
+
+  // Actualizar botón
+  const btn=document.getElementById(`btn-td-${pat}`);
+  if(btn){
+    btn.className='btn-todo-dia'+(nuevoEstado?' activo':'');
+    btn.textContent=nuevoEstado?'✔ Todo el día':'☀ Todo el día';
+  }
+
   actualizarBarraGuardar();
 }
 
@@ -627,8 +678,13 @@ async function guardarDia(){
     const batch=db.batch();
     const ref=doc=>db.collection('bitacora_conductores').doc(fecha).collection('registros').doc();
     for(const [pat,datos] of Object.entries(borrador)){
-      if(!datos.conductor||!datos.horaIni){
-        toast(`${pat}: conductor y hora inicio son obligatorios`,true);
+      if(!datos.conductor){
+        toast(`${pat}: el conductor es obligatorio`,true);
+        btn.disabled=false;btn.innerHTML='💾 Guardar día';
+        return;
+      }
+      if(!datos.todoDia&&!datos.horaIni){
+        toast(`${pat}: ingresa la hora inicio o marca "Todo el día"`,true);
         btn.disabled=false;btn.innerHTML='💾 Guardar día';
         return;
       }
@@ -641,12 +697,15 @@ async function guardarDia(){
           batchPrev.update(d.ref,{horaFin:datos.horaIni,horaFinCalculada:true});
       });
       await batchPrev.commit();
+      const horaIniFinal=datos.todoDia?'00:01':(datos.horaIni||'');
+      const horaFinFinal=datos.todoDia?'23:59':(datos.horaFin||'');
       const nuevoRef=db.collection('bitacora_conductores').doc(fecha).collection('registros').doc();
       batch.set(nuevoRef,{
         patente:pat,tipo:flotaActual[pat]?.tipo||'Otro',
         conductor:datos.conductor,fecha,
-        horaIni:datos.horaIni,horaFin:datos.horaFin||'',
-        horaFinCalculada:false,comentario:datos.comentario||'',
+        horaIni:horaIniFinal,horaFin:horaFinFinal,
+        horaFinCalculada:false,todoDia:datos.todoDia||false,
+        comentario:datos.comentario||'',
         creadoEn:firebase.firestore.FieldValue.serverTimestamp(),
       });
     }
@@ -677,7 +736,8 @@ async function copiarDiaAnteriorDirecto(fecha,registrosAyer){
         patente:pat,tipo:flotaActual[pat]?.tipo||r.tipo||'Otro',
         conductor:r.conductor,fecha,
         horaIni:'',horaFin:'',horaFinCalculada:false,
-        comentario:'',creadoEn:firebase.firestore.FieldValue.serverTimestamp(),
+        todoDia:false,comentario:'',
+        creadoEn:firebase.firestore.FieldValue.serverTimestamp(),
       });
     }
     await batch.commit();
@@ -767,9 +827,12 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
 
     if(ultimo){
       // Ya tiene registro guardado en Firestore — mostrar normal con +turno
-      const fin=ultimo.horaFin
-        ?`${ultimo.horaFin}${ultimo.horaFinCalculada?' <span class="fin-calc">(auto)</span>':''}`
-        :'<span class="fin-calc">pendiente</span>';
+      const fin=ultimo.todoDia
+        ?`<span class="lbl-todo-dia">☀ Todo el día</span>`
+        :ultimo.horaFin
+          ?`${ultimo.horaFin}${ultimo.horaFinCalculada?' <span class="fin-calc">(auto)</span>':''}`
+          :'<span class="fin-calc">pendiente</span>';
+      const ini=ultimo.todoDia?`<span class="lbl-todo-dia">—</span>`:(ultimo.horaIni||'—');
       const histBtn=regs.length>1
         ?`<button class="btn-accion btn-edit" style="font-size:10px;margin-right:2px;" onclick="verHistorial('${pat}','${fecha}')">+${regs.length} turnos</button>`:'';
       filas+=`<tr class="asignado" id="fila-vis-${pat}">
@@ -777,7 +840,7 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
         <td><strong>${pat}</strong></td>
         <td style="font-size:11px;color:var(--ts);">${modelo}</td>
         <td>${puntoFijo}<span style="font-weight:600;">${escH(ultimo.conductor)}</span></td>
-        <td style="font-size:12px;">${ultimo.horaIni||'—'}</td>
+        <td style="font-size:12px;">${ini}</td>
         <td style="font-size:12px;">${fin}</td>
         <td style="font-size:11px;color:var(--ts);">${escH(ultimo.comentario||'')}</td>
         <td style="white-space:nowrap;display:flex;gap:3px;align-items:center;">
@@ -803,10 +866,7 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
       const bd=borradorPre[pat]||null;
       const condDefault=bd?bd.conductor:(conductoresFijos[pat]||'');
       const esBorrador=!!bd;
-
-      const txtSugerido=conductoresFijos[pat]&&!bd
-        ?`${puntoFijo}<span style="color:var(--ts);font-size:10px;opacity:.8;">(fijo — ya pre-llenado)</span>`
-        :'';
+      const esTodoDia=bd?.todoDia||false;
 
       filas+=`<tr class="${esBorrador?'fila-pendiente-guardar':'sin-asignar'}" id="fila-inp-${pat}">
         <td>${badgeTipo(tipo)}</td>
@@ -818,23 +878,37 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
             style="text-transform:uppercase;border:1px solid var(--vb);border-radius:5px;padding:4px 7px;font-size:12px;font-family:inherit;width:100%;max-width:200px;"
             value="${escH(condDefault)}"
             oninput="this.value=this.value.toUpperCase();onInputBorrador('${pat}')">
-          ${txtSugerido}
         </td>
-        <td><input type="time" id="inp-ini-${pat}" value="${bd?.horaIni||''}"
-          style="border:1px solid var(--vb);border-radius:5px;padding:4px 6px;font-size:12px;"
-          onchange="onInputBorrador('${pat}')"></td>
-        <td><input type="time" id="inp-fin-${pat}" value="${bd?.horaFin||''}"
-          style="border:1px solid var(--vb);border-radius:5px;padding:4px 6px;font-size:12px;"
-          onchange="onInputBorrador('${pat}')"></td>
+        <td id="td-ini-${pat}">
+          ${esTodoDia
+            ?`<span class="lbl-todo-dia">00:01</span>`
+            :`<input type="time" id="inp-ini-${pat}" value="${bd?.horaIni||''}"
+              style="border:1px solid var(--vb);border-radius:5px;padding:4px 6px;font-size:12px;"
+              onchange="onInputBorrador('${pat}')">`
+          }
+        </td>
+        <td id="td-fin-${pat}">
+          ${esTodoDia
+            ?`<span class="lbl-todo-dia">23:59</span>`
+            :`<input type="time" id="inp-fin-${pat}" value="${bd?.horaFin||''}"
+              style="border:1px solid var(--vb);border-radius:5px;padding:4px 6px;font-size:12px;"
+              onchange="onInputBorrador('${pat}')">`
+          }
+        </td>
         <td><input type="text" id="inp-com-${pat}" placeholder="Comentario" value="${escH(bd?.comentario||'')}"
           style="border:1px solid var(--vb);border-radius:5px;padding:4px 7px;font-size:12px;font-family:inherit;width:100%;"
           onchange="onInputBorrador('${pat}')"></td>
-        <td></td>
+        <td style="text-align:center;">
+          <button class="btn-todo-dia${esTodoDia?' activo':''}" id="btn-td-${pat}"
+            onclick="toggleTodoDia('${pat}')" title="Marcar como uso todo el día (00:01 – 23:59)">
+            ${esTodoDia?'✔ Todo el día':'☀ Todo el día'}
+          </button>
+        </td>
       </tr>`;
 
-      // Si tiene conductor fijo y no hay borrador — ya agregar al borrador automático
+      // Si tiene conductor fijo y no hay borrador — agregar al borrador automático
       if(conductoresFijos[pat]&&!bd){
-        borrador[pat]={conductor:conductoresFijos[pat],horaIni:'',horaFin:'',comentario:''};
+        borrador[pat]={conductor:conductoresFijos[pat],horaIni:'',horaFin:'',comentario:'',todoDia:false};
       }
     }
   });
