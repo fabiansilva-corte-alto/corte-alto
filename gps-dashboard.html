@@ -542,48 +542,6 @@ let graficoActual = null;
 let modoGrafico = 'excesos_flota';
 let sinGPS5dias = new Set();
 let eventosGeoCache = [];
-let bitacoraCache = {}; // {fecha: [{patente,conductor,horaIni,horaFin}]}
-
-/* ─── BITÁCORA: cargar y resolver conductor real ─── */
-async function cargarBitacora(fechas) {
-  bitacoraCache = {};
-  try {
-    const docs = await Promise.all(
-      fechas.map(f => db.collection('bitacora_conductores').doc(f).collection('registros').get())
-    );
-    fechas.forEach((f, i) => {
-      bitacoraCache[f] = [];
-      docs[i].forEach(d => {
-        const r = d.data();
-        bitacoraCache[f].push({
-          patente:   r.patente   || '',
-          conductor: r.conductor || '',
-          horaIni:   r.horaIni   || '00:00',
-          horaFin:   r.horaFin   || '23:59',
-        });
-      });
-    });
-  } catch(e) { console.warn('cargarBitacora:', e.message); }
-}
-
-// Retorna conductor de la bitácora para una patente/fecha/hora, o null si no hay
-function conductorBitacora(patente, fecha, hora) {
-  const regs = (bitacoraCache[fecha] || []).filter(r => r.patente === patente);
-  if (regs.length === 0) return null;
-  if (!hora) return regs[regs.length - 1].conductor || null;
-  const h = hora.slice(0, 5);
-  for (const r of regs) {
-    const ini = (r.horaIni || '00:00').slice(0, 5);
-    const fin = (r.horaFin || '23:59').slice(0, 5);
-    if (h >= ini && h <= fin) return r.conductor || null;
-  }
-  return regs[regs.length - 1].conductor || null;
-}
-
-// Bitácora tiene prioridad sobre CSV
-function resolverConductor(patente, fecha, hora, conductorCSV) {
-  return conductorBitacora(patente, fecha, hora) || conductorCSV || '';
-}
 
 /* ─── MAPA FIJO PATENTES → FLOTA ─── */
 const MAPA_FLOTAS = {
@@ -651,18 +609,13 @@ async function consultar() {
 
     document.getElementById('f-desde').value = desde;
     document.getElementById('f-hasta').value = hasta;
-    const totalBit = Object.values(bitacoraCache).reduce((s,r)=>s+r.length,0);
-    const bitInfo = totalBit > 0 ? ` · 📋 ${totalBit} reg. bitácora` : '';
     document.getElementById('lbl-periodo').textContent =
-      `${snap.size} día(s) cargado(s): ${fmtFecha(desde)} → ${fmtFecha(hasta)}${bitInfo}`;
+      `${snap.size} día(s) cargado(s): ${fmtFecha(desde)} → ${fmtFecha(hasta)}`;
 
     document.getElementById('sec-inicial').style.display = 'none';
     document.getElementById('sec-kpis').style.display = 'block';
     document.getElementById('sec-graficos').style.display = 'block';
     document.getElementById('sec-tabs').style.display = 'block';
-
-    // Cargar bitácora del período
-    await cargarBitacora(snap.docs.map(d => d.id));
 
     renderKPIs();
     renderGrafico();
@@ -812,9 +765,7 @@ function agruparPorMovil() {
       map[p].excRuta += m.excRuta || 0;
       if ((m.velMaxRuta||0) > map[p].velMaxRuta) map[p].velMaxRuta = m.velMaxRuta||0;
       map[p].dias++;
-      // Bitácora tiene prioridad sobre conductor del CSV
-      const condReal = conductorBitacora(p, d.fecha, null) || m.conductor || '';
-      if (condReal) map[p].conductores.add(condReal);
+      if (m.conductor) map[p].conductores.add(m.conductor);
       // Acumular eventos detallados de velocidad
       if (Array.isArray(m.eventosVel)) map[p].eventosVel.push(...m.eventosVel);
     });
@@ -1091,8 +1042,7 @@ function renderConductores() {
   const mapCond = {};
   datos.forEach(dia => {
     (dia.moviles||[]).forEach(m => {
-      const condReal = conductorBitacora(m.patente, dia.fecha, null) || m.conductor || '';
-      const c = condReal.trim() || 'Sin asignar';
+      const c = (m.conductor||'').trim() || 'Sin asignar';
       if (!mapCond[c]) mapCond[c] = { nombre:c, km:0, excGeo:0, excRuta:0, dias:0, patentes:new Set() };
       mapCond[c].km      += m.km||0;
       mapCond[c].excGeo  += m.excGeo||0;
@@ -1534,14 +1484,10 @@ async function cargarEventosGeo() {
     docs.forEach(d => {
       if (!d.exists) return;
       (d.data().eventos || []).forEach(ev => {
-        const _pat = ev.patente || '';
-        const _hora = ev.fechaEvento || '';
-        const _condCSV = ev.nombreMovil
-          ? ev.nombreMovil.replace(new RegExp('^'+_pat+'\s*','i'),'').trim() : '';
         eventosGeoCache.push({
           fecha:      d.id,
-          patente:    _pat,
-          conductor:  resolverConductor(_pat, d.id, _hora, _condCSV),
+          patente:    ev.patente    || '',
+          conductor:  ev.nombreMovil ? ev.nombreMovil.replace(new RegExp('^'+(ev.patente||'')+'\s*','i'),'').trim() : '',
           geocerca:   ev.geocerca   || '',
           velLimite:  ev.velLimite  || 0,
           velEvento:  ev.velEvento  || 0,
