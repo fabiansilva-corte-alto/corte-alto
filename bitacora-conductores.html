@@ -171,6 +171,8 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
 .btn-guardar-dia{background:var(--ac);color:#fff;border:none;border-radius:7px;padding:9px 22px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;}
 .btn-guardar-dia:hover{background:var(--ac2);}
 .btn-guardar-dia:disabled{background:#555;cursor:not-allowed;opacity:.6;}
+.btn-limpiar-dia{background:#fff;color:#c0392b;border:1px solid #e57373;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;}
+.btn-limpiar-dia:hover{background:#fdecea;}
 .btn-cancelar-dia{background:transparent;color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:8px 14px;font-size:12px;cursor:pointer;}
 .btn-cancelar-dia:hover{background:rgba(255,255,255,.1);}
 
@@ -283,6 +285,7 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
             <input type="date" id="hist-fecha">
             <button class="btn-hoy" id="btn-hoy">Hoy</button>
             <span class="lbl-registros" id="lbl-registros"></span>
+            <button class="btn-limpiar-dia" id="btn-limpiar-dia" style="display:none;" title="Borrar todos los registros del día para volver a copiar">🗑 Limpiar día</button>
           </div>
         </div>
         <div id="tabla-wrap" style="overflow-x:auto;overflow-y:auto;max-height:70vh;">
@@ -646,6 +649,24 @@ document.getElementById('btn-hoy').addEventListener('click',()=>{
   cargarHistorial(h);
 });
 
+document.getElementById('btn-limpiar-dia').addEventListener('click',async()=>{
+  if(!fechaActual) return;
+  if(!confirm(`¿Borrar TODOS los registros del ${fmtFecha(fechaActual)}?\nPodrás volver a copiar desde otro día.`)) return;
+  const btn=document.getElementById('btn-limpiar-dia');
+  btn.textContent='Limpiando...'; btn.disabled=true;
+  try{
+    const snap=await db.collection('bitacora_conductores').doc(fechaActual).collection('registros').get();
+    const batch=db.batch();
+    snap.forEach(d=>batch.delete(d.ref));
+    await batch.commit();
+    toast(`Registros del ${fmtFecha(fechaActual)} eliminados ✓`);
+    cargarHistorial(fechaActual);
+  }catch(e){
+    toast('Error al limpiar: '+e.message,true);
+    btn.textContent='🗑 Limpiar día'; btn.disabled=false;
+  }
+});
+
 // Borrador en memoria: { patente → { conductor, horaIni, horaFin, comentario } }
 let borrador={};
 let fechaActual='';
@@ -911,6 +932,7 @@ async function cargarHistorial(fecha){
     const asignados=Object.keys(porPat).length;
     const total=Object.keys(flotaActual).length;
     lbl.textContent=`${asignados} / ${total} móviles asignados`;
+    document.getElementById('btn-limpiar-dia').style.display=asignados>0?'':'none';
 
     renderTablaConBorrador(fecha,porPat,{});
     _ultimoPorPat=porPat;
