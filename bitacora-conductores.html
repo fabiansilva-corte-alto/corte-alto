@@ -914,6 +914,9 @@ async function cargarHistorial(fecha){
   // Reset botón guardar (fix bug: quedaba en "Guardando..." al cambiar fecha)
   const btnG=document.getElementById('btn-guardar-dia');
   btnG.disabled=false; btnG.innerHTML='💾 Guardar día';
+  // Reset botón limpiar
+  const btnL=document.getElementById('btn-limpiar-dia');
+  btnL.textContent='🗑 Limpiar día'; btnL.disabled=false; btnL.style.display='none';
   document.getElementById('barra-guardar').style.display='none';
   const wrap=document.getElementById('tabla-wrap');
   const lbl=document.getElementById('lbl-registros');
