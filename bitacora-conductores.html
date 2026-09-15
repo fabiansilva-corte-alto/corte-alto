@@ -149,16 +149,19 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
 .empty-bit{text-align:center;padding:32px;color:var(--ts);}
 .empty-bit h3{font-size:14px;font-weight:600;margin-bottom:6px;}
 
-/* BANNER COPIA DÍA ANTERIOR */
-.banner-copia{background:#e8f4fd;border:1px solid #90caf9;border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:10px;}
-.banner-copia .bc-titulo{font-size:13px;font-weight:700;color:#1565c0;display:flex;align-items:center;gap:8px;}
-.banner-copia .bc-sub{font-size:12px;color:#1976d2;}
-.banner-copia .bc-acciones{display:flex;gap:8px;flex-wrap:wrap;}
-.btn-copia-si{background:#1565c0;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;}
+/* BANNER COPIA — ahora dentro del card-header como widget inline */
+.copia-widget{display:flex;flex-direction:column;gap:8px;background:#e8f4fd;border:1px solid #90caf9;border-radius:8px;padding:10px 14px;flex:1;min-width:0;}
+.copia-widget.oculto{display:none;}
+.cw-fuentes{display:flex;gap:6px;flex-wrap:wrap;}
+.btn-fuente{background:#fff;border:2px solid #90caf9;border-radius:6px;padding:5px 11px;font-size:11px;font-weight:700;color:#1565c0;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn-fuente:hover,.btn-fuente.sel{background:#1565c0;color:#fff;border-color:#1565c0;}
+.cw-acciones{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.cw-lbl{font-size:11px;color:#1565c0;font-weight:600;white-space:nowrap;}
+.btn-copia-si{background:#1565c0;color:#fff;border:none;border-radius:6px;padding:6px 13px;font-size:11px;font-weight:700;cursor:pointer;}
 .btn-copia-si:hover{background:#0d47a1;}
-.btn-copia-rev{background:#fff;color:#1565c0;border:2px solid #1565c0;border-radius:7px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;}
-.btn-copia-rev:hover{background:#e8f4fd;}
-.btn-copia-no{background:#fff;color:var(--ts);border:1px solid var(--vb);border-radius:7px;padding:7px 14px;font-size:12px;cursor:pointer;}
+.btn-copia-rev{background:#fff;color:#1565c0;border:2px solid #1565c0;border-radius:6px;padding:5px 13px;font-size:11px;font-weight:700;cursor:pointer;}
+.btn-copia-rev:hover{background:#e3f0fd;}
+.btn-copia-no{background:#fff;color:var(--ts);border:1px solid var(--vb);border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;}
 .btn-copia-no:hover{background:var(--vs);}
 
 /* BARRA GUARDAR DÍA */
@@ -261,20 +264,22 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
       <div id="banner-alerta" style="display:none;" class="banner-alerta">
         ⚠️ <span id="banner-texto"></span>
       </div>
-      <!-- Banner copia día anterior -->
-      <div id="banner-copia" style="display:none;" class="banner-copia">
-        <div class="bc-titulo">📋 <span id="bc-titulo-txt"></span></div>
-        <div class="bc-sub" id="bc-sub-txt"></div>
-        <div class="bc-acciones">
-          <button class="btn-copia-si" id="btn-copia-si">✅ Sí, copiar igual y guardar</button>
-          <button class="btn-copia-rev" id="btn-copia-rev">✏️ Sí, pero revisar primero</button>
-          <button class="btn-copia-no" id="btn-copia-no">❌ No copiar</button>
-        </div>
-      </div>
       <div class="card">
-        <div class="card-header">
-          <span>🚛</span><h2>Flota del día</h2>
-          <div class="nav-fecha">
+        <div class="card-header" style="flex-wrap:wrap;gap:10px;align-items:flex-start;">
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <span>🚛</span><h2>Flota del día</h2>
+          </div>
+          <!-- Widget copia inline — ocupa el espacio central -->
+          <div class="copia-widget oculto" id="copia-widget">
+            <div class="cw-fuentes" id="cw-fuentes"></div>
+            <div class="cw-acciones" id="cw-acciones" style="display:none;">
+              <span class="cw-lbl" id="cw-accion-lbl">¿Qué deseas hacer?</span>
+              <button class="btn-copia-si" id="btn-copia-si">✅ Copiar directo</button>
+              <button class="btn-copia-rev" id="btn-copia-rev">✏️ Revisar antes</button>
+              <button class="btn-copia-no" id="btn-copia-no">❌ No copiar</button>
+            </div>
+          </div>
+          <div class="nav-fecha" style="flex-shrink:0;">
             <input type="date" id="hist-fecha">
             <button class="btn-hoy" id="btn-hoy">Hoy</button>
             <span class="lbl-registros" id="lbl-registros"></span>
@@ -647,10 +652,6 @@ let fechaActual='';
 let modoRevision=false; // true cuando el usuario eligió "revisar primero"
 let datosAyer={}; // cache de registros del día anterior
 let _ultimoPorPat={}; // último porPat cargado para re-render desde ciclarEstado
-
-function ocultarBannerCopia(){
-  document.getElementById('banner-copia').style.display='none';
-}
 
 function actualizarBarraGuardar(){
   const barra=document.getElementById('barra-guardar');
@@ -1104,42 +1105,92 @@ async function guardarTurnoExtra(patente,fecha){
   cargarHistorial(fecha);
 }
 
-// ══ COPIA DÍA ANTERIOR ══
+// ══ COPIA BIDIRECCIONAL ══
+// datosAyer ahora puede tener {anterior, posterior} con {fecha, regs} cada uno
+let fuenteSeleccionada=null; // 'anterior' | 'posterior'
+
+function ocultarBannerCopia(){
+  document.getElementById('copia-widget').classList.add('oculto');
+  document.getElementById('cw-acciones').style.display='none';
+  fuenteSeleccionada=null;
+}
+
 async function buscarDiaAnterior(fecha){
   try{
-    // Calcular fecha anterior (puede no ser ayer calendario — buscar el día hábil anterior con datos)
-    const fechaDate=new Date(fecha+'T12:00:00');
-    let intentos=0;
-    let snapAyer=null;
-    let fechaAyer='';
-    while(intentos<7){
-      intentos++;
-      fechaDate.setDate(fechaDate.getDate()-1);
-      fechaAyer=fechaDate.toISOString().slice(0,10);
-      const s=await db.collection('bitacora_conductores').doc(fechaAyer).collection('registros').get();
-      if(!s.empty){snapAyer=s;break;}
+    const [anterior,posterior]=await Promise.all([
+      buscarEnDireccion(fecha,'atras',30),
+      buscarEnDireccion(fecha,'adelante',30),
+    ]);
+
+    if(!anterior&&!posterior) return; // Sin datos en ninguna dirección
+
+    datosAyer={anterior,posterior};
+    const fuentes=document.getElementById('cw-fuentes');
+    fuentes.innerHTML='';
+
+    const crearBotonFuente=(dir,datos)=>{
+      const btn=document.createElement('button');
+      btn.className='btn-fuente';
+      btn.dataset.dir=dir;
+      const ico=dir==='anterior'?'⬅️':'➡️';
+      btn.innerHTML=`${ico} ${fmtFecha(datos.fecha)} <span style="font-weight:400;opacity:.8;">(${new Set(datos.regs.map(r=>r.patente)).size} móviles)</span>`;
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.btn-fuente').forEach(b=>b.classList.remove('sel'));
+        btn.classList.add('sel');
+        fuenteSeleccionada=dir;
+        const d=datos;
+        document.getElementById('cw-accion-lbl').textContent=
+          `Copiando desde ${fmtFecha(d.fecha)} — ¿qué deseas hacer?`;
+        document.getElementById('cw-acciones').style.display='flex';
+      });
+      fuentes.appendChild(btn);
+    };
+
+    // Etiqueta intro
+    const lbl=document.createElement('span');
+    lbl.style.cssText='font-size:11px;font-weight:700;color:#1565c0;white-space:nowrap;';
+    lbl.textContent='📋 Copiar desde:';
+    fuentes.appendChild(lbl);
+
+    if(anterior) crearBotonFuente('anterior',anterior);
+    if(posterior) crearBotonFuente('posterior',posterior);
+
+    // Si solo hay una dirección, seleccionarla automáticamente
+    if(anterior&&!posterior){
+      fuentes.querySelector('[data-dir="anterior"]').click();
+    } else if(posterior&&!anterior){
+      fuentes.querySelector('[data-dir="posterior"]').click();
     }
-    if(!snapAyer||snapAyer.empty)return; // No hay datos anteriores
-    const regs=snapAyer.docs.map(d=>({id:d.id,...d.data()}));
-    datosAyer={fecha:fechaAyer,regs};
-    // Contar conductores únicos
-    const condUnicos=new Set(regs.map(r=>r.conductor)).size;
-    const mobUnicos=new Set(regs.map(r=>r.patente)).size;
-    document.getElementById('bc-titulo-txt').textContent=
-      `Se encontraron datos del ${fmtFecha(fechaAyer)} (${mobUnicos} móviles, ${condUnicos} conductores)`;
-    document.getElementById('bc-sub-txt').textContent=
-      `¿Deseas usar esas asignaciones como punto de partida para hoy?`;
-    document.getElementById('banner-copia').style.display='flex';
+
+    document.getElementById('copia-widget').classList.remove('oculto');
   }catch(e){console.warn('buscarDiaAnterior:',e.message);}
 }
 
+async function buscarEnDireccion(fecha,dir,maxDias){
+  const d=new Date(fecha+'T12:00:00');
+  for(let i=0;i<maxDias;i++){
+    dir==='atras'?d.setDate(d.getDate()-1):d.setDate(d.getDate()+1);
+    const f=d.toISOString().slice(0,10);
+    const s=await db.collection('bitacora_conductores').doc(f).collection('registros').get();
+    if(!s.empty) return {fecha:f,regs:s.docs.map(d=>({id:d.id,...d.data()}))};
+  }
+  return null;
+}
+
+function getDatosFuente(){
+  if(!fuenteSeleccionada||!datosAyer) return null;
+  return datosAyer[fuenteSeleccionada]||null;
+}
+
 document.getElementById('btn-copia-si').addEventListener('click',()=>{
-  if(!datosAyer.regs)return;
-  copiarDiaAnteriorDirecto(fechaActual,datosAyer.regs);
+  const d=getDatosFuente();
+  if(!d) return;
+  copiarDiaAnteriorDirecto(fechaActual,d.regs);
 });
 document.getElementById('btn-copia-rev').addEventListener('click',()=>{
-  if(!datosAyer.regs)return;
-  activarModoRevision(fechaActual,datosAyer.regs);
+  const d=getDatosFuente();
+  if(!d) return;
+  activarModoRevision(fechaActual,d.regs);
 });
 document.getElementById('btn-copia-no').addEventListener('click',()=>{
   ocultarBannerCopia();
