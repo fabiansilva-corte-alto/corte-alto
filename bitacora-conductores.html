@@ -1182,45 +1182,30 @@ async function buscarDiaAnterior(fecha){
 }
 
 async function buscarEnDireccion(fecha,dir,maxDias){
-  // Consulta eficiente: busca todos los docs de bitacora_conductores
-  // ordenados por fecha y filtra los cercanos al día dado
-  try{
-    let q;
-    if(dir==='atras'){
-      q=await db.collection('bitacora_conductores')
-        .where(firebase.firestore.FieldPath.documentId(),'<',fecha)
-        .orderBy(firebase.firestore.FieldPath.documentId(),'desc')
-        .limit(maxDias)
-        .get();
-    } else {
-      q=await db.collection('bitacora_conductores')
-        .where(firebase.firestore.FieldPath.documentId(),'>',fecha)
-        .orderBy(firebase.firestore.FieldPath.documentId(),'asc')
-        .limit(maxDias)
-        .get();
-    }
-    // Tomar el primer doc que tenga registros en su subcolección
-    for(const docFecha of q.docs){
-      const regsSnap=await db.collection('bitacora_conductores')
-        .doc(docFecha.id).collection('registros').limit(1).get();
-      if(!regsSnap.empty){
-        // Cargar registros completos
-        const todos=await db.collection('bitacora_conductores')
-          .doc(docFecha.id).collection('registros').get();
-        return {fecha:docFecha.id, regs:todos.docs.map(d=>({id:d.id,...d.data()}))};
-      }
-    }
-  }catch(e){
-    // Fallback: búsqueda secuencial si Firestore no tiene índice
-    const d=new Date(fecha+'T12:00:00');
-    for(let i=0;i<maxDias;i++){
-      dir==='atras'?d.setDate(d.getDate()-1):d.setDate(d.getDate()+1);
-      const f=d.toISOString().slice(0,10);
-      const s=await db.collection('bitacora_conductores').doc(f).collection('registros').get();
-      if(!s.empty) return {fecha:f,regs:s.docs.map(d=>({id:d.id,...d.data()}))};
-    }
+  // Construir lista de fechas candidatas y consultarlas en paralelo
+  const candidatas=[];
+  const d=new Date(fecha+'T12:00:00');
+  for(let i=0;i<maxDias;i++){
+    dir==='atras'?d.setDate(d.getDate()-1):d.setDate(d.getDate()+1);
+    candidatas.push(d.toISOString().slice(0,10));
   }
-  return null;
+  // Consultar todas en paralelo (limit:1 por subcol para saber si tiene datos)
+  const resultados=await Promise.all(
+    candidatas.map(f=>
+      db.collection('bitacora_conductores').doc(f).collection('registros').limit(1).get()
+        .then(s=>({fecha:f,vacia:s.empty}))
+        .catch(()=>({fecha:f,vacia:true}))
+    )
+  );
+  // Tomar la más cercana con datos
+  const primera=dir==='atras'
+    ? resultados.find(r=>!r.vacia)
+    : resultados.find(r=>!r.vacia);
+  if(!primera) return null;
+  // Cargar registros completos de esa fecha
+  const snap=await db.collection('bitacora_conductores')
+    .doc(primera.fecha).collection('registros').get();
+  return {fecha:primera.fecha, regs:snap.docs.map(d=>({id:d.id,...d.data()}))};
 }
 
 function getDatosFuente(){
