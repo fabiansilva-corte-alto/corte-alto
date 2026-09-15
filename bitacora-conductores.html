@@ -175,11 +175,41 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
 .fila-pendiente-guardar td{background:#fffde7 !important;}
 .fila-pendiente-guardar td:nth-child(4){color:#1a2e1a !important;font-style:normal !important;}
 
-/* BOTÓN TODO EL DÍA */
-.btn-todo-dia{background:#2980b9;color:#fff;border:none;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;line-height:1.4;}
-.btn-todo-dia:hover{background:#1a6fa8;}
-.btn-todo-dia.activo{background:#1a5276;box-shadow:inset 0 1px 3px rgba(0,0,0,.3);}
+/* ÍCONO TODO EL DÍA (reloj) */
+.btn-todo-dia{background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s;}
+.btn-todo-dia svg{width:18px;height:18px;transition:all .2s;}
+.btn-todo-dia .ico-reloj{fill:none;stroke:#999;stroke-width:2;stroke-linecap:round;}
+.btn-todo-dia.activo .ico-reloj{stroke:#2980b9;}
+.btn-todo-dia:hover{transform:scale(1.15);}
 .lbl-todo-dia{font-size:10px;color:#1a6fa8;font-weight:600;white-space:nowrap;}
+
+/* ESTADOS DE MÓVIL */
+.badge-estado{display:inline-flex;align-items:center;gap:4px;border-radius:5px;padding:3px 8px;font-size:11px;font-weight:700;}
+.badge-sinuso{background:#fff3e0;color:#e65100;}
+.badge-panne{background:#fdecea;color:#c0392b;}
+.fila-sinuso td{background:#fff8f0 !important;opacity:.85;}
+.fila-panne td{background:#fff0f0 !important;}
+.fila-gps-alerta td{background:#fdecea !important;}
+.fila-gps-alerta td:nth-child(2) strong{color:#c0392b;}
+.lbl-gps-alerta{font-size:10px;color:#c0392b;font-weight:700;display:block;margin-top:2px;}
+.btn-estado{background:none;border:1px solid var(--vb);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;margin-left:4px;}
+.btn-estado:hover{background:var(--vs);}
+.menu-estado{position:absolute;z-index:200;background:#fff;border:1px solid var(--vb);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);padding:6px;min-width:140px;}
+.menu-estado button{display:block;width:100%;text-align:left;background:none;border:none;padding:6px 10px;font-size:12px;cursor:pointer;border-radius:5px;}
+.menu-estado button:hover{background:var(--vs);}
+
+/* TABLA MÓVILES REGISTRADOS */
+.tabla-moviles{width:100%;border-collapse:collapse;font-size:13px;}
+.tabla-moviles th{background:var(--vd);color:#fff;padding:8px 10px;font-size:11px;font-weight:600;text-align:left;}
+.tabla-moviles td{padding:8px 10px;border-bottom:1px solid var(--vb);}
+.tabla-moviles tr:hover td{background:var(--vs);}
+.btn-del-movil{background:none;border:1px solid #e57373;color:#c62828;border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;}
+.btn-del-movil:hover{background:#fdecea;}
+.tabs-cond{display:flex;gap:0;border-bottom:2px solid var(--vb);margin-bottom:12px;}
+.tab-cond-btn{background:none;border:none;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ts);border-bottom:2px solid transparent;margin-bottom:-2px;}
+.tab-cond-btn.on{color:var(--vd);border-bottom-color:var(--vd);}
+.tab-cond-panel{display:none;}
+.tab-cond-panel.on{display:block;}
 
 /* TOAST */
 .toast{position:fixed;bottom:20px;right:20px;z-index:999;background:var(--vd);color:#fff;border-radius:8px;padding:10px 16px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
@@ -260,50 +290,55 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
 
     <!-- ══ TAB 2: CONDUCTORES ══ -->
     <div class="tab-panel" id="tab-conductores">
-      <!-- Formulario agregar conductor -->
+      <!-- Formulario agregar -->
       <div class="card">
-        <div class="card-header"><span>➕</span><h2>Agregar conductor</h2></div>
-        <div class="card-body">
-          <div class="form-grid">
-            <div class="fg"><label>Nombre conductor *</label><input type="text" id="nc-nombre" placeholder="Nombre del conductor" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
-            <div class="fg">
-              <label>Móvil asignado fijo <span style="font-weight:400;color:var(--ts)">(opcional)</span></label>
-              <select id="nc-patente"><option value="">— Sin asignación fija —</option></select>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-            <button class="btn-guardar" id="btn-add-cond">Agregar conductor</button>
-            <span id="nc-estado" style="font-size:12px;color:var(--ts);"></span>
-          </div>
+        <div class="tabs-cond">
+          <button class="tab-cond-btn on" id="tcb-cond" onclick="switchTabCond('cond')">👤 Conductores</button>
+          <button class="tab-cond-btn" id="tcb-movil" onclick="switchTabCond('movil')">🚗 Móviles</button>
         </div>
-      </div>
-      <!-- Agregar móvil nuevo -->
-      <div class="card">
-        <div class="card-header"><span>🚗</span><h2>Agregar móvil nuevo</h2><span style="font-size:11px;color:var(--ts);margin-left:4px;">— para vehículos que aparecen en GPS pero no están en la flota</span></div>
-        <div class="card-body">
-          <div class="form-grid">
-            <div class="fg"><label>Patente *</label><input type="text" id="nm-patente" placeholder="Ej: ABCD-12" style="text-transform:uppercase;"></div>
-            <div class="fg"><label>Tipo *</label>
-              <select id="nm-tipo">
-                <option value="">— Selecciona —</option>
-                <option value="Furgón">Furgón</option>
-                <option value="PickUp">PickUp</option>
-                <option value="Camión">Camión</option>
-                <option value="Máquina">Máquina</option>
-              </select>
+
+        <!-- Sub-panel: agregar conductor -->
+        <div class="tab-cond-panel on" id="tcp-cond">
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="fg"><label>Nombre conductor *</label><input type="text" id="nc-nombre" placeholder="Nombre del conductor" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+              <div class="fg">
+                <label>Móvil asignado fijo <span style="font-weight:400;color:var(--ts)">(opcional)</span></label>
+                <select id="nc-patente"><option value="">— Sin asignación fija —</option></select>
+              </div>
             </div>
-            <div class="fg"><label>Modelo *</label><input type="text" id="nm-modelo" placeholder="Ej: Mitsubishi L-200" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
-            <div class="fg"><label>Conductor fijo <span style="font-weight:400;color:var(--ts)">(opcional)</span></label>
-              <select id="nm-conductor-fijo"><option value="">— Sin asignación fija —</option></select>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+              <button class="btn-guardar" id="btn-add-cond">Agregar conductor</button>
+              <span id="nc-estado" style="font-size:12px;color:var(--ts);"></span>
             </div>
           </div>
-          <button class="btn-guardar" id="btn-add-movil">Agregar móvil</button>
+          <div id="lista-conductores"><div class="empty-bit"><h3>Cargando...</h3></div></div>
         </div>
-      </div>
-      <!-- Lista conductores -->
-      <div class="card">
-        <div class="card-header"><span>👥</span><h2>Conductores registrados</h2></div>
-        <div id="lista-conductores"><div class="empty-bit"><h3>Cargando...</h3></div></div>
+
+        <!-- Sub-panel: agregar y listar móviles -->
+        <div class="tab-cond-panel" id="tcp-movil">
+          <div class="card-body" style="border-bottom:1px solid var(--vb);margin-bottom:12px;">
+            <div style="font-size:12px;font-weight:700;color:var(--vd);margin-bottom:10px;">➕ Agregar móvil nuevo <span style="font-weight:400;color:var(--ts);font-size:11px;">— para vehículos que aparecen en GPS o flota nueva</span></div>
+            <div class="form-grid">
+              <div class="fg"><label>Patente *</label><input type="text" id="nm-patente" placeholder="Ej: ABCD-12" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+              <div class="fg"><label>Tipo *</label>
+                <select id="nm-tipo">
+                  <option value="">— Selecciona —</option>
+                  <option value="Furgón">Furgón</option>
+                  <option value="PickUp">PickUp</option>
+                  <option value="Camión">Camión</option>
+                  <option value="Máquina">Máquina</option>
+                </select>
+              </div>
+              <div class="fg"><label>Modelo *</label><input type="text" id="nm-modelo" placeholder="Ej: Mitsubishi L-200" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+              <div class="fg"><label>Conductor fijo <span style="font-weight:400;color:var(--ts)">(opcional)</span></label>
+                <select id="nm-conductor-fijo"><option value="">— Sin asignación fija —</option></select>
+              </div>
+            </div>
+            <button class="btn-guardar" id="btn-add-movil">Agregar móvil</button>
+          </div>
+          <div id="lista-moviles"><div class="empty-bit"><h3>Cargando...</h3></div></div>
+        </div>
       </div>
     </div>
 
@@ -331,6 +366,34 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
       <button class="btn-danger" id="ec-eliminar">Eliminar</button>
       <button class="btn-sec" id="ec-cancelar">Cancelar</button>
       <button class="btn-guardar" id="ec-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal editar móvil -->
+<div class="modal-bg" id="modal-movil">
+  <div class="modal">
+    <h3>🚗 Editar móvil</h3>
+    <input type="hidden" id="em-patente">
+    <div class="form-grid">
+      <div class="fg full"><label>Patente</label><input type="text" id="em-patente-txt" disabled style="background:var(--vs);color:var(--ts);"></div>
+      <div class="fg full"><label>Modelo</label><input type="text" id="em-modelo" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fg full"><label>Tipo</label>
+        <select id="em-tipo">
+          <option value="Furgón">Furgón</option>
+          <option value="PickUp">PickUp</option>
+          <option value="Camión">Camión</option>
+          <option value="Máquina">Máquina</option>
+        </select>
+      </div>
+      <div class="fg full"><label>Conductor fijo (opcional)</label>
+        <select id="em-conductor-fijo"><option value="">— Sin asignación fija —</option></select>
+      </div>
+    </div>
+    <div class="modal-acciones">
+      <button class="btn-danger" id="em-eliminar">🗑 Eliminar móvil</button>
+      <button class="btn-sec" id="em-cancelar">Cancelar</button>
+      <button class="btn-guardar" id="em-guardar">Guardar</button>
     </div>
   </div>
 </div>
@@ -510,7 +573,7 @@ async function cargarFlota(){
     const snap=await db.collection('config_flota_gps').get();
     if(!snap.empty){
       snap.forEach(d=>{
-        flotaActual[d.id]={tipo:d.data().tipo||'Otro',modelo:d.data().modelo||'—'};
+        flotaActual[d.id]={tipo:d.data().tipo||'Otro',modelo:d.data().modelo||'—',estado:d.data().estado||'operativo'};
       });
     } else {
       // Primera vez: inicializar desde FLOTA_BASE
@@ -617,6 +680,21 @@ function onInputBorrador(pat){
   actualizarBarraGuardar();
 }
 
+// ══ ESTADO DE MÓVIL ══
+async function cambiarEstadoMovil(pat,nuevoEstado){
+  const labels={'operativo':'🟢 Operativo','sinuso':'🟠 Sin uso','panne':'🔴 En panne'};
+  const confirmar=nuevoEstado!=='operativo'
+    ?confirm(`¿Marcar ${pat} como "${labels[nuevoEstado]}"?\nNo aparecerá en el listado de asignación para ese estado.`)
+    :confirm(`¿Marcar ${pat} como Operativo?`);
+  if(!confirmar)return;
+  try{
+    await db.collection('config_flota_gps').doc(pat).update({estado:nuevoEstado});
+    flotaActual[pat].estado=nuevoEstado;
+    toast(`${pat} → ${labels[nuevoEstado]}`);
+    renderTablaConBorrador(fechaActual,{},borrador);
+  }catch(e){toast('Error: '+e.message,true);}
+}
+
 // Activa/desactiva "Todo el día" para una patente
 function toggleTodoDia(pat){
   const yaActivo=borrador[pat]?.todoDia||false;
@@ -651,11 +729,12 @@ function toggleTodoDia(pat){
       onchange="onInputBorrador('${pat}')">`;
   }
 
-  // Actualizar botón
+  // Actualizar botón SVG
   const btn=document.getElementById(`btn-td-${pat}`);
   if(btn){
     btn.className='btn-todo-dia'+(nuevoEstado?' activo':'');
-    btn.textContent=nuevoEstado?'✔ Todo el día':'☀ Todo el día';
+    btn.innerHTML=SVG_RELOJ;
+    btn.title=nuevoEstado?'Todo el día activo — clic para desactivar':'Todo el día (00:01–23:59)';
   }
 
   actualizarBarraGuardar();
@@ -776,12 +855,18 @@ async function cargarHistorial(fecha){
   borrador={};
   modoRevision=false;
   datosAyer={};
+  patsGpsEnFecha=new Set();
   ocultarBannerCopia();
+  // Reset botón guardar (fix bug: quedaba en "Guardando..." al cambiar fecha)
+  const btnG=document.getElementById('btn-guardar-dia');
+  btnG.disabled=false; btnG.innerHTML='💾 Guardar día';
   document.getElementById('barra-guardar').style.display='none';
   const wrap=document.getElementById('tabla-wrap');
   const lbl=document.getElementById('lbl-registros');
   wrap.innerHTML='<div class="empty-bit"><h3>Cargando...</h3></div>';
   await cargarConductoresMemoria();
+  // Cargar patentes GPS de esa fecha en paralelo
+  cargarPatsGps(fecha);
   try{
     const snap=await db.collection('bitacora_conductores').doc(fecha).collection('registros').orderBy('horaIni').get();
     const porPat={};
@@ -805,6 +890,27 @@ async function cargarHistorial(fecha){
   }
 }
 
+// SVG reloj para botón Todo el día
+const SVG_RELOJ=`<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="9" class="ico-reloj"/>
+  <polyline points="12 7 12 12 15 15" class="ico-reloj"/>
+</svg>`;
+
+// Patentes GPS activas en la fecha (para alertas punto 2)
+let patsGpsEnFecha=new Set();
+
+async function cargarPatsGps(fecha){
+  try{
+    const snap=await db.collection('gps_registros').doc(fecha).get();
+    if(snap.exists){
+      const movs=snap.data().moviles||{};
+      patsGpsEnFecha=new Set(Object.keys(movs));
+    } else {
+      patsGpsEnFecha=new Set();
+    }
+  }catch(e){ patsGpsEnFecha=new Set(); }
+}
+
 function renderTablaConBorrador(fecha,porPat,borradorPre){
   const wrap=document.getElementById('tabla-wrap');
   const datalist=conductoresLista.map(c=>`<option value="${escH(c.nombre)}">`).join('');
@@ -815,18 +921,40 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
     const modelo=flotaActual[pat].modelo||'—';
     const esFijo=!!conductoresFijos[pat];
     const puntoFijo=esFijo?'<span class="punto-fijo" title="Conductor fijo asignado"></span>':'';
+    const estado=flotaActual[pat].estado||'operativo'; // operativo | sinuso | panne
 
     if(tipo!==tipoActual){
       tipoActual=tipo;
       const ico=tipo==='Furgón'?'🚐':tipo==='PickUp'?'🛻':tipo==='Camión'?'🚚':'⚙️';
-      filas+=`<tr class="fila-seccion"><td colspan="8">${ico} Flota ${tipo}</td></tr>`;
+      filas+=`<tr class="fila-seccion"><td colspan="9">${ico} Flota ${tipo}</td></tr>`;
+    }
+
+    // ── ESTADOS Sin uso / En panne ──
+    if(estado==='sinuso'||estado==='panne'){
+      const cls=estado==='sinuso'?'fila-sinuso':'fila-panne';
+      const badge=estado==='sinuso'
+        ?`<span class="badge-estado badge-sinuso">🟠 Sin uso</span>`
+        :`<span class="badge-estado badge-panne">🔴 En panne</span>`;
+      filas+=`<tr class="${cls}" id="fila-inp-${pat}">
+        <td>${badgeTipo(tipo)}</td>
+        <td><strong>${pat}</strong></td>
+        <td style="font-size:11px;">${modelo}</td>
+        <td colspan="5">${badge}
+          <button class="btn-estado" onclick="cambiarEstadoMovil('${pat}','operativo')" title="Marcar como Operativo">↩ Operativo</button>
+          ${estado==='sinuso'?`<button class="btn-estado" style="color:var(--rojo)" onclick="cambiarEstadoMovil('${pat}','panne')">🔴 En panne</button>`
+            :`<button class="btn-estado" style="color:#e65100" onclick="cambiarEstadoMovil('${pat}','sinuso')">🟠 Sin uso</button>`}
+        </td>
+        <td></td>
+      </tr>`;
+      return; // No mostrar inputs para estos estados
     }
 
     const regs=porPat[pat]||[];
     const ultimo=regs.length>0?regs[regs.length-1]:null;
+    // Alerta GPS: móvil sin conductor asignado pero con datos GPS en esa fecha
+    const tieneAlertaGps=!ultimo&&patsGpsEnFecha.has(pat)&&!borrador[pat]?.conductor;
 
     if(ultimo){
-      // Ya tiene registro guardado en Firestore — mostrar normal con +turno
       const fin=ultimo.todoDia
         ?`<span class="lbl-todo-dia">☀ Todo el día</span>`
         :ultimo.horaFin
@@ -843,6 +971,7 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
         <td style="font-size:12px;">${ini}</td>
         <td style="font-size:12px;">${fin}</td>
         <td style="font-size:11px;color:var(--ts);">${escH(ultimo.comentario||'')}</td>
+        <td></td>
         <td style="white-space:nowrap;display:flex;gap:3px;align-items:center;">
           ${histBtn}
           <button class="btn-accion btn-edit" onclick="abrirEditModal('${ultimo.id}','${fecha}','${escH(ultimo.conductor)}','${ultimo.horaIni||''}','${ultimo.horaFin||''}','${escH(ultimo.comentario||'')}')">✏️</button>
@@ -856,28 +985,31 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
         <td><input type="time" id="inp-ini-turno-${pat}"></td>
         <td><input type="time" id="inp-fin-turno-${pat}"></td>
         <td><input type="text" id="inp-com-turno-${pat}" placeholder="Comentario"></td>
+        <td></td>
         <td colspan="2" style="white-space:nowrap;">
           <button class="btn-guardar-fila" onclick="guardarTurnoExtra('${pat}','${fecha}')">💾 Guardar turno</button>
           <button class="btn-cancelar-fila" onclick="document.getElementById('edit-turno-${pat}').style.display='none'">✕</button>
         </td>
       </tr>`;
     } else {
-      // Sin registro — mostrar fila de entrada (borrador o vacía)
       const bd=borradorPre[pat]||null;
       const condDefault=bd?bd.conductor:(conductoresFijos[pat]||'');
       const esBorrador=!!bd;
       const esTodoDia=bd?.todoDia||false;
+      const clsFila=tieneAlertaGps?'fila-gps-alerta':(esBorrador?'fila-pendiente-guardar':'sin-asignar');
+      const alertaGpsTxt=tieneAlertaGps?`<span class="lbl-gps-alerta">⚠️ Circulando en GPS sin conductor asignado</span>`:'';
 
-      filas+=`<tr class="${esBorrador?'fila-pendiente-guardar':'sin-asignar'}" id="fila-inp-${pat}">
+      filas+=`<tr class="${clsFila}" id="fila-inp-${pat}">
         <td>${badgeTipo(tipo)}</td>
         <td><strong>${pat}</strong></td>
         <td style="font-size:11px;">${modelo}</td>
         <td>
           ${puntoFijo}
           <input type="text" id="inp-cond-${pat}" placeholder="Conductor *" list="list-conductores"
-            style="text-transform:uppercase;border:1px solid var(--vb);border-radius:5px;padding:4px 7px;font-size:12px;font-family:inherit;width:100%;max-width:200px;"
+            style="text-transform:uppercase;border:1px solid ${tieneAlertaGps?'#e57373':'var(--vb)'};border-radius:5px;padding:4px 7px;font-size:12px;font-family:inherit;width:100%;max-width:200px;"
             value="${escH(condDefault)}"
             oninput="this.value=this.value.toUpperCase();onInputBorrador('${pat}')">
+          ${alertaGpsTxt}
         </td>
         <td id="td-ini-${pat}">
           ${esTodoDia
@@ -898,15 +1030,16 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
         <td><input type="text" id="inp-com-${pat}" placeholder="Comentario" value="${escH(bd?.comentario||'')}"
           style="border:1px solid var(--vb);border-radius:5px;padding:4px 7px;font-size:12px;font-family:inherit;width:100%;"
           onchange="onInputBorrador('${pat}')"></td>
-        <td style="text-align:center;">
+        <td style="text-align:center;vertical-align:middle;">
+          <button class="btn-estado" style="color:#e65100;border-color:#e65100;" onclick="cambiarEstadoMovil('${pat}','sinuso')" title="Sin uso">🟠</button>
+          <button class="btn-estado" style="color:var(--rojo);border-color:var(--rojo);" onclick="cambiarEstadoMovil('${pat}','panne')" title="En panne">🔴</button>
+        </td>
+        <td style="text-align:center;vertical-align:middle;">
           <button class="btn-todo-dia${esTodoDia?' activo':''}" id="btn-td-${pat}"
-            onclick="toggleTodoDia('${pat}')" title="Marcar como uso todo el día (00:01 – 23:59)">
-            ${esTodoDia?'✔ Todo el día':'☀ Todo el día'}
-          </button>
+            onclick="toggleTodoDia('${pat}')" title="Todo el día (00:01–23:59)">${SVG_RELOJ}</button>
         </td>
       </tr>`;
 
-      // Si tiene conductor fijo y no hay borrador — agregar al borrador automático
       if(conductoresFijos[pat]&&!bd){
         borrador[pat]={conductor:conductoresFijos[pat],horaIni:'',horaFin:'',comentario:'',todoDia:false};
       }
@@ -918,7 +1051,7 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
       <thead><tr>
         <th>Tipo</th><th>Patente</th><th>Modelo</th>
         <th>Conductor</th><th>H. inicio</th><th>H. fin</th>
-        <th>Comentario</th><th></th>
+        <th>Comentario</th><th style="width:70px"></th><th style="width:38px"></th>
       </tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
@@ -1079,8 +1212,8 @@ document.getElementById('btn-add-movil').addEventListener('click',async()=>{
   const condFijo=document.getElementById('nm-conductor-fijo').value;
   if(!pat||!tipo||!modelo){toast('Patente, tipo y modelo son obligatorios',true);return;}
   if(flotaActual[pat]){toast('Esa patente ya existe en la flota',true);return;}
-  await db.collection('config_flota_gps').doc(pat).set({tipo,modelo});
-  flotaActual[pat]={tipo,modelo};
+  await db.collection('config_flota_gps').doc(pat).set({tipo,modelo,estado:'operativo'});
+  flotaActual[pat]={tipo,modelo,estado:'operativo'};
   if(condFijo){
     // Buscar conductor y actualizar patenteFija
     const c=conductoresLista.find(x=>x.nombre===condFijo);
@@ -1121,6 +1254,96 @@ document.getElementById('ec-eliminar').addEventListener('click',async()=>{
   document.getElementById('modal-cond').classList.remove('open');
   toast('Conductor eliminado');
   await cargarConductores();
+});
+
+// ══ TABS INTERNOS CONDUCTORES ══
+function switchTabCond(tab){
+  ['cond','movil'].forEach(t=>{
+    document.getElementById(`tcb-${t}`).classList.toggle('on',t===tab);
+    document.getElementById(`tcp-${t}`).classList.toggle('on',t===tab);
+  });
+  if(tab==='movil') cargarMoviles();
+}
+
+// ══ GESTIÓN DE MÓVILES ══
+async function cargarMoviles(){
+  const wrap=document.getElementById('lista-moviles');
+  wrap.innerHTML='<div class="empty-bit"><h3>Cargando...</h3></div>';
+  const pats=ordenFlota(flotaActual);
+  if(pats.length===0){
+    wrap.innerHTML='<div class="empty-bit"><h3>Sin móviles registrados</h3></div>';
+    return;
+  }
+  const estadoLabel={operativo:'🟢 Operativo',sinuso:'🟠 Sin uso',panne:'🔴 En panne'};
+  const filas=pats.map(pat=>{
+    const m=flotaActual[pat];
+    const est=m.estado||'operativo';
+    // Buscar conductor fijo
+    const condFijo=conductoresLista.find(c=>c.patenteFija===pat);
+    return`<tr>
+      <td><strong>${pat}</strong></td>
+      <td style="font-size:11px;">${m.tipo||'—'}</td>
+      <td style="font-size:11px;">${m.modelo||'—'}</td>
+      <td style="font-size:11px;">${condFijo?escH(condFijo.nombre):'<span style="color:#bbb;">Sin fijo</span>'}</td>
+      <td>${estadoLabel[est]||est}</td>
+      <td><button class="btn-accion btn-edit" onclick="abrirEditMovil('${pat}')">✏️ Editar</button></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML=`<table class="tabla-moviles">
+    <thead><tr><th>Patente</th><th>Tipo</th><th>Modelo</th><th>Conductor fijo</th><th>Estado</th><th></th></tr></thead>
+    <tbody>${filas}</tbody>
+  </table>`;
+}
+
+function abrirEditMovil(pat){
+  const m=flotaActual[pat]||{};
+  document.getElementById('em-patente').value=pat;
+  document.getElementById('em-patente-txt').value=pat;
+  document.getElementById('em-modelo').value=m.modelo||'';
+  document.getElementById('em-tipo').value=m.tipo||'PickUp';
+  // Poblar select conductor fijo
+  const condFijoActual=conductoresLista.find(c=>c.patenteFija===pat);
+  const opts=conductoresLista.map(c=>`<option value="${c.id}" ${condFijoActual?.id===c.id?'selected':''}>${escH(c.nombre)}</option>`).join('');
+  document.getElementById('em-conductor-fijo').innerHTML='<option value="">— Sin asignación fija —</option>'+opts;
+  document.getElementById('modal-movil').classList.add('open');
+}
+document.getElementById('em-cancelar').addEventListener('click',()=>document.getElementById('modal-movil').classList.remove('open'));
+document.getElementById('em-guardar').addEventListener('click',async()=>{
+  const pat=document.getElementById('em-patente').value;
+  const modelo=document.getElementById('em-modelo').value.trim();
+  const tipo=document.getElementById('em-tipo').value;
+  const condId=document.getElementById('em-conductor-fijo').value;
+  if(!modelo||!tipo){toast('Modelo y tipo son obligatorios',true);return;}
+  const estadoActual=flotaActual[pat].estado||'operativo';
+  await db.collection('config_flota_gps').doc(pat).update({tipo,modelo,estado:estadoActual});
+  flotaActual[pat]={...flotaActual[pat],tipo,modelo};
+  // Actualizar conductor fijo: desasignar el anterior, asignar el nuevo
+  const anterior=conductoresLista.find(c=>c.patenteFija===pat);
+  if(anterior&&anterior.id!==condId){
+    await db.collection('config_conductores').doc(anterior.id).update({patenteFija:''});
+  }
+  if(condId&&condId!==anterior?.id){
+    await db.collection('config_conductores').doc(condId).update({patenteFija:pat});
+  }
+  document.getElementById('modal-movil').classList.remove('open');
+  toast(`Móvil ${pat} actualizado ✓`);
+  await cargarConductoresMemoria();
+  poblarSelectsPatente();
+  cargarMoviles();
+});
+document.getElementById('em-eliminar').addEventListener('click',async()=>{
+  const pat=document.getElementById('em-patente').value;
+  if(!confirm(`¿Eliminar el móvil ${pat} de la flota?\nEsta acción no se puede deshacer.`))return;
+  // Desasignar conductor fijo si existe
+  const condFijo=conductoresLista.find(c=>c.patenteFija===pat);
+  if(condFijo) await db.collection('config_conductores').doc(condFijo.id).update({patenteFija:''});
+  await db.collection('config_flota_gps').doc(pat).delete();
+  delete flotaActual[pat];
+  document.getElementById('modal-movil').classList.remove('open');
+  toast(`Móvil ${pat} eliminado de la flota`);
+  await cargarConductoresMemoria();
+  poblarSelectsPatente();
+  cargarMoviles();
 });
 
 // ══ TAB DÍAS PENDIENTES ══
