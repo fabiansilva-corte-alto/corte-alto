@@ -182,13 +182,6 @@ input[type="date"]:focus{outline:2px solid var(--ac);outline-offset:1px;}
 .t-sk{background:#f4ecf7;color:#6c3483;}
 .t-otro{background:var(--vs);color:var(--vm);}
 
-.input-conductor{
-  border:1px solid var(--vb);border-radius:5px;
-  padding:5px 8px;font-size:12px;width:100%;
-  font-family:var(--f);color:var(--tp);background:var(--sup);
-}
-.input-conductor:focus{outline:2px solid var(--ac);outline-offset:1px;border-color:var(--ac);}
-.input-conductor.sin-nombre{border-color:var(--amarillo);background:var(--amar-s);}
 
 .km-val{font-weight:600;color:var(--tp);}
 .km-cero{color:var(--rojo);font-weight:700;}
@@ -458,7 +451,6 @@ input[type="date"]:focus{outline:2px solid var(--ac);outline-offset:1px;}
               <th>Patente</th>
               <th>Tipo</th>
               <th>Centro</th>
-              <th>Conductor</th>
               <th style="text-align:right">Km día</th>
               <th style="text-align:center">Exc. Geocerca</th>
               <th style="text-align:center">Exc. Ruta</th>
@@ -471,7 +463,6 @@ input[type="date"]:focus{outline:2px solid var(--ac);outline-offset:1px;}
 
       <div style="font-size:12px;color:var(--ts);margin-bottom:16px;">
         ⚠️ Las filas en rojo corresponden a móviles <strong>sin movimiento o sin señal GPS</strong> ese día. Verifica si estuvieron en taller o fuera de servicio.
-        <br>✏️ Los conductores en <span style="color:var(--amarillo);font-weight:700;">amarillo</span> no vienen en el archivo — completa el nombre antes de guardar.
       </div>
 
       <div class="barra-prog" id="barra-prog">
@@ -489,7 +480,7 @@ input[type="date"]:focus{outline:2px solid var(--ac);outline-offset:1px;}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
           Volver a cargar
         </button>
-        <span style="font-size:12px;color:var(--ts);margin-left:auto;" id="lbl-sin-conductor"></span>
+
       </div>
     </div>
   </div>
@@ -636,20 +627,23 @@ function asignarArchivo(file, tipo) {
 ══════════════════════════════════════ */
 function leerCSV(file) {
   return new Promise((res, rej) => {
+    // Detecta si el texto tiene caracteres de reemplazo UTF-8 mal decodificados
+    function tieneGarbage(txt) {
+      return txt.includes('\uFFFD') || /[\x80-\x9F]/.test(txt);
+    }
     const intentarLeer = (encoding) => {
       const r = new FileReader();
       r.onload = e => {
+        const txt = e.target.result;
+        if (encoding === 'utf-8' && tieneGarbage(txt)) {
+          // El archivo es latin-1, releer con encoding correcto
+          intentarLeer('iso-8859-1');
+          return;
+        }
         try {
-          const txt = e.target.result;
-          const filas = parsearCSVRobusto(txt);
-          res(filas);
+          res(parsearCSVRobusto(txt));
         } catch(err) {
-          if (encoding === 'utf-8') {
-            // Reintentar con latin-1 si UTF-8 falla
-            intentarLeer('iso-8859-1');
-          } else {
-            rej(new Error('Error leyendo ' + file.name + ': ' + err.message));
-          }
+          rej(new Error('Error leyendo ' + file.name + ': ' + err.message));
         }
       };
       r.onerror = () => {
@@ -835,7 +829,6 @@ async function analizarArchivos() {
       const nombre = r['Nombre'] || '';
       const patCSV = (r['Patente'] || '').trim().toUpperCase();
       // Extraer conductor del nombre
-      const { conductor: conductorCSV } = parsearNombreMovil(nombre);
       const km = parseNum(r['Kilometros Recorridos [km]'] || r['Kilometros Recorridos']);
       const odomIni = parseNum(r['Odometro Inicial [km]']);
       const odomFin = parseNum(r['Odometro Final [km]']);
@@ -863,8 +856,6 @@ async function analizarArchivos() {
       return {
         patente: patCSV,
         nombreMovil: nombre,
-        conductorSugerido: conductorCSV || '',
-        conductorFinal: conductorCSV || '', // editable
         tipo,
         centro,
         km,
@@ -926,11 +917,10 @@ function renderizarRevision() {
   document.getElementById('lbl-fecha-rev').textContent = `Informe: ${formatFecha(fecha)}`;
 
   // Chips resumen
-  const totalKm = moviles.reduce((s, m) => s + m.km, 0);
+  const totalKm  = moviles.reduce((s, m) => s + m.km, 0);
   const totalGeo = moviles.reduce((s, m) => s + m.excGeo, 0);
   const totalRuta = moviles.reduce((s, m) => s + m.excRuta, 0);
-  const sinGPS = moviles.filter(m => m.sinGPS).length;
-  const sinNombre = moviles.filter(m => !m.conductorFinal).length;
+  const sinGPS   = moviles.filter(m => m.sinGPS).length;
 
   document.getElementById('chips-resumen').innerHTML = `
     <div class="chip azul">
@@ -945,28 +935,18 @@ function renderizarRevision() {
     <div class="chip naranja">
       <div><div class="cv">${totalRuta}</div><div class="cl">Excesos en ruta</div></div>
     </div>
-    <div class="chip ${sinGPS>0?'rojo':'verde'}">
+    <div class="chip ${sinGPS > 0 ? 'rojo' : 'verde'}">
       <div><div class="cv">${sinGPS}</div><div class="cl">Sin movimiento/GPS</div></div>
     </div>
   `;
 
-  // Tabla
+  // Tabla — conductor ya no se muestra ni edita aquí (lo gestiona Bitácora de Conductores)
   const tbody = document.getElementById('tbody-conductores');
-  tbody.innerHTML = moviles.map((m, i) => `
+  tbody.innerHTML = moviles.map(m => `
     <tr class="${m.sinGPS ? 'sin-gps' : ''}">
       <td><strong>${m.patente}</strong></td>
       <td>${badgeTipo(m.tipo)}</td>
       <td style="font-size:11px;color:var(--ts);">${m.centro || '—'}</td>
-      <td>
-        <input
-          class="input-conductor ${!m.conductorFinal ? 'sin-nombre' : ''}"
-          type="text"
-          value="${escHtml(m.conductorFinal)}"
-          placeholder="Ingresar conductor..."
-          data-i="${i}"
-          oninput="actualizarConductor(${i}, this.value, this)"
-        >
-      </td>
       <td style="text-align:right">
         <span class="${m.sinGPS ? 'km-cero' : 'km-val'}">${m.km.toFixed(1)}</span>
       </td>
@@ -982,23 +962,8 @@ function renderizarRevision() {
     </tr>
   `).join('');
 
-  actualizarLblSinConductor();
-
   // Scroll suave a la sección
   document.getElementById('sec-revision').scrollIntoView({ behavior:'smooth', block:'start' });
-}
-
-function actualizarConductor(i, valor, input) {
-  datosAnalizados.moviles[i].conductorFinal = valor.trim();
-  input.classList.toggle('sin-nombre', !valor.trim());
-  actualizarLblSinConductor();
-}
-
-function actualizarLblSinConductor() {
-  const sin = datosAnalizados.moviles.filter(m => !m.conductorFinal).length;
-  document.getElementById('lbl-sin-conductor').textContent =
-    sin > 0 ? `⚠ ${sin} móvil(es) sin conductor asignado` : '✓ Todos los conductores completos';
-  document.getElementById('lbl-sin-conductor').style.color = sin > 0 ? 'var(--amarillo)' : 'var(--ac2)';
 }
 
 /* ══════════════════════════════════════
@@ -1062,13 +1027,22 @@ async function ejecutarGuardado(docRef, fecha, moviles, eventosGeo, eventosVel={
     fill.style.width = '50%'; pct.textContent = '50%';
     txt.textContent = 'Guardando detalle de móviles...';
 
+    // Limpiar subcolección móviles previa (evita patentes fantasma en sobreescritura)
+    const movPrev = await docRef.collection('moviles').get();
+    if (!movPrev.empty) {
+      const batchDel = db.batch();
+      movPrev.forEach(d => batchDel.delete(d.ref));
+      await batchDel.commit();
+    }
+
     // Subcolección: un documento por móvil
+    // conductor siempre '' — la fuente oficial es bitacora_conductores
     const batch = db.batch();
     moviles.forEach(m => {
       const ref = docRef.collection('moviles').doc(m.patente);
       batch.set(ref, {
         patente: m.patente,
-        conductor: m.conductorFinal || '',
+        conductor: '',
         tipo: m.tipo,
         centro: m.centro,
         km: m.km,
@@ -1220,30 +1194,43 @@ async function guardarNuevaFecha(idAntiguo, fechaAntigua) {
   }
 
   try {
-    // Leer documento original completo
-    const docRef = db.collection(COL).doc(idAntiguo);
-    const snap = await docRef.get();
-    const data = snap.data();
-
-    // Leer subcolección móviles
+    const docRef  = db.collection(COL).doc(idAntiguo);
+    const snap    = await docRef.get();
+    const data    = snap.data();
     const movSnap = await docRef.collection('moviles').get();
-
-    // Crear nuevo documento con nueva fecha como ID
     const nuevoRef = db.collection(COL).doc(nuevaFecha);
+
+    // Crear documento principal con nueva fecha
     await nuevoRef.set({
       ...data,
       fecha: nuevaFecha,
       fechaTS: firebase.firestore.Timestamp.fromDate(new Date(nuevaFecha + 'T12:00:00')),
     });
 
-    // Copiar subcolección móviles al nuevo documento
-    const batch = db.batch();
-    movSnap.forEach(m => {
-      batch.set(nuevoRef.collection('moviles').doc(m.id), m.data());
-    });
-    await batch.commit();
+    // Copiar subcolección móviles
+    const batchMov = db.batch();
+    movSnap.forEach(m => batchMov.set(nuevoRef.collection('moviles').doc(m.id), m.data()));
+    await batchMov.commit();
 
-    // Eliminar documento antiguo y su subcolección
+    // Copiar gps_geocercas si existe
+    const geoSnap = await db.collection('gps_geocercas').doc(idAntiguo).get();
+    if (geoSnap.exists) {
+      await db.collection('gps_geocercas').doc(nuevaFecha).set({
+        ...geoSnap.data(), fecha: nuevaFecha,
+      });
+      await db.collection('gps_geocercas').doc(idAntiguo).delete();
+    }
+
+    // Copiar gps_velocidades si existe
+    const velSnap = await db.collection('gps_velocidades').doc(idAntiguo).get();
+    if (velSnap.exists) {
+      await db.collection('gps_velocidades').doc(nuevaFecha).set({
+        ...velSnap.data(), fecha: nuevaFecha,
+      });
+      await db.collection('gps_velocidades').doc(idAntiguo).delete();
+    }
+
+    // Eliminar documento antiguo y su subcolección móviles
     const batchDel = db.batch();
     movSnap.forEach(m => batchDel.delete(docRef.collection('moviles').doc(m.id)));
     await batchDel.commit();
@@ -1256,50 +1243,18 @@ async function guardarNuevaFecha(idAntiguo, fechaAntigua) {
     console.error(err);
   }
 }
-
-function mostrarEditFecha(id) {
-  document.querySelectorAll('[id^="hedit-"]').forEach(el => el.style.display = 'none');
-  document.getElementById('hedit-' + id).style.display = 'block';
-}
-function ocultarEditFecha(id) {
-  document.getElementById('hedit-' + id).style.display = 'none';
-}
-async function guardarNuevaFecha(idAntiguo, fechaAntigua) {
-  const nuevaFecha = document.getElementById('finp-' + idAntiguo).value;
-  if (!nuevaFecha) { mostrarToast('Selecciona una fecha válida', 'warn'); return; }
-  if (nuevaFecha === fechaAntigua) { ocultarEditFecha(idAntiguo); return; }
-  try {
-    const docRef = db.collection(COL).doc(idAntiguo);
-    const snap = await docRef.get();
-    const data = snap.data();
-    // Copiar subcolección móviles
-    const movSnap = await docRef.collection('moviles').get();
-    const nuevoRef = db.collection(COL).doc(nuevaFecha);
-    await nuevoRef.set({ ...data, fecha: nuevaFecha,
-      fechaTS: firebase.firestore.Timestamp.fromDate(new Date(nuevaFecha + 'T12:00:00')) });
-    const batch = db.batch();
-    movSnap.forEach(m => batch.set(nuevoRef.collection('moviles').doc(m.id), m.data()));
-    await batch.commit();
-    const batchDel = db.batch();
-    movSnap.forEach(m => batchDel.delete(docRef.collection('moviles').doc(m.id)));
-    await batchDel.commit();
-    await docRef.delete();
-    mostrarToast('Fecha corregida: ' + formatFecha(fechaAntigua) + ' → ' + formatFecha(nuevaFecha), 'ok');
-    cargarHistorial();
-  } catch(err) {
-    mostrarToast('Error: ' + err.message, 'err');
-    console.error(err);
-  }
-}
 async function eliminarRegistro(id, fecha) {
   if (!confirm(`¿Eliminar el informe GPS del ${formatFecha(fecha)}?\nEsta acción no se puede deshacer.`)) return;
   try {
-    // Eliminar subcolección móviles primero
+    // Eliminar subcolección móviles
     const movSnap = await db.collection(COL).doc(id).collection('moviles').get();
     const b = db.batch();
     movSnap.forEach(d => b.delete(d.ref));
     await b.commit();
     await db.collection(COL).doc(id).delete();
+    // Eliminar geocercas y velocidades del mismo día
+    await db.collection('gps_geocercas').doc(id).delete().catch(() => {});
+    await db.collection('gps_velocidades').doc(id).delete().catch(() => {});
     mostrarToast(`Informe del ${formatFecha(fecha)} eliminado`, 'ok');
     cargarHistorial();
   } catch(err) {
