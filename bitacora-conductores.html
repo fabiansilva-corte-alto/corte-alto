@@ -149,6 +149,32 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
 .empty-bit{text-align:center;padding:32px;color:var(--ts);}
 .empty-bit h3{font-size:14px;font-weight:600;margin-bottom:6px;}
 
+/* BANNER COPIA DÍA ANTERIOR */
+.banner-copia{background:#e8f4fd;border:1px solid #90caf9;border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:10px;}
+.banner-copia .bc-titulo{font-size:13px;font-weight:700;color:#1565c0;display:flex;align-items:center;gap:8px;}
+.banner-copia .bc-sub{font-size:12px;color:#1976d2;}
+.banner-copia .bc-acciones{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-copia-si{background:#1565c0;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;}
+.btn-copia-si:hover{background:#0d47a1;}
+.btn-copia-rev{background:#fff;color:#1565c0;border:2px solid #1565c0;border-radius:7px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;}
+.btn-copia-rev:hover{background:#e8f4fd;}
+.btn-copia-no{background:#fff;color:var(--ts);border:1px solid var(--vb);border-radius:7px;padding:7px 14px;font-size:12px;cursor:pointer;}
+.btn-copia-no:hover{background:var(--vs);}
+
+/* BARRA GUARDAR DÍA */
+.barra-guardar{position:sticky;bottom:0;z-index:150;background:var(--vd);padding:10px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 -2px 12px rgba(0,0,0,.15);}
+.barra-guardar .bg-info{flex:1;font-size:12px;color:rgba(255,255,255,.8);}
+.barra-guardar .bg-info strong{color:#fff;}
+.btn-guardar-dia{background:var(--ac);color:#fff;border:none;border-radius:7px;padding:9px 22px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.btn-guardar-dia:hover{background:var(--ac2);}
+.btn-guardar-dia:disabled{background:#555;cursor:not-allowed;opacity:.6;}
+.btn-cancelar-dia{background:transparent;color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:8px 14px;font-size:12px;cursor:pointer;}
+.btn-cancelar-dia:hover{background:rgba(255,255,255,.1);}
+
+/* FILAS EN MODO EDICIÓN GLOBAL */
+.fila-pendiente-guardar td{background:#fffde7 !important;}
+.fila-pendiente-guardar td:nth-child(4){color:#1a2e1a !important;font-style:normal !important;}
+
 /* TOAST */
 .toast{position:fixed;bottom:20px;right:20px;z-index:999;background:var(--vd);color:#fff;border-radius:8px;padding:10px 16px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
 .toast.show{transform:translateY(0);opacity:1;}
@@ -195,6 +221,16 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
       <div id="banner-alerta" style="display:none;" class="banner-alerta">
         ⚠️ <span id="banner-texto"></span>
       </div>
+      <!-- Banner copia día anterior -->
+      <div id="banner-copia" style="display:none;" class="banner-copia">
+        <div class="bc-titulo">📋 <span id="bc-titulo-txt"></span></div>
+        <div class="bc-sub" id="bc-sub-txt"></div>
+        <div class="bc-acciones">
+          <button class="btn-copia-si" id="btn-copia-si">✅ Sí, copiar igual y guardar</button>
+          <button class="btn-copia-rev" id="btn-copia-rev">✏️ Sí, pero revisar primero</button>
+          <button class="btn-copia-no" id="btn-copia-no">❌ No copiar</button>
+        </div>
+      </div>
       <div class="card">
         <div class="card-header">
           <span>🚛</span><h2>Flota del día</h2>
@@ -207,6 +243,12 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
         <div id="tabla-wrap" style="overflow-x:auto;overflow-y:auto;max-height:70vh;">
           <div class="empty-bit"><h3>Cargando...</h3></div>
         </div>
+      </div>
+      <!-- Barra guardar día -->
+      <div class="barra-guardar" id="barra-guardar" style="display:none;">
+        <div class="bg-info"><strong id="bg-pendientes-txt"></strong></div>
+        <button class="btn-cancelar-dia" id="btn-cancelar-dia">Descartar borrador</button>
+        <button class="btn-guardar-dia" id="btn-guardar-dia">💾 Guardar día</button>
       </div>
     </div>
 
@@ -530,10 +572,152 @@ document.getElementById('btn-hoy').addEventListener('click',()=>{
   cargarHistorial(h);
 });
 
-let filaAbierta=null;
+// Borrador en memoria: { patente → { conductor, horaIni, horaFin, comentario } }
+let borrador={};
+let fechaActual='';
+let modoRevision=false; // true cuando el usuario eligió "revisar primero"
+let datosAyer={}; // cache de registros del día anterior
+
+function ocultarBannerCopia(){
+  document.getElementById('banner-copia').style.display='none';
+}
+
+function actualizarBarraGuardar(){
+  const barra=document.getElementById('barra-guardar');
+  const pendientes=Object.keys(borrador).length;
+  if(pendientes>0||modoRevision){
+    barra.style.display='flex';
+    document.getElementById('bg-pendientes-txt').textContent=
+      pendientes>0
+        ?`${pendientes} móvil(es) con cambios pendientes de guardar`
+        :'Revisa las asignaciones y presiona Guardar día';
+  } else {
+    barra.style.display='none';
+  }
+}
+
+// Captura cambio en inputs del borrador
+function onInputBorrador(pat){
+  const cond=document.getElementById(`inp-cond-${pat}`)?.value.trim()||'';
+  const ini=document.getElementById(`inp-ini-${pat}`)?.value||'';
+  const fin=document.getElementById(`inp-fin-${pat}`)?.value||'';
+  const com=document.getElementById(`inp-com-${pat}`)?.value.trim()||'';
+  if(cond){
+    borrador[pat]={conductor:cond,horaIni:ini,horaFin:fin,comentario:com};
+  } else {
+    delete borrador[pat];
+  }
+  actualizarBarraGuardar();
+}
+
+document.getElementById('btn-guardar-dia').addEventListener('click',()=>guardarDia());
+document.getElementById('btn-cancelar-dia').addEventListener('click',()=>{
+  if(!confirm('¿Descartar todos los cambios no guardados?'))return;
+  borrador={};
+  modoRevision=false;
+  cargarHistorial(fechaActual);
+});
+
+async function guardarDia(){
+  if(Object.keys(borrador).length===0){toast('No hay cambios para guardar',true);return;}
+  const btn=document.getElementById('btn-guardar-dia');
+  btn.disabled=true;btn.textContent='Guardando...';
+  try{
+    const fecha=fechaActual;
+    const batch=db.batch();
+    const ref=doc=>db.collection('bitacora_conductores').doc(fecha).collection('registros').doc();
+    for(const [pat,datos] of Object.entries(borrador)){
+      if(!datos.conductor||!datos.horaIni){
+        toast(`${pat}: conductor y hora inicio son obligatorios`,true);
+        btn.disabled=false;btn.innerHTML='💾 Guardar día';
+        return;
+      }
+      // Cerrar turno anterior abierto si existe
+      const prevSnap=await db.collection('bitacora_conductores').doc(fecha)
+        .collection('registros').where('patente','==',pat).where('horaFin','==','').get();
+      const batchPrev=db.batch();
+      prevSnap.forEach(d=>{
+        if(datos.horaIni>(d.data().horaIni||''))
+          batchPrev.update(d.ref,{horaFin:datos.horaIni,horaFinCalculada:true});
+      });
+      await batchPrev.commit();
+      const nuevoRef=db.collection('bitacora_conductores').doc(fecha).collection('registros').doc();
+      batch.set(nuevoRef,{
+        patente:pat,tipo:flotaActual[pat]?.tipo||'Otro',
+        conductor:datos.conductor,fecha,
+        horaIni:datos.horaIni,horaFin:datos.horaFin||'',
+        horaFinCalculada:false,comentario:datos.comentario||'',
+        creadoEn:firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+    const n=Object.keys(borrador).length;
+    borrador={};
+    modoRevision=false;
+    toast(`${n} asignación(es) guardadas ✓`);
+    cargarHistorial(fecha);
+  }catch(e){
+    toast('Error al guardar: '+e.message,true);
+    btn.disabled=false;btn.innerHTML='💾 Guardar día';
+  }
+}
+
+// Copia directa a Firestore desde datos de ayer (opción "Sí, copiar igual")
+async function copiarDiaAnteriorDirecto(fecha,registrosAyer){
+  const btn=document.getElementById('btn-copia-si');
+  btn.disabled=true;btn.textContent='Copiando...';
+  try{
+    const batch=db.batch();
+    // Solo copiar el último registro por patente (el conductor activo)
+    const porPat={};
+    registrosAyer.forEach(r=>{if(!porPat[r.patente])porPat[r.patente]=r;else if(r.horaIni>porPat[r.patente].horaIni)porPat[r.patente]=r;});
+    for(const [pat,r] of Object.entries(porPat)){
+      const nuevoRef=db.collection('bitacora_conductores').doc(fecha).collection('registros').doc();
+      batch.set(nuevoRef,{
+        patente:pat,tipo:flotaActual[pat]?.tipo||r.tipo||'Otro',
+        conductor:r.conductor,fecha,
+        horaIni:'',horaFin:'',horaFinCalculada:false,
+        comentario:'',creadoEn:firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+    toast(`${Object.keys(porPat).length} asignaciones copiadas ✓`);
+    ocultarBannerCopia();
+    cargarHistorial(fecha);
+  }catch(e){
+    toast('Error al copiar: '+e.message,true);
+    btn.disabled=false;btn.textContent='✅ Sí, copiar igual y guardar';
+  }
+}
+
+// Modo revisión: carga datos de ayer en los inputs del borrador
+function activarModoRevision(fecha,registrosAyer){
+  modoRevision=true;
+  borrador={};
+  // Tomar último conductor por patente
+  const porPat={};
+  registrosAyer.forEach(r=>{
+    if(!porPat[r.patente])porPat[r.patente]=r;
+    else if(r.horaIni>porPat[r.patente].horaIni)porPat[r.patente]=r;
+  });
+  // Poner en borrador (sin horas — ayer es ayer)
+  Object.entries(porPat).forEach(([pat,r])=>{
+    // No sobrescribir conductores fijos — ya están
+    borrador[pat]={conductor:r.conductor,horaIni:'',horaFin:'',comentario:''};
+  });
+  ocultarBannerCopia();
+  // Redibujar tabla con los inputs pre-llenados
+  renderTablaConBorrador(fecha,{},borrador);
+  actualizarBarraGuardar();
+}
 
 async function cargarHistorial(fecha){
-  filaAbierta=null;
+  fechaActual=fecha;
+  borrador={};
+  modoRevision=false;
+  datosAyer={};
+  ocultarBannerCopia();
+  document.getElementById('barra-guardar').style.display='none';
   const wrap=document.getElementById('tabla-wrap');
   const lbl=document.getElementById('lbl-registros');
   wrap.innerHTML='<div class="empty-bit"><h3>Cargando...</h3></div>';
@@ -550,118 +734,137 @@ async function cargarHistorial(fecha){
     const total=Object.keys(flotaActual).length;
     lbl.textContent=`${asignados} / ${total} móviles asignados`;
 
-    let filas='',tipoActual='';
-    ordenFlota(flotaActual).forEach(pat=>{
-      const tipo=flotaActual[pat].tipo;
-      const modelo=flotaActual[pat].modelo||'—';
-      const esFijo=!!conductoresFijos[pat];
+    renderTablaConBorrador(fecha,porPat,{});
 
-      if(tipo!==tipoActual){
-        tipoActual=tipo;
-        const ico=tipo==='Furgón'?'🚐':tipo==='PickUp'?'🛻':tipo==='Camión'?'🚚':'⚙️';
-        filas+=`<tr class="fila-seccion"><td colspan="8">${ico} Flota ${tipo}</td></tr>`;
-      }
-
-      const regs=porPat[pat]||[];
-      const ultimo=regs.length>0?regs[regs.length-1]:null;
-      const puntoFijo=esFijo?'<span class="punto-fijo" title="Conductor fijo asignado"></span>':'';
-
-      if(ultimo){
-        const fin=ultimo.horaFin
-          ?`${ultimo.horaFin}${ultimo.horaFinCalculada?' <span class="fin-calc">(auto)</span>':''}`
-          :'<span class="fin-calc">pendiente</span>';
-        const histBtn=regs.length>1
-          ?`<button class="btn-accion btn-edit" style="font-size:10px;margin-right:2px;" onclick="verHistorial('${pat}','${fecha}')">+${regs.length} turnos</button>`:'';
-        filas+=`<tr class="asignado" id="fila-${pat}">
-          <td>${badgeTipo(tipo)}</td>
-          <td><strong>${pat}</strong></td>
-          <td style="font-size:11px;color:var(--ts);">${modelo}</td>
-          <td>${puntoFijo}<span style="font-weight:600;">${escH(ultimo.conductor)}</span></td>
-          <td style="font-size:12px;">${ultimo.horaIni||'—'}</td>
-          <td style="font-size:12px;">${fin}</td>
-          <td style="font-size:11px;color:var(--ts);">${escH(ultimo.comentario||'')}</td>
-          <td style="white-space:nowrap;display:flex;gap:3px;align-items:center;">
-            ${histBtn}
-            <button class="btn-accion btn-edit" onclick="abrirEditModal('${ultimo.id}','${fecha}','${escH(ultimo.conductor)}','${ultimo.horaIni||''}','${ultimo.horaFin||''}','${escH(ultimo.comentario||'')}')">✏️</button>
-            <button class="btn-accion btn-del" onclick="eliminarRegistro('${ultimo.id}','${fecha}')">🗑</button>
-            <button class="btn-asignar" onclick="toggleFila('${pat}','${fecha}','','','','')">+turno</button>
-          </td>
-        </tr>`;
-      } else {
-        // Sin asignar — pre-rellenar conductor fijo si existe
-        const condFijo=conductoresFijos[pat]||'';
-        const txtCelda=condFijo
-          ?`${puntoFijo}<span style="color:var(--ts);font-style:italic;">${escH(condFijo)} <span style="font-size:10px;opacity:.7;">(sugerido)</span></span>`
-          :`<span style="color:#bbb;font-style:italic;">Sin asignar</span>`;
-        filas+=`<tr class="sin-asignar" id="fila-${pat}">
-          <td>${badgeTipo(tipo)}</td>
-          <td><strong>${pat}</strong></td>
-          <td style="font-size:11px;">${modelo}</td>
-          <td>${txtCelda}</td>
-          <td colspan="3"></td>
-          <td><button class="btn-asignar" onclick="toggleFila('${pat}','${fecha}','${escH(condFijo)}','','','')">+ Asignar</button></td>
-        </tr>`;
-      }
-
-      // Fila edición inline
-      const condFijoDefault=conductoresFijos[pat]||'';
-      filas+=`<tr class="fila-edicion" id="edit-${pat}" style="display:none;">
-        <td colspan="2" style="font-size:11px;font-weight:700;color:var(--vd);">✏️ ${pat}</td>
-        <td><input type="text" id="inp-cond-${pat}" placeholder="Conductor *" list="list-conductores" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></td>
-        <td><input type="time" id="inp-ini-${pat}"></td>
-        <td><input type="time" id="inp-fin-${pat}"></td>
-        <td><input type="text" id="inp-com-${pat}" placeholder="Comentario"></td>
-        <td colspan="2" style="white-space:nowrap;">
-          <button class="btn-guardar-fila" onclick="guardarFila('${pat}','${fecha}')">💾 Guardar</button>
-          <button class="btn-cancelar-fila" onclick="cerrarFila('${pat}')">✕</button>
-        </td>
-      </tr>`;
-    });
-
-    // Datalist de conductores para autocompletado
-    const datalist=conductoresLista.map(c=>`<option value="${escH(c.nombre)}">`).join('');
-
-    wrap.innerHTML=`<datalist id="list-conductores">${datalist}</datalist><table class="tabla-bit">
-        <thead><tr>
-          <th>Tipo</th><th>Patente</th><th>Modelo</th>
-          <th>Conductor</th><th>H. inicio</th><th>H. fin</th>
-          <th>Comentario</th><th></th>
-        </tr></thead>
-        <tbody>${filas}</tbody>
-      </table>`;
+    // Si el día está vacío, buscar datos de ayer
+    if(asignados===0){
+      buscarDiaAnterior(fecha);
+    }
   }catch(e){
     wrap.innerHTML=`<div class="empty-bit"><h3 style="color:var(--rojo)">Error: ${e.message}</h3></div>`;
   }
 }
 
-function toggleFila(pat,fecha,conductor,horaIni,horaFin,comentario){
-  if(filaAbierta&&filaAbierta!==pat)cerrarFila(filaAbierta);
-  const fila=document.getElementById(`edit-${pat}`);
-  if(!fila)return;
-  if(fila.style.display!=='none'){cerrarFila(pat);return;}
-  document.getElementById(`inp-cond-${pat}`).value=conductor;
-  document.getElementById(`inp-ini-${pat}`).value=horaIni;
-  document.getElementById(`inp-fin-${pat}`).value=horaFin;
-  document.getElementById(`inp-com-${pat}`).value=comentario;
-  fila.style.display='';
-  filaAbierta=pat;
-  document.getElementById(`inp-cond-${pat}`).focus();
+function renderTablaConBorrador(fecha,porPat,borradorPre){
+  const wrap=document.getElementById('tabla-wrap');
+  const datalist=conductoresLista.map(c=>`<option value="${escH(c.nombre)}">`).join('');
+  let filas='',tipoActual='';
+
+  ordenFlota(flotaActual).forEach(pat=>{
+    const tipo=flotaActual[pat].tipo;
+    const modelo=flotaActual[pat].modelo||'—';
+    const esFijo=!!conductoresFijos[pat];
+    const puntoFijo=esFijo?'<span class="punto-fijo" title="Conductor fijo asignado"></span>':'';
+
+    if(tipo!==tipoActual){
+      tipoActual=tipo;
+      const ico=tipo==='Furgón'?'🚐':tipo==='PickUp'?'🛻':tipo==='Camión'?'🚚':'⚙️';
+      filas+=`<tr class="fila-seccion"><td colspan="8">${ico} Flota ${tipo}</td></tr>`;
+    }
+
+    const regs=porPat[pat]||[];
+    const ultimo=regs.length>0?regs[regs.length-1]:null;
+
+    if(ultimo){
+      // Ya tiene registro guardado en Firestore — mostrar normal con +turno
+      const fin=ultimo.horaFin
+        ?`${ultimo.horaFin}${ultimo.horaFinCalculada?' <span class="fin-calc">(auto)</span>':''}`
+        :'<span class="fin-calc">pendiente</span>';
+      const histBtn=regs.length>1
+        ?`<button class="btn-accion btn-edit" style="font-size:10px;margin-right:2px;" onclick="verHistorial('${pat}','${fecha}')">+${regs.length} turnos</button>`:'';
+      filas+=`<tr class="asignado" id="fila-vis-${pat}">
+        <td>${badgeTipo(tipo)}</td>
+        <td><strong>${pat}</strong></td>
+        <td style="font-size:11px;color:var(--ts);">${modelo}</td>
+        <td>${puntoFijo}<span style="font-weight:600;">${escH(ultimo.conductor)}</span></td>
+        <td style="font-size:12px;">${ultimo.horaIni||'—'}</td>
+        <td style="font-size:12px;">${fin}</td>
+        <td style="font-size:11px;color:var(--ts);">${escH(ultimo.comentario||'')}</td>
+        <td style="white-space:nowrap;display:flex;gap:3px;align-items:center;">
+          ${histBtn}
+          <button class="btn-accion btn-edit" onclick="abrirEditModal('${ultimo.id}','${fecha}','${escH(ultimo.conductor)}','${ultimo.horaIni||''}','${ultimo.horaFin||''}','${escH(ultimo.comentario||'')}')">✏️</button>
+          <button class="btn-accion btn-del" onclick="eliminarRegistro('${ultimo.id}','${fecha}')">🗑</button>
+          <button class="btn-asignar" onclick="mostrarFilaInline('${pat}','${fecha}')">+turno</button>
+        </td>
+      </tr>
+      <tr class="fila-edicion" id="edit-turno-${pat}" style="display:none;">
+        <td colspan="2" style="font-size:11px;font-weight:700;color:var(--vd);">✏️ Nuevo turno ${pat}</td>
+        <td><input type="text" id="inp-cond-turno-${pat}" placeholder="Conductor *" list="list-conductores" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></td>
+        <td><input type="time" id="inp-ini-turno-${pat}"></td>
+        <td><input type="time" id="inp-fin-turno-${pat}"></td>
+        <td><input type="text" id="inp-com-turno-${pat}" placeholder="Comentario"></td>
+        <td colspan="2" style="white-space:nowrap;">
+          <button class="btn-guardar-fila" onclick="guardarTurnoExtra('${pat}','${fecha}')">💾 Guardar turno</button>
+          <button class="btn-cancelar-fila" onclick="document.getElementById('edit-turno-${pat}').style.display='none'">✕</button>
+        </td>
+      </tr>`;
+    } else {
+      // Sin registro — mostrar fila de entrada (borrador o vacía)
+      const bd=borradorPre[pat]||null;
+      const condDefault=bd?bd.conductor:(conductoresFijos[pat]||'');
+      const esBorrador=!!bd;
+
+      const txtSugerido=conductoresFijos[pat]&&!bd
+        ?`${puntoFijo}<span style="color:var(--ts);font-size:10px;opacity:.8;">(fijo — ya pre-llenado)</span>`
+        :'';
+
+      filas+=`<tr class="${esBorrador?'fila-pendiente-guardar':'sin-asignar'}" id="fila-inp-${pat}">
+        <td>${badgeTipo(tipo)}</td>
+        <td><strong>${pat}</strong></td>
+        <td style="font-size:11px;">${modelo}</td>
+        <td>
+          ${puntoFijo}
+          <input type="text" id="inp-cond-${pat}" placeholder="Conductor *" list="list-conductores"
+            style="text-transform:uppercase;border:1px solid var(--vb);border-radius:5px;padding:4px 7px;font-size:12px;font-family:inherit;width:100%;max-width:200px;"
+            value="${escH(condDefault)}"
+            oninput="this.value=this.value.toUpperCase();onInputBorrador('${pat}')">
+          ${txtSugerido}
+        </td>
+        <td><input type="time" id="inp-ini-${pat}" value="${bd?.horaIni||''}"
+          style="border:1px solid var(--vb);border-radius:5px;padding:4px 6px;font-size:12px;"
+          onchange="onInputBorrador('${pat}')"></td>
+        <td><input type="time" id="inp-fin-${pat}" value="${bd?.horaFin||''}"
+          style="border:1px solid var(--vb);border-radius:5px;padding:4px 6px;font-size:12px;"
+          onchange="onInputBorrador('${pat}')"></td>
+        <td><input type="text" id="inp-com-${pat}" placeholder="Comentario" value="${escH(bd?.comentario||'')}"
+          style="border:1px solid var(--vb);border-radius:5px;padding:4px 7px;font-size:12px;font-family:inherit;width:100%;"
+          onchange="onInputBorrador('${pat}')"></td>
+        <td></td>
+      </tr>`;
+
+      // Si tiene conductor fijo y no hay borrador — ya agregar al borrador automático
+      if(conductoresFijos[pat]&&!bd){
+        borrador[pat]={conductor:conductoresFijos[pat],horaIni:'',horaFin:'',comentario:''};
+      }
+    }
+  });
+
+  wrap.innerHTML=`<datalist id="list-conductores">${datalist}</datalist>
+    <table class="tabla-bit">
+      <thead><tr>
+        <th>Tipo</th><th>Patente</th><th>Modelo</th>
+        <th>Conductor</th><th>H. inicio</th><th>H. fin</th>
+        <th>Comentario</th><th></th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+
+  actualizarBarraGuardar();
 }
 
-function cerrarFila(pat){
-  const fila=document.getElementById(`edit-${pat}`);
-  if(fila)fila.style.display='none';
-  if(filaAbierta===pat)filaAbierta=null;
+// Turno extra para móviles que ya tienen registro guardado
+function mostrarFilaInline(pat,fecha){
+  document.getElementById(`edit-turno-${pat}`).style.display='';
+  document.getElementById(`inp-cond-turno-${pat}`).focus();
 }
 
-async function guardarFila(patente,fecha){
-  const conductor=document.getElementById(`inp-cond-${patente}`).value.trim();
-  const horaIni=document.getElementById(`inp-ini-${patente}`).value;
-  const horaFin=document.getElementById(`inp-fin-${patente}`).value;
-  const comentario=document.getElementById(`inp-com-${patente}`).value.trim();
+async function guardarTurnoExtra(patente,fecha){
+  const conductor=document.getElementById(`inp-cond-turno-${patente}`).value.trim();
+  const horaIni=document.getElementById(`inp-ini-turno-${patente}`).value;
+  const horaFin=document.getElementById(`inp-fin-turno-${patente}`).value;
+  const comentario=document.getElementById(`inp-com-turno-${patente}`).value.trim();
   if(!conductor||!horaIni){toast('Conductor y hora inicio son obligatorios',true);return;}
   const ref=db.collection('bitacora_conductores').doc(fecha).collection('registros');
-  // Calcular hora fin automática
   const prevSnap=await ref.where('patente','==',patente).where('horaFin','==','').get();
   const batch=db.batch();
   prevSnap.forEach(d=>{
@@ -673,9 +876,50 @@ async function guardarFila(patente,fecha){
     horaIni,horaFin:horaFin||'',horaFinCalculada:false,
     comentario,creadoEn:firebase.firestore.FieldValue.serverTimestamp(),
   });
-  toast(`${patente} — asignado ✓`);
+  toast(`${patente} — turno extra guardado ✓`);
   cargarHistorial(fecha);
 }
+
+// ══ COPIA DÍA ANTERIOR ══
+async function buscarDiaAnterior(fecha){
+  try{
+    // Calcular fecha anterior (puede no ser ayer calendario — buscar el día hábil anterior con datos)
+    const fechaDate=new Date(fecha+'T12:00:00');
+    let intentos=0;
+    let snapAyer=null;
+    let fechaAyer='';
+    while(intentos<7){
+      intentos++;
+      fechaDate.setDate(fechaDate.getDate()-1);
+      fechaAyer=fechaDate.toISOString().slice(0,10);
+      const s=await db.collection('bitacora_conductores').doc(fechaAyer).collection('registros').get();
+      if(!s.empty){snapAyer=s;break;}
+    }
+    if(!snapAyer||snapAyer.empty)return; // No hay datos anteriores
+    const regs=snapAyer.docs.map(d=>({id:d.id,...d.data()}));
+    datosAyer={fecha:fechaAyer,regs};
+    // Contar conductores únicos
+    const condUnicos=new Set(regs.map(r=>r.conductor)).size;
+    const mobUnicos=new Set(regs.map(r=>r.patente)).size;
+    document.getElementById('bc-titulo-txt').textContent=
+      `Se encontraron datos del ${fmtFecha(fechaAyer)} (${mobUnicos} móviles, ${condUnicos} conductores)`;
+    document.getElementById('bc-sub-txt').textContent=
+      `¿Deseas usar esas asignaciones como punto de partida para hoy?`;
+    document.getElementById('banner-copia').style.display='flex';
+  }catch(e){console.warn('buscarDiaAnterior:',e.message);}
+}
+
+document.getElementById('btn-copia-si').addEventListener('click',()=>{
+  if(!datosAyer.regs)return;
+  copiarDiaAnteriorDirecto(fechaActual,datosAyer.regs);
+});
+document.getElementById('btn-copia-rev').addEventListener('click',()=>{
+  if(!datosAyer.regs)return;
+  activarModoRevision(fechaActual,datosAyer.regs);
+});
+document.getElementById('btn-copia-no').addEventListener('click',()=>{
+  ocultarBannerCopia();
+});
 
 async function verHistorial(pat,fecha){
   const snap=await db.collection('bitacora_conductores').doc(fecha)
