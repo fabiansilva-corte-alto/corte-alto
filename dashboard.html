@@ -486,11 +486,8 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
   <div class="section">
     <div class="section-title"><i class="ti ti-stack-3"></i> Producción</div>
 
-    <!-- KPI cards: Volumen Producido · Volumen Meta · Cumplimiento -->
-    <div class="kpi-grid" id="kpi-prod">
-      <div class="kpi-card"><div class="loading-block"><div class="spinner"></div></div></div>
-      <div class="kpi-card"><div class="loading-block"><div class="spinner"></div></div></div>
-      <div class="kpi-card"><div class="loading-block"><div class="spinner"></div></div></div>
+    <!-- KPI cards eliminadas: vol/meta/cumplimiento ahora en banda ejecutiva -->
+    <div id="kpi-prod" style="display:none">
     </div>
 
     <!-- Tabla producción diaria por equipo/operador -->
@@ -1026,12 +1023,11 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr) {
     }
   }
 
-  // Meta acumulada hasta última fecha con producción
-  const ultimaFecha = prodTodo.map(d=>d.fecha).sort().reverse()[0] || hasta;
+  // Meta acumulada hasta hoy (hasta), igual que el bloque Producción
   let metaAcum = 0;
   lineasReales.forEach(lin => {
     if(!metasPorLinea[lin]) return;
-    Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f<=ultimaFecha) metaAcum+=v; });
+    Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f>=desde && f<=hasta) metaAcum+=v; });
   });
 
   const cumpl     = metaAcum>0 ? volTotal/metaAcum*100 : NaN;
@@ -1095,11 +1091,10 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr) {
     const volLin   = prodLin.reduce((s,d)=>s+(parseFloat(d.totalGlobal)||0),0);
     const metaLin  = metasPorLinea[lin]?.total || 0;
 
-    // Meta acumulada de esta línea
-    const ultimaLin = prodLin.map(d=>d.fecha).sort().reverse()[0] || ultimaFecha;
+    // Meta acumulada de esta línea hasta hoy (hasta)
     let metaAcumLin = 0;
     if(metasPorLinea[lin]) {
-      Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f<=ultimaLin) metaAcumLin+=v; });
+      Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f>=desde && f<=hasta) metaAcumLin+=v; });
     }
 
     const cumplLin  = metaAcumLin>0 ? volLin/metaAcumLin*100 : NaN;
@@ -1198,10 +1193,7 @@ async function cargarMeta(desde, hasta, linea, prod) {
 
 // ── LOADERS ───────────────────────────────────────────────────────────────
 function mostrarLoaders() {
-  ['kpi-prod'].forEach(id => {
-    document.getElementById(id).querySelectorAll('.kpi-card')
-      .forEach(c => c.innerHTML = loaderHTML);
-  });
+  // kpi-prod eliminado (datos ahora en banda ejecutiva)
   document.getElementById('vol-eq-card').innerHTML =
     '<div class="kpi-label"><i class="ti ti-engine"></i> Volumen por equipo</div>'+loaderHTML;
   document.getElementById('rodal-card').innerHTML =
