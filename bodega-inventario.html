@@ -86,12 +86,14 @@ textarea{resize:vertical;min-height:72px}
 .ia-msg.err{color:var(--rojo)}
 
 /* CALIDADES */
-.calidad-row{display:flex;align-items:center;gap:8px;background:var(--gris-fondo);border:1px solid var(--borde);border-radius:8px;padding:10px 12px;margin-bottom:6px}
-.calidad-icono{font-size:16px;flex-shrink:0}
-.calidad-nombre{font-size:13px;font-weight:600;flex:1;min-width:0;color:var(--text)}
-.calidad-input{width:130px;min-width:90px;text-align:right;padding:8px 10px;font-size:15px;font-weight:700;border:1.5px solid var(--borde);border-radius:8px;flex-shrink:0;background:#fff}
+.calidad-row{background:var(--gris-fondo);border:1px solid var(--borde);border-radius:8px;padding:10px 12px;margin-bottom:6px}
+.calidad-row-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.calidad-icono{font-size:15px;flex-shrink:0}
+.calidad-nombre{font-size:13px;font-weight:600;flex:1;color:var(--text)}
+.calidad-row-bottom{display:flex;align-items:center;gap:6px}
+.calidad-input{flex:1;text-align:right;padding:9px 12px;font-size:16px;font-weight:700;border:1.5px solid var(--borde);border-radius:8px;background:#fff;width:100%}
 .calidad-input:focus{outline:2px solid var(--verde-medio);border-color:var(--verde-medio)}
-.calidad-unidad{font-size:12px;color:var(--text3);flex-shrink:0;font-weight:600}
+.calidad-unidad{font-size:13px;color:var(--text3);font-weight:600;flex-shrink:0}
 
 /* PRODUCCIÓN ADICIONAL */
 .prod-lista{display:flex;flex-direction:column;gap:8px}
@@ -149,6 +151,58 @@ textarea{resize:vertical;min-height:72px}
 .loading{text-align:center;padding:40px 10px;color:var(--text3);font-size:13px}
 .spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--borde);border-top-color:var(--verde-medio);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:8px}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* Botones acción historial */
+.hist-acciones{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--borde)}
+.btn-hist{flex:1;border:none;padding:9px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+.btn-editar{background:var(--azul-bg);color:var(--azul)}
+.btn-tarjeta{background:var(--verde-claro);color:var(--verde-medio)}
+/* MODAL EDICIÓN */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.visible{display:flex}
+.modal-box{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;padding:20px 16px 32px}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-header h3{font-size:16px;font-weight:700;color:var(--verde-oscuro)}
+.btn-cerrar-modal{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);padding:4px}
+/* MODAL TARJETA */
+/* ── TARJETA (estilo informe blanco) ── */
+.tarjeta-preview{background:#fff;border:1px solid #e2e8e2;border-radius:12px;padding:20px;margin-bottom:12px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.tarjeta-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.tarjeta-top-left{flex:1}
+.tarjeta-logo{width:64px;height:64px;object-fit:contain;flex-shrink:0;margin-left:12px}
+.tarjeta-header{font-size:11px;color:#888;margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em}
+.tarjeta-empresa{font-size:18px;font-weight:700;color:#1a3a1a;margin-bottom:2px}
+.tarjeta-fundo{font-size:12px;color:#555;margin-bottom:4px}
+.tarjeta-fechas{font-size:11px;color:#777;display:flex;gap:16px;margin-bottom:12px}
+.tarjeta-cal-bloque{background:#f0f5f0;border-left:3px solid #2d5a2d;border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:12px}
+.tarjeta-cal-nombre{font-size:11px;color:#2d5a2d;font-weight:700;margin-bottom:6px}
+.tarjeta-cal-row{display:flex;justify-content:space-between;font-size:12px;color:#333;padding:2px 0;border-bottom:1px solid #dde8dd}
+.tarjeta-cal-row:last-child{border-bottom:none;font-weight:700;color:#1a3a1a;padding-top:6px}
+.tarjeta-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.tarjeta-num{background:#f4f6f4;border:1px solid #e2e8e2;border-radius:8px;padding:10px 12px}
+.tarjeta-num-label{font-size:10px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.tarjeta-num-val{font-size:18px;font-weight:700;color:#1a3a1a}
+.tarjeta-num-sub{font-size:10px;color:#999;margin-top:2px}
+.tarjeta-brecha{border-radius:8px;padding:12px 16px;margin-bottom:10px}
+.tarjeta-brecha.pos{background:#e8f5e9;border:1px solid #a5d6a7}
+.tarjeta-brecha.neg{background:#fdecea;border:1px solid #ef9a9a}
+.tarjeta-brecha-label{font-size:11px;color:#555;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.tarjeta-brecha-val{font-size:26px;font-weight:800}
+.tarjeta-brecha.pos .tarjeta-brecha-val{color:#2d5a2d}
+.tarjeta-brecha.neg .tarjeta-brecha-val{color:#c0392b}
+.tarjeta-brecha-sub{font-size:11px;margin-top:2px}
+.tarjeta-brecha.pos .tarjeta-brecha-sub{color:#4caf50}
+.tarjeta-brecha.neg .tarjeta-brecha-sub{color:#e57373}
+.tarjeta-obs{font-size:12px;color:#555;line-height:1.5;border-top:1px solid #eee;padding-top:10px;margin-bottom:10px;display:flex;gap:8px}
+.tarjeta-hist-title{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.tarjeta-hist-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0}
+.tarjeta-hist-item{font-size:11px;padding:4px 2px;border-bottom:1px solid #f0f0f0}
+.tarjeta-hist-item-fecha{color:#666;font-size:10px;margin-bottom:1px}
+.tarjeta-hist-item-val{font-weight:700;font-size:12px}
+.tarjeta-hist-pos{color:#2d5a2d}
+.tarjeta-hist-neg{color:#c0392b}
+.tarjeta-hist-item.actual{background:#f0f5f0;border-radius:6px;padding:6px;margin-top:4px}
+.tarjeta-hist-item.actual .tarjeta-hist-item-fecha{font-weight:700;color:#1a3a1a}
+.btn-copiar{width:100%;background:var(--verde-medio);color:#fff;border:none;padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -216,22 +270,25 @@ textarea{resize:vertical;min-height:72px}
       <div class="card-title">📦 Volúmenes por calidad</div>
 
       <div class="calidad-row">
-        <span class="calidad-icono">🌿</span>
-        <span class="calidad-nombre">Madera Fresca</span>
-        <input class="calidad-input" type="number" id="vol-fresca" step="0.001" inputmode="decimal" placeholder="0.000" oninput="actualizarResumen()">
-        <span class="calidad-unidad">m³</span>
+        <div class="calidad-row-top"><span class="calidad-icono">🌿</span><span class="calidad-nombre">Madera Fresca</span></div>
+        <div class="calidad-row-bottom">
+          <input class="calidad-input" type="number" id="vol-fresca" step="0.001" inputmode="decimal" placeholder="0.000" oninput="actualizarResumen()">
+          <span class="calidad-unidad">m³</span>
+        </div>
       </div>
       <div class="calidad-row">
-        <span class="calidad-icono">🍂</span>
-        <span class="calidad-nombre">Madera Esporada</span>
-        <input class="calidad-input" type="number" id="vol-esporada" step="0.001" inputmode="decimal" placeholder="0.000" oninput="actualizarResumen()">
-        <span class="calidad-unidad">m³</span>
+        <div class="calidad-row-top"><span class="calidad-icono">🍂</span><span class="calidad-nombre">Madera Esporada</span></div>
+        <div class="calidad-row-bottom">
+          <input class="calidad-input" type="number" id="vol-esporada" step="0.001" inputmode="decimal" placeholder="0.000" oninput="actualizarResumen()">
+          <span class="calidad-unidad">m³</span>
+        </div>
       </div>
       <div class="calidad-row">
-        <span class="calidad-icono">🟤</span>
-        <span class="calidad-nombre">Madera Manchada</span>
-        <input class="calidad-input" type="number" id="vol-manchada" step="0.001" inputmode="decimal" placeholder="0.000" oninput="actualizarResumen()">
-        <span class="calidad-unidad">m³</span>
+        <div class="calidad-row-top"><span class="calidad-icono">🟤</span><span class="calidad-nombre">Madera Manchada</span></div>
+        <div class="calidad-row-bottom">
+          <input class="calidad-input" type="number" id="vol-manchada" step="0.001" inputmode="decimal" placeholder="0.000" oninput="actualizarResumen()">
+          <span class="calidad-unidad">m³</span>
+        </div>
       </div>
 
       <label style="margin-top:14px">Portal Mininco — F. Corte Alto (m³)</label>
@@ -284,16 +341,59 @@ textarea{resize:vertical;min-height:72px}
       <div class="chart-wrap"><canvas id="chart-brecha"></canvas></div>
     </div>
     <div id="lista-historial"><div class="loading"><div class="spinner"></div><br>Cargando…</div></div>
+    <div style="text-align:center;margin-top:8px">
+      <button onclick="cargarHistorialPrevio()" style="background:none;border:1px dashed var(--borde);color:var(--text3);padding:10px 16px;border-radius:8px;font-size:12px;cursor:pointer">
+        📂 Cargar historial previo Los Alpes / Santa Rosa / El Olivillo
+      </button>
+    </div>
   </div>
 
 </main>
 </div>
+<!-- MODAL EDICIÓN -->
+<div class="modal-overlay" id="modal-edicion">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>✏️ Editar registro</h3>
+      <button class="btn-cerrar-modal" onclick="cerrarModal('modal-edicion')">✕</button>
+    </div>
+    <input type="hidden" id="edit-id">
+    <label>Madera Fresca (m³)</label>
+    <input type="number" id="edit-fresca" step="0.001" inputmode="decimal" placeholder="0.000" oninput="recalcEdit()">
+    <label>Madera Esporada (m³)</label>
+    <input type="number" id="edit-esporada" step="0.001" inputmode="decimal" placeholder="0.000" oninput="recalcEdit()">
+    <label>Madera Manchada (m³)</label>
+    <input type="number" id="edit-manchada" step="0.001" inputmode="decimal" placeholder="0.000" oninput="recalcEdit()">
+    <label>Portal Mininco — F. Corte Alto (m³)</label>
+    <input type="number" id="edit-portal" step="0.001" inputmode="decimal" placeholder="0.000" oninput="recalcEdit()">
+    <label>Observaciones</label>
+    <textarea id="edit-obs" style="min-height:60px"></textarea>
+    <div class="resumen-card" id="edit-resumen" style="margin-top:12px">
+      <div id="edit-resumen-body"></div>
+    </div>
+    <button class="btn-primario" style="margin-top:12px" onclick="guardarEdicion()">💾 Guardar cambios</button>
+  </div>
+</div>
+
+<!-- MODAL TARJETA -->
+<div class="modal-overlay" id="modal-tarjeta">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>📤 Tarjeta para WhatsApp</h3>
+      <button class="btn-cerrar-modal" onclick="cerrarModal('modal-tarjeta')">✕</button>
+    </div>
+    <div id="tarjeta-contenido"></div>
+    <button class="btn-copiar" onclick="copiarTarjeta()">📋 Copiar texto para WhatsApp</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, Timestamp }
+import { getFirestore, collection, addDoc, getDocs, setDoc, doc, updateDoc,
+  query, orderBy, where, Timestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const fb={apiKey:"AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",authDomain:"reporte-inicio-faena-forestal.firebaseapp.com",
@@ -602,9 +702,295 @@ function renderLista(lista){
       </div>
       ${prods?`<div class="hist-prod">➕ ${prods}</div>`:''}
       ${r.observaciones?`<div class="hist-obs"><div class="hist-obs-label">Observaciones</div>${r.observaciones}</div>`:''}
+      <div class="hist-acciones">
+        <button class="btn-hist btn-editar" onclick="abrirEdicion('${r.id}')">✏️ Editar</button>
+        <button class="btn-hist btn-tarjeta" onclick="abrirTarjeta('${r.id}')">📤 Tarjeta</button>
+      </div>
     </div>`;
   }).join('');
 }
+
+// ── MODAL EDICIÓN
+window.abrirEdicion=function(id){
+  const r=todosReg.find(x=>x.id===id); if(!r) return;
+  document.getElementById('edit-id').value=id;
+  document.getElementById('edit-fresca').value=r.volFresca||'';
+  document.getElementById('edit-esporada').value=r.volEsporada||'';
+  document.getElementById('edit-manchada').value=r.volManchada||'';
+  document.getElementById('edit-portal').value=r.portalMininco||'';
+  document.getElementById('edit-obs').value=r.observaciones||'';
+  recalcEdit();
+  document.getElementById('modal-edicion').classList.add('visible');
+};
+
+window.recalcEdit=function(){
+  const f=parseFloat(document.getElementById('edit-fresca').value)||0;
+  const e=parseFloat(document.getElementById('edit-esporada').value)||0;
+  const m=parseFloat(document.getElementById('edit-manchada').value)||0;
+  const p=parseFloat(document.getElementById('edit-portal').value)||0;
+  const total=f+e+m, brecha=total-p;
+  const cls=brecha>=0?'tag-pos':'tag-neg', sgn=brecha>=0?'+':'';
+  document.getElementById('edit-resumen-body').innerHTML=`
+    <div class="resumen-row sub"><span>🌿 Fresca</span><span>${fmt(f)} m³</span></div>
+    <div class="resumen-row sub"><span>🍂 Esporada</span><span>${fmt(e)} m³</span></div>
+    <div class="resumen-row sub"><span>🟤 Manchada</span><span>${fmt(m)} m³</span></div>
+    <div class="resumen-row"><span><strong>Total interno</strong></span><span><strong>${fmt(total)} m³</strong></span></div>
+    <div class="resumen-row"><span>Portal Mininco</span><span>${fmt(p)} m³</span></div>
+    <div class="resumen-row total-line"><span>Diferencia</span><span class="${cls}">${sgn}${fmt(brecha)} m³</span></div>`;
+};
+
+window.guardarEdicion=async function(){
+  const id=document.getElementById('edit-id').value;
+  const f=parseFloat(document.getElementById('edit-fresca').value)||0;
+  const e=parseFloat(document.getElementById('edit-esporada').value)||0;
+  const m=parseFloat(document.getElementById('edit-manchada').value)||0;
+  const p=parseFloat(document.getElementById('edit-portal').value)||0;
+  const obs=document.getElementById('edit-obs').value.trim();
+  const total=f+e+m, brecha=total-p;
+  try{
+    await updateDoc(doc(db,COL,id),{
+      volFresca:f,volEsporada:e,volManchada:m,
+      inventarioCalidades:total,inventarioInterno:total,
+      portalMininco:p,brecha,observaciones:obs
+    });
+    cerrarModal('modal-edicion');
+    mostrarToast('✅ Registro actualizado');
+    await cargarHistorial();
+  }catch(err){console.error(err);mostrarToast('Error al actualizar');}
+};
+
+// ── MODAL TARJETA
+window.abrirTarjeta=function(id){
+  const r=todosReg.find(x=>x.id===id); if(!r) return;
+  const pos=r.brecha>=0;
+  const sgn=pos?'+':'';
+  // Historial completo ordenado
+  const histOrd=[...todosReg].filter(x=>x.fundoId===r.fundoId).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const histRows=histOrd.map((h,i)=>{
+    const p=h.brecha>=0, esActual=h.id===r.id;
+    return`<div class="tarjeta-hist-item${esActual?' actual':''}">
+      <div class="tarjeta-hist-item-fecha">${fmtFecha(h.fecha)}</div>
+      <div class="tarjeta-hist-item-val ${p?'tarjeta-hist-pos':'tarjeta-hist-neg'}">${p?'+':''}${fmt(h.brecha)} m³</div>
+    </div>`;
+  }).join('');
+
+  const tieneCalidades=(r.volFresca||0)+(r.volEsporada||0)+(r.volManchada||0)>0;
+  const totalCal=(r.volFresca||0)+(r.volEsporada||0)+(r.volManchada||0);
+  const calRows=[];
+  if((r.volFresca||0)>0)   calRows.push(`<div class="tarjeta-cal-row"><span>Fresca</span><span>${fmt(r.volFresca)} m³</span></div>`);
+  if((r.volEsporada||0)>0) calRows.push(`<div class="tarjeta-cal-row"><span>Esporada</span><span>${fmt(r.volEsporada)} m³</span></div>`);
+  if((r.volManchada||0)>0) calRows.push(`<div class="tarjeta-cal-row"><span>Manchada</span><span>${fmt(r.volManchada)} m³</span></div>`);
+  if(tieneCalidades)        calRows.push(`<div class="tarjeta-cal-row"><span>Total</span><span>${fmt(r.inventarioInterno)} m³</span></div>`);
+
+  document.getElementById('tarjeta-contenido').innerHTML=`
+    <div class="tarjeta-preview">
+      <div class="tarjeta-top">
+        <div class="tarjeta-top-left">
+          <div class="tarjeta-header">Informe de inventario</div>
+          <div class="tarjeta-empresa">${r.fundoNombre}</div>
+          <div class="tarjeta-fundo">${r.fundoCancha?r.fundoNombre+' — F. Corte Alto Ltda · Cód. '+r.fundoCancha:r.fundoNombre+' — F. Corte Alto Ltda'}</div>
+        </div>
+        <img class="tarjeta-logo" src="logo.png" alt="Corte Alto">
+      </div>
+      <div class="tarjeta-fechas">
+        <span>📅 Inventario: ${fmtFecha(r.fecha)}</span>
+        ${r.fechaRevision&&r.fechaRevision!==r.fecha?`<span>📄 Revisión: ${fmtFecha(r.fechaRevision)}</span>`:''}
+      </div>
+      ${r.calibrador?`<div class="tarjeta-cal-bloque">
+        <div class="tarjeta-cal-nombre">Cal. — ${r.calibrador}</div>
+        ${calRows.join('')}
+      </div>`:(tieneCalidades?`<div class="tarjeta-cal-bloque"><div class="tarjeta-cal-nombre">Volúmenes por calidad</div>${calRows.join('')}</div>`:'')}
+      <div class="tarjeta-nums">
+        <div class="tarjeta-num">
+          <div class="tarjeta-num-label">Inventario interno</div>
+          <div class="tarjeta-num-val">${fmt(r.inventarioInterno)} m³</div>
+        </div>
+        <div class="tarjeta-num">
+          <div class="tarjeta-num-label">Portal Mininco</div>
+          <div class="tarjeta-num-val">${fmt(r.portalMininco)} m³</div>
+          <div class="tarjeta-num-sub">Saldo final F. Corte Alto</div>
+        </div>
+      </div>
+      <div class="tarjeta-brecha ${pos?'pos':'neg'}">
+        <div class="tarjeta-brecha-label">${pos?'↗':'↘'} Diferencia (inventario interno vs. portal)</div>
+        <div class="tarjeta-brecha-val">${sgn}${fmt(r.brecha)} m³</div>
+        <div class="tarjeta-brecha-sub">${pos?'Inventario interno supera al portal':'Portal supera al inventario interno'}</div>
+      </div>
+      ${r.observaciones?`<div class="tarjeta-obs"><span>🔧</span><span>${r.observaciones}</span></div>`:''}
+      ${histRows?`<div class="tarjeta-hist-title">⏱ Histórico de brechas</div><div class="tarjeta-hist-grid">${histRows}</div>`:''}
+    </div>`;
+
+  // Guardar texto para copiar
+  window._tarjetaTexto=generarTextoWhatsApp(r,histOrd);
+  document.getElementById('modal-tarjeta').classList.add('visible');
+};
+
+function generarTextoWhatsApp(r,histOrd){
+  const pos=r.brecha>=0, sgn=pos?'+':'';
+  const cals=[];
+  if((r.volFresca||0)>0)   cals.push(`  🌿 Fresca: ${fmt(r.volFresca)} m³`);
+  if((r.volEsporada||0)>0) cals.push(`  🍂 Esporada: ${fmt(r.volEsporada)} m³`);
+  if((r.volManchada||0)>0) cals.push(`  🟤 Manchada: ${fmt(r.volManchada)} m³`);
+  const hist=histOrd.map(h=>`  ${fmtFecha(h.fecha)}: ${h.brecha>=0?'+':''}${fmt(h.brecha)} m³`).join('\n');
+  return`🌲 *Informe de inventario*
+*F. Corte Alto Ltda · ${r.fundoNombre}*${r.fundoCancha?' · Cancha '+r.fundoCancha:''}
+📅 Inventario: ${fmtFecha(r.fecha)}${r.fechaRevision&&r.fechaRevision!==r.fecha?' · Revisión: '+fmtFecha(r.fechaRevision):''}
+${r.calibrador?'👷 '+r.calibrador+'\n':''}
+*Volúmenes por calidad:*
+${cals.join('\n')}
+
+📦 Inventario interno: *${fmt(r.inventarioInterno)} m³*
+🏭 Portal Mininco: *${fmt(r.portalMininco)} m³*
+${pos?'✅':'⚠️'} Diferencia: *${sgn}${fmt(r.brecha)} m³*
+${r.observaciones?'\n📝 '+r.observaciones+'\n':''}
+📊 *Histórico de brechas:*
+${hist}`;
+}
+
+window.copiarTarjeta=function(){
+  if(!window._tarjetaTexto) return;
+  navigator.clipboard.writeText(window._tarjetaTexto)
+    .then(()=>mostrarToast('✅ Copiado — pega en WhatsApp'))
+    .catch(()=>mostrarToast('Error al copiar'));
+};
+
+window.cerrarModal=function(id){
+  document.getElementById(id).classList.remove('visible');
+};
+// Cerrar modal tocando overlay
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('visible');});
+});
+
+// ── CARGA HISTORIAL PREVIO (Los Alpes Hij 1 / Santa Rosa / El Olivillo)
+window.cargarHistorialPrevio=async function(){
+  let total=0;
+
+  // ── Los Alpes Hijuela 1 (cancha 4211)
+  {
+    const snap=await getDocs(query(collection(db,'config_fundos'),where('codigoCancha','==','4211')));
+    let fundoId='', fundoNombre='Los Alpes Hijuela 1', fundoCancha='4211';
+    if(!snap.empty){const d=snap.docs[0]; fundoId=d.id; fundoNombre=d.data().nombre||fundoNombre;}
+    const registros=[
+      {fecha:'2026-05-31',fechaRevision:'2026-06-01',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:8575.229,portalMininco:9234,brecha:-658.771,calibrador:'Brayan Gutiérrez / Néstor Silva',observaciones:'Dobles y triples rumas sin medir. Estimación de 14 cargas (~400 m³) no inventariadas.'},
+      {fecha:'2026-06-07',fechaRevision:'2026-06-07',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:11759.692,portalMininco:11433,brecha:326.692,calibrador:'Mario Llanquileo / Néstor Silva',observaciones:''},
+      {fecha:'2026-06-14',fechaRevision:'2026-06-15',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:10621.150,portalMininco:11616,brecha:-994.850,calibrador:'Brayan Gutiérrez / Brandon Manríquez',observaciones:'Canchas 23, 77 y 78 medidas con estimaciones — rumas doble/triple altura. Timbeter solo fotografia la primera cara.'},
+      {fecha:'2026-06-21',fechaRevision:'2026-06-22',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:10743.019,portalMininco:10863,brecha:-120.000,calibrador:'José Muñoz / Néstor Silva',observaciones:'Canchas 81 y 94 con estimaciones por dobles/triples rumas no medibles con Timbeter.'},
+      {fecha:'2026-06-28',fechaRevision:'2026-06-30',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:10683.451,portalMininco:13340,brecha:-2656.549,calibrador:'Brayan Gutiérrez / Víctor Pavian',observaciones:'Brecha corregida tras identificar error en información del calibrador 2. Las variaciones en parte se pueden deber a que ambos calibradores informaron estimaciones en algunas rumas con doble o triple ruma.'},
+      {fecha:'2026-07-05',fechaRevision:'2026-07-06',volFresca:4021.733,volEsporada:3110.268,volManchada:1194.328,inventarioInterno:11479.693,portalMininco:12267,brecha:-787.307,calibrador:'Mario Llanquileo / Néstor Silva',observaciones:'Ambos calibradores informaron estimaciones en rumas con doble y triple altura.'},
+      {fecha:'2026-07-12',fechaRevision:'2026-07-13',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:11827.638,portalMininco:13127,brecha:-1299.362,calibrador:'Brayan Gutiérrez / Brandon Manríquez',observaciones:'Ambos calibradores informaron estimaciones en rumas con doble y triple altura.'},
+      {fecha:'2026-07-19',fechaRevision:'2026-07-20',volFresca:2813.734,volEsporada:552.110,volManchada:156.789,inventarioInterno:12168.762,portalMininco:12349,brecha:-180.238,calibrador:'Mario Llanquileo / Néstor Silva',observaciones:'Ambos calibradores informaron estimaciones. Faena utilizó madera para defensas en socavones. Ruma IND (4,00m/18-22cm) aproximada por árbol caído.'},
+      {fecha:'2026-07-26',fechaRevision:'2026-07-27',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:12949.763,portalMininco:11717,brecha:1232.763,calibrador:'Brayan Gutiérrez / Brandon Manríquez',observaciones:'Ambos calibradores informaron estimaciones. Faena utilizó trozos para defensas en socavones.'},
+      {fecha:'2026-08-02',fechaRevision:'2026-08-03',volFresca:1476.854,volEsporada:5536.464,volManchada:1194.328,inventarioInterno:12188.423,portalMininco:11664,brecha:524.423,calibrador:'Mario Llanquileo / Néstor Silva',observaciones:'Ambos calibradores informaron estimaciones. Faena utilizó trozos para defensas en socavones.'},
+      {fecha:'2026-08-09',fechaRevision:'2026-08-10',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:5338.274,portalMininco:7157,brecha:-1818.726,calibrador:'Brayan Gutiérrez',observaciones:'Solo 1 calibrador en faena. Cancha 77: imposible medir — hasta 6 filas de madera. Uso de trozos en zonas de derrumbe.'},
+      {fecha:'2026-08-16',fechaRevision:'2026-08-17',volFresca:2032.489,volEsporada:3344.944,volManchada:1008.136,inventarioInterno:6385.569,portalMininco:5977,brecha:408.569,calibrador:'Mario Llanquileo',observaciones:'Solo 1 calibrador. Rumas doble/triple/cuádruple en cancha 77 (pulpa e industrial). Faena utilizó trozos en socavones.'},
+      {fecha:'2026-08-23',fechaRevision:'2026-08-24',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:2216.355,portalMininco:2763,brecha:-546.645,calibrador:'Brayan Gutiérrez',observaciones:'Solo 1 calibrador. Cancha 77: hasta 6 filas, imposible medir. Uso de trozos en zonas de derrumbe.'},
+      {fecha:'2026-08-30',fechaRevision:'2026-08-31',volFresca:829.520,volEsporada:1116.180,volManchada:0,inventarioInterno:1945.700,portalMininco:489,brecha:1456.700,calibrador:'Mario Llanquileo',observaciones:'La faena utilizó madera para defensas en socavones, la cual no se pudo medir.'},
+      {fecha:'2026-09-06',fechaRevision:'2026-09-07',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:2936.827,portalMininco:2095,brecha:841.827,calibrador:'Brayan Gutiérrez',observaciones:'La faena utilizó madera para defensas en socavones, la cual no se pudo medir.'},
+      {fecha:'2026-09-13',fechaRevision:'2026-09-14',volFresca:2358.140,volEsporada:0,volManchada:825.188,inventarioInterno:3183.328,portalMininco:1188,brecha:1995.328,calibrador:'Mario Llanquileo',observaciones:'La faena utilizó madera para arreglo de derrumbes en alcantarillado (400m prod. 36-44), la cual no se pudo medir.'},
+    ];
+    for(const r of registros){
+      try{
+        await setDoc(doc(db,COL,`previo_alpes_${r.fecha}`),{
+          fundoId,fundoNombre,fundoCancha,
+          fecha:r.fecha,fechaRevision:r.fechaRevision,
+          calibrador:r.calibrador,
+          volFresca:r.volFresca,volEsporada:r.volEsporada,volManchada:r.volManchada,
+          produccionAdicional:[],
+          inventarioCalidades:r.volFresca+r.volEsporada+r.volManchada,
+          produccionTotal:0,
+          inventarioInterno:r.inventarioInterno,
+          portalMininco:r.portalMininco,
+          brecha:r.brecha,
+          observaciones:r.observaciones,
+          creadoEn:Timestamp.now()
+        },{merge:true});
+        total++;
+      }catch(e){console.error('Error alpes',r.fecha,e);}
+    }
+  }
+
+  // ── Santa Rosa (cancha 2324)
+  {
+    const snap=await getDocs(query(collection(db,'config_fundos'),where('codigoCancha','==','2324')));
+    let fundoId='', fundoNombre='Santa Rosa', fundoCancha='2324';
+    if(!snap.empty){const d=snap.docs[0]; fundoId=d.id; fundoNombre=d.data().nombre||fundoNombre;}
+    const registros=[
+      {fecha:'2026-05-31',fechaRevision:'2026-05-31',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:620.000,portalMininco:619,brecha:1.000,calibrador:'',observaciones:''},
+      {fecha:'2026-06-07',fechaRevision:'2026-06-07',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:1429.076,portalMininco:1402,brecha:27.076,calibrador:'Sebastián Sandoval',observaciones:''},
+      {fecha:'2026-06-14',fechaRevision:'2026-06-14',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:2228.879,portalMininco:2008,brecha:220.879,calibrador:'Héctor Jara',observaciones:''},
+      {fecha:'2026-06-21',fechaRevision:'2026-06-21',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:2052.683,portalMininco:1907,brecha:145.683,calibrador:'Natanael',observaciones:''},
+      {fecha:'2026-06-28',fechaRevision:'2026-06-28',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:3970.944,portalMininco:3851,brecha:119.944,calibrador:'Héctor Jara',observaciones:''},
+      {fecha:'2026-07-05',fechaRevision:'2026-07-05',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:3427.157,portalMininco:4324,brecha:-896.843,calibrador:'Sebastián Sandoval',observaciones:''},
+      {fecha:'2026-07-12',fechaRevision:'2026-07-12',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:4032.043,portalMininco:3702,brecha:330.043,calibrador:'José Muñoz',observaciones:''},
+      {fecha:'2026-07-19',fechaRevision:'2026-07-19',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:3373.880,portalMininco:3629,brecha:-255.120,calibrador:'Mario Sandoval',observaciones:''},
+      {fecha:'2026-07-26',fechaRevision:'2026-07-26',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:3003.209,portalMininco:3430,brecha:-426.791,calibrador:'José Muñoz',observaciones:''},
+      {fecha:'2026-08-02',fechaRevision:'2026-08-02',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:2938.088,portalMininco:3408,brecha:-469.912,calibrador:'Mario Sandoval',observaciones:''},
+      {fecha:'2026-08-09',fechaRevision:'2026-08-09',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:2950.187,portalMininco:4491,brecha:-1540.813,calibrador:'José Muñoz',observaciones:''},
+      {fecha:'2026-08-16',fechaRevision:'2026-08-16',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:2776.206,portalMininco:2566,brecha:210.206,calibrador:'Natanael Niclouse',observaciones:''},
+      {fecha:'2026-08-23',fechaRevision:'2026-08-23',volFresca:1940.700,volEsporada:0,volManchada:336.300,inventarioInterno:2277.000,portalMininco:2785,brecha:-508.000,calibrador:'',observaciones:''},
+      {fecha:'2026-08-30',fechaRevision:'2026-08-30',volFresca:3217.967,volEsporada:0,volManchada:574.904,inventarioInterno:4113.052,portalMininco:4336,brecha:-222.948,calibrador:'',observaciones:''},
+      {fecha:'2026-09-06',fechaRevision:'2026-09-06',volFresca:3306.032,volEsporada:0,volManchada:1349.234,inventarioInterno:5091.703,portalMininco:5806,brecha:-714.297,calibrador:'',observaciones:''},
+      {fecha:'2026-09-13',fechaRevision:'2026-09-13',volFresca:5641.434,volEsporada:0,volManchada:906.209,inventarioInterno:6547.643,portalMininco:6425,brecha:122.643,calibrador:'',observaciones:''},
+    ];
+    for(const r of registros){
+      try{
+        await setDoc(doc(db,COL,`previo_sr_${r.fecha}`),{
+          fundoId,fundoNombre,fundoCancha,
+          fecha:r.fecha,fechaRevision:r.fechaRevision,
+          calibrador:r.calibrador,
+          volFresca:r.volFresca,volEsporada:r.volEsporada,volManchada:r.volManchada,
+          produccionAdicional:[],
+          inventarioCalidades:r.volFresca+r.volEsporada+r.volManchada,
+          produccionTotal:0,
+          inventarioInterno:r.inventarioInterno,
+          portalMininco:r.portalMininco,
+          brecha:r.brecha,
+          observaciones:r.observaciones,
+          creadoEn:Timestamp.now()
+        },{merge:true});
+        total++;
+      }catch(e){console.error('Error santa rosa',r.fecha,e);}
+    }
+  }
+
+  // ── El Olivillo (cancha 3101)
+  {
+    const snap=await getDocs(query(collection(db,'config_fundos'),where('codigoCancha','==','3101')));
+    let fundoId='', fundoNombre='El Olivillo', fundoCancha='3101';
+    if(!snap.empty){const d=snap.docs[0]; fundoId=d.id; fundoNombre=d.data().nombre||fundoNombre;}
+    const registros=[
+      {fecha:'2026-08-09',fechaRevision:'2026-08-09',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:4138.720,portalMininco:3173,brecha:965.720,calibrador:'Brandon Manríquez',observaciones:''},
+      {fecha:'2026-08-16',fechaRevision:'2026-08-16',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:3184.316,portalMininco:3228,brecha:-43.684,calibrador:'Néstor Silva',observaciones:''},
+      {fecha:'2026-08-23',fechaRevision:'2026-08-23',volFresca:0,volEsporada:0,volManchada:0,inventarioInterno:1503.500,portalMininco:1105,brecha:398.500,calibrador:'Brandon Manríquez',observaciones:''},
+      {fecha:'2026-08-30',fechaRevision:'2026-08-30',volFresca:905.901,volEsporada:0,volManchada:0,inventarioInterno:1320.788,portalMininco:765,brecha:555.788,calibrador:'Néstor Silva',observaciones:''},
+      {fecha:'2026-09-06',fechaRevision:'2026-09-06',volFresca:1499.587,volEsporada:0,volManchada:0,inventarioInterno:2416.724,portalMininco:2265,brecha:151.724,calibrador:'Brandon Manríquez',observaciones:''},
+      {fecha:'2026-09-13',fechaRevision:'2026-09-13',volFresca:1592.454,volEsporada:62.543,volManchada:0,inventarioInterno:2398.038,portalMininco:2361,brecha:37.038,calibrador:'Néstor Silva',observaciones:''},
+    ];
+    for(const r of registros){
+      try{
+        await setDoc(doc(db,COL,`previo_olivillo_${r.fecha}`),{
+          fundoId,fundoNombre,fundoCancha,
+          fecha:r.fecha,fechaRevision:r.fechaRevision,
+          calibrador:r.calibrador,
+          volFresca:r.volFresca,volEsporada:r.volEsporada,volManchada:r.volManchada,
+          produccionAdicional:[],
+          inventarioCalidades:r.volFresca+r.volEsporada+r.volManchada,
+          produccionTotal:0,
+          inventarioInterno:r.inventarioInterno,
+          portalMininco:r.portalMininco,
+          brecha:r.brecha,
+          observaciones:r.observaciones,
+          creadoEn:Timestamp.now()
+        },{merge:true});
+        total++;
+      }catch(e){console.error('Error olivillo',r.fecha,e);}
+    }
+  }
+
+  mostrarToast(`✅ ${total} registros históricos cargados`);
+  await cargarHistorial();
+};
 
 // ── TABS
 window.cambiarTab=function(tab){
