@@ -66,6 +66,17 @@
     .xl-hint{font-size:11px;color:var(--text-muted)}
     .xl-name{font-size:13px;font-weight:700;color:var(--pos)}
 
+    /* JSON PASTE */
+    .json-section{border:1px solid var(--mn);border-radius:var(--r);background:rgba(26,122,184,.05);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+    .json-title{font-size:12px;font-weight:700;color:var(--mn);display:flex;align-items:center;gap:6px}
+    .json-textarea{width:100%;min-height:72px;font-size:11px;font-family:monospace;border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;resize:vertical;background:var(--surface);color:var(--text);outline:none}
+    .json-textarea:focus{border-color:var(--mn)}
+    .json-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .btn-load-json{padding:7px 16px;background:var(--mn);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer}
+    .btn-load-json:hover{background:var(--mn-dim)}
+    .btn-clr-json{padding:7px 12px;background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:var(--r);font-size:12px;cursor:pointer}
+    .btn-clr-json:hover{border-color:var(--neg);color:var(--neg)}
+
     /* ENTRADA MANUAL */
     .manual-section{border:1px solid var(--warn-border);border-radius:var(--r);background:var(--warn-bg);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
     .manual-title{font-size:12px;font-weight:700;color:var(--warn);display:flex;align-items:center;gap:6px}
@@ -260,8 +271,19 @@
       </div>
 
       <div class="mn-ctrl">
-        <span class="sp idle" id="sp-mn">Sin archivo</span>
-        <button class="btn-clr" id="btn-clr-xl" style="display:none" onclick="window.limpiarXL()">× Limpiar</button>
+        <span class="sp idle" id="sp-mn">Sin datos</span>
+        <button class="btn-clr" id="btn-clr-xl" style="display:none" onclick="window.limpiarXL()">× Limpiar Excel</button>
+      </div>
+
+      <!-- JSON paste desde IA externa -->
+      <div class="json-section">
+        <div class="json-title">🤖 Pegar JSON desde Gemini / Copilot</div>
+        <textarea class="json-textarea" id="json-paste" placeholder='{"mes":"2026-09","dias":[{"dia":1,"avance":412},{"dia":2,"avance":464}...]}'></textarea>
+        <div class="json-actions">
+          <button class="btn-load-json" onclick="window.cargarJSON()">Cargar JSON</button>
+          <button class="btn-clr-json" id="btn-clr-json" style="display:none" onclick="window.limpiarJSON()">× Limpiar JSON</button>
+          <span class="sp idle" id="sp-json">Sin datos JSON</span>
+        </div>
       </div>
 
       <!-- Entrada manual para días faltantes -->
@@ -375,6 +397,9 @@ const infoMN   = document.getElementById("info-mn");
 // tbody reemplazado por data-rows
 const pillsEl  = {style:{display:"none"}}; // pills eliminado
 const manList  = document.getElementById("manual-list");
+const jsonPaste= document.getElementById("json-paste");
+const spJson   = document.getElementById("sp-json");
+const btnClrJson=document.getElementById("btn-clr-json");
 
 // ── Init checkboxes ───────────────────────────────────────────────────
 // Inicializar rango: primer día del mes actual → hoy
@@ -563,8 +588,64 @@ window.limpiarXL=()=>{
   S.datosMN=[]; xlFile.value="";
   xlDrop.classList.remove("ok");
   xlDrop.querySelector(".xl-txt").innerHTML='Arrastra o haz clic para subir el Excel del portal Mininco<br><span class="xl-hint">Copia la tabla del portal → pega en Excel → guarda → sube aquí</span>';
-  spMn.className="sp idle"; spMn.textContent="Sin archivo";
+  spMn.className="sp idle"; spMn.textContent="Sin datos";
   btnClrXL.style.display="none";
+  infoMN.className="ibox";
+  actualizarTabla();
+};
+
+// ── JSON DESDE IA EXTERNA ─────────────────────────────────────────────
+window.cargarJSON=()=>{
+  const raw=(jsonPaste.value||"").trim();
+  if(!raw){
+    infoMN.textContent="⚠ Pega el JSON en el área de texto primero.";
+    infoMN.className="ibox v err";
+    return;
+  }
+  try{
+    const obj=JSON.parse(raw);
+    // Aceptar {mes, dias:[{dia, avance}]} o {dias:[{dia, avance}]}
+    if(!obj.dias||!Array.isArray(obj.dias)) throw new Error("Formato incorrecto: falta la clave \"dias\".");
+    const datos=[];
+    for(const entry of obj.dias){
+      const dia=parseInt(entry.dia);
+      const vol=parseFloat(entry.avance??entry.volumen??entry.vol??0);
+      if(isNaN(dia)||dia<1||dia>31) continue;
+      if(isNaN(vol)||vol<0) continue;
+      const exist=datos.find(d=>d.dia===dia);
+      if(exist) exist.volumen+=vol;
+      else datos.push({dia,volumen:vol,manual:false});
+    }
+    if(datos.length===0) throw new Error("No se encontraron días con avance válido en el JSON.");
+
+    // Reemplaza datos Excel + merge manuales
+    S.datosMN=datos.sort((a,b)=>a.dia-b.dia);
+    aplicarManuales();
+
+    const tot=S.datosMN.reduce((s,d)=>s+d.volumen,0);
+    spJson.className="sp ok"; spJson.textContent=`${datos.length} días del JSON`;
+    btnClrJson.style.display="";
+    // Limpiar Excel si había algo
+    xlDrop.classList.remove("ok");
+    xlDrop.querySelector(".xl-txt").innerHTML='Arrastra o haz clic para subir el Excel del portal Mininco<br><span class="xl-hint">Copia la tabla del portal → pega en Excel → guarda → sube aquí</span>';
+    spMn.className="sp idle"; spMn.textContent="Sin datos";
+    btnClrXL.style.display="none";
+    xlFile.value="";
+
+    infoMN.textContent=`✓ JSON cargado correctamente · ${datos.length} día(s) · ${fmt(tot)} m³`;
+    infoMN.className="ibox v ok";
+    actualizarTabla();
+  }catch(err){
+    spJson.className="sp err"; spJson.textContent="Error JSON";
+    infoMN.textContent=`⚠ ${err.message}`;
+    infoMN.className="ibox v err";
+  }
+};
+
+window.limpiarJSON=()=>{
+  S.datosMN=[]; jsonPaste.value="";
+  spJson.className="sp idle"; spJson.textContent="Sin datos JSON";
+  btnClrJson.style.display="none";
   infoMN.className="ibox";
   actualizarTabla();
 };
