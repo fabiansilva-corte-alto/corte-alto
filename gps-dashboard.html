@@ -131,6 +131,31 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
   font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;
 }
 
+/* BANNERS DÍAS FALTANTES */
+.banner-dias-faltantes{
+  display:flex;flex-direction:column;gap:6px;margin-top:8px;
+}
+.banner-dias-item{
+  display:flex;align-items:flex-start;gap:10px;
+  border-radius:7px;padding:9px 13px;font-size:12px;
+}
+.banner-dias-item.naranja-item{
+  background:var(--naranja-s);border:1px solid #f0c080;
+}
+.banner-dias-item.azul-item{
+  background:var(--azul-s);border:1px solid #aed6f1;
+}
+.banner-dias-item .ico{font-size:16px;flex-shrink:0;}
+.banner-dias-item strong{display:block;margin-bottom:3px;font-size:12px;font-weight:700;}
+.banner-dias-item.naranja-item strong{color:var(--naranja);}
+.banner-dias-item.azul-item strong{color:var(--azul);}
+.tags-dias{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;}
+.tag-dia{
+  font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;
+}
+.naranja-item .tag-dia{background:var(--naranja);color:#fff;}
+.azul-item .tag-dia{background:var(--azul);color:#fff;}
+
 /* GRÁFICOS */
 .graficos-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 @media(max-width:700px){.graficos-grid{grid-template-columns:1fr;}}
@@ -414,6 +439,7 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
     <div class="card-body">
       <div class="kpi-grid" id="kpi-grid"></div>
       <div id="alerta-gps-wrap" style="margin-top:12px;"></div>
+      <div id="banner-dias-faltantes-wrap"></div>
     </div>
   </div>
 
@@ -685,6 +711,7 @@ async function consultar() {
     await cargarEventosGeo();
     renderDetalleGeo();
     verificar5Dias();
+    verificarDiasFaltantes();
 
   } catch(err) {
     toast('Error: ' + err.message, 'err');
@@ -1514,6 +1541,91 @@ function actualizarAlertaSinGPS() {
         </div>
       </div>
     </div>` : '';
+}
+
+/* ─── BANNER DÍAS FALTANTES ─── */
+async function verificarDiasFaltantes() {
+  const wrap = document.getElementById('banner-dias-faltantes-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  try {
+    // Usar el rango de fechas del filtro actual
+    const desdeVal = document.getElementById('f-desde').value;
+    const hastaVal = document.getElementById('f-hasta').value;
+    if (!desdeVal || !hastaVal) return;
+    const inicio = new Date(desdeVal + 'T00:00:00');
+    const ayer   = new Date(hastaVal + 'T00:00:00');
+
+    const diasRango = [];
+    for (let d = new Date(inicio); d <= ayer; d.setDate(d.getDate() + 1)) {
+      diasRango.push(d.toISOString().slice(0,10));
+    }
+
+    if (diasRango.length === 0) { wrap.innerHTML = ''; return; }
+
+    // --- Días sin carga GPS ---
+    const isoInicio = inicio.toISOString().slice(0,10);
+    const isoAyer   = ayer.toISOString().slice(0,10);
+    const snapGPS = await db.collection('gps_registros')
+      .where(firebase.firestore.FieldPath.documentId(), '>=', isoInicio)
+      .where(firebase.firestore.FieldPath.documentId(), '<=', isoAyer)
+      .get();
+    const diasConGPS = new Set(snapGPS.docs.map(d => d.id));
+    const diasSinGPS = diasRango.filter(f => !diasConGPS.has(f));
+
+    // --- Días sin bitácora de conductores ---
+    // Verificamos cuáles fechas tienen al menos 1 registro en subcolección 'registros'
+    let diasConRegistros = new Set();
+    try {
+      const snapReg = await db.collectionGroup('registros').get();
+      snapReg.docs.forEach(d => diasConRegistros.add(d.ref.parent.parent.id));
+    } catch(e2) {
+      // Fallback: si no hay índice, verificar docs padre en bitacora_conductores
+      const snapBit = await db.collection('bitacora_conductores').get();
+      snapBit.docs.forEach(doc => diasConRegistros.add(doc.id));
+    }
+    const diasSinBit = diasRango.filter(f => !diasConRegistros.has(f));
+
+    // Formato de fecha: "17 sep", "18 sep"
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    function fmtDia(iso) {
+      const [,m,d] = iso.split('-');
+      return `${parseInt(d)} ${meses[parseInt(m)-1]}`;
+    }
+
+    let html = '<div class="banner-dias-faltantes">';
+
+    if (diasSinGPS.length > 0) {
+      html += `
+        <div class="banner-dias-item naranja-item">
+          <span class="ico">📂</span>
+          <div>
+            <strong>Días sin carga GPS</strong>
+            <div class="tags-dias">
+              ${diasSinGPS.map(f => `<span class="tag-dia">${fmtDia(f)}</span>`).join('')}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    if (diasSinBit.length > 0) {
+      html += `
+        <div class="banner-dias-item azul-item">
+          <span class="ico">📋</span>
+          <div>
+            <strong>Días sin registro bitácora de conductores</strong>
+            <div class="tags-dias">
+              ${diasSinBit.map(f => `<span class="tag-dia">${fmtDia(f)}</span>`).join('')}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    html += '</div>';
+    wrap.innerHTML = (diasSinGPS.length > 0 || diasSinBit.length > 0) ? html : '';
+
+  } catch(e) { console.warn('verificarDiasFaltantes:', e.message); }
 }
 
 /* ─── SELECTOR MÚLTIPLE MÓVILES ─── */
