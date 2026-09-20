@@ -46,7 +46,49 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
 .btn-consultar{background:var(--text);color:#fff;border:none;padding:9px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;align-self:flex-end}
 .btn-consultar:disabled{opacity:.5;cursor:wait}
 
-/* KPI GRID */
+/* ── FILTRO MES/AÑO + AVANZADO ── */
+input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--text);outline:none}
+.btn-avanzado{background:none;border:1px solid var(--border);color:var(--text2);padding:8px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:var(--font);white-space:nowrap;align-self:flex-end}
+.btn-avanzado.active{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
+.filtro-avanzado{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+
+/* ── BANDA EJECUTIVA ── */
+.exec-band{background:linear-gradient(135deg,#1a1a2e 0%,#2d4a6e 100%);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem}
+.exec-band-title{font-size:10px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
+.exec-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:.625rem;margin-bottom:.625rem}
+.exec-kpi{background:rgba(255,255,255,.12);border-radius:10px;padding:.625rem .875rem}
+.exec-kpi-label{font-size:9px;font-weight:700;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;display:flex;align-items:center;gap:4px}
+.exec-kpi-val{font-size:20px;font-weight:800;color:#fff;line-height:1}
+.exec-kpi-val.ok{color:#a8f0a0}
+.exec-kpi-val.warn{color:#ffe080}
+.exec-kpi-val.bad{color:#ffaaaa}
+.exec-kpi-sub{font-size:9px;color:rgba(255,255,255,.55);margin-top:2px}
+.exec-extras{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem}
+.exec-extra{background:rgba(0,0,0,.15);border-radius:8px;padding:.4rem .6rem;text-align:center}
+.exec-extra-label{font-size:8px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px;line-height:1.3}
+.exec-extra-val{font-size:12px;font-weight:800;color:#fff}
+
+/* ── 3 COLUMNAS LÍNEAS ── */
+.lineas-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1rem}
+.linea-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.linea-head{padding:.5rem .875rem;font-size:11px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center}
+.lh-t1{background:#1D5FAD}.lh-t2{background:#3B6D11}.lh-t3{background:#854F0B}
+.linea-body{padding:.75rem .875rem}
+.linea-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:.625rem}
+.lkpi{text-align:center}
+.lkpi-label{font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.lkpi-val{font-size:16px;font-weight:800;line-height:1}
+.lkpi-val.blue{color:var(--blue)}.lkpi-val.ok{color:var(--green)}.lkpi-val.warn{color:var(--amber)}.lkpi-val.bad{color:var(--red)}
+.lkpi-sub{font-size:9px;color:var(--text3);margin-top:1px}
+.linea-extras{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.lextra{background:var(--bg);border-radius:6px;padding:4px 7px}
+.lextra-label{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:1px;line-height:1.2}
+.lextra-val{font-size:11px;font-weight:700;color:var(--text)}
+@media(max-width:700px){
+  .lineas-grid{grid-template-columns:1fr}
+  .exec-kpis{grid-template-columns:1fr 1fr}
+  .exec-extras{grid-template-columns:1fr 1fr}
+}
 .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:.75rem}
 .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem}
 .kpi-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:flex;align-items:center;gap:5px}
@@ -353,40 +395,54 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
   <!-- ═══ BLOQUE 1: FILTRO GENERAL ═══ -->
   <div class="section">
     <div class="section-title"><i class="ti ti-filter"></i> Filtro general</div>
-    <!-- Fila 1: Fechas + Línea -->
-    <div class="filters-row" style="margin-bottom:10px">
-      <div class="filter-field" style="max-width:150px">
-        <div class="filter-label"><i class="ti ti-calendar"></i> Desde</div>
-        <input type="date" id="f-desde">
+    <!-- Fila principal: Mes/Año + botón avanzado + Consultar -->
+    <div class="filters-row" style="margin-bottom:0">
+      <div class="filter-field" style="max-width:200px">
+        <div class="filter-label"><i class="ti ti-calendar-month"></i> Mes y año</div>
+        <input type="month" id="f-mes">
       </div>
-      <div class="filter-field" style="max-width:150px">
-        <div class="filter-label"><i class="ti ti-calendar"></i> Hasta</div>
-        <input type="date" id="f-hasta">
-      </div>
-      <div class="filter-field">
-        <div class="filter-label"><i class="ti ti-git-branch"></i> Línea</div>
-        <select id="f-linea">
-          <option value="">Todas las líneas</option>
-        </select>
-      </div>
-    </div>
-    <!-- Fila 2: Fundo + Eq. Madereo + Consultar -->
-    <div class="filters-row">
-      <div class="filter-field">
-        <div class="filter-label"><i class="ti ti-map-pin"></i> Fundo <span id="f-fundo-lbl" style="font-weight:400;color:var(--text3)">(todos)</span></div>
-        <button class="ms-trigger" onclick="msAbrir('fundo')">
-          <span id="f-fundo-txt">Todos los fundos</span>
-        </button>
-      </div>
-      <div class="filter-field">
-        <div class="filter-label"><i class="ti ti-engine"></i> Eq. Madereo <span id="f-eqm-lbl" style="font-weight:400;color:var(--text3)">(todos)</span></div>
-        <button class="ms-trigger" onclick="msAbrir('eqm')">
-          <span id="f-eqm-txt">Todos los equipos</span>
-        </button>
-      </div>
+      <!-- Campos ocultos que sigue leyendo consultar() -->
+      <input type="hidden" id="f-desde">
+      <input type="hidden" id="f-hasta">
+      <button class="btn-avanzado" id="btn-avanzado" onclick="toggleAvanzado()">
+        <i class="ti ti-adjustments-horizontal"></i> Filtro avanzado
+      </button>
       <button class="btn-consultar" onclick="consultar()" id="btn-consultar">
         <i class="ti ti-search"></i> Consultar
       </button>
+    </div>
+    <!-- Panel avanzado (oculto por defecto) -->
+    <div class="filtro-avanzado" id="filtro-avanzado" style="display:none">
+      <div class="filters-row" style="margin-bottom:10px">
+        <div class="filter-field" style="max-width:150px">
+          <div class="filter-label"><i class="ti ti-calendar"></i> Desde</div>
+          <input type="date" id="f-desde-adv">
+        </div>
+        <div class="filter-field" style="max-width:150px">
+          <div class="filter-label"><i class="ti ti-calendar"></i> Hasta</div>
+          <input type="date" id="f-hasta-adv">
+        </div>
+        <div class="filter-field">
+          <div class="filter-label"><i class="ti ti-git-branch"></i> Línea</div>
+          <select id="f-linea">
+            <option value="">Todas las líneas</option>
+          </select>
+        </div>
+      </div>
+      <div class="filters-row">
+        <div class="filter-field">
+          <div class="filter-label"><i class="ti ti-map-pin"></i> Fundo <span id="f-fundo-lbl" style="font-weight:400;color:var(--text3)">(todos)</span></div>
+          <button class="ms-trigger" onclick="msAbrir('fundo')">
+            <span id="f-fundo-txt">Todos los fundos</span>
+          </button>
+        </div>
+        <div class="filter-field">
+          <div class="filter-label"><i class="ti ti-engine"></i> Eq. Madereo <span id="f-eqm-lbl" style="font-weight:400;color:var(--text3)">(todos)</span></div>
+          <button class="ms-trigger" onclick="msAbrir('eqm')">
+            <span id="f-eqm-txt">Todos los equipos</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -416,6 +472,14 @@ select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);paddin
         <button class="ms-modal-ok" onclick="msOK('eqm')">Listo</button>
       </div>
     </div>
+  </div>
+
+  <!-- ═══ BANDA EJECUTIVA ═══ -->
+  <div id="exec-wrap" style="display:none">
+    <!-- Consolidado -->
+    <div class="exec-band" id="exec-consolidado"></div>
+    <!-- 3 columnas líneas -->
+    <div class="lineas-grid" id="exec-lineas"></div>
   </div>
 
   <!-- ═══ BLOQUE 2: PRODUCCIÓN ═══ -->
@@ -645,11 +709,47 @@ const avg  = arr => arr.length ? arr.reduce((s,v)=>s+v,0)/arr.length : NaN;
 const toISO = d => d.toISOString().split('T')[0];
 const loaderHTML = '<div class="loading-block"><div class="spinner"></div></div>';
 
-// ── FECHAS POR DEFECTO ────────────────────────────────────────────────────
+// ── FILTRO MES/AÑO ────────────────────────────────────────────────────────
 const hoy = new Date();
+const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+document.getElementById('f-mes').value = mesActual;
+
+// Sync fechas avanzadas con el mes actual
 const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-document.getElementById('f-desde').value = toISO(primerDia);
-document.getElementById('f-hasta').value = toISO(hoy);
+const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0);
+document.getElementById('f-desde-adv').value = toISO(primerDia);
+document.getElementById('f-hasta-adv').value = toISO(hoy);
+
+// ── TOGGLE FILTRO AVANZADO ─────────────────────────────────────────────────
+let AVANZADO_ACTIVO = false;
+window.toggleAvanzado = function() {
+  AVANZADO_ACTIVO = !AVANZADO_ACTIVO;
+  document.getElementById('filtro-avanzado').style.display = AVANZADO_ACTIVO ? 'block' : 'none';
+  const btn = document.getElementById('btn-avanzado');
+  btn.classList.toggle('active', AVANZADO_ACTIVO);
+  btn.innerHTML = AVANZADO_ACTIVO
+    ? '<i class="ti ti-x"></i> Cerrar avanzado'
+    : '<i class="ti ti-adjustments-horizontal"></i> Filtro avanzado';
+};
+
+// Helper: obtiene desde/hasta desde mes o avanzado
+function getFechas() {
+  if(AVANZADO_ACTIVO) {
+    const d = document.getElementById('f-desde-adv').value;
+    const h = document.getElementById('f-hasta-adv').value;
+    return { desde:d, hasta:h };
+  }
+  const mes = document.getElementById('f-mes').value;
+  if(!mes) return { desde:'', hasta:'' };
+  const [a,m] = mes.split('-');
+  const diasMes = new Date(+a, +m, 0).getDate();
+  const desde = `${mes}-01`;
+  const hasta = toISO(new Date()) <= `${mes}-${String(diasMes).padStart(2,'0')}`
+    && toISO(new Date()) >= desde
+    ? toISO(new Date())
+    : `${mes}-${String(diasMes).padStart(2,'0')}`;
+  return { desde, hasta, mesStr:mes };
+}
 
 // ── CARGAR LÍNEAS, FUNDOS Y EQUIPOS MADEREO ──────────────────────────────
 const MS_SEL = { fundo: null, eqm: null }; // null=todos, Set=filtro activo
@@ -769,10 +869,12 @@ let VMA_MININCO = {};
 
 // ── CONSULTAR ─────────────────────────────────────────────────────────────
 window.consultar = async function() {
-  const desde = document.getElementById('f-desde').value;
-  const hasta  = document.getElementById('f-hasta').value;
-  const linea  = document.getElementById('f-linea').value;
-  if(!desde||!hasta){ showToast('⚠️ Selecciona fechas'); return; }
+  const { desde, hasta, mesStr } = getFechas();
+  const linea = AVANZADO_ACTIVO ? document.getElementById('f-linea').value : '';
+  // sync hidden fields para compatibilidad con resto del código
+  document.getElementById('f-desde').value = desde;
+  document.getElementById('f-hasta').value = hasta;
+  if(!desde||!hasta){ showToast('⚠️ Selecciona un período'); return; }
   if(desde>hasta){ showToast('⚠️ Fecha Desde > Hasta'); return; }
 
   document.getElementById('btn-consultar').disabled = true;
@@ -835,6 +937,9 @@ window.consultar = async function() {
 
     G = { prod, prodEqm, jefe:jefeLinea, jefeEqm, meta, inicio, desde, hasta };
 
+    // ── Banda ejecutiva (solo en modo mes completo) ───────────────────────
+    await renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr);
+
     // Poblar selector procesadores (por LÍNEA)
     poblarProcesadores(jefeLinea);
 
@@ -862,6 +967,209 @@ window.consultar = async function() {
   }
   document.getElementById('btn-consultar').disabled = false;
 };
+
+// ── BANDA EJECUTIVA ────────────────────────────────────────────────────────
+const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+// Líneas derivadas dinámicamente desde los datos (no hardcodeado)
+const LIN_CLASSES = ['lh-t1','lh-t2','lh-t3','lh-t1','lh-t2','lh-t3']; // cicla si hay más de 3
+
+async function cargarMetaLinea(lin, mesStr) {
+  const [a,m] = mesStr.split('-');
+  try {
+    const snap = await getDoc(doc(db,'config_volumen_meta',`${lin}_${mesStr}`));
+    if(!snap.exists()) return { total:0, porDia:{} };
+    let total=0; const porDia={};
+    (snap.data().valores||[]).forEach((v,i)=>{
+      const f=`${a}-${m}-${String(i+1).padStart(2,'0')}`;
+      const n=parseFloat(v)||0; total+=n; porDia[f]=n;
+    });
+    return { total, porDia };
+  } catch(e){ return { total:0, porDia:{} }; }
+}
+
+async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr) {
+  const wrap = document.getElementById('exec-wrap');
+  // Solo mostrar si tenemos datos
+  if(!prodTodo.length && !jefeTodo.length) { wrap.style.display='none'; return; }
+  wrap.style.display = 'block';
+
+  const [a,m] = (mesStr||desde).split('-');
+  const mesLabel = mesStr
+    ? `${MESES_ES[+m-1]} ${a}`
+    : `${desde} → ${hasta}`;
+
+  // ── Derivar líneas reales desde los datos ────────────────────────────
+  const lineasReales = [...new Set(prodTodo.map(d=>d.linea||d.codLinea||'').filter(Boolean))].sort();
+  // Si no hay campo linea en prod, intenta con jefe
+  if(!lineasReales.length) {
+    const fromJefe = [...new Set(jefeTodo.map(d=>d.linea||'').filter(Boolean))].sort();
+    lineasReales.push(...fromJefe);
+  }
+  // DEBUG temporal: loguear valores de linea encontrados
+  console.log('[Ejecutivo] lineasReales:', lineasReales, '| mesStr:', mesStr);
+  console.log('[Ejecutivo] Muestra campos linea en prod:', prodTodo.slice(0,3).map(d=>({linea:d.linea,codLinea:d.codLinea,totalGlobal:d.totalGlobal})));
+  if(mesStr) console.log('[Ejecutivo] Buscando meta en config_volumen_meta/{lin}_{mesStr}:', lineasReales.map(l=>`${l}_${mesStr}`));
+
+  // ── Volumen total consolidado ─────────────────────────────────────────
+  const volTotal = prodTodo.reduce((s,d)=>s+(parseFloat(d.totalGlobal)||0),0);
+  const diasConProd = new Set(prodTodo.map(d=>d.fecha)).size || 1;
+
+  // ── Meta total (suma de todas las líneas reales) ─────────────────────
+  const metasPorLinea = {};
+  let metaTotal = 0;
+  if(mesStr && lineasReales.length) {
+    for(const lin of lineasReales) {
+      const ml = await cargarMetaLinea(lin, mesStr);
+      metasPorLinea[lin] = ml;
+      metaTotal += ml.total;
+    }
+  }
+
+  // Meta acumulada hasta última fecha con producción
+  const ultimaFecha = prodTodo.map(d=>d.fecha).sort().reverse()[0] || hasta;
+  let metaAcum = 0;
+  lineasReales.forEach(lin => {
+    if(!metasPorLinea[lin]) return;
+    Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f<=ultimaFecha) metaAcum+=v; });
+  });
+
+  const cumpl     = metaAcum>0 ? volTotal/metaAcum*100 : NaN;
+  const falta     = Math.max(0, metaTotal-volTotal);
+  const promDia   = diasConProd>0 ? volTotal/diasConProd : 0;
+  // Días restantes del mes (si es mes actual)
+  const hoyISO    = toISO(new Date());
+  const diasMes   = mesStr ? new Date(+a,+m,0).getDate() : diasConProd;
+  const diasRest  = Math.max(0, diasMes - diasConProd);
+  const proyecc   = volTotal + promDia * diasRest;
+
+  const pctCls = isNaN(cumpl)?'':(cumpl>=100?'ok':cumpl>=85?'warn':'bad');
+
+  // ── Render consolidado ────────────────────────────────────────────────
+  document.getElementById('exec-consolidado').innerHTML = `
+    <div class="exec-band-title"><i class="ti ti-chart-pie-2"></i> Consolidado faena — ${mesLabel}</div>
+    <div class="exec-kpis">
+      <div class="exec-kpi">
+        <div class="exec-kpi-label"><i class="ti ti-stack-2"></i> Volumen producido</div>
+        <div class="exec-kpi-val">${fmt2(volTotal)} <span style="font-size:12px;opacity:.7">m³</span></div>
+        <div class="exec-kpi-sub">${prodTodo.length} reportes en el período</div>
+      </div>
+      <div class="exec-kpi">
+        <div class="exec-kpi-label"><i class="ti ti-target"></i> Meta acumulada</div>
+        <div class="exec-kpi-val">${fmt2(metaAcum)} <span style="font-size:12px;opacity:.7">m³</span></div>
+        <div class="exec-kpi-sub">Meta total mes: ${fmt2(metaTotal)} m³</div>
+      </div>
+      <div class="exec-kpi">
+        <div class="exec-kpi-label"><i class="ti ti-rosette"></i> Cumplimiento</div>
+        <div class="exec-kpi-val ${pctCls}">${isNaN(cumpl)?'—':Math.round(cumpl)+'%'}</div>
+        <div class="exec-kpi-sub">${fmt2(volTotal)} / ${fmt2(metaAcum)} m³</div>
+      </div>
+    </div>
+    <div class="exec-extras">
+      <div class="exec-extra">
+        <div class="exec-extra-label">m³ total meta</div>
+        <div class="exec-extra-val">${fmt2(metaTotal)} m³</div>
+      </div>
+      <div class="exec-extra">
+        <div class="exec-extra-label">Falta por hacer</div>
+        <div class="exec-extra-val">${fmt2(falta)} m³</div>
+      </div>
+      <div class="exec-extra">
+        <div class="exec-extra-label">Prom m³/día (${diasConProd} días)</div>
+        <div class="exec-extra-val">${fmt2(promDia)} m³</div>
+      </div>
+      <div class="exec-extra">
+        <div class="exec-extra-label">Proyección m³</div>
+        <div class="exec-extra-val">${fmt2(proyecc)} m³</div>
+      </div>
+    </div>`;
+
+  // ── Render columnas por línea ─────────────────────────────────────────
+  const lineasWrap = document.getElementById('exec-lineas');
+  lineasWrap.innerHTML = '';
+
+  for(let li=0; li<lineasReales.length; li++) {
+    const lin = lineasReales[li];
+    const prodLin  = prodTodo.filter(d=>(d.linea||d.codLinea||'')===lin);
+    const jefeLin  = jefeTodo.filter(d=>(d.linea||'')===lin);
+    const volLin   = prodLin.reduce((s,d)=>s+(parseFloat(d.totalGlobal)||0),0);
+    const metaLin  = metasPorLinea[lin]?.total || 0;
+
+    // Meta acumulada de esta línea
+    const ultimaLin = prodLin.map(d=>d.fecha).sort().reverse()[0] || ultimaFecha;
+    let metaAcumLin = 0;
+    if(metasPorLinea[lin]) {
+      Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f<=ultimaLin) metaAcumLin+=v; });
+    }
+
+    const cumplLin  = metaAcumLin>0 ? volLin/metaAcumLin*100 : NaN;
+    const faltaLin  = Math.max(0, metaLin-volLin);
+    const diasLin   = new Set(prodLin.map(d=>d.fecha)).size || 1;
+    const promLin   = diasLin>0 ? volLin/diasLin : 0;
+    const diasRestL = Math.max(0, diasMes-diasLin);
+    const proyecLin = volLin + promLin*diasRestL;
+
+    const pctL = isNaN(cumplLin)?'':(cumplLin>=100?'ok':cumplLin>=85?'warn':'bad');
+    const linClass = LIN_CLASSES[li % LIN_CLASSES.length];
+
+    // Equipos activos en la línea
+    const eqsSet = new Set();
+    jefeLin.forEach(d=>(d.equipos||[]).forEach(eq=>{ if(eq.equipo) eqsSet.add(eq.equipo); }));
+    const eqsHTML = [...eqsSet].sort().map(e=>
+      `<span style="display:inline-block;font-size:9px;font-weight:600;padding:2px 6px;border-radius:8px;margin:2px;background:var(--bg);color:var(--text2);border:1px solid var(--border)">${e}</span>`
+    ).join('');
+
+    const card = document.createElement('div');
+    card.className = 'linea-card';
+    card.innerHTML = `
+      <div class="linea-head ${linClass}">
+        <span>${lin}</span>
+        <span style="font-size:9px;opacity:.8">${prodLin.length} rep.</span>
+      </div>
+      <div class="linea-body">
+        <div class="linea-kpis">
+          <div class="lkpi">
+            <div class="lkpi-label">Producido</div>
+            <div class="lkpi-val blue">${fmt2(volLin)}</div>
+            <div class="lkpi-sub">m³</div>
+          </div>
+          <div class="lkpi">
+            <div class="lkpi-label">Meta acum.</div>
+            <div class="lkpi-val" style="color:var(--text2)">${fmt2(metaAcumLin)}</div>
+            <div class="lkpi-sub">m³</div>
+          </div>
+          <div class="lkpi">
+            <div class="lkpi-label">Cumplim.</div>
+            <div class="lkpi-val ${pctL}">${isNaN(cumplLin)?'—':Math.round(cumplLin)+'%'}</div>
+            <div class="lkpi-sub">${fmt2(volLin)}/${fmt2(metaAcumLin)}</div>
+          </div>
+        </div>
+        <div class="linea-extras">
+          <div class="lextra">
+            <div class="lextra-label">Meta total</div>
+            <div class="lextra-val">${fmt2(metaLin)} m³</div>
+          </div>
+          <div class="lextra">
+            <div class="lextra-label">Falta</div>
+            <div class="lextra-val">${fmt2(faltaLin)} m³</div>
+          </div>
+          <div class="lextra">
+            <div class="lextra-label">Prom/día</div>
+            <div class="lextra-val">${fmt2(promLin)} m³</div>
+          </div>
+          <div class="lextra">
+            <div class="lextra-label">Proyección</div>
+            <div class="lextra-val">${fmt2(proyecLin)} m³</div>
+          </div>
+        </div>
+        ${eqsSet.size?`<div style="margin-top:6px;padding-top:5px;border-top:1px solid var(--border)">
+          <div style="font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Equipos activos</div>
+          ${eqsHTML}
+        </div>`:''}
+      </div>`;
+    lineasWrap.appendChild(card);
+  }
+}
 
 // ── META ──────────────────────────────────────────────────────────────────
 async function cargarMeta(desde, hasta, linea, prod) {
