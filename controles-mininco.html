@@ -38,6 +38,8 @@
   .estado.guardado{background:var(--verde-cl);color:var(--verde-osc);}
   .estado.error{background:#fdecea;color:var(--rojo);}
 
+  .aviso-duplicado{display:none;background:#fff8e1;color:#8a6100;border:1px solid var(--ambar);border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;margin:2px 0 12px;}
+
   .grid-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 14px;margin:12px 0;}
   .campo label{display:block;font-size:11px;font-weight:700;color:#5b6b62;text-transform:uppercase;letter-spacing:.02em;margin-bottom:3px;}
   .campo input,.campo select,.campo textarea{width:100%;padding:8px 9px;border:1px solid var(--gris-borde);border-radius:7px;font-size:14px;font-family:inherit;background:#fbfcfb;}
@@ -646,6 +648,30 @@ async function procesarUnPDF(file){
   }
 }
 
+// Busca en TODOS (los controles ya guardados) uno con el mismo N° de informe
+// dentro de la misma categoría (Calidad / Supervisión). Ignora números vacíos
+// o el valor por defecto '(sin número)', ya que no identifican nada.
+function buscarDuplicado(numero, categoria){
+  const n = (numero||'').trim();
+  if(!n || n === '(sin número)') return null;
+  return TODOS.find(r => r.categoria === categoria && (r.numero||'').trim() === n) || null;
+}
+
+function actualizarAvisoDuplicado(tarjeta){
+  const divAviso = tarjeta.querySelector('.aviso-duplicado');
+  if(!divAviso) return;
+  const numero = tarjeta.querySelector('.f-numero').value;
+  const categoria = tarjeta.querySelector('.f-categoria').value;
+  const dup = buscarDuplicado(numero, categoria);
+  if(dup){
+    divAviso.textContent = `⚠️ Ya existe un control guardado con este N° de informe (${formatoFecha(dup.fecha)}). Puedes guardarlo igual si es intencional.`;
+    divAviso.style.display = 'block';
+  }else{
+    divAviso.style.display = 'none';
+    divAviso.textContent = '';
+  }
+}
+
 function renderTarjetaRevision(tarjeta, datos){
   const nota = calcularNota(datos.resultado);
   const bonoSugerido = bonoAutomatico(datos.resultado);
@@ -676,6 +702,8 @@ function renderTarjetaRevision(tarjeta, datos){
       <div class="campo chico"><label>Resultado (0-100)</label><input type="number" min="0" max="100" class="f-resultado" value="${datos.resultado}"></div>
     </div>
 
+    <div class="aviso-duplicado"></div>
+
     <div class="campo"><label>Inconformidades detectadas (una por línea — se numeran solas si hay más de una; edítalas o agrega/quita)</label>
       <textarea class="f-inconformidades">${formatoInconformidadesNumeradas(datos.inconformidades)}</textarea>
     </div>
@@ -701,6 +729,13 @@ function renderTarjetaRevision(tarjeta, datos){
   `;
 
   activarSelectsOtro(tarjeta);
+
+  // Aviso (no bloqueante) si ya existe un control guardado con el mismo N° de informe
+  // en la misma categoría. Se revisa al mostrar la tarjeta y de nuevo si el usuario
+  // edita el N° o la categoría a mano.
+  actualizarAvisoDuplicado(tarjeta);
+  tarjeta.querySelector('.f-numero').addEventListener('input', ()=> actualizarAvisoDuplicado(tarjeta));
+  tarjeta.querySelector('.f-categoria').addEventListener('change', ()=> actualizarAvisoDuplicado(tarjeta));
 
   // Recalcular nota/bono en vivo cuando cambia el resultado o el usuario edita el select
   const inputResultado = tarjeta.querySelector('.f-resultado');
