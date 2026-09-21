@@ -76,14 +76,34 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
 .linea-body{padding:.75rem .875rem}
 .linea-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:.625rem}
 .lkpi{text-align:center}
-.lkpi-label{font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
-.lkpi-val{font-size:16px;font-weight:800;line-height:1}
+.lkpi-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.lkpi-val{font-size:24px;font-weight:800;line-height:1}
 .lkpi-val.blue{color:var(--blue)}.lkpi-val.ok{color:var(--green)}.lkpi-val.warn{color:var(--amber)}.lkpi-val.bad{color:var(--red)}
-.lkpi-sub{font-size:9px;color:var(--text3);margin-top:1px}
+.lkpi-sub{font-size:10px;color:var(--text3);margin-top:3px}
 .linea-extras{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.lextra{background:var(--bg);border-radius:6px;padding:4px 7px}
-.lextra-label{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:1px;line-height:1.2}
-.lextra-val{font-size:11px;font-weight:700;color:var(--text)}
+.lextra{background:var(--bg);border-radius:6px;padding:6px 9px}
+.lextra-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px;line-height:1.2}
+.lextra-val{font-size:15px;font-weight:700;color:var(--text)}
+
+/* ── DESGLOSE MADEREO POR LÍNEA ── */
+.madereo-desglose{margin-top:7px;padding-top:6px;border-top:1px solid var(--border)}
+.madereo-title{font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.madereo-table{width:100%;border-collapse:collapse}
+.madereo-table th{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;padding:3px 5px;text-align:right;border-bottom:1px solid var(--border)}
+.madereo-table th:first-child{text-align:left}
+.madereo-table th.col-pct{text-align:center}
+.madereo-table td{font-size:13px;font-weight:600;color:var(--text);padding:5px 5px;text-align:right;border-bottom:1px solid var(--bg)}
+.madereo-table td:first-child{text-align:left;font-weight:700}
+.madereo-table td.col-pct{text-align:center}
+.madereo-table tr:last-child td{border-bottom:none}
+.madereo-eq-label{display:flex;align-items:center;gap:5px}
+.madereo-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.madereo-dot.torre{background:#1D5FAD}
+.madereo-dot.skidder{background:#854F0B}
+.mpct-ok{background:var(--green-bg);color:var(--green);font-weight:800;padding:2px 6px;border-radius:4px;display:inline-block}
+.mpct-warn{background:var(--amber-bg);color:var(--amber);font-weight:800;padding:2px 6px;border-radius:4px;display:inline-block}
+.mpct-bad{background:var(--red-bg);color:var(--red);font-weight:800;padding:2px 6px;border-radius:4px;display:inline-block}
+
 @media(max-width:700px){
   .lineas-grid{grid-template-columns:1fr}
   .exec-kpis{grid-template-columns:1fr 1fr}
@@ -199,13 +219,13 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
 .tipo-total{background:#1a1a1a}
 .prod-table .row-op th{padding:3px 7px;font-size:10px;font-weight:600;color:var(--text2);background:#f8f8f8;text-align:center;border:1px solid var(--border);white-space:nowrap}
 .prod-table .row-op th:first-child{text-align:left}
-.prod-table td{padding:4px 7px;border:1px solid var(--border);text-align:right;color:var(--text2);font-size:11px}
-.prod-table td:first-child{text-align:center;font-weight:700;color:var(--text3);background:#fafafa;font-size:11px}
-.prod-table td.val{color:var(--text);font-weight:600}
+.prod-table td{padding:4px 9px;border:1px solid var(--border);text-align:center;color:var(--text2);font-size:11px;min-width:60px}
+.prod-table td:first-child{text-align:center;font-weight:700;color:var(--text3);background:#fafafa;font-size:11px;min-width:34px}
+.prod-table td.val{color:var(--text);font-weight:600;text-align:center}
 .prod-table td.vacio{color:#ddd;text-align:center}
-.prod-table td.total-dia{font-weight:800;color:#fff;background:#1a1a1a;text-align:right}
-.prod-table .row-total td{font-weight:800;padding:6px 8px;border-top:2px solid var(--border2)}
-.prod-table .row-total td:first-child{background:#1a1a1a;color:#fff;text-align:left;font-size:11px}
+.prod-table td.total-dia{font-weight:800;color:#fff;background:#1a1a1a;text-align:center}
+.prod-table .row-total td{font-weight:800;padding:6px 9px;border-top:2px solid var(--border2);text-align:center}
+.prod-table .row-total td:first-child{background:#1a1a1a;color:#fff;text-align:center;font-size:11px}
 .prod-table .row-total .tot-torre{background:var(--blue-bg);color:var(--blue)}
 .prod-table .row-total .tot-sk{background:var(--amber-bg);color:var(--amber)}
 .prod-table .row-total .tot-shovel{background:var(--purple-bg);color:var(--purple)}
@@ -1047,36 +1067,36 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr) {
     <div class="exec-kpis">
       <div class="exec-kpi">
         <div class="exec-kpi-label"><i class="ti ti-stack-2"></i> Volumen producido</div>
-        <div class="exec-kpi-val">${fmt2(volTotal)} <span style="font-size:12px;opacity:.7">m³</span></div>
+        <div class="exec-kpi-val">${fmt0(volTotal)} <span style="font-size:12px;opacity:.7">m³</span></div>
         <div class="exec-kpi-sub">${prodTodo.length} reportes en el período</div>
       </div>
       <div class="exec-kpi">
         <div class="exec-kpi-label"><i class="ti ti-target"></i> Meta acumulada</div>
-        <div class="exec-kpi-val">${fmt2(metaAcum)} <span style="font-size:12px;opacity:.7">m³</span></div>
-        <div class="exec-kpi-sub">Meta total mes: ${fmt2(metaTotal)} m³</div>
+        <div class="exec-kpi-val">${fmt0(metaAcum)} <span style="font-size:12px;opacity:.7">m³</span></div>
+        <div class="exec-kpi-sub">Meta total mes: ${fmt0(metaTotal)} m³</div>
       </div>
       <div class="exec-kpi">
         <div class="exec-kpi-label"><i class="ti ti-rosette"></i> Cumplimiento</div>
         <div class="exec-kpi-val ${pctCls}">${isNaN(cumpl)?'—':Math.round(cumpl)+'%'}</div>
-        <div class="exec-kpi-sub">${fmt2(volTotal)} / ${fmt2(metaAcum)} m³</div>
+        <div class="exec-kpi-sub">${fmt0(volTotal)} / ${fmt0(metaAcum)} m³</div>
       </div>
     </div>
     <div class="exec-extras">
       <div class="exec-extra">
         <div class="exec-extra-label">m³ total meta</div>
-        <div class="exec-extra-val">${fmt2(metaTotal)} m³</div>
+        <div class="exec-extra-val">${fmt0(metaTotal)} m³</div>
       </div>
       <div class="exec-extra">
         <div class="exec-extra-label">Falta por hacer</div>
-        <div class="exec-extra-val">${fmt2(falta)} m³</div>
+        <div class="exec-extra-val">${fmt0(falta)} m³</div>
       </div>
       <div class="exec-extra">
         <div class="exec-extra-label">Prom m³/día (${diasConProd} días)</div>
-        <div class="exec-extra-val">${fmt2(promDia)} m³</div>
+        <div class="exec-extra-val">${fmt0(promDia)} m³</div>
       </div>
       <div class="exec-extra">
         <div class="exec-extra-label">Proyección m³</div>
-        <div class="exec-extra-val">${fmt2(proyecc)} m³</div>
+        <div class="exec-extra-val">${fmt0(proyecc)} m³</div>
       </div>
     </div>`;
 
@@ -1107,12 +1127,76 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr) {
     const pctL = isNaN(cumplLin)?'':(cumplLin>=100?'ok':cumplLin>=85?'warn':'bad');
     const linClass = LIN_CLASSES[li % LIN_CLASSES.length];
 
-    // Equipos activos en la línea
-    const eqsSet = new Set();
-    jefeLin.forEach(d=>(d.equipos||[]).forEach(eq=>{ if(eq.equipo) eqsSet.add(eq.equipo); }));
-    const eqsHTML = [...eqsSet].sort().map(e=>
-      `<span style="display:inline-block;font-size:9px;font-weight:600;padding:2px 6px;border-radius:8px;margin:2px;background:var(--bg);color:var(--text2);border:1px solid var(--border)">${e}</span>`
-    ).join('');
+    // ── Desglose madereo Torre vs Skidder para esta línea ────────────────
+    // Volumen por equipo desde cartolas (solo reportes de esta línea)
+    const volPorEq = {};
+    prodLin.forEach(d => {
+      (d.cartolas||[]).forEach(c => {
+        if(!c.equipo) return;
+        let v = 0; (c.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
+        volPorEq[c.equipo] = (volPorEq[c.equipo]||0) + v;
+      });
+    });
+
+    // Clasificar equipos: Torre (ALPINE/TORRE) vs Skidder (SK/SKIDDER)
+    const eqTorre = {}, eqSkidder = {}, eqOtro = {};
+    Object.entries(volPorEq).forEach(([eq, v]) => {
+      const n = eq.toUpperCase();
+      if(n.includes('ALPINE') || n.includes('TORRE')) eqTorre[eq] = v;
+      else if(n.includes('SK') || n.includes('SKIDDER')) eqSkidder[eq] = v;
+      else eqOtro[eq] = v;
+    });
+
+    const volTorre   = Object.values(eqTorre).reduce((s,v)=>s+v,0);
+    const volSkidder = Object.values(eqSkidder).reduce((s,v)=>s+v,0);
+    const volMadereoTotal = volTorre + volSkidder + Object.values(eqOtro).reduce((s,v)=>s+v,0);
+
+    // % reales
+    const pctTorreReal   = volMadereoTotal>0 ? volTorre/volMadereoTotal*100 : 0;
+    const pctSkidderReal = volMadereoTotal>0 ? volSkidder/volMadereoTotal*100 : 0;
+
+    // % planificados (fijos; primera línea = Los Alpes T1: 35/65, resto: 46/54)
+    const esAlpes = li === 0;
+    const pctTorrePlan   = esAlpes ? 35 : 46;
+    const pctSkidderPlan = esAlpes ? 65 : 54;
+
+    // Color % real: verde si está entre 98%-102% del plan, ámbar ±10%, rojo fuera
+    const pctColor = (real, plan) => {
+      if(plan===0) return 'mpct-ok';
+      const ratio = real/plan*100;
+      if(ratio>=98 && ratio<=102) return 'mpct-ok';
+      if(ratio>=90 && ratio<=110) return 'mpct-warn';
+      return 'mpct-bad';
+    };
+
+    const desgloseHTML = volMadereoTotal>0 ? `
+      <div class="madereo-desglose">
+        <div class="madereo-title"><i class="ti ti-truck"></i> Madereo — Torre vs Skidder</div>
+        <table class="madereo-table">
+          <thead>
+            <tr>
+              <th>Equipo</th>
+              <th>Vol. real</th>
+              <th class="col-pct">% real</th>
+              <th class="col-pct">% plan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="madereo-eq-label"><span class="madereo-dot torre"></span>Torre</div></td>
+              <td>${fmt0(volTorre)} m³</td>
+              <td class="col-pct"><span class="${pctColor(pctTorreReal, pctTorrePlan)}">${pctTorreReal.toFixed(0)}%</span></td>
+              <td class="col-pct" style="color:var(--text3)">${pctTorrePlan}%</td>
+            </tr>
+            <tr>
+              <td><div class="madereo-eq-label"><span class="madereo-dot skidder"></span>Skidder</div></td>
+              <td>${fmt0(volSkidder)} m³</td>
+              <td class="col-pct"><span class="${pctColor(pctSkidderReal, pctSkidderPlan)}">${pctSkidderReal.toFixed(0)}%</span></td>
+              <td class="col-pct" style="color:var(--text3)">${pctSkidderPlan}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>` : '';
 
     const card = document.createElement('div');
     card.className = 'linea-card';
@@ -1125,42 +1209,39 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr) {
         <div class="linea-kpis">
           <div class="lkpi">
             <div class="lkpi-label">Producido</div>
-            <div class="lkpi-val blue">${fmt2(volLin)}</div>
+            <div class="lkpi-val blue">${fmt0(volLin)}</div>
             <div class="lkpi-sub">m³</div>
           </div>
           <div class="lkpi">
             <div class="lkpi-label">Meta acum.</div>
-            <div class="lkpi-val" style="color:var(--text2)">${fmt2(metaAcumLin)}</div>
+            <div class="lkpi-val" style="color:var(--text2)">${fmt0(metaAcumLin)}</div>
             <div class="lkpi-sub">m³</div>
           </div>
           <div class="lkpi">
             <div class="lkpi-label">Cumplim.</div>
             <div class="lkpi-val ${pctL}">${isNaN(cumplLin)?'—':Math.round(cumplLin)+'%'}</div>
-            <div class="lkpi-sub">${fmt2(volLin)}/${fmt2(metaAcumLin)}</div>
+            <div class="lkpi-sub">${fmt0(volLin)}/${fmt0(metaAcumLin)}</div>
           </div>
         </div>
         <div class="linea-extras">
           <div class="lextra">
             <div class="lextra-label">Meta total</div>
-            <div class="lextra-val">${fmt2(metaLin)} m³</div>
+            <div class="lextra-val">${fmt0(metaLin)} m³</div>
           </div>
           <div class="lextra">
             <div class="lextra-label">Falta</div>
-            <div class="lextra-val">${fmt2(faltaLin)} m³</div>
+            <div class="lextra-val">${fmt0(faltaLin)} m³</div>
           </div>
           <div class="lextra">
             <div class="lextra-label">Prom/día</div>
-            <div class="lextra-val">${fmt2(promLin)} m³</div>
+            <div class="lextra-val">${fmt0(promLin)} m³</div>
           </div>
           <div class="lextra">
             <div class="lextra-label">Proyección</div>
-            <div class="lextra-val">${fmt2(proyecLin)} m³</div>
+            <div class="lextra-val">${fmt0(proyecLin)} m³</div>
           </div>
         </div>
-        ${eqsSet.size?`<div style="margin-top:6px;padding-top:5px;border-top:1px solid var(--border)">
-          <div style="font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Equipos activos</div>
-          ${eqsHTML}
-        </div>`:''}
+        ${desgloseHTML}
       </div>`;
     lineasWrap.appendChild(card);
   }
@@ -1365,7 +1446,7 @@ function renderTablaDiariaEqm() {
       ops.forEach(op => {
         const v = hayProd?.[eq]?.[op] || 0;
         if(v>0){
-          rowHTML += `<td class="val">${fmt2(v)}</td>`;
+          rowHTML += `<td class="val">${fmt0(v)}</td>`;
           totalDia += v;
           totalesOp[eq][op] = (totalesOp[eq][op]||0) + v;
           totalesEq[eq] = (totalesEq[eq]||0) + v;
@@ -1375,7 +1456,7 @@ function renderTablaDiariaEqm() {
       });
     });
     if(totalDia>0){
-      rowHTML += `<td class="total-dia">${fmt2(totalDia)}</td>`;
+      rowHTML += `<td class="total-dia">${fmt0(totalDia)}</td>`;
       rows += `<tr>${rowHTML}</tr>`;
     }
   });
@@ -1384,7 +1465,7 @@ function renderTablaDiariaEqm() {
   let headTipo = '<tr class="row-tipo"><th class="tipo-dia">DÍA</th>';
   equiposOrden.forEach(eq => {
     const ops = [...colsEq[eq]].sort();
-    headTipo += `<th class="${tipoClase(eq)}" colspan="${ops.length}">${eq} · ${fmt2(totalesEq[eq]||0)} m³</th>`;
+    headTipo += `<th class="${tipoClase(eq)}" colspan="${ops.length}">${eq} · ${fmt0(totalesEq[eq]||0)} m³</th>`;
   });
   headTipo += '<th class="tipo-total">TOTAL</th></tr>';
 
@@ -1397,10 +1478,10 @@ function renderTablaDiariaEqm() {
     ops.forEach(op => {
       const v = totalesOp[eq][op]||0;
       grandTotal += v;
-      totalRow += `<td class="${cls}">${fmt2(v)}</td>`;
+      totalRow += `<td class="${cls}">${fmt0(v)}</td>`;
     });
   });
-  totalRow += `<td class="tot-grand">${fmt2(grandTotal)}</td></tr>`;
+  totalRow += `<td class="tot-grand">${fmt0(grandTotal)}</td></tr>`;
 
   document.getElementById('vol-eq-card').innerHTML =
     `<div class="kpi-label" style="margin-bottom:4px"><i class="ti ti-table"></i> Producción diaria por equipo y operador</div>
@@ -1523,7 +1604,7 @@ function renderRodalesFundoEqm(jefeLinea) {
 
       return `<div class="fundo-rodal-item" style="min-width:140px">
         <div class="fundo-rodal-num">Rodal ${num}</div>
-        <div class="fundo-rodal-vol">${fmt2(rd.vol)} <span style="font-size:10px;font-weight:400;color:var(--text3)">m³</span></div>
+        <div class="fundo-rodal-vol">${fmt0(rd.vol)} <span style="font-size:10px;font-weight:400;color:var(--text3)">m³</span></div>
         <div class="fundo-rodal-pct">${pct.toFixed(1)}% del fundo</div>
         <div class="fundo-rodal-bar"><div class="fundo-rodal-bar-fill" style="width:${Math.min(pct,100).toFixed(1)}%"></div></div>
         ${vmaHTML}
@@ -1534,7 +1615,7 @@ function renderRodalesFundoEqm(jefeLinea) {
       <div class="fundo-header">
         <div class="fundo-header-name">📍 ${fundo}</div>
         ${headerVmaHTML}
-        <div class="fundo-header-vol">${fmt2(datos.vol)} m³</div>
+        <div class="fundo-header-vol">${fmt0(datos.vol)} m³</div>
       </div>
       <div class="fundo-rodales">${rodalItems}</div>
     </div>`;
@@ -1591,7 +1672,7 @@ function renderGrafico(prod, meta, desde, hasta) {
       responsive:true,maintainAspectRatio:false,
       plugins:{
         legend:{position:'bottom',labels:{font:{size:11},boxWidth:14,padding:12}},
-        tooltip:{mode:'index',intersect:false,callbacks:{label:c=>` ${c.dataset.label}: ${fmt2(c.parsed.y)} m³`}}
+        tooltip:{mode:'index',intersect:false,callbacks:{label:c=>` ${c.dataset.label}: ${fmt0(c.parsed.y)} m³`}}
       },
       scales:{
         x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:15}},
@@ -2153,27 +2234,27 @@ async function renderVarasEnPiso(jefe) {
           <div class="varas-nums" style="grid-template-columns:repeat(4,1fr);margin-bottom:8px">
             <div class="varas-num">
               <div class="varas-num-label">Ajuste</div>
-              <div class="varas-num-val" style="color:var(--text3);font-size:15px">${fmt2(d.ajusteArb*d.vma)}</div>
+              <div class="varas-num-val" style="color:var(--text3);font-size:15px">${fmt0(d.ajusteArb*d.vma)}</div>
             </div>
             <div class="varas-num">
               <div class="varas-num-label">Madereados</div>
-              <div class="varas-num-val" style="color:var(--blue);font-size:18px">${fmt2(d.madereados*d.vma)}</div>
+              <div class="varas-num-val" style="color:var(--blue);font-size:18px">${fmt0(d.madereados*d.vma)}</div>
             </div>
             <div class="varas-num">
               <div class="varas-num-label">Trozados</div>
-              <div class="varas-num-val" style="color:var(--green);font-size:18px">${fmt2(d.m3Proc)}</div>
+              <div class="varas-num-val" style="color:var(--green);font-size:18px">${fmt0(d.m3Proc)}</div>
             </div>
             <div class="varas-num">
               <div class="varas-num-label">En piso</div>
-              <div class="varas-num-val" style="color:var(--amber);font-size:18px">${fmt2(d.varasM3)}</div>
+              <div class="varas-num-val" style="color:var(--amber);font-size:18px">${fmt0(d.varasM3)}</div>
             </div>
           </div>
 
           <!-- CONSISTENCIA -->
           ${d.vma>0?`<div style="background:${d.inconsistente?'#FEF3E2':'#f0f0f0'};border-radius:6px;padding:6px 10px;font-size:11px;color:${d.inconsistente?'var(--amber)':'var(--text3)'}">
             ${d.inconsistente
-              ? `⚠ Inconsistencia: árboles en piso (${fmt0(d.varasArb)}) × VMA = ${fmt2(d.esperadoM3)} m³, pero m³ calculados = ${fmt2(d.varasM3)} m³ (dif: ${fmt2(Math.abs(d.difM3))} m³, margen ±${fmt2(d.margen)} m³)`
-              : `✓ Consistente: diferencia ${fmt2(Math.abs(d.difM3))} m³ dentro del margen ±${fmt2(d.margen)} m³`}
+              ? `⚠ Inconsistencia: árboles en piso (${fmt0(d.varasArb)}) × VMA = ${fmt0(d.esperadoM3)} m³, pero m³ calculados = ${fmt0(d.varasM3)} m³ (dif: ${fmt0(Math.abs(d.difM3))} m³, margen ±${fmt0(d.margen)} m³)`
+              : `✓ Consistente: diferencia ${fmt0(Math.abs(d.difM3))} m³ dentro del margen ±${fmt0(d.margen)} m³`}
           </div>`:''}
 
           <div class="varas-bar" style="margin-top:8px">
