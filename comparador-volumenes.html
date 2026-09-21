@@ -76,6 +76,9 @@
     .btn-load-json:hover{background:var(--mn-dim)}
     .btn-clr-json{padding:7px 12px;background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:var(--r);font-size:12px;cursor:pointer}
     .btn-clr-json:hover{border-color:var(--neg);color:var(--neg)}
+    .btn-copy-prompt{padding:7px 14px;background:none;border:1px solid var(--mn);color:var(--mn);border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;transition:.15s}
+    .btn-copy-prompt:hover{background:rgba(26,122,184,.1)}
+    .btn-copy-prompt.copied{border-color:var(--pos);color:var(--pos);background:var(--pos-bg)}
 
     /* ENTRADA MANUAL */
     .manual-section{border:1px solid var(--warn-border);border-radius:var(--r);background:var(--warn-bg);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
@@ -277,7 +280,10 @@
 
       <!-- JSON paste desde IA externa -->
       <div class="json-section">
-        <div class="json-title">🤖 Pegar JSON desde Gemini / Copilot</div>
+        <div class="json-title" style="justify-content:space-between">
+          <span>🤖 Pegar JSON desde Gemini / Copilot</span>
+          <button class="btn-copy-prompt" id="btn-copy-prompt" onclick="window.copiarPrompt()" title="Copia el prompt listo para pegarlo en Gemini junto a la imagen del portal">📋 Copiar prompt</button>
+        </div>
         <textarea class="json-textarea" id="json-paste" placeholder='{"mes":"2026-09","dias":[{"dia":1,"avance":412},{"dia":2,"avance":464}...]}'></textarea>
         <div class="json-actions">
           <button class="btn-load-json" onclick="window.cargarJSON()">Cargar JSON</button>
@@ -603,7 +609,10 @@ window.cargarJSON=()=>{
     return;
   }
   try{
-    const obj=JSON.parse(raw);
+    // Extraer solo el bloque JSON aunque Gemini agregue texto antes/después
+    const match=raw.match(/\{[\s\S]*\}/);
+    if(!match) throw new Error("No se encontró un bloque JSON válido en el texto pegado.");
+    const obj=JSON.parse(match[0]);
     // Aceptar {mes, dias:[{dia, avance}]} o {dias:[{dia, avance}]}
     if(!obj.dias||!Array.isArray(obj.dias)) throw new Error("Formato incorrecto: falta la clave \"dias\".");
     const datos=[];
@@ -648,6 +657,41 @@ window.limpiarJSON=()=>{
   btnClrJson.style.display="none";
   infoMN.className="ibox";
   actualizarTabla();
+};
+
+const PROMPT_GEMINI=`Analiza esta imagen de una tabla del portal Mininco. La tabla tiene exactamente estas columnas en este orden: Fecha (dd-mm), Programa, Avance, Cump.(%).
+
+Extrae ÚNICAMENTE los valores de la columna "Avance" (tercera columna). No uses "Programa" ni "Cump.(%)".
+
+Reglas estrictas:
+- Lee cada fila de arriba hacia abajo, sin saltarte ninguna
+- Si dos filas consecutivas tienen el mismo valor en Avance, inclúyelas igual — son días distintos con igual resultado, no son duplicados
+- Si una fila tiene celda vacía o con guión (—) en la columna Avance, asigna 0 (cero) — NO omitas el día
+- La fila "TOTAL" al final NO se incluye
+- Los números pueden tener punto como separador de miles (ej: 1.234 = 1234) — ignora los puntos, el valor real es el número entero
+- El mes lo sacas de las fechas visibles en la columna Fecha (formato dd-mm)
+
+Devuelve SOLO este JSON, sin texto adicional, sin explicaciones:
+{"mes":"AAAA-MM","dias":[{"dia":1,"avance":460},{"dia":2,"avance":463}...]}
+
+Donde "mes" es el año y mes en formato AAAA-MM, y cada objeto tiene el número de día y su avance en m³.`;
+
+window.copiarPrompt=()=>{
+  navigator.clipboard.writeText(PROMPT_GEMINI).then(()=>{
+    const btn=document.getElementById("btn-copy-prompt");
+    btn.textContent="✓ ¡Copiado!";
+    btn.classList.add("copied");
+    setTimeout(()=>{btn.innerHTML="📋 Copiar prompt";btn.classList.remove("copied");},2000);
+  }).catch(()=>{
+    // Fallback para file://
+    const ta=document.createElement("textarea");
+    ta.value=PROMPT_GEMINI; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); document.body.removeChild(ta);
+    const btn=document.getElementById("btn-copy-prompt");
+    btn.textContent="✓ ¡Copiado!"; btn.classList.add("copied");
+    setTimeout(()=>{btn.innerHTML="📋 Copiar prompt";btn.classList.remove("copied");},2000);
+  });
 };
 
 // ── ENTRADA MANUAL ────────────────────────────────────────────────────
