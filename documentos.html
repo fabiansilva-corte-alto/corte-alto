@@ -324,39 +324,20 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 
       <div class="bandeja-dropzone">
         <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></div>
-        <strong>Selecciona la carpeta del trabajador</strong>
-        <p>Elige la carpeta completa desde tu explorador (ej. "Aguilera Aguilera Reinaldo"), tal como está organizada hoy en el servidor.</p>
-        <input type="file" id="bandeja-carpeta-input" webkitdirectory directory multiple style="display:none" onchange="manejarCarpetaTrabajador(event)">
-        <button class="btn-primary" onclick="document.getElementById('bandeja-carpeta-input').click()">Elegir carpeta</button>
+        <strong>Selecciona una o varias carpetas de trabajadores</strong>
+        <p>El explorador de Windows solo permite elegir una carpeta por vez (Ctrl/Shift no funciona ahí). Para cargar VARIOS trabajadores de una sola vez, elige la carpeta que los contiene a todos (ej. "DOCUMENTACION LABORAL") y el sistema los separa automáticamente en una tarjeta por trabajador. También puedes elegir la carpeta de un solo trabajador (ej. "Aguilera Aguilera Reinaldo"), o volver a pulsar el botón para ir agregando más carpetas después.</p>
+        <input type="file" id="bandeja-carpeta-input" webkitdirectory directory multiple style="display:none" onchange="manejarCarpetasTrabajador(event)">
+        <button class="btn-primary" onclick="document.getElementById('bandeja-carpeta-input').click()">Elegir carpeta(s)</button>
       </div>
 
       <div id="bandeja-revision" class="hidden" style="margin-top:1.5rem">
-        <div class="field-label">Carpeta seleccionada: <span id="bandeja-carpeta-detectada" style="font-weight:800;color:var(--text);text-transform:none;letter-spacing:0"></span></div>
-
-        <div class="bandeja-match-card" id="bandeja-match-card"></div>
-
-        <div id="bandeja-busqueda-wrap" class="bandeja-busqueda-wrap hidden">
-          <label class="field-label" for="bandeja-busqueda-input">Buscar trabajador por nombre o RUT</label>
-          <input class="field-input" id="bandeja-busqueda-input" type="text" placeholder="Escribe para buscar..." oninput="buscarTrabajadorBandeja()">
-          <div id="bandeja-busqueda-resultados"></div>
+        <div class="toolbar-desktop" style="margin-bottom:14px">
+          <div class="contador-desktop" id="bandeja-carpetas-contador">0 carpetas</div>
+          <button class="btn-primary" id="bandeja-btn-subir-todo" onclick="subirTodoBandeja()">Subir todo lo pendiente</button>
+          <button class="btn-secondary" onclick="cancelarBandeja()">Cancelar todo</button>
         </div>
-
-        <div class="contador-desktop" id="bandeja-archivos-contador" style="margin-top:1.2rem">0 archivos</div>
-        <div class="tabla-wrap">
-          <table class="tabla">
-            <thead>
-              <tr><th>Archivo</th><th>Tipo de documento</th><th>Fundo</th><th>Vigente</th><th></th></tr>
-            </thead>
-            <tbody id="bandeja-archivos-body"></tbody>
-          </table>
-        </div>
-
-        <div id="bandeja-resultado-subida" style="margin-top:12px"></div>
-
-        <div class="toolbar-desktop" style="margin-top:14px">
-          <button class="btn-primary" id="bandeja-btn-subir" onclick="subirDocumentosBandeja()">Subir documentos</button>
-          <button class="btn-secondary" onclick="cancelarBandeja()">Cancelar</button>
-        </div>
+        <div id="bandeja-resultado-global" style="margin-bottom:10px"></div>
+        <div id="bandeja-carpetas-cont"></div>
       </div>
     </div>
 
@@ -583,8 +564,8 @@ const EMPRESAS_SUGERIDAS = {
 let usuarioActual = null; // { rol, centro, nombre }
 let dotTabActual = "corte-alto";
 let dotDatosTodos = null; // fetch único con todos los trabajadores; las pestañas se separan en el render
-let bandejaTrabajadorSeleccionado = null;
-let bandejaArchivos = []; // [{ file, nombre, tipo, fundo, vigente }]
+let bandejaCarpetas = []; // [{ id, nombreCarpeta, trabajador, archivos: [{file,nombre,tipo,fundo,vigente,incluir,duplicado}], estado: 'pendiente'|'subiendo'|'listo', resultadoTexto }]
+let bandejaContadorId = 0;
 
 function mostrarPantalla(id){
   ["pantalla-login","pantalla-sinacceso","pantalla-jefe","pantalla-escritorio"].forEach(v=>{
@@ -1060,36 +1041,174 @@ function matchTrabajador(nombreCarpeta){
   return null;
 }
 
-window.manejarCarpetaTrabajador = function(event){
-  const archivos = Array.from(event.target.files || []);
+// Nombres típicos de las subcarpetas fijas dentro de la carpeta de UN trabajador
+// (a. Documentación Contractual, b. Acreditaciones y Certificaciones, etc., o casos
+// sueltos como "Seguridad"/"Procedimientos") — sirven para reconocer que lo elegido
+// es la carpeta de una sola persona y no una carpeta que contiene a varias personas.
+function pareceSubcarpetaDeTrabajador(nombre){
+  return /^[a-z]\.\s/i.test(nombre) ||
+    /^(documentaci[oó]n|acreditaci|capacitaci|entrega|ex[aá]menes|seguro|seguridad|procedimientos)/i.test(nombre);
+}
+
+window.manejarCarpetasTrabajador = async function(event){
+  const archivos = Array.from(event.target.files || [])
+    .filter(f => !/^\./.test(f.name) && !/^thumbs\.db$/i.test(f.name));
   if(!archivos.length) return;
 
-  const primerPath = archivos[0].webkitRelativePath || archivos[0].name;
-  const nombreCarpeta = primerPath.split("/")[0];
+  // El selector de carpetas del sistema operativo solo deja elegir UNA carpeta por vez
+  // (Ctrl/Shift no aplica ahí, es limitación del explorador de Windows/Mac). Para que de
+  // todas formas se pueda cargar a varios trabajadores de una sola vez, detectamos si lo
+  // elegido fue la carpeta de UN trabajador (con sus subcarpetas a-f adentro) o una carpeta
+  // "contenedora" con varias carpetas de trabajadores adentro (ej. "DOCUMENTACION LABORAL")
+  // — en ese caso cada subcarpeta de primer nivel se trata como un trabajador distinto.
+  const nivel1 = new Set();
+  archivos.forEach(f => {
+    const partes = (f.webkitRelativePath || f.name).split("/");
+    if(partes.length >= 3) nivel1.add(partes[1]);
+  });
+  const esCarpetaContenedora = nivel1.size >= 2 && Array.from(nivel1).every(n => !pareceSubcarpetaDeTrabajador(n));
 
-  bandejaArchivos = archivos
-    .filter(f => !/^\./.test(f.name) && !/^thumbs\.db$/i.test(f.name))
-    .map(f => ({ file: f, nombre: f.name, tipo: sugerirTipoDocumento(f.name, f.webkitRelativePath || f.name), fundo: "", vigente: false }));
+  // Agrupar los archivos elegidos por trabajador (permite elegir la carpeta de varios
+  // trabajadores de una vez si se detectó carpeta contenedora, o ir agregando más
+  // carpetas con clics sucesivos al botón).
+  const grupos = {};
+  const ordenCarpetas = [];
+  archivos.forEach(f => {
+    const ruta = f.webkitRelativePath || f.name;
+    const partes = ruta.split("/");
+    const nombreCarpeta = esCarpetaContenedora ? (partes[1] || partes[0]) : partes[0];
+    if(!grupos[nombreCarpeta]){ grupos[nombreCarpeta] = []; ordenCarpetas.push(nombreCarpeta); }
+    grupos[nombreCarpeta].push(f);
+  });
 
-  bandejaTrabajadorSeleccionado = matchTrabajador(nombreCarpeta);
-  document.getElementById("bandeja-carpeta-detectada").textContent = nombreCarpeta;
+  for(const nombreCarpeta of ordenCarpetas){
+    const archivosCarpeta = grupos[nombreCarpeta].map(f => ({
+      file: f, nombre: f.name,
+      tipo: sugerirTipoDocumento(f.name, f.webkitRelativePath || f.name),
+      fundo: "", vigente: false, incluir: true, duplicado: null
+    }));
+    const trabajador = matchTrabajador(nombreCarpeta);
+    if(trabajador){
+      archivosCarpeta.forEach(a => { if(a.tipo === "anexo_fundo") a.fundo = extraerFundo(a.nombre, trabajador.nombre); });
+    }
 
-  if(bandejaTrabajadorSeleccionado){
-    bandejaArchivos.forEach(a => {
-      if(a.tipo === "anexo_fundo") a.fundo = extraerFundo(a.nombre, bandejaTrabajadorSeleccionado.nombre);
-    });
+    // si ya había una tarjeta pendiente con el mismo nombre de carpeta, se reemplaza en vez de duplicarla
+    const existenteIdx = bandejaCarpetas.findIndex(c => c.nombreCarpeta === nombreCarpeta && c.estado !== "listo");
+    const card = {
+      id: existenteIdx > -1 ? bandejaCarpetas[existenteIdx].id : "carpeta_" + (++bandejaContadorId),
+      nombreCarpeta, trabajador, archivos: archivosCarpeta, estado: "pendiente", resultadoTexto: ""
+    };
+    if(existenteIdx > -1) bandejaCarpetas[existenteIdx] = card;
+    else bandejaCarpetas.push(card);
   }
 
-  document.getElementById("bandeja-resultado-subida").innerHTML = "";
-  renderBandejaMatch();
-  renderBandejaArchivos();
+  event.target.value = ""; // permite volver a elegir la(s) misma(s) carpeta(s) más adelante si hace falta
+
   document.getElementById("bandeja-revision").classList.remove("hidden");
+  renderBandejaCarpetas();
+
+  await Promise.all(bandejaCarpetas.filter(c => c.estado === "pendiente" && c.trabajador).map(c => marcarDuplicadosBandeja(c)));
+  renderBandejaCarpetas();
 };
 
-function renderBandejaMatch(){
-  const cont = document.getElementById("bandeja-match-card");
-  if(bandejaTrabajadorSeleccionado){
-    const t = bandejaTrabajadorSeleccionado;
+function encontrarCarpetaBandeja(cardId){
+  return bandejaCarpetas.find(c => c.id === cardId);
+}
+
+// Revisa, para el trabajador de esta carpeta, si alguno de sus archivos
+// elegidos ya tiene un documento subido antes con el mismo nombre — si es
+// así lo marca como duplicado y lo deja sin incluir en la subida por
+// defecto (el usuario puede tildarlo igual para subirlo de todas formas).
+async function marcarDuplicadosBandeja(card){
+  if(!card.trabajador){
+    card.archivos.forEach(a => { a.duplicado = null; if(a.incluir === undefined) a.incluir = true; });
+    return;
+  }
+  try{
+    const snap = await getDocs(query(collection(db, "documentos"), where("trabajadorId", "==", card.trabajador.id)));
+    const existentes = {};
+    snap.forEach(d => {
+      const data = d.data();
+      const clave = normalizar(data.nombreArchivo || "");
+      if(clave && !existentes[clave]) existentes[clave] = data;
+    });
+    card.archivos.forEach(a => {
+      const previo = existentes[normalizar(a.nombre)];
+      if(previo){
+        a.duplicado = { fecha: previo.fechaSubida || "", subidoPor: previo.subidoPor || "" };
+        a.incluir = false;
+      }else{
+        a.duplicado = null;
+        if(a.incluir === undefined) a.incluir = true;
+      }
+    });
+  }catch(e){
+    // si falla la verificación (ej. sin conexión), no bloqueamos la carga —
+    // se sube igual, simplemente sin marcar duplicados
+    card.archivos.forEach(a => { if(a.incluir === undefined) a.incluir = true; });
+  }
+}
+
+function fechaCortaBandeja(iso){
+  if(!iso) return "antes";
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return "antes";
+  return d.toLocaleDateString("es-CL");
+}
+
+function renderBandejaCarpetas(){
+  const cont = document.getElementById("bandeja-carpetas-cont");
+  const contador = document.getElementById("bandeja-carpetas-contador");
+  const pendientes = bandejaCarpetas.filter(c => c.estado !== "listo");
+  contador.textContent = `${bandejaCarpetas.length} carpeta${bandejaCarpetas.length === 1 ? "" : "s"}` +
+    (bandejaCarpetas.length && pendientes.length !== bandejaCarpetas.length ? ` (${pendientes.length} pendiente${pendientes.length === 1 ? "" : "s"})` : "");
+
+  if(!bandejaCarpetas.length){
+    cont.innerHTML = "";
+    return;
+  }
+
+  cont.innerHTML = bandejaCarpetas.map(card => `
+    <div class="bandeja-carpeta-card" style="border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;${card.estado === "listo" ? "opacity:.65" : ""}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div class="field-label" style="margin:0">Carpeta: <span style="font-weight:800;color:var(--text);text-transform:none;letter-spacing:0">${escapeHtml(card.nombreCarpeta)}</span></div>
+        ${card.estado !== "subiendo" ? `<button class="bandeja-quitar" onclick="quitarCarpetaBandeja('${card.id}')" aria-label="Quitar carpeta" title="Quitar esta carpeta de la lista">✕</button>` : ""}
+      </div>
+      <div class="bandeja-match-card" id="bandeja-match-${card.id}"></div>
+      <div id="bandeja-busqueda-wrap-${card.id}" class="bandeja-busqueda-wrap hidden">
+        <label class="field-label">Buscar trabajador por nombre o RUT</label>
+        <input class="field-input" id="bandeja-busqueda-input-${card.id}" type="text" placeholder="Escribe para buscar..." oninput="buscarTrabajadorBandeja('${card.id}')">
+        <div id="bandeja-busqueda-resultados-${card.id}"></div>
+      </div>
+      ${card.estado === "listo" ? `<div class="status-note" style="color:var(--green2);margin-top:10px">✓ ${escapeHtml(card.resultadoTexto)}</div>` : `
+      <div class="contador-desktop" style="margin-top:1rem">${card.archivos.length} archivo${card.archivos.length === 1 ? "" : "s"}</div>
+      <div id="bandeja-duplicados-aviso-${card.id}"></div>
+      <div class="tabla-wrap">
+        <table class="tabla">
+          <thead><tr><th>Archivo</th><th>Tipo de documento</th><th>Fundo</th><th>Vigente</th><th>Subir</th><th></th></tr></thead>
+          <tbody id="bandeja-archivos-body-${card.id}"></tbody>
+        </table>
+      </div>
+      <div id="bandeja-resultado-${card.id}" style="margin-top:10px"></div>
+      <div class="toolbar-desktop" style="margin-top:12px">
+        <button class="btn-secondary" id="bandeja-btn-subir-${card.id}" onclick="subirCarpetaBandeja('${card.id}')" ${card.estado === "subiendo" ? "disabled" : ""}>${card.estado === "subiendo" ? "Subiendo…" : "Subir esta carpeta"}</button>
+      </div>
+      `}
+    </div>
+  `).join("");
+
+  bandejaCarpetas.forEach(card => {
+    if(card.estado === "listo") return;
+    renderBandejaMatch(card);
+    renderBandejaArchivosCarpeta(card);
+  });
+}
+
+function renderBandejaMatch(card){
+  const cont = document.getElementById(`bandeja-match-${card.id}`);
+  if(!cont) return;
+  if(card.trabajador){
+    const t = card.trabajador;
     const etiquetaCentro = t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente de asignar";
     cont.innerHTML = `
       <div class="bandeja-match-ok">
@@ -1097,132 +1216,156 @@ function renderBandejaMatch(){
           <div class="bandeja-match-nombre">${escapeHtml(t.nombre)}</div>
           <div class="bandeja-match-detalle">${escapeHtml(t.rut || "—")} · ${escapeHtml(etiquetaCentro)} · ${escapeHtml(t.empresa || "—")}</div>
         </div>
-        <button class="btn-secondary" onclick="abrirBusquedaBandeja()">Cambiar trabajador</button>
+        <button class="btn-secondary" onclick="abrirBusquedaBandeja('${card.id}')">Cambiar trabajador</button>
       </div>
     `;
-    document.getElementById("bandeja-busqueda-wrap").classList.add("hidden");
+    const wrap = document.getElementById(`bandeja-busqueda-wrap-${card.id}`);
+    if(wrap) wrap.classList.add("hidden");
   }else{
     cont.innerHTML = `<div class="bandeja-match-falta">No se pudo identificar automáticamente al trabajador a partir del nombre de la carpeta. Búscalo manualmente abajo.</div>`;
-    abrirBusquedaBandeja();
+    window.abrirBusquedaBandeja(card.id);
   }
 }
 
-window.abrirBusquedaBandeja = function(){
-  document.getElementById("bandeja-busqueda-wrap").classList.remove("hidden");
-  document.getElementById("bandeja-busqueda-input").value = "";
-  document.getElementById("bandeja-busqueda-resultados").innerHTML = "";
-  document.getElementById("bandeja-busqueda-input").focus();
+window.abrirBusquedaBandeja = function(cardId){
+  const wrap = document.getElementById(`bandeja-busqueda-wrap-${cardId}`);
+  if(!wrap) return;
+  wrap.classList.remove("hidden");
+  document.getElementById(`bandeja-busqueda-input-${cardId}`).value = "";
+  document.getElementById(`bandeja-busqueda-resultados-${cardId}`).innerHTML = "";
+  document.getElementById(`bandeja-busqueda-input-${cardId}`).focus();
 };
 
-window.buscarTrabajadorBandeja = function(){
-  const term = normalizar(document.getElementById("bandeja-busqueda-input").value);
-  const cont = document.getElementById("bandeja-busqueda-resultados");
+window.buscarTrabajadorBandeja = function(cardId){
+  const term = normalizar(document.getElementById(`bandeja-busqueda-input-${cardId}`).value);
+  const cont = document.getElementById(`bandeja-busqueda-resultados-${cardId}`);
   if(term.length < 2){ cont.innerHTML = ""; return; }
   const candidatos = (dotDatosTodos || [])
     .filter(t => normalizar(t.nombre).includes(term) || normalizar(t.rut).includes(term))
     .slice(0, 8);
   cont.innerHTML = candidatos.length ? candidatos.map(t => `
-    <div class="bandeja-sugerencia" onclick="elegirTrabajadorBandeja('${t.id}')">
+    <div class="bandeja-sugerencia" onclick="elegirTrabajadorBandeja('${cardId}', '${t.id}')">
       <strong>${escapeHtml(t.nombre)}</strong>
       <span>${escapeHtml(t.rut || "—")} · ${escapeHtml(t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente")}</span>
     </div>
   `).join("") : '<div class="bandeja-sugerencia-vacio">Sin resultados.</div>';
 };
 
-window.elegirTrabajadorBandeja = function(id){
+window.elegirTrabajadorBandeja = async function(cardId, id){
+  const card = encontrarCarpetaBandeja(cardId);
   const t = (dotDatosTodos || []).find(x => x.id === id);
-  if(!t) return;
-  bandejaTrabajadorSeleccionado = t;
-  bandejaArchivos.forEach(a => {
+  if(!card || !t) return;
+  card.trabajador = t;
+  card.archivos.forEach(a => {
     if(a.tipo === "anexo_fundo" && !a.fundo) a.fundo = extraerFundo(a.nombre, t.nombre);
   });
-  renderBandejaMatch();
-  renderBandejaArchivos();
+  renderBandejaMatch(card);
+  renderBandejaArchivosCarpeta(card);
+  await marcarDuplicadosBandeja(card);
+  renderBandejaArchivosCarpeta(card);
 };
 
-function renderBandejaArchivos(){
-  document.getElementById("bandeja-archivos-contador").textContent =
-    bandejaArchivos.length + (bandejaArchivos.length === 1 ? " archivo" : " archivos");
+function renderBandejaArchivosCarpeta(card){
+  const cuerpo = document.getElementById(`bandeja-archivos-body-${card.id}`);
+  if(!cuerpo) return; // la tarjeta ya se subió y no muestra la tabla
 
-  const cuerpo = document.getElementById("bandeja-archivos-body");
-  if(!bandejaArchivos.length){
-    cuerpo.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:1.5rem">No hay archivos.</td></tr>';
+  const totalDuplicados = card.archivos.filter(a => a.duplicado).length;
+  const avisoBox = document.getElementById(`bandeja-duplicados-aviso-${card.id}`);
+  if(avisoBox){
+    avisoBox.innerHTML = totalDuplicados
+      ? `<div class="status-note" style="color:var(--red);margin-top:8px">⚠ ${totalDuplicados} archivo${totalDuplicados === 1 ? "" : "s"} ya ${totalDuplicados === 1 ? "estaba subido" : "estaban subidos"} antes para este trabajador — quedaron sin marcar en "Subir" para no duplicarlos. Márcalos tú si de verdad quieres subirlos de nuevo.</div>`
+      : "";
+  }
+
+  if(!card.archivos.length){
+    cuerpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">No hay archivos.</td></tr>';
     return;
   }
 
-  cuerpo.innerHTML = bandejaArchivos.map((a, i) => `
-    <tr>
-      <td>${escapeHtml(a.nombre)}</td>
+  cuerpo.innerHTML = card.archivos.map((a, i) => `
+    <tr${a.duplicado ? ' style="background:#fff3e0"' : ""}>
+      <td>${escapeHtml(a.nombre)}${a.duplicado ? `<div class="badge-inactivo" style="margin-top:4px;display:inline-block">Ya subido ${escapeHtml(fechaCortaBandeja(a.duplicado.fecha))}</div>` : ""}</td>
       <td>
-        <select class="bandeja-select-tipo" onchange="actualizarTipoArchivoBandeja(${i}, this.value)">
+        <select class="bandeja-select-tipo" onchange="actualizarTipoArchivoBandeja('${card.id}', ${i}, this.value)">
           ${TIPOS_DOCUMENTO.map(td => `<option value="${td.slug}" ${a.tipo === td.slug ? "selected" : ""}>${td.label}</option>`).join("")}
         </select>
       </td>
-      <td>${a.tipo === "anexo_fundo" ? `<input class="bandeja-input-fundo" value="${escapeHtml(a.fundo)}" placeholder="Nombre del fundo" oninput="actualizarFundoArchivoBandeja(${i}, this.value)">` : "—"}</td>
-      <td style="text-align:center">${a.tipo === "anexo_fundo" ? `<input type="checkbox" ${a.vigente ? "checked" : ""} onchange="marcarVigenteArchivoBandeja(${i}, this.checked)">` : "—"}</td>
-      <td><button class="bandeja-quitar" onclick="quitarArchivoBandeja(${i})" aria-label="Quitar">✕</button></td>
+      <td>${a.tipo === "anexo_fundo" ? `<input class="bandeja-input-fundo" value="${escapeHtml(a.fundo)}" placeholder="Nombre del fundo" oninput="actualizarFundoArchivoBandeja('${card.id}', ${i}, this.value)">` : "—"}</td>
+      <td style="text-align:center">${a.tipo === "anexo_fundo" ? `<input type="checkbox" ${a.vigente ? "checked" : ""} onchange="marcarVigenteArchivoBandeja('${card.id}', ${i}, this.checked)">` : "—"}</td>
+      <td style="text-align:center"><input type="checkbox" ${a.incluir ? "checked" : ""} onchange="marcarIncluirArchivoBandeja('${card.id}', ${i}, this.checked)" title="${a.duplicado ? "Ya estaba subido — márcalo para subirlo de todas formas" : "Subir este archivo"}"></td>
+      <td><button class="bandeja-quitar" onclick="quitarArchivoBandeja('${card.id}', ${i})" aria-label="Quitar">✕</button></td>
     </tr>
   `).join("");
 }
 
-window.actualizarTipoArchivoBandeja = function(i, valor){
-  const a = bandejaArchivos[i];
+window.marcarIncluirArchivoBandeja = function(cardId, i, marcado){
+  const card = encontrarCarpetaBandeja(cardId);
+  if(card && card.archivos[i]) card.archivos[i].incluir = marcado;
+};
+
+window.actualizarTipoArchivoBandeja = function(cardId, i, valor){
+  const card = encontrarCarpetaBandeja(cardId);
+  const a = card && card.archivos[i];
   if(!a) return;
   a.tipo = valor;
   if(valor === "anexo_fundo"){
-    if(!a.fundo && bandejaTrabajadorSeleccionado) a.fundo = extraerFundo(a.nombre, bandejaTrabajadorSeleccionado.nombre);
+    if(!a.fundo && card.trabajador) a.fundo = extraerFundo(a.nombre, card.trabajador.nombre);
   }else{
     a.fundo = "";
     a.vigente = false;
   }
-  renderBandejaArchivos();
+  renderBandejaArchivosCarpeta(card);
 };
 
-window.actualizarFundoArchivoBandeja = function(i, valor){
-  if(bandejaArchivos[i]) bandejaArchivos[i].fundo = valor;
+window.actualizarFundoArchivoBandeja = function(cardId, i, valor){
+  const card = encontrarCarpetaBandeja(cardId);
+  if(card && card.archivos[i]) card.archivos[i].fundo = valor;
 };
 
-window.marcarVigenteArchivoBandeja = function(i, marcado){
-  bandejaArchivos.forEach((a, idx) => {
+window.marcarVigenteArchivoBandeja = function(cardId, i, marcado){
+  const card = encontrarCarpetaBandeja(cardId);
+  if(!card) return;
+  card.archivos.forEach((a, idx) => {
     if(a.tipo === "anexo_fundo") a.vigente = (idx === i) ? marcado : false;
   });
-  renderBandejaArchivos();
+  renderBandejaArchivosCarpeta(card);
 };
 
-window.quitarArchivoBandeja = function(i){
-  bandejaArchivos.splice(i, 1);
-  renderBandejaArchivos();
+window.quitarArchivoBandeja = function(cardId, i){
+  const card = encontrarCarpetaBandeja(cardId);
+  if(!card) return;
+  card.archivos.splice(i, 1);
+  renderBandejaCarpetas();
+};
+
+window.quitarCarpetaBandeja = function(cardId){
+  bandejaCarpetas = bandejaCarpetas.filter(c => c.id !== cardId);
+  renderBandejaCarpetas();
 };
 
 window.cancelarBandeja = function(){
-  bandejaArchivos = [];
-  bandejaTrabajadorSeleccionado = null;
+  bandejaCarpetas = [];
   document.getElementById("bandeja-carpeta-input").value = "";
   document.getElementById("bandeja-revision").classList.add("hidden");
-  document.getElementById("bandeja-busqueda-wrap").classList.add("hidden");
-  document.getElementById("bandeja-resultado-subida").innerHTML = "";
+  document.getElementById("bandeja-resultado-global").innerHTML = "";
+  document.getElementById("bandeja-carpetas-cont").innerHTML = "";
 };
 
-window.subirDocumentosBandeja = async function(){
-  if(!bandejaTrabajadorSeleccionado){
-    alert("Primero identifica al trabajador de esta carpeta.");
-    return;
+// Sube los archivos incluidos de UNA carpeta (usado tanto por el botón de
+// cada tarjeta como por "Subir todo lo pendiente"). Devuelve los números
+// para que quien llama arme su propio mensaje de resultado.
+async function subirArchivosDeCarpeta(card, onProgreso){
+  const t = card.trabajador;
+  const aSubir = card.archivos.filter(a => a.incluir !== false);
+  const omitidos = card.archivos.length - aSubir.length;
+  if(!aSubir.length){
+    return { ok: 0, conError: 0, omitidos, sinArchivos: true };
   }
-  if(!bandejaArchivos.length){
-    alert("No hay archivos para subir.");
-    return;
-  }
-
-  const t = bandejaTrabajadorSeleccionado;
-  const boton = document.getElementById("bandeja-btn-subir");
-  const resultadoBox = document.getElementById("bandeja-resultado-subida");
-  boton.disabled = true;
-  resultadoBox.innerHTML = "";
 
   const centroCarpeta = t.centro || "SIN_CENTRO";
 
   // Si algún anexo de cambio de fundo queda marcado como vigente, desmarcar los anteriores del mismo trabajador
-  const marcaVigenteNueva = bandejaArchivos.some(a => a.tipo === "anexo_fundo" && a.vigente);
+  const marcaVigenteNueva = aSubir.some(a => a.tipo === "anexo_fundo" && a.vigente);
   if(marcaVigenteNueva){
     try{
       const previos = await getDocs(query(collection(db, "documentos"), where("trabajadorId", "==", t.id)));
@@ -1241,8 +1384,8 @@ window.subirDocumentosBandeja = async function(){
 
   let ok = 0, conError = 0, terminados = 0;
   const CONCURRENCIA = 4; // subir varios archivos en paralelo en vez de uno por uno
-  const total = bandejaArchivos.length;
-  boton.textContent = `Subiendo 0/${total}…`;
+  const total = aSubir.length;
+  if(onProgreso) onProgreso(0, total);
 
   async function subirUno(a){
     try{
@@ -1269,27 +1412,94 @@ window.subirDocumentosBandeja = async function(){
       conError++;
     }
     terminados++;
-    boton.textContent = `Subiendo ${terminados}/${total}…`;
+    if(onProgreso) onProgreso(terminados, total);
   }
 
   let siguiente = 0;
-  async function trabajador(){
+  async function trabajadorLoop(){
     while(siguiente < total){
-      const a = bandejaArchivos[siguiente];
+      const a = aSubir[siguiente];
       siguiente++;
       await subirUno(a);
     }
   }
-  await Promise.all(Array.from({ length: Math.min(CONCURRENCIA, total) }, trabajador));
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCIA, total) }, trabajadorLoop));
 
-  boton.disabled = false;
-  boton.textContent = "Subir documentos";
-  resultadoBox.innerHTML = `<div class="status-note" style="color:${conError ? "var(--red)" : "var(--green2)"}">Subidos: ${ok}. Con error: ${conError}.</div>`;
-  if(ok > 0){ bovedaConteos = null; bovedaFiniquitos = null; bovedaFallbackInfo = null; } // se recalcula la próxima vez que se entre a la Bóveda
+  return { ok, conError, omitidos };
+}
 
-  if(conError === 0){
-    setTimeout(() => { window.cancelarBandeja(); }, 1800);
+window.subirCarpetaBandeja = async function(cardId){
+  const card = encontrarCarpetaBandeja(cardId);
+  if(!card) return;
+  if(!card.trabajador){
+    alert("Primero identifica al trabajador de esta carpeta.");
+    return;
   }
+  if(!card.archivos.length){
+    alert("No hay archivos para subir en esta carpeta.");
+    return;
+  }
+
+  card.estado = "subiendo";
+  renderBandejaCarpetas();
+
+  const resultado = await subirArchivosDeCarpeta(card, (hechos, total) => {
+    const boton = document.getElementById(`bandeja-btn-subir-${cardId}`);
+    if(boton) boton.textContent = `Subiendo ${hechos}/${total}…`;
+  });
+
+  if(resultado.sinArchivos){
+    card.estado = "pendiente";
+    renderBandejaCarpetas();
+    const resultadoBox = document.getElementById(`bandeja-resultado-${cardId}`);
+    if(resultadoBox) resultadoBox.innerHTML = `<div class="status-note" style="color:var(--red)">No hay archivos marcados para subir (todos quedaron sin marcar por ser duplicados).</div>`;
+    return;
+  }
+
+  if(resultado.conError === 0){
+    card.estado = "listo";
+    card.resultadoTexto = `${resultado.ok} documento${resultado.ok === 1 ? "" : "s"} subido${resultado.ok === 1 ? "" : "s"}` +
+      (resultado.omitidos ? ` · ${resultado.omitidos} omitido${resultado.omitidos === 1 ? "" : "s"} (duplicados sin marcar)` : "");
+  }else{
+    card.estado = "pendiente";
+  }
+  if(resultado.ok > 0){ bovedaConteos = null; bovedaFiniquitos = null; bovedaFallbackInfo = null; } // se recalcula la próxima vez que se entre a la Bóveda
+
+  renderBandejaCarpetas();
+  if(card.estado === "pendiente"){
+    const resultadoBox = document.getElementById(`bandeja-resultado-${cardId}`);
+    if(resultadoBox) resultadoBox.innerHTML = `<div class="status-note" style="color:var(--red)">Subidos: ${resultado.ok}. Con error: ${resultado.conError}.${resultado.omitidos ? ` Omitidos: ${resultado.omitidos}.` : ""}</div>`;
+  }
+};
+
+window.subirTodoBandeja = async function(){
+  const pendientes = bandejaCarpetas.filter(c => c.estado === "pendiente");
+  if(!pendientes.length){
+    alert("No hay carpetas pendientes por subir.");
+    return;
+  }
+  const sinTrabajador = pendientes.filter(c => !c.trabajador);
+  if(sinTrabajador.length){
+    alert(`Hay ${sinTrabajador.length} carpeta${sinTrabajador.length === 1 ? "" : "s"} sin trabajador identificado — búscalo manualmente en esa tarjeta antes de subir todo, o quítala de la lista.`);
+    return;
+  }
+
+  const botonTodo = document.getElementById("bandeja-btn-subir-todo");
+  botonTodo.disabled = true;
+  const globalBox = document.getElementById("bandeja-resultado-global");
+
+  let carpetasConError = 0;
+  for(let i = 0; i < pendientes.length; i++){
+    const card = pendientes[i];
+    globalBox.innerHTML = `<div class="status-note">Subiendo carpeta ${i + 1}/${pendientes.length} — ${escapeHtml(card.nombreCarpeta)}…</div>`;
+    await window.subirCarpetaBandeja(card.id);
+    if(card.estado !== "listo") carpetasConError++;
+  }
+
+  botonTodo.disabled = false;
+  globalBox.innerHTML = carpetasConError
+    ? `<div class="status-note" style="color:var(--red)">Terminado con errores: ${carpetasConError} carpeta${carpetasConError === 1 ? "" : "s"} con problemas — revisa el detalle en cada tarjeta.</div>`
+    : `<div class="status-note" style="color:var(--green2)">✓ ${pendientes.length} carpeta${pendientes.length === 1 ? "" : "s"} subida${pendientes.length === 1 ? "" : "s"} sin errores.</div>`;
 };
 
 // ================= BÓVEDA DE DOCUMENTOS =================
