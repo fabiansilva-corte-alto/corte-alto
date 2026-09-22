@@ -534,6 +534,37 @@
 </head>
 <body>
 
+<!-- ══ PANTALLA DE LOGIN ══════════════════════════════════════ -->
+<div id="login-screen" style="position:fixed; inset:0; background:#1a3a1a; z-index:9999;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px;">
+  <div style="background:#fff; border-radius:16px; padding:32px 28px; width:100%; max-width:360px; box-shadow:0 8px 32px rgba(0,0,0,.35);">
+    <div style="text-align:center; margin-bottom:24px;">
+      <img id="login-logo" src="" alt="Corte Alto" style="height:70px; width:auto; margin-bottom:12px;">
+      <h2 style="font-size:18px; color:#1a3a1a; font-weight:700; margin:0;">Cierre de Mes</h2>
+      <p style="font-size:13px; color:#666; margin:4px 0 0;">Acceso restringido al supervisor</p>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-size:12px; font-weight:600; color:#444; display:block; margin-bottom:4px;">CORREO</label>
+      <input id="login-email" type="email" placeholder="correo@ejemplo.cl"
+        style="width:100%; padding:10px 12px; border:1.5px solid #e0e0d8; border-radius:8px; font-size:14px; outline:none; box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:8px;">
+      <label style="font-size:12px; font-weight:600; color:#444; display:block; margin-bottom:4px;">CONTRASEÑA</label>
+      <input id="login-pass" type="password" placeholder="••••••••"
+        style="width:100%; padding:10px 12px; border:1.5px solid #e0e0d8; border-radius:8px; font-size:14px; outline:none; box-sizing:border-box;">
+    </div>
+    <p id="login-error" style="color:#b91c1c; font-size:12px; min-height:18px; margin:6px 0 12px;"></p>
+    <button id="login-btn"
+      style="width:100%; padding:12px; background:#2d5a2d; color:#fff; border:none; border-radius:8px;
+             font-size:15px; font-weight:600; cursor:pointer;">
+      Ingresar
+    </button>
+  </div>
+</div>
+
+<!-- ══ CONTENIDO PRINCIPAL (oculto hasta login OK) ═══════════ -->
+<div id="main-app" style="display:none;">
+
 <!-- ── HEADER ──────────────────────────────────────────────── -->
 <header class="app-header">
   <a href="index.html" class="back-btn">‹</a>
@@ -814,6 +845,8 @@
 <!-- Toast -->
 <div id="toast"></div>
 
+</div><!-- /main-app -->
+
 <!-- ══════════════════════════════════════════════════════════
      SCRIPT
 ═══════════════════════════════════════════════════════════ -->
@@ -839,21 +872,70 @@ try {
 const db   = firebase.firestore();
 const auth = firebase.auth();
 
-// Autenticación: si ya hay sesión activa (venimos del login) se respeta;
-// si no, iniciamos anónima para que las reglas de Firestore no rechacen la lectura.
-function ensureAuth() {
-  return new Promise(resolve => {
-    const unsub = auth.onAuthStateChanged(user => {
-      unsub();
-      if (user) { resolve(user); }
-      else {
-        auth.signInAnonymously()
-          .then(resolve)
-          .catch(() => resolve(null)); // continúa aunque falle (Firestore público)
-      }
-    });
+// ── CONTROL DE ACCESO ────────────────────────────────────────
+// Solo este email puede usar el módulo
+const EMAIL_AUTORIZADO = 'supervisor@girozserviciosforestales.cl';
+
+// Inyectar logo en pantalla de login (mismo base64 que el header)
+document.addEventListener('DOMContentLoaded', () => {
+  const hdrLogo = document.querySelector('.hdr-logo img');
+  const loginLogo = document.getElementById('login-logo');
+  if (hdrLogo && loginLogo) loginLogo.src = hdrLogo.src;
+
+  document.getElementById('login-btn').addEventListener('click', hacerLogin);
+  document.getElementById('login-pass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') hacerLogin();
   });
+});
+
+async function hacerLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
+
+  errEl.textContent = '';
+
+  if (email !== EMAIL_AUTORIZADO) {
+    errEl.textContent = 'No tienes acceso a este módulo.';
+    return;
+  }
+  if (!pass) { errEl.textContent = 'Ingresa tu contraseña.'; return; }
+
+  btn.textContent = 'Ingresando…';
+  btn.disabled = true;
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+    // onAuthStateChanged se encarga de mostrar el módulo
+  } catch(e) {
+    const msgs = {
+      'auth/wrong-password':   'Contraseña incorrecta.',
+      'auth/user-not-found':   'Usuario no encontrado.',
+      'auth/invalid-email':    'Correo inválido.',
+      'auth/too-many-requests':'Demasiados intentos. Espera unos minutos.',
+    };
+    errEl.textContent = msgs[e.code] || 'Error al ingresar. Intenta de nuevo.';
+    btn.textContent = 'Ingresar';
+    btn.disabled = false;
+  }
 }
+
+// Observar estado de auth — muestra login o app según corresponda
+auth.onAuthStateChanged(user => {
+  if (user && user.email.toLowerCase() === EMAIL_AUTORIZADO) {
+    // Usuario autorizado → mostrar app
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    inicializarApp();
+  } else {
+    // Sin sesión o email no autorizado → mostrar login
+    if (user) auth.signOut(); // cerrar sesión de otro usuario
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('main-app').style.display = 'none';
+  }
+});
+
+function ensureAuth() { return Promise.resolve(auth.currentUser); }
 
 // ── ESTADO GLOBAL ─────────────────────────────────────────────
 let state = {
@@ -893,7 +975,11 @@ function toast(msg, tipo = '') {
 }
 
 // ── INICIALIZACIÓN ────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+let _appIniciada = false;
+function inicializarApp() {
+  if (_appIniciada) return;
+  _appIniciada = true;
+
   // Años en selectors
   const anio = new Date().getFullYear();
   [document.getElementById('sel-anio'),
@@ -950,9 +1036,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-cerrar-modal-hist').addEventListener('click', () =>
     document.getElementById('modal-hist').classList.remove('open'));
 
-  // Asegurar auth y luego cargar config
-  ensureAuth().then(() => cargarConfigFirestore());
-});
+  // Cargar config de Firestore
+  cargarConfigFirestore();
+}
 
 // ── CONFIG ────────────────────────────────────────────────────
 async function cargarConfigFirestore() {
@@ -1310,19 +1396,24 @@ async function cargarCierre() {
       vma = fundo.vma || fundo.VMA || 0.7;
     }
 
-    // 3. Trabajadores de RRHH (documentos) por línea
+    // 3. Trabajadores desde colección 'dotacion'
+    // El campo de filtro por línea puede ser 'linea', 'centro' u otro —
+    // primero intentamos por 'linea', luego fallback sin filtro de línea
     let trabajadores = [];
-    const trabSnap = await db.collection('documentos')
-      .where('linea', '==', linea)
-      .where('activo', '==', true)
-      .get();
-    trabSnap.forEach(d => trabajadores.push({ id: d.id, ...d.data() }));
+    try {
+      const trabSnap = await db.collection('dotacion')
+        .where('linea', '==', linea)
+        .where('activo', '==', true)
+        .get();
+      trabSnap.forEach(d => trabajadores.push({ id: d.id, ...d.data() }));
+    } catch(e) { /* campo 'linea' no existe, intentar sin filtro */ }
 
-    // Si no hay datos de RRHH en esa colección, intentar config_operadores
+    // Fallback: traer todos activos (sin filtro de línea)
     if (!trabajadores.length) {
-      const opSnap = await db.collection('config_operadores')
-        .where('linea', '==', linea).get();
-      opSnap.forEach(d => trabajadores.push({ id: d.id, ...d.data() }));
+      const trabSnap2 = await db.collection('dotacion')
+        .where('activo', '==', true)
+        .get();
+      trabSnap2.forEach(d => trabajadores.push({ id: d.id, ...d.data() }));
     }
 
     // 4. ¿Existe ya un cierre guardado?
@@ -1361,11 +1452,11 @@ function construirFilasCierre(trabajadores, prodTotal, prodTorre, vma) {
     return {
       id:        t.id,
       nombre:    t.nombre || t.nombreCompleto || '(sin nombre)',
-      rut:       t.rut || '',
-      cargo:     t.cargo || t.funcion || '',
+      rut:       t.rut || t.id || '',
+      cargo:     t.cargo || t.funcion || t.subarea || '',
+      centro:    t.centro || '',
       obs:       '',
       ...filaBase,
-      // Permite edición manual posterior
       _manual:   false,
     };
   });
