@@ -1369,19 +1369,21 @@ async function cargarCierre() {
   try {
     // 1. Producción del mes desde reportes_produccion
     // Los documentos guardan: fecha ("2026-09-22"), linea ("LÍNEA T1"), totalGlobal
+    // Nota: filtrar por linea + fecha requeriría índice compuesto en Firestore.
+    // En su lugar filtramos solo por rango de fecha y luego filtramos linea en JS.
     const mesStr      = String(mes).padStart(2, '0');
     const fechaDesde  = `${anio}-${mesStr}-01`;
     const fechaHasta  = `${anio}-${mesStr}-31`;
 
     const prodSnap = await db.collection('reportes_produccion')
-      .where('linea',  '==', linea)
-      .where('fecha',  '>=', fechaDesde)
-      .where('fecha',  '<=', fechaHasta)
+      .where('fecha', '>=', fechaDesde)
+      .where('fecha', '<=', fechaHasta)
       .get();
 
     let prodTotal = 0, prodTorre = 0;
     prodSnap.forEach(d => {
       const dat = d.data();
+      if (dat.linea !== linea) return;   // filtrar por línea en JS
       prodTotal += dat.totalGlobal || dat.volumenTotal || dat.totalM3 || 0;
       prodTorre += dat.volumenTorre || dat.produccionTorre || 0;
     });
@@ -1389,37 +1391,27 @@ async function cargarCierre() {
     // Fallback: si no hay campo separado de torre, asumir 50%
     if (!prodTorre && prodTotal) prodTorre = prodTotal * 0.5;
 
-    // 2. Fundo activo desde config_fundos (filtramos por línea)
+    // 2. Fundo activo desde config_fundos (filtramos por línea en JS para evitar índice compuesto)
     let fundo = null, vma = 0.7;
     const fundoSnap = await db.collection('config_fundos')
-      .where('linea', '==', linea)
       .where('activo', '==', true)
-      .limit(1).get();
+      .get();
     if (!fundoSnap.empty) {
-      fundo = fundoSnap.docs[0].data();
-      fundo.id = fundoSnap.docs[0].id;
+      const fundoDoc = fundoSnap.docs.find(d => d.data().linea === linea) || fundoSnap.docs[0];
+      fundo = fundoDoc.data();
+      fundo.id = fundoDoc.id;
       vma = fundo.vma || fundo.VMA || 0.7;
     }
 
     // 3. Trabajadores desde colección 'dotacion'
     // El campo de filtro por línea puede ser 'linea', 'centro' u otro —
     // primero intentamos por 'linea', luego fallback sin filtro de línea
+    // 3. Trabajadores desde dotacion — solo filtro simple por activo (evita índice compuesto)
     let trabajadores = [];
-    try {
-      const trabSnap = await db.collection('dotacion')
-        .where('linea', '==', linea)
-        .where('activo', '==', true)
-        .get();
-      trabSnap.forEach(d => trabajadores.push({ id: d.id, ...d.data() }));
-    } catch(e) { /* campo 'linea' no existe, intentar sin filtro */ }
-
-    // Fallback: traer todos activos (sin filtro de línea)
-    if (!trabajadores.length) {
-      const trabSnap2 = await db.collection('dotacion')
-        .where('activo', '==', true)
-        .get();
-      trabSnap2.forEach(d => trabajadores.push({ id: d.id, ...d.data() }));
-    }
+    const trabSnap = await db.collection('dotacion')
+      .where('activo', '==', true)
+      .get();
+    trabSnap.forEach(d => trabajadores.push({ id: d.id, ...d.data() }));
 
     // 4. ¿Existe ya un cierre guardado?
     const cierreSnap = await db.collection('cierre_mes').doc(docId).get();
