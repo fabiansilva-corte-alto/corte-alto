@@ -1368,34 +1368,34 @@ async function cargarCierre() {
 
   try {
     // 1. Producción del mes desde reportes_produccion
-    // Los documentos guardan: fecha ("2026-09-22"), linea ("LÍNEA T1"), totalGlobal
-    // Nota: filtrar por linea + fecha requeriría índice compuesto en Firestore.
-    // En su lugar filtramos solo por rango de fecha y luego filtramos linea en JS.
     const mesStr      = String(mes).padStart(2, '0');
     const fechaDesde  = `${anio}-${mesStr}-01`;
     const fechaHasta  = `${anio}-${mesStr}-31`;
 
+    console.log('[cierre] PASO 1: reportes_produccion', fechaDesde, fechaHasta);
     const prodSnap = await db.collection('reportes_produccion')
       .where('fecha', '>=', fechaDesde)
       .where('fecha', '<=', fechaHasta)
       .get();
+    console.log('[cierre] PASO 1 OK — docs:', prodSnap.size);
 
     let prodTotal = 0, prodTorre = 0;
     prodSnap.forEach(d => {
       const dat = d.data();
-      if (dat.linea !== linea) return;   // filtrar por línea en JS
+      if (dat.linea !== linea) return;
       prodTotal += dat.totalGlobal || dat.volumenTotal || dat.totalM3 || 0;
       prodTorre += dat.volumenTorre || dat.produccionTorre || 0;
     });
 
-    // Fallback: si no hay campo separado de torre, asumir 50%
     if (!prodTorre && prodTotal) prodTorre = prodTotal * 0.5;
 
-    // 2. Fundo activo desde config_fundos (filtramos por línea en JS para evitar índice compuesto)
+    // 2. Fundo activo desde config_fundos
+    console.log('[cierre] PASO 2: config_fundos');
     let fundo = null, vma = 0.7;
     const fundoSnap = await db.collection('config_fundos')
       .where('activo', '==', true)
       .get();
+    console.log('[cierre] PASO 2 OK — docs:', fundoSnap.size);
     if (!fundoSnap.empty) {
       const fundoDoc = fundoSnap.docs.find(d => d.data().linea === linea) || fundoSnap.docs[0];
       fundo = fundoDoc.data();
@@ -1403,18 +1403,19 @@ async function cargarCierre() {
       vma = fundo.vma || fundo.VMA || 0.7;
     }
 
-    // 3. Trabajadores desde colección 'dotacion'
-    // El campo de filtro por línea puede ser 'linea', 'centro' u otro —
-    // primero intentamos por 'linea', luego fallback sin filtro de línea
-    // 3. Trabajadores desde dotacion — solo filtro simple por activo (evita índice compuesto)
+    // 3. Trabajadores desde dotacion
+    console.log('[cierre] PASO 3: dotacion');
     let trabajadores = [];
     const trabSnap = await db.collection('dotacion')
       .where('activo', '==', true)
       .get();
+    console.log('[cierre] PASO 3 OK — docs:', trabSnap.size);
     trabSnap.forEach(d => trabajadores.push({ id: d.id, ...d.data() }));
 
     // 4. ¿Existe ya un cierre guardado?
+    console.log('[cierre] PASO 4: cierre_mes doc', docId);
     const cierreSnap = await db.collection('cierre_mes').doc(docId).get();
+    console.log('[cierre] PASO 4 OK — existe:', cierreSnap.exists);
     let cierreGuardado = null;
     if (cierreSnap.exists) cierreGuardado = cierreSnap.data();
 
