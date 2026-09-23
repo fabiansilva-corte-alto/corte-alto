@@ -39,7 +39,7 @@
 
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
-      font-size: 14px;
+      font-size: 16px;
       background: var(--gris-0);
       color: var(--gris-5);
       min-height: 100vh;
@@ -72,7 +72,7 @@
     .app-header .back-btn:hover { background: rgba(255,255,255,.25); }
     .hdr-logo { height: 38px; flex-shrink: 0; display:flex; align-items:center; }
     .hdr-logo img { height: 38px; width: auto; object-fit: contain; }
-    .app-header h1 { font-size: 17px; font-weight: 600; flex: 1; }
+    .app-header h1 { font-size: 19px; font-weight: 600; flex: 1; }
     .app-header .badge-linea {
       background: rgba(255,255,255,.2);
       padding: 3px 10px;
@@ -96,11 +96,11 @@
     .tabs-bar::-webkit-scrollbar { display: none; }
     .tab-btn {
       flex: none;
-      padding: 12px 20px;
+      padding: 14px 22px;
       border: none;
       background: none;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 500;
       color: var(--gris-3);
       border-bottom: 2px solid transparent;
@@ -128,12 +128,145 @@
       margin-bottom: 16px;
     }
     .card-title {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       color: var(--gris-3);
       text-transform: uppercase;
       letter-spacing: .5px;
       margin-bottom: 12px;
+    }
+
+    /* ── SUB-TABS (Configuración) ────────────────────────────── */
+    .subtabs-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      background: var(--blanco);
+      border-radius: var(--radio);
+      padding: 6px;
+      box-shadow: var(--sombra);
+    }
+    .subtab-btn {
+      flex: 1;
+      min-width: 120px;
+      padding: 10px 14px;
+      border: 2px solid var(--gris-1);
+      border-radius: var(--radio);
+      background: var(--gris-0);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gris-3);
+      text-align: center;
+      transition: all .15s;
+    }
+    .subtab-btn.active {
+      background: var(--verde);
+      color: #fff;
+      border-color: var(--verde);
+    }
+    .subtab-btn:hover:not(.active) {
+      background: var(--verde-bg);
+      color: var(--verde);
+      border-color: var(--verde-clr);
+    }
+    .subview { display: none; }
+    .subview.active { display: block; }
+
+    /* ── DOTACIÓN ─────────────────────────────────────────────── */
+    .dot-worker-card {
+      background: var(--blanco);
+      border: 1.5px solid var(--gris-1);
+      border-radius: var(--radio);
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .dot-worker-nombre {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gris-5);
+      margin-bottom: 8px;
+    }
+    .dot-worker-rut {
+      font-size: 12px;
+      color: var(--gris-3);
+      margin-bottom: 8px;
+    }
+    .dot-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gris-3);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin: 8px 0 5px;
+    }
+    .dot-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .dot-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border: 2px solid var(--gris-1);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--gris-0);
+      color: var(--gris-3);
+      user-select: none;
+      transition: all .15s;
+    }
+    .dot-chip input[type=checkbox] { display: none; }
+    .dot-chip.sel-linea { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
+    .dot-chip.sel-funcion { border-color: #7c3aed; background: #f5f3ff; color: #6d28d9; }
+    .dot-chip.sel-trepa { border-color: #d97706; background: #fffbeb; color: #92400e; }
+    .dot-chip.sel-senialeo { border-color: #0891b2; background: #ecfeff; color: #155e75; }
+    .dot-chip.sel-excluido { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+
+    /* ── BONOS CONFIG ─────────────────────────────────────────── */
+    .bono-config-card {
+      background: var(--blanco);
+      border: 1.5px solid var(--gris-1);
+      border-radius: var(--radio);
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .bono-config-funcion {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--verde);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bono-tipo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--gris-1);
+    }
+    .bono-tipo-row:last-child { border-bottom: none; }
+    .bono-tipo-nombre {
+      flex: 1;
+      font-size: 14px;
+      color: var(--gris-4);
+    }
+    .bono-tipo-input {
+      width: 110px;
+    }
+    .bono-tipo-activo {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--gris-3);
     }
 
     /* ── FORM CONTROLS ────────────────────────────────────── */
@@ -151,7 +284,7 @@
       min-width: 130px;
     }
     label {
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--gris-3);
       text-transform: uppercase;
@@ -160,8 +293,8 @@
     select, input[type="text"], input[type="number"] {
       border: 1.5px solid var(--gris-2);
       border-radius: var(--radio);
-      padding: 8px 10px;
-      font-size: 14px;
+      padding: 10px 12px;
+      font-size: 15px;
       color: var(--gris-5);
       background: var(--blanco);
       width: 100%;
@@ -178,10 +311,10 @@
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
       gap: 6px;
-      padding: 9px 18px;
+      padding: 11px 20px;
       border: none;
       border-radius: var(--radio);
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
       transition: opacity .15s, transform .1s;
@@ -192,8 +325,8 @@
     .btn-secondary { background: var(--gris-1); color: var(--gris-4); }
     .btn-secondary:hover { background: var(--gris-2); }
     .btn-danger { background: var(--rojo); color: #fff; }
-    .btn-sm { padding: 5px 10px; font-size: 12px; }
-    .btn-icon { padding: 6px; border-radius: 6px; }
+    .btn-sm { padding: 7px 12px; font-size: 13px; }
+    .btn-icon { padding: 7px; border-radius: 6px; }
 
     /* ── STAT CHIPS (resumen rápido) ──────────────────────── */
     .stats-row {
@@ -210,9 +343,9 @@
       flex: 1;
       min-width: 130px;
     }
-    .stat-chip .sc-label { font-size: 11px; color: var(--gris-3); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
-    .stat-chip .sc-value { font-size: 20px; font-weight: 700; color: var(--verde); margin-top: 2px; }
-    .stat-chip .sc-sub { font-size: 11px; color: var(--gris-3); margin-top: 1px; }
+    .stat-chip .sc-label { font-size: 13px; color: var(--gris-3); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+    .stat-chip .sc-value { font-size: 26px; font-weight: 700; color: var(--verde); margin-top: 2px; }
+    .stat-chip .sc-sub { font-size: 13px; color: var(--gris-3); margin-top: 1px; }
     .stat-chip.verde { border-color: var(--verde-clr); background: var(--verde-bg); }
     .stat-chip.amarillo { border-color: var(--amarillo); background: #fff3e8; }
     .stat-chip.amarillo .sc-value { color: var(--amarillo); }
@@ -240,13 +373,13 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 15px;
     }
     thead th {
       background: var(--gris-0);
-      padding: 9px 10px;
+      padding: 11px 12px;
       text-align: left;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--gris-3);
       text-transform: uppercase;
@@ -260,20 +393,20 @@
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: var(--gris-0); }
     tbody td {
-      padding: 8px 10px;
+      padding: 10px 12px;
       vertical-align: middle;
     }
-    td.td-nombre { font-weight: 600; min-width: 150px; }
-    td.td-cargo { color: var(--gris-3); min-width: 140px; white-space: nowrap; }
+    td.td-nombre { font-weight: 600; min-width: 160px; }
+    td.td-cargo { color: var(--gris-3); min-width: 150px; white-space: nowrap; }
     td input[type="number"] {
-      width: 90px;
-      padding: 5px 7px;
-      font-size: 13px;
+      width: 100px;
+      padding: 6px 8px;
+      font-size: 14px;
       text-align: right;
     }
-    td select { font-size: 12px; padding: 5px 24px 5px 7px; }
+    td select { font-size: 14px; padding: 6px 24px 6px 8px; }
     td.td-total { font-weight: 700; color: var(--verde); text-align: right; white-space: nowrap; }
-    td.td-obs input { min-width: 140px; font-size: 12px; }
+    td.td-obs input { min-width: 150px; font-size: 14px; }
     .tfoot-total td {
       background: var(--verde-bg);
       font-weight: 700;
@@ -299,8 +432,8 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 16px;
     }
-    .seccion-title { font-size: 14px; font-weight: 700; color: var(--gris-5); }
-    .seccion-sub { font-size: 12px; color: var(--gris-3); }
+    .seccion-title { font-size: 16px; font-weight: 700; color: var(--gris-5); }
+    .seccion-sub { font-size: 14px; color: var(--gris-3); }
 
     /* ── CONFIG TRAMOS ────────────────────────────────────── */
     .tramos-grid {
@@ -624,28 +757,77 @@
         </select>
       </div>
     </div>
+    <!-- Selector modo VMA -->
+    <div style="margin:12px 0 4px; padding:14px 16px; background:#f0f4ec; border-radius:8px; border:1px solid #c8d8b8;">
+      <label style="font-size:14px; font-weight:700; color:#2d5a2d; display:block; margin-bottom:6px;">
+        🌲 MODO VMA — Volumen por árbol del bosque
+      </label>
+      <p style="font-size:13px; color:#555; margin:0 0 12px;">
+        El VMA define qué tabla de bonos se aplica. Consulta el catastro del fundo si no estás seguro.
+        <strong>Mayor o igual (≥)</strong> significa bosque con árboles grandes (alto VMA);
+        <strong>menor que (&lt;)</strong> significa bosque con árboles más pequeños (bajo VMA).
+      </p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:9px 16px;
+                      background:#fff; border:2px solid #2d5a2d; border-radius:20px; font-size:15px; font-weight:600; color:#2d5a2d;">
+          <input type="radio" name="modo-vma" value="alto" checked style="accent-color:#2d5a2d; width:16px; height:16px;">
+          Mayor o igual a 0,56 m³/árbol &nbsp;<span style="opacity:.6; font-weight:400">(≥ 0,56)</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:9px 16px;
+                      background:#fff; border:2px solid #888; border-radius:20px; font-size:15px; font-weight:600; color:#444;">
+          <input type="radio" name="modo-vma" value="bajo" style="accent-color:#2d5a2d; width:16px; height:16px;">
+          Menor a 0,56 m³/árbol &nbsp;<span style="opacity:.6; font-weight:400">(&lt; 0,56)</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:9px 16px;
+                      background:#fff; border:2px solid #888; border-radius:20px; font-size:15px; font-weight:600; color:#444;">
+          <input type="radio" name="modo-vma" value="pendiente" style="accent-color:#2d5a2d; width:16px; height:16px;">
+          ⏳ Por confirmar
+        </label>
+      </div>
+      <p id="vma-sugerencia" style="font-size:13px; color:#666; margin:10px 0 0;"></p>
+    </div>
     <button class="btn btn-primary" id="btn-cargar">🔍 Cargar Datos</button>
   </div>
 
   <!-- Resumen del período (oculto hasta cargar) -->
   <div id="resumen-periodo" style="display:none">
 
-    <!-- Chips de estadísticas -->
+    <!-- Chips de estadísticas: fila superior -->
     <div class="stats-row">
+      <!-- 1. Producción Total (faena global) -->
       <div class="stat-chip verde">
         <div class="sc-label">Producción Total</div>
         <div class="sc-value" id="stat-prod">—</div>
-        <div class="sc-sub" id="stat-prod-sub">m³ este mes</div>
+        <div class="sc-sub">m³ faena global este mes</div>
       </div>
-      <div class="stat-chip" id="chip-meta">
-        <div class="sc-label">Meta Mes</div>
-        <div class="sc-value" id="stat-meta">—</div>
-        <div class="sc-sub" id="stat-meta-sub">m³ (VMA <span id="stat-vma">—</span>)</div>
+      <!-- 2. Equipos — tarjeta expandida con checkboxes por equipo -->
+      <div class="stat-chip" style="background:#f3f0fa; border-color:#8b5cf6; flex:2; min-width:260px;" id="chip-equipos">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+          <div>
+            <div class="sc-label" style="color:#6d28d9;">🚜 Equipos con producción</div>
+            <div style="font-size:12px; color:#888; margin-top:1px;">Marca los que trabajaron este mes</div>
+          </div>
+          <button onclick="recalcularDesdeEquipos()" id="btn-recalcular"
+            style="display:none; background:#6d28d9; color:#fff; border:none; padding:5px 10px;
+                   border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; white-space:nowrap; flex-shrink:0;">
+            ↻ Recalcular
+          </button>
+        </div>
+        <!-- Lista de equipos con checkbox + m³ — se llena por JS -->
+        <div id="lista-equipos-check" style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+          <span style="font-size:12px; color:#aaa; font-style:italic;">Carga datos para ver equipos</span>
+        </div>
       </div>
-      <div class="stat-chip amarillo">
-        <div class="sc-label">Fundo Activo</div>
-        <div class="sc-value fs-12 mt-12" id="stat-fundo" style="font-size:15px">—</div>
+      <!-- 3. Fundo + Meta según VMA (combinado) -->
+      <div class="stat-chip amarillo" id="chip-meta">
+        <div class="sc-label">Fundo activo</div>
+        <div class="sc-value" id="stat-fundo" style="font-size:18px">—</div>
         <div class="sc-sub" id="stat-fundo-sub">—</div>
+        <div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(0,0,0,.1);">
+          <div style="font-size:12px; font-weight:700; color:#92400e; text-transform:uppercase; letter-spacing:.05em;">Meta referencial</div>
+          <div style="font-size:26px; font-weight:800; color:#92400e; line-height:1.1;" id="stat-meta">—</div>
+          <div style="font-size:13px; color:#78350f; margin-top:2px;">m³ para bono máx · VMA <span id="stat-vma">—</span></div>
+        </div>
       </div>
     </div>
 
@@ -731,42 +913,84 @@
 ═══════════════════════════════════════════════════════════ -->
 <div id="tab-config" class="view">
 
-  <!-- VMA Umbral -->
-  <div class="card">
-    <div class="card-title">Umbral VMA</div>
-    <p class="text-muted fs-12" style="margin-bottom:12px">
-      Define los puntos de corte del VMA para aplicar las tablas de tramos correctas.
-      VMA Alto: ≥ umbral. VMA Bajo: &lt; umbral.
-    </p>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Umbral VMA Alto / Bajo</label>
-        <input type="number" id="cfg-vma-umbral" step="0.01" value="0.56" placeholder="0.56" />
-      </div>
-      <div class="form-group">
-        <label>Umbral VMA Muy Bajo</label>
-        <input type="number" id="cfg-vma-umbral2" step="0.01" value="0.35" placeholder="0.35" />
-      </div>
-    </div>
-    <button class="btn btn-primary btn-sm" id="btn-guardar-vma">Guardar umbrales</button>
+  <!-- Sub-tabs bar -->
+  <div class="subtabs-bar">
+    <button class="subtab-btn active" onclick="mostrarSubtab('dotacion', this)">👷 Dotación por Línea</button>
+    <button class="subtab-btn" onclick="mostrarSubtab('bonos', this)">💰 Bonos</button>
+    <button class="subtab-btn" onclick="mostrarSubtab('rangos-vma', this)">🌲 Rangos VMA</button>
   </div>
 
-  <!-- Cargos y tramos -->
-  <div class="card">
-    <div class="flex-between" style="margin-bottom:12px">
-      <div class="card-title" style="margin:0">Cargos y Tramos de Bono</div>
-      <button class="btn btn-primary btn-sm" id="btn-nuevo-cargo">+ Cargo</button>
-    </div>
-    <p class="text-muted fs-12" style="margin-bottom:12px">
-      Configura cada cargo con su tipo de remuneración y tramos. Los cambios se aplican al próximo cierre.
-    </p>
-    <div id="lista-cargos" class="tramos-grid">
-      <div class="loader"><div class="spinner"></div>Cargando configuración…</div>
+  <!-- ── SUB-TAB 1: DOTACIÓN POR LÍNEA ── -->
+  <div id="subview-dotacion" class="subview active">
+    <div class="card">
+      <div class="flex-between" style="margin-bottom:12px">
+        <div class="card-title" style="margin:0">👷 Dotación por Línea</div>
+        <button class="btn btn-primary btn-sm" id="btn-guardar-dotacion" onclick="guardarDotacion()">💾 Guardar</button>
+      </div>
+      <p style="font-size:13px; color:var(--gris-3); margin-bottom:14px;">
+        Asigna línea(s) y función(es) a cada trabajador. Un trabajador puede tener múltiples líneas y funciones si trabaja en diferentes roles en el mes.
+      </p>
+      <div id="lista-dotacion">
+        <div class="loader"><div class="spinner"></div>Cargando trabajadores…</div>
+      </div>
     </div>
   </div>
 
-  <div style="padding-bottom: 32px; text-align: center;">
-    <button class="btn btn-primary" id="btn-guardar-config">💾 Guardar Configuración</button>
+  <!-- ── SUB-TAB 2: BONOS ── -->
+  <div id="subview-bonos" class="subview">
+    <div class="card">
+      <div class="flex-between" style="margin-bottom:12px">
+        <div class="card-title" style="margin:0">💰 Configuración de Bonos por Función</div>
+        <button class="btn btn-primary btn-sm" onclick="guardarBonosConfig()">💾 Guardar Bonos</button>
+      </div>
+      <p style="font-size:13px; color:var(--gris-3); margin-bottom:16px;">
+        Define los tipos de bono y montos para cada función. Los tipos marcados con ✓ se aplican automáticamente en el cierre, con opción de quitar individualmente.
+      </p>
+      <div id="lista-bonos-config">
+        <div class="loader"><div class="spinner"></div>Cargando configuración…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SUB-TAB 3: RANGOS VMA ── -->
+  <div id="subview-rangos-vma" class="subview">
+    <!-- VMA Umbral -->
+    <div class="card">
+      <div class="card-title">Umbral VMA</div>
+      <p class="text-muted fs-12" style="margin-bottom:12px">
+        Define los puntos de corte del VMA para aplicar las tablas de tramos correctas.
+        VMA Alto: ≥ umbral. VMA Bajo: &lt; umbral.
+      </p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Umbral VMA Alto / Bajo</label>
+          <input type="number" id="cfg-vma-umbral" step="0.01" value="0.56" placeholder="0.56" />
+        </div>
+        <div class="form-group">
+          <label>Umbral VMA Muy Bajo</label>
+          <input type="number" id="cfg-vma-umbral2" step="0.01" value="0.35" placeholder="0.35" />
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="btn-guardar-vma">Guardar umbrales</button>
+    </div>
+
+    <!-- Cargos y tramos -->
+    <div class="card">
+      <div class="flex-between" style="margin-bottom:12px">
+        <div class="card-title" style="margin:0">Cargos y Tramos de Bono</div>
+        <button class="btn btn-primary btn-sm" id="btn-nuevo-cargo">+ Cargo</button>
+      </div>
+      <p class="text-muted fs-12" style="margin-bottom:12px">
+        Configura cada cargo con su tipo de remuneración y tramos. Los cambios se aplican al próximo cierre.
+      </p>
+      <div id="lista-cargos" class="tramos-grid">
+        <div class="loader"><div class="spinner"></div>Cargando configuración…</div>
+      </div>
+    </div>
+
+    <div style="padding-bottom: 32px; text-align: center;">
+      <button class="btn btn-primary" id="btn-guardar-config">💾 Guardar Configuración</button>
+    </div>
   </div>
 
 </div>
@@ -956,12 +1180,19 @@ let state = {
   cargos: [],          // config de cargos desde Firestore
   vmaUmbral: 0.56,
   vmaUmbral2: 0.35,
+  modoVma: 'alto',     // 'alto' | 'bajo' | 'pendiente'
   produccionMes: null, // objeto con totales del mes
   fundoActivo: null,   // documento del fundo
   trabajadores: [],    // de RRHH/documentos
   filasCierre: [],     // datos editables del cierre en curso
   cierreId: null,      // id del cierre cargado (si existe)
   editingCargoIdx: null,
+  dotacionDocs: [],    // trabajadores con asignación de línea/función
+  bonosConfig: {},     // configuración de bonos por función
+  cartolasRaw: [],     // cartolas del mes cargado
+  equiposDetectados: [],
+  equiposSeleccionados: null,
+  _sinAsignacion: [],  // trabajadores sin asignación de línea (Taller Coihue / Pendiente)
 };
 
 // ── UTILIDADES ────────────────────────────────────────────────
@@ -1016,6 +1247,8 @@ function inicializarApp() {
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      // Auto-cargar dotación cuando se abre Configuración
+      if (btn.dataset.tab === 'config') cargarDotacion();
     });
   });
 
@@ -1052,6 +1285,9 @@ function inicializarApp() {
 
   // Cargar config de Firestore
   cargarConfigFirestore();
+  cargarBonosConfig();
+  // Pre-cargar dotación para que el filtro por centro funcione desde el primer cierre
+  cargarDotacionSilenciosa();
 }
 
 // ── CONFIG ────────────────────────────────────────────────────
@@ -1075,77 +1311,179 @@ async function cargarConfigFirestore() {
 }
 
 function cargosPorDefecto() {
+  // ── TABLAS REALES de bonos (según PDF Rangos de Producciones) ──────────────
+  // tramosAlto = VMA por árbol ≥ 0,56 m³  |  tramosBajo = VMA < 0,56 m³
+  // baseProd: 'torre' usa producción del equipo de volteo/tala
+  //           'faena' usa producción total de la faena (procesamiento)
   return [
-    {
-      nombre: 'OP TORRE', tipo: 'tramo', baseProd: 'torre',
-      tramosAlto: [{desde:6001,hasta:6300,bono:80000},{desde:6300,hasta:null,bono:120000}],
-      tramosBajo: [{desde:4801,hasta:5040,bono:80000},{desde:5040,hasta:null,bono:120000}],
-      bonosFijos: [],
-    },
-    {
-      nombre: 'OP ORDENAMIENTO VARAS', tipo: 'tramo', baseProd: 'torre',
-      tramosAlto: [{desde:5500,hasta:6000,bono:40000},{desde:6001,hasta:6300,bono:80000},{desde:6300,hasta:null,bono:120000}],
-      tramosBajo: [{desde:4400,hasta:4800,bono:40000},{desde:4801,hasta:5040,bono:80000},{desde:5040,hasta:null,bono:120000}],
-      bonosFijos: [],
-    },
+    // ── TORRE ──────────────────────────────────────────────────────────────
     {
       nombre: 'ESTROBERO', tipo: 'tramo', baseProd: 'torre',
-      tramosAlto: [{desde:6001,hasta:6300,bono:40000},{desde:6300,hasta:null,bono:80000}],
-      tramosBajo: [{desde:4801,hasta:5040,bono:40000},{desde:5040,hasta:null,bono:80000}],
-      bonosFijos: [{nombre:'Bono Asistencia',monto:25000}],
+      tramosAlto: [
+        {desde:5000, hasta:4999, bono:25000},   // typo PDF: rango real 4.500-4.999
+        {desde:4500, hasta:4999, bono:25000},
+        {desde:5500, hasta:5999, bono:45000},
+        {desde:6000, hasta:6299, bono:60000},
+        {desde:6300, hasta:null, bono:80000},
+      ],
+      tramosBajo: [
+        {desde:4000, hasta:4499, bono:25000},
+        {desde:4500, hasta:4999, bono:45000},
+        {desde:5000, hasta:5499, bono:60000},
+        {desde:5500, hasta:null, bono:80000},
+      ],
+      bonosFijos: [],
+    },
+    {
+      nombre: 'OP TORRE', tipo: 'tramo', baseProd: 'torre',
+      // Usa misma tabla que Op Torre, Garra, Procesador, Op Clasificado (faena)
+      // pero referenciando producción torre — pendiente confirmar rangos específicos
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:40000},
+        {desde:14000, hasta:14999, bono:80000},
+        {desde:15000, hasta:null,  bono:120000},
+      ],
+      tramosBajo: [
+        {desde:11000, hasta:11500, bono:40000},
+        {desde:11501, hasta:12000, bono:80000},
+        {desde:12501, hasta:null,  bono:120000},
+      ],
+      bonosFijos: [],
+    },
+    {
+      nombre: 'OP GARRA ORDENAMIENTO', tipo: 'tramo', baseProd: 'torre',
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:40000},
+        {desde:14000, hasta:14999, bono:80000},
+        {desde:15000, hasta:null,  bono:120000},
+      ],
+      tramosBajo: [
+        {desde:11000, hasta:11500, bono:40000},
+        {desde:11501, hasta:12000, bono:80000},
+        {desde:12501, hasta:null,  bono:120000},
+      ],
+      bonosFijos: [],
+    },
+    // ── FAENA ──────────────────────────────────────────────────────────────
+    {
+      nombre: 'OP TORRE FAENA', tipo: 'tramo', baseProd: 'faena',
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:40000},
+        {desde:14000, hasta:14999, bono:80000},
+        {desde:15000, hasta:null,  bono:120000},
+      ],
+      tramosBajo: [
+        {desde:11000, hasta:11500, bono:40000},
+        {desde:11501, hasta:12000, bono:80000},
+        {desde:12501, hasta:null,  bono:120000},
+      ],
+      bonosFijos: [],
+    },
+    {
+      nombre: 'OP GARRA CLASIFICADO', tipo: 'tramo', baseProd: 'faena',
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:40000},
+        {desde:14000, hasta:14999, bono:80000},
+        {desde:15000, hasta:null,  bono:120000},
+      ],
+      tramosBajo: [
+        {desde:11000, hasta:11500, bono:40000},
+        {desde:11501, hasta:12000, bono:80000},
+        {desde:12501, hasta:null,  bono:120000},
+      ],
+      bonosFijos: [],
     },
     {
       nombre: 'OP PROCESADOR', tipo: 'tramo', baseProd: 'faena',
-      tramosAlto: [{desde:13500,hasta:13999,bono:40000},{desde:14000,hasta:14999,bono:80000},{desde:15000,hasta:null,bono:120000}],
-      tramosBajo: [{desde:11000,hasta:11500,bono:40000},{desde:11501,hasta:12000,bono:80000},{desde:12501,hasta:null,bono:120000}],
-      bonosFijos: [{nombre:'Bono Calidad (nota ≥4.5)',monto:70000}],
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:40000},
+        {desde:14000, hasta:14999, bono:80000},
+        {desde:15000, hasta:null,  bono:120000},
+      ],
+      tramosBajo: [
+        {desde:11000, hasta:11500, bono:40000},
+        {desde:11501, hasta:12000, bono:80000},
+        {desde:12501, hasta:null,  bono:120000},
+      ],
+      bonosFijos: [],
     },
     {
-      nombre: 'OP CLASIFICADO', tipo: 'tramo', baseProd: 'faena',
-      tramosAlto: [{desde:13500,hasta:13999,bono:40000},{desde:14000,hasta:14999,bono:80000},{desde:15000,hasta:null,bono:120000}],
-      tramosBajo: [{desde:11000,hasta:11500,bono:40000},{desde:11501,hasta:12000,bono:80000},{desde:12501,hasta:null,bono:120000}],
-      bonosFijos: [{nombre:'Bono Calidad (nota ≥4.5)',monto:50000}],
+      nombre: 'OP SKIDDER', tipo: 'tramo', baseProd: 'faena',
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:40000},
+        {desde:14000, hasta:14999, bono:80000},
+        {desde:15000, hasta:null,  bono:120000},
+      ],
+      tramosBajo: [
+        {desde:11000, hasta:11500, bono:40000},
+        {desde:11501, hasta:12000, bono:80000},
+        {desde:12501, hasta:null,  bono:120000},
+      ],
+      bonosFijos: [],
     },
     {
-      nombre: 'OP SK GRAPPEL', tipo: 'tramo', baseProd: 'faena',
-      tramosAlto: [{desde:14000,hasta:14999,bono:40000},{desde:15000,hasta:null,bono:80000}],
-      tramosBajo: [{desde:11501,hasta:12000,bono:40000},{desde:12501,hasta:null,bono:80000}],
+      // Bono imponible — se paga solo el tramo más alto que califica (no se suman)
+      nombre: 'OP SHOVEL', tipo: 'tramo', baseProd: 'faena',
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:70000},
+        {desde:14000, hasta:14499, bono:100000},
+        {desde:14500, hasta:null,  bono:150000},
+      ],
+      tramosBajo: [
+        {desde:11000, hasta:11500, bono:70000},
+        {desde:11501, hasta:12000, bono:100000},
+        {desde:12001, hasta:null,  bono:150000},
+      ],
       bonosFijos: [],
     },
     {
       nombre: 'MOTOSERRISTA', tipo: 'tramo', baseProd: 'faena',
-      tramosAlto: [{desde:14000,hasta:14999,bono:40000},{desde:15000,hasta:null,bono:80000}],
-      tramosBajo: [{desde:11501,hasta:12000,bono:40000},{desde:12501,hasta:null,bono:80000}],
-      bonosFijos: [{nombre:'Desgaste Herramienta',monto:130000}],
+      // Bono imponible
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:25000},
+        {desde:14000, hasta:14499, bono:50000},
+        {desde:14500, hasta:null,  bono:80000},
+      ],
+      tramosBajo: [
+        {desde:11000, hasta:11500, bono:25000},
+        {desde:11501, hasta:12000, bono:50000},
+        {desde:12001, hasta:null,  bono:80000},
+      ],
+      bonosFijos: [],
     },
     {
-      nombre: 'OP SHOVEL', tipo: 'tramo', baseProd: 'faena',
-      tramosAlto: [{desde:14000,hasta:14999,bono:100000},{desde:15000,hasta:null,bono:250000}],
-      tramosBajo: [{desde:11501,hasta:12000,bono:50000},{desde:12501,hasta:null,bono:50000}],
-      bonosFijos: [{nombre:'Bono Calidad',monto:50000}],
+      nombre: 'JEFE FAENA', tipo: 'tramo', baseProd: 'faena',
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:40000},
+        {desde:14000, hasta:14499, bono:80000},
+        {desde:14500, hasta:null,  bono:120000},
+      ],
+      tramosBajo: [
+        {desde:11000, hasta:11500, bono:40000},
+        {desde:11501, hasta:12000, bono:80000},
+        {desde:12001, hasta:null,  bono:120000},
+      ],
+      bonosFijos: [],
     },
     {
-      nombre: 'JEFE FAENA (trato)', tipo: 'trato', baseProd: 'faena',
-      tratoValor: 70, tratoDesgaste: 30, tratoEquipos: 2,
-      tramosAlto: [], tramosBajo: [],
-      bonosFijos: [{nombre:'Bono Pauta (nota ≥4.8)',monto:70000},{nombre:'Bono Ingreso m³',monto:25000}],
-    },
-    {
-      nombre: 'JEFE FAENA (bono)', tipo: 'tramo', baseProd: 'faena',
-      tramosAlto: [{desde:14000,hasta:14999,bono:80000},{desde:15000,hasta:null,bono:120000}],
-      tramosBajo: [{desde:11501,hasta:12000,bono:80000},{desde:12501,hasta:null,bono:120000}],
-      bonosFijos: [{nombre:'Bono Pauta (nota ≥4.8)',monto:70000},{nombre:'Bono Ingreso m³',monto:25000}],
+      nombre: 'SUPERVISOR', tipo: 'tramo', baseProd: 'faena',
+      // Bono producción Línea 1
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:100000},
+        {desde:14000, hasta:14499, bono:150000},
+        {desde:14500, hasta:null,  bono:250000},
+      ],
+      tramosBajo: [
+        {desde:11000, hasta:11500, bono:100000},
+        {desde:11501, hasta:12000, bono:150000},
+        {desde:12001, hasta:null,  bono:250000},
+      ],
+      bonosFijos: [],
     },
     {
       nombre: 'CALIBRADOR', tipo: 'fijo', baseProd: 'faena',
       tramosAlto: [], tramosBajo: [],
-      bonosFijos: [{nombre:'Bono Producción',monto:0}], // configurable
-    },
-    {
-      nombre: 'SUPERVISOR', tipo: 'tramo', baseProd: 'faena',
-      tramosAlto: [{desde:14000,hasta:14999,bono:80000},{desde:15000,hasta:null,bono:150000}],
-      tramosBajo: [{desde:11501,hasta:12000,bono:80000},{desde:12501,hasta:null,bono:150000}],
-      bonosFijos: [{nombre:'Bono No Accidente',monto:100000}],
+      bonosFijos: [],
     },
   ];
 }
@@ -1170,6 +1508,300 @@ async function guardarConfig() {
   } catch (e) {
     toast('Error al guardar: ' + e.message,'error');
   }
+}
+
+// ── SUB-TABS CONFIGURACIÓN ────────────────────────────────────
+function mostrarSubtab(id, btn) {
+  document.querySelectorAll('.subview').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('subview-' + id).classList.add('active');
+  btn.classList.add('active');
+  // Cargar datos al mostrar el sub-tab
+  if (id === 'dotacion') cargarDotacion();
+  if (id === 'bonos') renderBonosConfig();
+}
+
+// ── DOTACIÓN ─────────────────────────────────────────────────
+const LINEAS_CONFIG = ['Línea 1','Línea 2','Línea 3','Flotante'];
+
+// Mapeo centro Firestore → selector línea UI
+const CENTRO_A_LINEA = {
+  'FORMIN 1': 'LÍNEA T1',
+  'FORMIN 2': 'LÍNEA T2',
+  'FORMIN 3': 'LÍNEA T3',
+  'Rotativo': 'ROTATIVO',
+};
+const CENTROS_EXCLUIDOS = ['Taller Coihue', 'Taller coihue', 'Pendiente de asignar'];
+
+const FUNCIONES_CONFIG = [
+  'Op. Torre','Op. Ordenamiento','Op. Procesador','Op. Clasificado',
+  'Op. Shovel','Op. Skidder','Estrobero','Motosierrista',
+  'Jefe de Faena','Calibrador','Supervisor','Conductor',
+  'Perfilero','Nochero','Mecánico'
+];
+
+// Carga silenciosa al inicio — sin tocar el DOM del sub-tab
+async function cargarDotacionSilenciosa() {
+  try {
+    const snap = await db.collection('dotacion').orderBy('nombre').get();
+    if (!snap.empty) {
+      state.dotacionDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+  } catch (e) { /* ignorar — se intentará de nuevo al abrir el sub-tab */ }
+}
+
+async function cargarDotacion() {
+  const cont = document.getElementById('lista-dotacion');
+  cont.innerHTML = '<div class="loader"><div class="spinner"></div>Cargando trabajadores…</div>';
+  try {
+    const snap = await db.collection('dotacion').orderBy('nombre').get();
+    if (snap.empty) {
+      cont.innerHTML = '<div class="empty-state"><div class="es-icon">👷</div><p>No hay trabajadores en la dotación.<br>Agrega trabajadores desde el módulo de Dotación.</p></div>';
+      return;
+    }
+    state.dotacionDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderDotacion();
+  } catch (e) {
+    cont.innerHTML = `<div class="empty-state"><p>Error al cargar: ${e.message}</p></div>`;
+  }
+}
+
+function renderDotacion() {
+  const cont = document.getElementById('lista-dotacion');
+  const trabajadores = state.dotacionDocs || [];
+  if (!trabajadores.length) {
+    cont.innerHTML = '<div class="empty-state"><p>Sin trabajadores.</p></div>';
+    return;
+  }
+
+  // Separar por centro para mostrar agrupados
+  const grupos = {};
+  const ORDEN_CENTROS = ['FORMIN 1','FORMIN 2','FORMIN 3','Rotativo','Taller Coihue','Pendiente de asignar'];
+  trabajadores.forEach((t, idx) => {
+    const centro = t.centro || 'Sin centro';
+    if (!grupos[centro]) grupos[centro] = [];
+    grupos[centro].push({ t, idx });
+  });
+
+  const CENTRO_BADGE_COLOR = {
+    'FORMIN 1':              { bg: '#dbeafe', color: '#1d4ed8' },
+    'FORMIN 2':              { bg: '#dcfce7', color: '#166534' },
+    'FORMIN 3':              { bg: '#fef9c3', color: '#854d0e' },
+    'Rotativo':              { bg: '#ede9fe', color: '#6d28d9' },
+    'Taller Coihue':         { bg: '#f1f5f9', color: '#475569' },
+    'Pendiente de asignar':  { bg: '#fee2e2', color: '#991b1b' },
+  };
+  const CENTRO_LINEA_LABEL = {
+    'FORMIN 1': '→ Línea 1',
+    'FORMIN 2': '→ Línea 2',
+    'FORMIN 3': '→ Línea 3',
+    'Rotativo': '→ Todas las líneas',
+    'Taller Coihue': '⚠ Sin asignación de línea',
+    'Pendiente de asignar': '⚠ Sin asignación de línea',
+  };
+
+  const centrosOrdenados = ORDEN_CENTROS.filter(c => grupos[c])
+    .concat(Object.keys(grupos).filter(c => !ORDEN_CENTROS.includes(c)));
+
+  cont.innerHTML = centrosOrdenados.map(centro => {
+    const col = CENTRO_BADGE_COLOR[centro] || { bg: '#f1f5f9', color: '#475569' };
+    const lineaLabel = CENTRO_LINEA_LABEL[centro] || '';
+    const excluido = CENTROS_EXCLUIDOS.some(e => e.toLowerCase() === centro.toLowerCase());
+
+    const cards = grupos[centro].map(({ t, idx }) => {
+      const funciones   = t.funciones || [];
+      const trepa       = t.trepa || false;
+      const senialeo    = t.senialeo || false;
+      const sinAsignar  = t.sinAsignar || false;
+
+      const funcChips = FUNCIONES_CONFIG.map(f => {
+        const sel = funciones.includes(f);
+        return `<label class="dot-chip${sel ? ' sel-funcion' : ''}" onclick="toggleChipFuncion(this,${idx},'${f}')">
+          <input type="checkbox" ${sel ? 'checked' : ''}> ${f}
+        </label>`;
+      }).join('');
+
+      const excluidoEfectivo = excluido || sinAsignar;
+      return `<div class="dot-worker-card" id="dot-worker-${idx}" style="${excluidoEfectivo ? 'opacity:.6' : ''}">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:6px;">
+          <div class="dot-worker-nombre" style="margin:0">👷 ${t.nombre || '—'}</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            ${t.rut ? `<div style="font-size:12px; color:var(--gris-3); white-space:nowrap">${t.rut}</div>` : ''}
+            <label class="dot-chip${sinAsignar ? ' sel-excluido' : ''}" onclick="toggleChipApt(this,'sinAsignar',${idx})" title="Marcar como Sin Asignar — excluye del cierre">
+              <input type="checkbox" ${sinAsignar ? 'checked' : ''}> ⛔ Sin asignar
+            </label>
+          </div>
+        </div>
+        ${excluido ? `<div style="font-size:12px; color:var(--rojo); margin-bottom:6px;">⚠ Excluido del cierre (${centro})</div>` : ''}
+        ${sinAsignar && !excluido ? `<div style="font-size:12px; color:var(--rojo); margin-bottom:6px;">⛔ Marcado manualmente como Sin Asignar</div>` : ''}
+        <div class="dot-section-label">Función(es) en faena</div>
+        <div class="dot-chips">${funcChips}</div>
+        <div class="dot-section-label" style="margin-top:10px">Aptitudes</div>
+        <div class="dot-chips">
+          <label class="dot-chip${trepa ? ' sel-trepa' : ''}" onclick="toggleChipApt(this,'trepa',${idx})">
+            <input type="checkbox" ${trepa ? 'checked' : ''}> 🧗 Trepa
+          </label>
+          <label class="dot-chip${senialeo ? ' sel-senialeo' : ''}" onclick="toggleChipApt(this,'senialeo',${idx})">
+            <input type="checkbox" ${senialeo ? 'checked' : ''}> 🚦 Señaleo
+          </label>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:20px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; padding:8px 12px;
+                  background:${col.bg}; border-radius:8px; border-left:4px solid ${col.color};">
+        <span style="font-size:14px; font-weight:700; color:${col.color};">${centro}</span>
+        <span style="font-size:12px; color:${col.color}; opacity:.8;">${lineaLabel}</span>
+        <span style="margin-left:auto; font-size:12px; color:${col.color}; opacity:.7;">${grupos[centro].length} trabajadores</span>
+      </div>
+      ${cards}
+    </div>`;
+  }).join('');
+}
+
+function toggleChipFuncion(label, idx, valor) {
+  const cb = label.querySelector('input[type=checkbox]');
+  cb.checked = !cb.checked;
+  const t = state.dotacionDocs[idx];
+  t.funciones = t.funciones || [];
+  if (cb.checked) { if (!t.funciones.includes(valor)) t.funciones.push(valor); }
+  else t.funciones = t.funciones.filter(x => x !== valor);
+  label.className = 'dot-chip' + (cb.checked ? ' sel-funcion' : '');
+}
+
+// Mantener por compatibilidad (ya no se usa para línea, solo función)
+function toggleChipDot(label, tipo, idx, valor) {
+  if (tipo === 'funcion') toggleChipFuncion(label, idx, valor);
+}
+
+function toggleChipApt(label, tipo, idx) {
+  const cb = label.querySelector('input[type=checkbox]');
+  cb.checked = !cb.checked;
+  const t = state.dotacionDocs[idx];
+  t[tipo] = cb.checked;
+  const clsMap = { trepa: 'sel-trepa', senialeo: 'sel-senialeo', sinAsignar: 'sel-excluido' };
+  label.className = 'dot-chip' + (cb.checked ? ' ' + clsMap[tipo] : '');
+  // Si se cambia sinAsignar, actualizar opacidad de toda la card
+  if (tipo === 'sinAsignar') {
+    const card = document.getElementById('dot-worker-' + idx);
+    if (card) card.style.opacity = cb.checked ? '.6' : '1';
+    // Mostrar/ocultar aviso
+    let aviso = card ? card.querySelector('.aviso-sin-asignar') : null;
+    if (cb.checked && card && !aviso) {
+      const div = document.createElement('div');
+      div.className = 'aviso-sin-asignar';
+      div.style.cssText = 'font-size:12px; color:var(--rojo); margin-bottom:6px;';
+      div.textContent = '⛔ Marcado manualmente como Sin Asignar';
+      card.insertBefore(div, card.children[1]);
+    } else if (!cb.checked && aviso) {
+      aviso.remove();
+    }
+  }
+}
+
+async function guardarDotacion() {
+  const btn = document.getElementById('btn-guardar-dotacion');
+  btn.disabled = true; btn.textContent = '⏳ Guardando…';
+  try {
+    // Firestore limita batch a 500 ops — dividir si hace falta
+    const todos = state.dotacionDocs || [];
+    for (let i = 0; i < todos.length; i += 400) {
+      const chunk = todos.slice(i, i + 400);
+      const batch = db.batch();
+      chunk.forEach(t => {
+        const ref = db.collection('dotacion').doc(t.id);
+        // Solo guardamos funciones, trepa y señaleo — la línea viene del campo centro
+        batch.update(ref, {
+          funciones:   t.funciones   || [],
+          trepa:       t.trepa       || false,
+          senialeo:    t.senialeo    || false,
+          sinAsignar:  t.sinAsignar  || false,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+      await batch.commit();
+    }
+    toast('Dotación guardada ✓', 'success');
+  } catch (e) {
+    toast('Error al guardar dotación: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Guardar';
+  }
+}
+
+// ── BONOS CONFIG ──────────────────────────────────────────────
+const TIPOS_BONO = [
+  { id: 'produccion',      nombre: '📦 Producción (tramo)',    desc: 'Según m³ y tabla de tramos VMA',          fijo: false },
+  { id: 'calidad',         nombre: '✅ Calidad',                desc: 'Por controles de calidad aprobados',      fijo: true  },
+  { id: 'asistencia',      nombre: '📅 Asistencia',             desc: 'Bono por asistencia perfecta',            fijo: true  },
+  { id: 'trepa',           nombre: '🧗 Trepa',                  desc: 'Para trabajadores con aptitud de trepa',  fijo: true  },
+  { id: 'senialeo',        nombre: '🚦 Señaleo',                desc: 'Para trabajadores con aptitud de señaleo',fijo: true  },
+  { id: 'responsabilidad', nombre: '👔 Responsabilidad',        desc: 'Cargo de supervisión / jefatura',         fijo: true  },
+];
+
+function renderBonosConfig() {
+  const cont = document.getElementById('lista-bonos-config');
+  const bonosConf = state.bonosConfig || {};
+
+  cont.innerHTML = FUNCIONES_CONFIG.map(fun => {
+    const conf = bonosConf[fun] || {};
+    const tiposHTML = TIPOS_BONO.map(tipo => {
+      const tc = conf[tipo.id] || {};
+      const monto = tc.monto || 0;
+      const activo = tc.activo !== false;
+      return `<div class="bono-tipo-row">
+        <div class="bono-tipo-nombre">
+          <strong>${tipo.nombre}</strong>
+          <div style="font-size:12px; color:var(--gris-3);">${tipo.desc}</div>
+        </div>
+        ${tipo.fijo ? `<input type="number" class="bono-tipo-input" placeholder="$ monto"
+          value="${monto || ''}"
+          onchange="setBonoCfg('${fun}','${tipo.id}','monto',this.value)"
+          style="border:1.5px solid var(--gris-2); border-radius:6px; padding:7px; font-size:14px;">` : '<span style="font-size:12px;color:var(--gris-3)">Automático</span>'}
+        <label class="bono-tipo-activo">
+          <input type="checkbox" ${activo ? 'checked' : ''}
+            onchange="setBonoCfg('${fun}','${tipo.id}','activo',this.checked)"
+            style="accent-color:var(--verde); width:16px; height:16px;">
+          Aplicar
+        </label>
+      </div>`;
+    }).join('');
+
+    return `<div class="bono-config-card">
+      <div class="bono-config-funcion">
+        <span style="background:var(--verde-bg); padding:4px 10px; border-radius:20px; font-size:14px; color:var(--verde);">${fun}</span>
+      </div>
+      ${tiposHTML}
+    </div>`;
+  }).join('');
+}
+
+function setBonoCfg(funcion, tipoId, campo, valor) {
+  state.bonosConfig = state.bonosConfig || {};
+  state.bonosConfig[funcion] = state.bonosConfig[funcion] || {};
+  state.bonosConfig[funcion][tipoId] = state.bonosConfig[funcion][tipoId] || {};
+  const v = campo === 'monto' ? (parseFloat(valor) || 0) : valor;
+  state.bonosConfig[funcion][tipoId][campo] = v;
+}
+
+async function guardarBonosConfig() {
+  try {
+    await db.collection('config_cierre_mes').doc('bonos').set({
+      bonosConfig: state.bonosConfig || {},
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    toast('Configuración de bonos guardada ✓', 'success');
+  } catch (e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+async function cargarBonosConfig() {
+  try {
+    const snap = await db.collection('config_cierre_mes').doc('bonos').get();
+    if (snap.exists) state.bonosConfig = snap.data().bonosConfig || {};
+  } catch (e) { /* ignorar */ }
 }
 
 // ── RENDER LISTA CARGOS ───────────────────────────────────────
@@ -1372,6 +2004,9 @@ async function cargarCierre() {
   const linea = document.getElementById('sel-linea').value;
   const docId = `${anio}-${String(mes).padStart(2,'0')}-${linea}`;
 
+  // Leer modo VMA seleccionado
+  state.modoVma = document.querySelector('input[name="modo-vma"]:checked')?.value || 'alto';
+
   document.getElementById('estado-vacio-cierre').style.display = 'none';
   document.getElementById('resumen-periodo').style.display = 'none';
   document.getElementById('secciones-equipos').innerHTML =
@@ -1386,50 +2021,67 @@ async function cargarCierre() {
     const fechaDesde  = `${anio}-${mesStr}-01`;
     const fechaHasta  = `${anio}-${mesStr}-31`;
 
-    console.log('[cierre] PASO 1: reportes_produccion', fechaDesde, fechaHasta);
     const prodSnap = await db.collection('reportes_produccion')
       .where('fecha', '>=', fechaDesde)
       .where('fecha', '<=', fechaHasta)
       .get();
-    console.log('[cierre] PASO 1 OK — docs:', prodSnap.size);
 
+    // Calcular producción global y producción torre desde cartolas
     let prodTotal = 0, prodTorre = 0;
+    const equiposVistos = new Set();
+    const cartolasRaw = [];  // guardamos para recalcular al cambiar equipos
+
     prodSnap.forEach(d => {
       const dat = d.data();
       if (dat.linea !== linea) return;
       prodTotal += dat.totalGlobal || dat.volumenTotal || dat.totalM3 || 0;
-      prodTorre += dat.volumenTorre || dat.produccionTorre || 0;
+
+      const cartolas = dat.cartolas || [];
+      cartolas.forEach(c => {
+        if (c.equipo) equiposVistos.add(c.equipo);
+        cartolasRaw.push({ ...c, _fecha: dat.fecha });
+        const esAlpine = (c.equipo || '').toUpperCase().includes('ALPINE')
+                      || (c.volteo || '').toUpperCase().includes('ALPINE');
+        if (esAlpine) prodTorre += c.total || 0;
+      });
     });
 
+    // Fallback si no hay cartolas ALPINE detectadas
     if (!prodTorre && prodTotal) prodTorre = prodTotal * 0.5;
 
+    // Guardar en estado
+    state.equiposDetectados   = [...equiposVistos];
+    state.equiposSeleccionados = null; // reset para que se inicialicen todos marcados
+    state.cartolasRaw         = cartolasRaw;
+
     // 2. Fundo activo desde config_fundos
-    console.log('[cierre] PASO 2: config_fundos');
-    let fundo = null, vma = 0.7;
+    let fundo = null, vma = 0.56;
     const fundoSnap = await db.collection('config_fundos')
       .where('activo', '==', true)
       .get();
-    console.log('[cierre] PASO 2 OK — docs:', fundoSnap.size);
     if (!fundoSnap.empty) {
       const fundoDoc = fundoSnap.docs.find(d => d.data().linea === linea) || fundoSnap.docs[0];
       fundo = fundoDoc.data();
       fundo.id = fundoDoc.id;
-      vma = fundo.vma || fundo.VMA || 0.7;
+      vma = fundo.vmaArbol || fundo.vma || fundo.VMA || 0.56;
+
+      // Sugerir modo VMA según el fundo
+      const sugerencia = document.getElementById('vma-sugerencia');
+      if (sugerencia && vma) {
+        const modo = vma >= 0.56 ? '≥ 0,56 m³/árbol' : '< 0,56 m³/árbol';
+        sugerencia.textContent = `📋 Fundo "${fundo.nombre || fundo.id}": VMA ${vma} m³/árbol → sugerido: ${modo}`;
+      }
     }
 
     // 3. Trabajadores desde dotacion
-    console.log('[cierre] PASO 3: dotacion');
     let trabajadores = [];
     const trabSnap = await db.collection('dotacion')
       .where('activo', '==', true)
       .get();
-    console.log('[cierre] PASO 3 OK — docs:', trabSnap.size);
     trabSnap.forEach(d => trabajadores.push({ id: d.id, ...d.data() }));
 
     // 4. ¿Existe ya un cierre guardado?
-    console.log('[cierre] PASO 4: cierre_mes doc', docId);
     const cierreSnap = await db.collection('cierre_mes').doc(docId).get();
-    console.log('[cierre] PASO 4 OK — existe:', cierreSnap.exists);
     let cierreGuardado = null;
     if (cierreSnap.exists) cierreGuardado = cierreSnap.data();
 
@@ -1447,7 +2099,8 @@ async function cargarCierre() {
     }
 
     // 7. Render
-    renderResumen(mes, anio, linea, prodTotal, fundo, vma);
+    renderResumen(mes, anio, linea, prodTotal, prodTorre, fundo, vma);
+    renderEquiposPanel(prodTotal, prodTorre);
     renderSecciones(vma, prodTotal, prodTorre);
 
   } catch (e) {
@@ -1458,27 +2111,97 @@ async function cargarCierre() {
 }
 
 function construirFilasCierre(trabajadores, prodTotal, prodTorre, vma) {
-  return trabajadores.map(t => {
-    const cargo = state.cargos.find(c => c.nombre === (t.cargo || t.funcion));
-    const filaBase = calcularBonos(cargo, prodTotal, prodTorre, vma);
-    return {
-      id:        t.id,
-      nombre:    t.nombre || t.nombreCompleto || '(sin nombre)',
-      rut:       t.rut || t.id || '',
-      cargo:     t.cargo || t.funcion || t.subarea || '',
-      centro:    t.centro || '',
-      obs:       '',
-      ...filaBase,
-      _manual:   false,
-    };
+  const lineaSeleccionada = document.getElementById('sel-linea').value;
+
+  // Construir índice rápido desde dotacionDocs (keyed por rut normalizado)
+  const dotMap = {};
+  (state.dotacionDocs || []).forEach(d => {
+    const key = _dotKey(d);
+    if (key) dotMap[key] = d;
   });
+
+  // Separar en: de esta línea | rotativos | sin asignación
+  const deLinea = [], rotativos = [], sinAsignacion = [];
+
+  trabajadores.forEach(t => {
+    const key = _dotKey(t);
+    const dot = dotMap[key] || t; // usar dotación si existe, si no el doc directo
+    const centro = (dot.centro || t.centro || '').trim();
+
+    // Excluir por centro (Taller Coihue / Pendiente) O por flag manual sinAsignar
+    if (CENTROS_EXCLUIDOS.some(e => e.toLowerCase() === centro.toLowerCase()) || !centro || dot.sinAsignar) {
+      sinAsignacion.push({ t, dot });
+      return;
+    }
+    const lineaCentro = CENTRO_A_LINEA[centro];
+    if (lineaCentro === 'ROTATIVO') {
+      rotativos.push({ t, dot });
+    } else if (lineaCentro === lineaSeleccionada) {
+      deLinea.push({ t, dot });
+    }
+    // Centros de otras líneas → no incluir
+  });
+
+  // Guardar sin-asignación para renderizar sección aparte
+  state._sinAsignacion = sinAsignacion.map(({ t, dot }) => _buildFila(t, dot, prodTotal, prodTorre, 'sin-asignacion'));
+
+  // Combinar: trabajadores de la línea + rotativos
+  return [...deLinea, ...rotativos].map(({ t, dot }) =>
+    _buildFila(t, dot, prodTotal, prodTorre, null)
+  );
+}
+
+function _dotKey(d) {
+  // Normaliza RUT quitando puntos y K mayúscula para matchear entre colecciones
+  const rut = (d.rut || '').replace(/\./g, '').replace(/k$/i, 'K').trim().toUpperCase();
+  return rut || (d.nombre || d.id || '').toUpperCase().trim();
+}
+
+function _buildFila(t, dot, prodTotal, prodTorre, overrideLinea) {
+  const cargoNombre = (dot?.funciones?.length ? dot.funciones[0] : '') ||
+                      t.cargo || t.funcion || t.subarea || '';
+  const cargo = state.cargos.find(c =>
+    c.nombre.toUpperCase() === cargoNombre.toUpperCase() ||
+    cargoNombre.toUpperCase().includes(c.nombre.toUpperCase())
+  );
+  const filaBase = calcularBonos(cargo, prodTotal, prodTorre, 0);
+
+  let bonoTrepa = 0, bonoSenialeo = 0;
+  const bonosCfg = state.bonosConfig || {};
+  if (dot?.trepa) {
+    const cfgFun = bonosCfg[cargoNombre] || {};
+    bonoTrepa = cfgFun.trepa?.activo !== false ? (cfgFun.trepa?.monto || 0) : 0;
+  }
+  if (dot?.senialeo) {
+    const cfgFun = bonosCfg[cargoNombre] || {};
+    bonoSenialeo = cfgFun.senialeo?.activo !== false ? (cfgFun.senialeo?.monto || 0) : 0;
+  }
+
+  return {
+    id:           t.id,
+    nombre:       t.nombre || t.nombreCompleto || '(sin nombre)',
+    rut:          t.rut || t.id || '',
+    cargo:        cargoNombre,
+    funciones:    dot?.funciones || [],
+    trepa:        dot?.trepa || false,
+    senialeo:     dot?.senialeo || false,
+    centro:       dot?.centro || t.centro || '',
+    obs:          '',
+    ...filaBase,
+    bonoTrepa,
+    bonoSenialeo,
+    totalBono:    (filaBase.totalBono || 0) + bonoTrepa + bonoSenialeo,
+    _sinAsig:     overrideLinea === 'sin-asignacion',
+    _manual:      false,
+  };
 }
 
 // ── CÁLCULO DE BONOS ─────────────────────────────────────────
 function calcularBonos(cargo, prodTotal, prodTorre, vma) {
   if (!cargo) return { bonoProduccion: 0, bonosFijosCalc: [], totalBono: 0 };
 
-  const esAltoVma = vma >= state.vmaUmbral;
+  // Usar modoVma del estado; 'pendiente' se trata como 'alto' hasta confirmar
+  const esAltoVma = state.modoVma === 'alto' || state.modoVma === 'pendiente';
   const tramos    = esAltoVma ? (cargo.tramosAlto || []) : (cargo.tramosBajo || []);
   const prod      = cargo.baseProd === 'torre' ? prodTorre : prodTotal;
 
@@ -1515,31 +2238,151 @@ function calcularBonos(cargo, prodTotal, prodTorre, vma) {
   };
 }
 
+// ── META REFERENCIAL SEGÚN MODO VMA ──────────────────────────
+// Usa el tramo más alto de faena (Supervisor) como referencia de meta máxima
+function metaReferencialPorModo() {
+  const esAlto = state.modoVma === 'alto' || state.modoVma === 'pendiente';
+  // El umbral más bajo del último tramo de la mayoría de cargos faena en VMA alto es 14.500
+  // En VMA bajo es 12.001. Usamos esos como "meta para bono máximo"
+  return esAlto ? 14500 : 12001;
+}
+
 // ── RENDER RESUMEN ────────────────────────────────────────────
-function renderResumen(mes, anio, linea, prodTotal, fundo, vma) {
+function renderResumen(mes, anio, linea, prodTotal, prodTorre, fundo, vma) {
+  // Stat prod y torre
   document.getElementById('stat-prod').textContent = fmtM3(prodTotal);
-  document.getElementById('stat-fundo').textContent = fundo?.nombre || 'Sin fundo activo';
-  document.getElementById('stat-fundo-sub').textContent = fundo ? `VMA ${vma}` : '—';
-  document.getElementById('stat-vma').textContent = vma;
+  const elTorre = document.getElementById('stat-torre');
+  if (elTorre) elTorre.textContent = fmtM3(prodTorre);
 
-  // Meta según VMA (referencia visual, la meta real se calcula por tramos)
-  const metaRef = vma >= state.vmaUmbral ? 15000 : 12500;
+  // Fundo + meta combinado
+  document.getElementById('stat-fundo').textContent = fundo?.nombre || '—';
+  document.getElementById('stat-fundo-sub').textContent = fundo
+    ? `VMA catastro: ${vma} m³/árbol`
+    : '⚠️ Sin fundo activo en config_fundos';
+
+  const esAlto = state.modoVma === 'alto' || state.modoVma === 'pendiente';
+  const modoLabel = state.modoVma === 'pendiente'
+    ? 'por confirmar'
+    : (esAlto ? '≥ 0,56' : '< 0,56');
+  const metaRef = metaReferencialPorModo();
   document.getElementById('stat-meta').textContent = fmtM3(metaRef);
+  document.getElementById('stat-vma').textContent = modoLabel;
 
-  const chip = document.getElementById('chip-meta');
+  // stat-torre y stat-equipos ya no existen en el HTML — ignorar
+
+  // Alerta meta
   const alerta = document.getElementById('alerta-meta');
   alerta.style.display = 'block';
   if (prodTotal >= metaRef) {
-    chip.classList.add('verde');
     alerta.className = 'alerta-meta';
-    alerta.textContent = `✅ Meta alcanzada: ${fmtM3(prodTotal)} producidos (meta referencial: ${fmtM3(metaRef)} para VMA ${vma})`;
+    alerta.textContent = `✅ Meta alcanzada: ${fmtM3(prodTotal)} m³ producidos (meta ${fmtM3(metaRef)} m³ para VMA ${modoLabel})`;
   } else {
-    chip.classList.add('amarillo');
     alerta.className = 'alerta-meta no-llega';
-    alerta.textContent = `⚠️ No se alcanzó la meta referencial: ${fmtM3(prodTotal)} / ${fmtM3(metaRef)} m³ (VMA ${vma})`;
+    alerta.textContent = `⚠️ Sin meta: ${fmtM3(prodTotal)} / ${fmtM3(metaRef)} m³ — VMA: ${modoLabel}`;
   }
 
   document.getElementById('hdr-linea-badge').textContent = `${linea} · ${MESES[mes]} ${anio}`;
+}
+
+// ── RENDER EQUIPOS EN LA TARJETA ─────────────────────────────
+function renderEquiposPanel(prodTotal, prodTorre) {
+  const cont = document.getElementById('lista-equipos-check');
+  const btnR = document.getElementById('btn-recalcular');
+  if (!cont) return;
+
+  // Calcular m³ por equipo desde cartolasRaw
+  const prodPorEquipo = {};
+  (state.cartolasRaw || []).forEach(c => {
+    if (!c.equipo) return;
+    prodPorEquipo[c.equipo] = (prodPorEquipo[c.equipo] || 0) + (c.total || 0);
+  });
+
+  const equipos = state.equiposDetectados || [];
+  if (!equipos.length) {
+    cont.innerHTML = '<span style="font-size:12px; color:#aaa; font-style:italic;">Sin equipos detectados en las cartolas</span>';
+    return;
+  }
+
+  cont.innerHTML = '';
+  if (btnR) btnR.style.display = 'inline-block';
+
+  // Inicializar selección: todos marcados por defecto
+  if (!state.equiposSeleccionados) state.equiposSeleccionados = [...equipos];
+
+  equipos.forEach(eq => {
+    const esTorre  = eq.toUpperCase().includes('ALPINE');
+    const m3Eq     = prodPorEquipo[eq] || 0;
+    const checked  = state.equiposSeleccionados.includes(eq);
+
+    const lbl = document.createElement('label');
+    lbl.style.cssText = `
+      display:flex; align-items:center; gap:6px; cursor:pointer;
+      padding:8px 12px 8px 10px;
+      background:${esTorre ? '#e8f4f8' : '#fff'};
+      border:2px solid ${checked ? (esTorre ? '#5ba3c0' : '#8b5cf6') : '#ccc'};
+      border-radius:8px; font-size:14px; font-weight:600;
+      color:${esTorre ? '#1e5f7a' : '#444'};
+      transition: border-color .15s;
+    `;
+    lbl.innerHTML = `
+      <input type="checkbox" value="${eq}" ${checked ? 'checked' : ''}
+        style="accent-color:${esTorre ? '#5ba3c0' : '#6d28d9'}; width:16px; height:16px;"
+        onchange="actualizarEquiposSeleccionados()">
+      <span>${esTorre ? '🌲' : '🚜'} ${eq}</span>
+      <span style="font-size:12px; font-weight:400; color:#888;">${fmtM3(m3Eq)}</span>
+      <span style="font-size:11px; padding:2px 8px; border-radius:10px;
+             background:${esTorre ? '#c8e8f4' : '#ede9fe'};
+             color:${esTorre ? '#1e5f7a' : '#6d28d9'};">
+        ${esTorre ? 'Torre' : 'Faena'}
+      </span>
+    `;
+    cont.appendChild(lbl);
+  });
+
+  actualizarEquiposSeleccionados(false);
+}
+
+function actualizarEquiposSeleccionados(recalcular = true) {
+  const checks = document.querySelectorAll('#lista-equipos-check input[type=checkbox]');
+  state.equiposSeleccionados = [...checks].filter(c => c.checked).map(c => c.value);
+
+  // Actualizar borde visual de cada label
+  checks.forEach(ch => {
+    const lbl = ch.closest('label');
+    if (!lbl) return;
+    const esTorre = ch.value.toUpperCase().includes('ALPINE');
+    lbl.style.borderColor = ch.checked
+      ? (esTorre ? '#5ba3c0' : '#8b5cf6')
+      : '#ccc';
+  });
+
+  if (recalcular) recalcularDesdeEquipos();
+}
+
+function recalcularDesdeEquipos() {
+  const p = state.produccionMes;
+  if (!p) return;
+
+  // Recalcular prod torre según equipos ALPINE seleccionados
+  let prodTorreSel = 0;
+  // Si hay datos en cartolas guardados, usarlos; si no, estimación proporcional
+  if (state.cartolasRaw?.length) {
+    state.cartolasRaw.forEach(c => {
+      const esAlpine = (c.equipo||'').toUpperCase().includes('ALPINE')
+                    || (c.volteo||'').toUpperCase().includes('ALPINE');
+      if (esAlpine && state.equiposSeleccionados.includes(c.equipo)) {
+        prodTorreSel += c.total || 0;
+      }
+    });
+  } else {
+    prodTorreSel = p.torre;
+  }
+
+  state.produccionMes.torreSeleccionada = prodTorreSel;
+
+  // Reconstruir filas con nueva producción
+  state.filasCierre = construirFilasCierre(state.trabajadores, p.total, prodTorreSel, 0);
+  renderSecciones(0, p.total, prodTorreSel);
 }
 
 // ── RENDER SECCIONES ──────────────────────────────────────────
@@ -1570,6 +2413,21 @@ function renderSecciones(vma, prodTotal, prodTorre) {
   const cont = document.getElementById('secciones-equipos');
   cont.innerHTML = '';
 
+  // Definir qué secciones usan prod torre vs faena
+  const SEC_TORRE = new Set(['TORRE']); // Torre Alpine usa prodTorre
+  const modoLabel = state.modoVma === 'pendiente'
+    ? '⏳ VMA por confirmar (usando ≥0,56)'
+    : state.modoVma === 'alto'
+    ? '🌲 VMA ≥ 0,56 m³/árbol'
+    : '🌳 VMA < 0,56 m³/árbol';
+
+  // Banner modo VMA activo
+  const metaRef = metaReferencialPorModo();
+  const banner = document.createElement('div');
+  banner.style.cssText = 'padding:8px 14px; background:#f0f4ec; border-radius:8px; border:1px solid #c8d8b8; margin-bottom:12px; font-size:12px; font-weight:600; color:#2d5a2d;';
+  banner.textContent = `${modoLabel} · Meta bono máx: ${fmtM3(metaRef)} m³ · Torre: ${fmtM3(prodTorre)} m³ · Faena: ${fmtM3(prodTotal)} m³`;
+  cont.appendChild(banner);
+
   // Agrupar filas por sección
   const grupos = {};
   SECCIONES_ORDEN.forEach(s => grupos[s.key] = []);
@@ -1590,14 +2448,22 @@ function renderSecciones(vma, prodTotal, prodTorre) {
     totalTrab    += filas.length;
     resumenFilas.push({ label: sec.label, cant: filas.length, total: totalSec });
 
+    const esTorre = SEC_TORRE.has(sec.key);
+    const prodSec = esTorre ? prodTorre : prodTotal;
+    const prodLabel = esTorre ? '🌲 Torre' : '🏭 Faena';
+
     const div = document.createElement('div');
     div.className = 'seccion-equipo';
     div.innerHTML = `
       <div class="seccion-header">
         <div class="seccion-icon">${sec.icono}</div>
-        <div>
+        <div style="flex:1">
           <div class="seccion-title">${sec.label}</div>
           <div class="seccion-sub">${filas.length} trabajador${filas.length>1?'es':''} · Total: ${fmtMoney(totalSec)}</div>
+        </div>
+        <div style="text-align:right; font-size:11px; color:#666; line-height:1.4;">
+          <div style="font-weight:700; color:#2d5a2d;">${fmtM3(prodSec)} m³</div>
+          <div>${prodLabel}</div>
         </div>
       </div>
       <div class="tabla-wrap">
@@ -1627,6 +2493,38 @@ function renderSecciones(vma, prodTotal, prodTorre) {
     cont.appendChild(div);
     renderFilasSec(sec.key, filas);
   });
+
+  // Segmento "Sin asignación de línea" (Taller Coihue / Pendiente)
+  const sinAsig = state._sinAsignacion || [];
+  if (sinAsig.length) {
+    const divSA = document.createElement('div');
+    divSA.className = 'seccion-equipo';
+    divSA.style.opacity = '.7';
+    divSA.innerHTML = `
+      <div class="seccion-header">
+        <div class="seccion-icon" style="background:#fee2e2; color:#991b1b;">⚠️</div>
+        <div style="flex:1">
+          <div class="seccion-title" style="color:#991b1b;">Sin asignación de línea</div>
+          <div class="seccion-sub">${sinAsig.length} trabajador${sinAsig.length>1?'es':''} · Taller Coihue / Pendiente · Sin bono calculado</div>
+        </div>
+      </div>
+      <div class="tabla-wrap">
+        <table>
+          <thead>
+            <tr><th>Nombre</th><th>Centro</th><th>Cargo</th></tr>
+          </thead>
+          <tbody>
+            ${sinAsig.map(f => `<tr>
+              <td class="td-nombre" style="color:#991b1b">${f.nombre}</td>
+              <td><span style="font-size:12px; color:var(--gris-3)">${f.centro || '—'}</span></td>
+              <td class="td-cargo">${f.cargo || '—'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    cont.appendChild(divSA);
+  }
 
   // Resumen total
   const tbody = document.getElementById('tbody-resumen-total');
