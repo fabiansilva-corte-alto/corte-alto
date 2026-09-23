@@ -925,7 +925,7 @@
     <div class="card">
       <div class="flex-between" style="margin-bottom:12px">
         <div class="card-title" style="margin:0">👷 Dotación por Línea</div>
-        <button class="btn btn-primary btn-sm" id="btn-guardar-dotacion" onclick="guardarDotacion()">💾 Guardar</button>
+        <span style="font-size:12px; color:var(--gris-3);">✓ Guardado automático al cambiar</span>
       </div>
       <p style="font-size:13px; color:var(--gris-3); margin-bottom:14px;">
         Asigna línea(s) y función(es) a cada trabajador. Un trabajador puede tener múltiples líneas y funciones si trabaja en diferentes roles en el mes.
@@ -1668,6 +1668,7 @@ function toggleChipFuncion(label, idx, valor) {
   if (cb.checked) { if (!t.funciones.includes(valor)) t.funciones.push(valor); }
   else t.funciones = t.funciones.filter(x => x !== valor);
   label.className = 'dot-chip' + (cb.checked ? ' sel-funcion' : '');
+  autoGuardarTrabajador(idx);
 }
 
 // Mantener por compatibilidad (ya no se usa para línea, solo función)
@@ -1686,7 +1687,6 @@ function toggleChipApt(label, tipo, idx) {
   if (tipo === 'sinAsignar') {
     const card = document.getElementById('dot-worker-' + idx);
     if (card) card.style.opacity = cb.checked ? '.6' : '1';
-    // Mostrar/ocultar aviso
     let aviso = card ? card.querySelector('.aviso-sin-asignar') : null;
     if (cb.checked && card && !aviso) {
       const div = document.createElement('div');
@@ -1697,6 +1697,46 @@ function toggleChipApt(label, tipo, idx) {
     } else if (!cb.checked && aviso) {
       aviso.remove();
     }
+  }
+  autoGuardarTrabajador(idx);
+}
+
+// Auto-guardado individual: guarda solo el trabajador modificado
+async function autoGuardarTrabajador(idx) {
+  const t = state.dotacionDocs[idx];
+  if (!t || !t.id) return;
+
+  // Indicador visual en la card
+  const card = document.getElementById('dot-worker-' + idx);
+  let badge = card ? card.querySelector('.dot-save-badge') : null;
+  if (card && !badge) {
+    badge = document.createElement('span');
+    badge.className = 'dot-save-badge';
+    badge.style.cssText = 'font-size:11px; color:var(--gris-3); margin-left:8px;';
+    const nombreEl = card.querySelector('.dot-worker-nombre');
+    if (nombreEl) nombreEl.appendChild(badge);
+  }
+  if (badge) badge.textContent = '⏳';
+
+  try {
+    await db.collection('dotacion').doc(t.id).update({
+      funciones:  t.funciones  || [],
+      trepa:      t.trepa      || false,
+      senialeo:   t.senialeo   || false,
+      sinAsignar: t.sinAsignar || false,
+      updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    if (badge) {
+      badge.textContent = '✓';
+      badge.style.color = 'var(--verde)';
+      setTimeout(() => { if (badge) badge.textContent = ''; }, 2000);
+    }
+  } catch (e) {
+    if (badge) {
+      badge.textContent = '⚠ Error';
+      badge.style.color = 'var(--rojo)';
+    }
+    console.error('autoGuardarTrabajador:', e);
   }
 }
 
