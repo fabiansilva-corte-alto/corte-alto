@@ -249,9 +249,13 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 7px 0;
+      padding: 7px 8px;
       border-bottom: 1px solid var(--gris-1);
+      border-radius: 6px;
+      transition: background .12s;
+      cursor: default;
     }
+    .bono-tipo-row:hover { background: var(--gris-0); }
     .bono-tipo-row:last-child { border-bottom: none; }
     .bono-tipo-nombre {
       flex: 1;
@@ -1719,13 +1723,13 @@ async function autoGuardarTrabajador(idx) {
   if (badge) badge.textContent = '⏳';
 
   try {
-    await db.collection('dotacion').doc(t.id).update({
+    await db.collection('dotacion').doc(t.id).set({
       funciones:  t.funciones  || [],
       trepa:      t.trepa      || false,
       senialeo:   t.senialeo   || false,
       sinAsignar: t.sinAsignar || false,
       updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
-    });
+    }, { merge: true });
     if (badge) {
       badge.textContent = '✓';
       badge.style.color = 'var(--verde)';
@@ -1752,13 +1756,13 @@ async function guardarDotacion() {
       chunk.forEach(t => {
         const ref = db.collection('dotacion').doc(t.id);
         // Solo guardamos funciones, trepa y señaleo — la línea viene del campo centro
-        batch.update(ref, {
+        batch.set(ref, {
           funciones:   t.funciones   || [],
           trepa:       t.trepa       || false,
           senialeo:    t.senialeo    || false,
           sinAsignar:  t.sinAsignar  || false,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        });
+        }, { merge: true });
       });
       await batch.commit();
     }
@@ -1772,56 +1776,104 @@ async function guardarDotacion() {
 
 // ── BONOS CONFIG ──────────────────────────────────────────────
 const TIPOS_BONO = [
-  { id: 'produccion',      nombre: '📦 Producción (tramo)',    desc: 'Según m³ y tabla de tramos VMA',          fijo: false },
-  { id: 'calidad',         nombre: '✅ Calidad',                desc: 'Por controles de calidad aprobados',      fijo: true  },
-  { id: 'asistencia',      nombre: '📅 Asistencia',             desc: 'Bono por asistencia perfecta',            fijo: true  },
-  { id: 'trepa',           nombre: '🧗 Trepa',                  desc: 'Para trabajadores con aptitud de trepa',  fijo: true  },
-  { id: 'senialeo',        nombre: '🚦 Señaleo',                desc: 'Para trabajadores con aptitud de señaleo',fijo: true  },
-  { id: 'responsabilidad', nombre: '👔 Responsabilidad',        desc: 'Cargo de supervisión / jefatura',         fijo: true  },
+  { id: 'produccion',      nombre: '📦 Producción (tramo)',    desc: 'Según m³ y tabla de tramos VMA',                    fijo: false },
+  { id: 'calidad',         nombre: '✅ Calidad',                desc: 'Por controles de calidad aprobados',                fijo: true  },
+  { id: 'asistencia',      nombre: '📅 Asistencia',             desc: 'Bono por asistencia perfecta',                      fijo: true  },
+  { id: 'trepa',           nombre: '🧗 Trepa',                  desc: 'Para trabajadores con aptitud de trepa',            fijo: true  },
+  { id: 'senialeo',        nombre: '🚦 Señaleo',                desc: 'Para trabajadores con aptitud de señaleo',          fijo: true  },
+  { id: 'responsabilidad', nombre: '👔 Responsabilidad',        desc: 'Cargo de supervisión / jefatura',                   fijo: true  },
 ];
+
+// Bonos extra que solo aplican a ciertas funciones
+const TIPOS_BONO_EXTRA = {
+  'Jefe de Faena': [
+    { id: 'ingreso_m3',   nombre: '📐 Ingreso M³',   desc: 'Bono por ingreso de metros cúbicos',  fijo: true },
+    { id: 'nota_pauta',   nombre: '📋 Nota Pauta',   desc: 'Bono por nota de pauta de supervisión', fijo: true },
+  ],
+};
+
+// Formatea número como $70.000
+function fmtPesos(val) {
+  if (!val && val !== 0) return '';
+  return '$' + Math.round(val).toLocaleString('es-CL');
+}
+// Parsea "$70.000" → 70000
+function parsePesos(str) {
+  return parseFloat(str.replace(/\$|\./g, '').replace(',', '.')) || 0;
+}
 
 function renderBonosConfig() {
   const cont = document.getElementById('lista-bonos-config');
   const bonosConf = state.bonosConfig || {};
 
-  cont.innerHTML = FUNCIONES_CONFIG.map(fun => {
-    const conf = bonosConf[fun] || {};
-    const tiposHTML = TIPOS_BONO.map(tipo => {
-      const tc = conf[tipo.id] || {};
-      const monto = tc.monto || 0;
-      const activo = tc.activo !== false;
-      return `<div class="bono-tipo-row">
-        <div class="bono-tipo-nombre">
-          <strong>${tipo.nombre}</strong>
-          <div style="font-size:12px; color:var(--gris-3);">${tipo.desc}</div>
-        </div>
-        ${tipo.fijo ? `<input type="number" class="bono-tipo-input" placeholder="$ monto"
-          value="${monto || ''}"
-          onchange="setBonoCfg('${fun}','${tipo.id}','monto',this.value)"
-          style="border:1.5px solid var(--gris-2); border-radius:6px; padding:7px; font-size:14px;">` : '<span style="font-size:12px;color:var(--gris-3)">Automático</span>'}
-        <label class="bono-tipo-activo">
-          <input type="checkbox" ${activo ? 'checked' : ''}
-            onchange="setBonoCfg('${fun}','${tipo.id}','activo',this.checked)"
-            style="accent-color:var(--verde); width:16px; height:16px;">
-          Aplicar
-        </label>
-      </div>`;
-    }).join('');
+  function renderFila(fun, tipo) {
+    const tc = (bonosConf[fun] || {})[tipo.id] || {};
+    const monto = tc.monto || 0;
+    const activo = tc.activo !== false;
+    const inputId = `bono-inp-${fun.replace(/\s/g,'_')}-${tipo.id}`;
+    return `<div class="bono-tipo-row">
+      <div class="bono-tipo-nombre">
+        <strong>${tipo.nombre}</strong>
+        <div style="font-size:12px; color:var(--gris-3);">${tipo.desc}</div>
+      </div>
+      ${tipo.fijo
+        ? `<div style="position:relative; display:inline-block;">
+            <input type="text" id="${inputId}" class="bono-tipo-input"
+              placeholder="$0"
+              value="${monto ? fmtPesos(monto) : ''}"
+              style="border:1.5px solid var(--gris-2); border-radius:6px; padding:7px 10px; font-size:14px; width:120px;"
+              oninput="formatBonoInput(this,'${fun}','${tipo.id}')"
+              onblur="formatBonoInputBlur(this,'${fun}','${tipo.id}')">
+           </div>`
+        : '<span style="font-size:12px;color:var(--gris-3)">Automático</span>'}
+      <label class="bono-tipo-activo">
+        <input type="checkbox" ${activo ? 'checked' : ''}
+          onchange="setBonoCfg('${fun}','${tipo.id}','activo',this.checked)"
+          style="accent-color:var(--verde); width:16px; height:16px;">
+        Aplicar
+      </label>
+    </div>`;
+  }
 
+  cont.innerHTML = FUNCIONES_CONFIG.map(fun => {
+    const tiposBase   = TIPOS_BONO.map(t => renderFila(fun, t)).join('');
+    const tiposExtra  = (TIPOS_BONO_EXTRA[fun] || []).map(t => renderFila(fun, t)).join('');
+    const extraBlock  = tiposExtra
+      ? `<div style="margin-top:4px; padding-top:4px; border-top:2px dashed var(--gris-1);">
+           <div style="font-size:11px; color:var(--gris-3); margin-bottom:4px; text-transform:uppercase; letter-spacing:.5px;">Bonos adicionales</div>
+           ${tiposExtra}
+         </div>`
+      : '';
     return `<div class="bono-config-card">
       <div class="bono-config-funcion">
         <span style="background:var(--verde-bg); padding:4px 10px; border-radius:20px; font-size:14px; color:var(--verde);">${fun}</span>
       </div>
-      ${tiposHTML}
+      ${tiposBase}
+      ${extraBlock}
     </div>`;
   }).join('');
+}
+
+// Formatea mientras escribe: mantiene $, solo dígitos, separador de miles
+function formatBonoInput(input, fun, tipoId) {
+  const raw = input.value.replace(/\$|\./g, '').replace(/\D/g, '');
+  const num = parseInt(raw, 10) || 0;
+  input.value = num ? '$' + num.toLocaleString('es-CL') : '';
+  setBonoCfg(fun, tipoId, 'monto', num);
+}
+
+function formatBonoInputBlur(input, fun, tipoId) {
+  const num = parsePesos(input.value);
+  input.value = num ? fmtPesos(num) : '';
+  setBonoCfg(fun, tipoId, 'monto', num);
 }
 
 function setBonoCfg(funcion, tipoId, campo, valor) {
   state.bonosConfig = state.bonosConfig || {};
   state.bonosConfig[funcion] = state.bonosConfig[funcion] || {};
   state.bonosConfig[funcion][tipoId] = state.bonosConfig[funcion][tipoId] || {};
-  const v = campo === 'monto' ? (parseFloat(valor) || 0) : valor;
+  // monto ya viene como número desde formatBonoInput; activo como boolean desde checkbox
+  const v = campo === 'monto' ? (typeof valor === 'number' ? valor : parsePesos(String(valor))) : valor;
   state.bonosConfig[funcion][tipoId][campo] = v;
 }
 
