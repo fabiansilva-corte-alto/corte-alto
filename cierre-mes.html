@@ -1639,7 +1639,13 @@ function renderDotacion() {
         ${excluido ? `<div style="font-size:12px; color:var(--rojo); margin-bottom:6px;">⚠ Excluido del cierre (${centro})</div>` : ''}
         ${sinAsignar && !excluido ? `<div style="font-size:12px; color:var(--rojo); margin-bottom:6px;">⛔ Marcado manualmente como Sin Asignar</div>` : ''}
         <div class="dot-section-label">Función(es) en faena</div>
-        <div class="dot-chips">${funcChips}</div>
+        <div class="dot-chips" id="chips-func-${idx}">${funcChips}</div>
+        ${funciones.length > 1 ? `
+        <div class="dot-section-label" style="margin-top:8px; color:var(--verde);">⭐ Función principal (para cálculo de bonos)</div>
+        <select id="func-principal-${idx}" style="font-size:13px; border:1.5px solid var(--verde); border-radius:6px; padding:6px 10px; margin-bottom:4px; background:#f0f7f0;"
+          onchange="setFuncionPrincipal(${idx}, this.value)">
+          ${funciones.map(f => `<option value="${f}" ${f === (t.funcionPrincipal || funciones[0]) ? 'selected' : ''}>${f}</option>`).join('')}
+        </select>` : ''}
         <div class="dot-section-label" style="margin-top:10px">Aptitudes</div>
         <div class="dot-chips">
           <label class="dot-chip${trepa ? ' sel-trepa' : ''}" onclick="toggleChipApt(this,'trepa',${idx})">
@@ -1670,9 +1676,37 @@ function toggleChipFuncion(label, idx, valor) {
   const t = state.dotacionDocs[idx];
   t.funciones = t.funciones || [];
   if (cb.checked) { if (!t.funciones.includes(valor)) t.funciones.push(valor); }
-  else t.funciones = t.funciones.filter(x => x !== valor);
+  else {
+    t.funciones = t.funciones.filter(x => x !== valor);
+    // Si se quita la función principal, resetear a la primera disponible
+    if (t.funcionPrincipal === valor) t.funcionPrincipal = t.funciones[0] || '';
+  }
   label.className = 'dot-chip' + (cb.checked ? ' sel-funcion' : '');
+  // Actualizar selector función principal si existe
+  _actualizarSelectorPrincipal(idx);
   autoGuardarTrabajador(idx);
+}
+
+function setFuncionPrincipal(idx, valor) {
+  state.dotacionDocs[idx].funcionPrincipal = valor;
+  autoGuardarTrabajador(idx);
+}
+
+function _actualizarSelectorPrincipal(idx) {
+  const t = state.dotacionDocs[idx];
+  const sel = document.getElementById('func-principal-' + idx);
+  if (!sel) return;
+  if ((t.funciones || []).length <= 1) {
+    // Solo una función: ocultar el selector
+    const wrap = sel.closest('.dot-section-label') || sel.previousElementSibling;
+    sel.style.display = 'none';
+    return;
+  }
+  // Reconstruir opciones
+  sel.innerHTML = t.funciones.map(f =>
+    `<option value="${f}" ${f === (t.funcionPrincipal || t.funciones[0]) ? 'selected' : ''}>${f}</option>`
+  ).join('');
+  sel.style.display = '';
 }
 
 // Mantener por compatibilidad (ya no se usa para línea, solo función)
@@ -1724,11 +1758,12 @@ async function autoGuardarTrabajador(idx) {
 
   try {
     await db.collection('dotacion').doc(t.id).set({
-      funciones:  t.funciones  || [],
-      trepa:      t.trepa      || false,
-      senialeo:   t.senialeo   || false,
-      sinAsignar: t.sinAsignar || false,
-      updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+      funciones:        t.funciones        || [],
+      funcionPrincipal: t.funcionPrincipal || (t.funciones?.[0] || ''),
+      trepa:            t.trepa            || false,
+      senialeo:         t.senialeo         || false,
+      sinAsignar:       t.sinAsignar       || false,
+      updatedAt:        firebase.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
     if (badge) {
       badge.textContent = '✓';
@@ -1757,10 +1792,11 @@ async function guardarDotacion() {
         const ref = db.collection('dotacion').doc(t.id);
         // Solo guardamos funciones, trepa y señaleo — la línea viene del campo centro
         batch.set(ref, {
-          funciones:   t.funciones   || [],
-          trepa:       t.trepa       || false,
-          senialeo:    t.senialeo    || false,
-          sinAsignar:  t.sinAsignar  || false,
+          funciones:        t.funciones        || [],
+          funcionPrincipal: t.funcionPrincipal || (t.funciones?.[0] || ''),
+          trepa:            t.trepa            || false,
+          senialeo:         t.senialeo         || false,
+          sinAsignar:       t.sinAsignar       || false,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         }, { merge: true });
       });
@@ -1787,8 +1823,14 @@ const TIPOS_BONO = [
 // Bonos extra que solo aplican a ciertas funciones
 const TIPOS_BONO_EXTRA = {
   'Jefe de Faena': [
-    { id: 'ingreso_m3',   nombre: '📐 Ingreso M³',   desc: 'Bono por ingreso de metros cúbicos',  fijo: true },
-    { id: 'nota_pauta',   nombre: '📋 Nota Pauta',   desc: 'Bono por nota de pauta de supervisión', fijo: true },
+    { id: 'ingreso_m3',        nombre: '📐 Ingreso M³',        desc: 'Bono por ingreso de metros cúbicos',       fijo: true },
+    { id: 'nota_pauta',        nombre: '📋 Nota Pauta',        desc: 'Bono por nota de pauta de supervisión',    fijo: true },
+  ],
+  'Supervisor': [
+    { id: 'no_accidentes',     nombre: '🦺 No Accidentes',     desc: 'Se multiplica por N° de líneas sin accidente (configurar en cierre)', fijo: true },
+  ],
+  'Motosierrista': [
+    { id: 'desgaste_herramienta', nombre: '🪚 Desgaste Herramienta', desc: 'Bono por desgaste y mantención de motosierra', fijo: true },
   ],
 };
 
@@ -2250,8 +2292,11 @@ function _dotKey(d) {
 }
 
 function _buildFila(t, dot, prodTotal, prodTorre, overrideLinea) {
-  const cargoNombre = (dot?.funciones?.length ? dot.funciones[0] : '') ||
-                      t.cargo || t.funcion || t.subarea || '';
+  // Función activa: funcionPrincipal guardada, o primera del array, o campo legacy
+  const funciones    = dot?.funciones || [];
+  const funcionPrinc = dot?.funcionPrincipal || funciones[0] || '';
+  const cargoNombre  = funcionPrinc || t.cargo || t.funcion || t.subarea || '';
+
   const cargo = state.cargos.find(c =>
     c.nombre.toUpperCase() === cargoNombre.toUpperCase() ||
     cargoNombre.toUpperCase().includes(c.nombre.toUpperCase())
@@ -2270,21 +2315,25 @@ function _buildFila(t, dot, prodTotal, prodTorre, overrideLinea) {
   }
 
   return {
-    id:           t.id,
-    nombre:       t.nombre || t.nombreCompleto || '(sin nombre)',
-    rut:          t.rut || t.id || '',
-    cargo:        cargoNombre,
-    funciones:    dot?.funciones || [],
-    trepa:        dot?.trepa || false,
-    senialeo:     dot?.senialeo || false,
-    centro:       dot?.centro || t.centro || '',
-    obs:          '',
+    id:              t.id,
+    nombre:          t.nombre || t.nombreCompleto || '(sin nombre)',
+    rut:             t.rut || t.id || '',
+    cargo:           cargoNombre,
+    funcionActiva:   cargoNombre,   // puede sobreescribirse en cierre
+    funciones,
+    funcionPrincipal: funcionPrinc,
+    trepa:           dot?.trepa    || false,
+    senialeo:        dot?.senialeo || false,
+    centro:          dot?.centro   || t.centro || '',
+    obs:             '',
+    diasExtra:       0,             // dato informativo, editable en cierre
+    noAccidentesX:   1,             // multiplicador para Supervisor
     ...filaBase,
     bonoTrepa,
     bonoSenialeo,
-    totalBono:    (filaBase.totalBono || 0) + bonoTrepa + bonoSenialeo,
-    _sinAsig:     overrideLinea === 'sin-asignacion',
-    _manual:      false,
+    totalBono:       (filaBase.totalBono || 0) + bonoTrepa + bonoSenialeo,
+    _sinAsig:        overrideLinea === 'sin-asignacion',
+    _manual:         false,
   };
 }
 
@@ -2637,18 +2686,39 @@ function renderFilasSec(secKey, filas) {
   tbody.innerHTML = filas.map(f => {
     const tieneBF = f.bonosFijosCalc?.length;
     const bonosFijosCell = tieneBF
-      ? `<td>${f.bonosFijosCalc.map(b=>
-            `<label style="display:flex;align-items:center;gap:4px;margin-bottom:3px;cursor:pointer">
-              <input type="checkbox" ${b.aplica?'checked':''}
-                onchange="toggleBonoFijo(${f._idx},'${b.nombre}',this.checked)" />
-              <span style="font-size:11px">${b.nombre} (${fmtMoney(b.monto)})</span>
-            </label>`
-          ).join('')}</td>`
+      ? `<td>${f.bonosFijosCalc.map(b => {
+          // Para no_accidentes del Supervisor: mostrar multiplicador × N
+          const esNoAcc = b.nombre === '🦺 No Accidentes';
+          return `<label style="display:flex;align-items:center;gap:4px;margin-bottom:3px;cursor:pointer">
+            <input type="checkbox" ${b.aplica?'checked':''}
+              onchange="toggleBonoFijo(${f._idx},'${b.nombre}',this.checked)" />
+            <span style="font-size:11px">${b.nombre} (${fmtMoney(b.monto)})</span>
+            ${esNoAcc ? `<span style="font-size:11px;color:var(--gris-3);">×</span>
+              <input type="number" min="1" max="10" value="${f.noAccidentesX||1}"
+                title="N° de líneas sin accidente"
+                onchange="actualizarNoAccidentes(${f._idx},this.value)"
+                style="width:36px;text-align:center;font-size:12px;padding:2px 4px;" />
+              <span style="font-size:11px;color:var(--gris-3);">líneas = ${fmtMoney((b.monto||0)*(f.noAccidentesX||1))}</span>` : ''}
+          </label>`;
+        }).join('')}</td>`
+      : '';
+
+    // Selector función activa (solo si tiene 2+ funciones)
+    const funcSelect = f.funciones?.length > 1
+      ? `<select style="font-size:11px;margin-top:3px;width:100%;border:1px solid var(--gris-1);border-radius:4px;padding:2px 4px;"
+           onchange="actualizarFuncionActiva(${f._idx},this.value)">
+           ${f.funciones.map(fn =>
+             `<option value="${fn}" ${fn===f.funcionActiva?'selected':''}>${fn}</option>`
+           ).join('')}
+         </select>`
       : '';
 
     return `<tr data-idx="${f._idx}">
       <td class="td-nombre">${f.nombre}</td>
-      <td class="td-cargo">${f.cargo}</td>
+      <td class="td-cargo">
+        <div>${f.funcionActiva || f.cargo}</div>
+        ${funcSelect}
+      </td>
       <td><span class="text-muted fs-12">${fmtM3(f.prodRef)}</span></td>
       <td>
         <input type="number" value="${f.bonoProduccion ?? 0}"
@@ -2657,14 +2727,23 @@ function renderFilasSec(secKey, filas) {
       </td>
       ${bonosFijosCell}
       <td class="td-obs">
-        <select onchange="actualizarObs(${f._idx},this.value)">
-          <option value="" ${!f.obs?'selected':''}>Normal</option>
-          <option value="VACACIONES" ${f.obs==='VACACIONES'?'selected':''}>Vacaciones</option>
-          <option value="PROPORCIONAL" ${f.obs==='PROPORCIONAL'?'selected':''}>Proporcional</option>
-          <option value="LICENCIA" ${f.obs==='LICENCIA'?'selected':''}>Lic. Médica</option>
-          <option value="TRATO ESPECIAL" ${f.obs==='TRATO ESPECIAL'?'selected':''}>Trato especial</option>
-          <option value="OTRO" ${f.obs==='OTRO'?'selected':''}>Otro</option>
-        </select>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <select onchange="actualizarObs(${f._idx},this.value)">
+            <option value="" ${!f.obs?'selected':''}>Normal</option>
+            <option value="VACACIONES" ${f.obs==='VACACIONES'?'selected':''}>Vacaciones</option>
+            <option value="PROPORCIONAL" ${f.obs==='PROPORCIONAL'?'selected':''}>Proporcional</option>
+            <option value="LICENCIA" ${f.obs==='LICENCIA'?'selected':''}>Lic. Médica</option>
+            <option value="TRATO ESPECIAL" ${f.obs==='TRATO ESPECIAL'?'selected':''}>Trato especial</option>
+            <option value="OTRO" ${f.obs==='OTRO'?'selected':''}>Otro</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--gris-3);">
+            <span>+días:</span>
+            <input type="number" min="0" max="31" value="${f.diasExtra||0}"
+              onchange="actualizarDiasExtra(${f._idx},this.value)"
+              style="width:44px;text-align:center;font-size:12px;padding:2px 4px;"
+              title="Días adicionales trabajados (informativo para RRHH)" />
+          </label>
+        </div>
       </td>
       <td class="td-total" id="total-fila-${f._idx}">${fmtMoney(f.totalBono)}</td>
     </tr>`;
@@ -2680,6 +2759,39 @@ function actualizarBonoProduccion(idx, valor) {
 function toggleBonoFijo(idx, nombre, aplica) {
   const bf = state.filasCierre[idx].bonosFijosCalc?.find(b => b.nombre === nombre);
   if (bf) bf.aplica = aplica;
+  recalcularFila(idx);
+}
+
+function _prodTorre() {
+  return state.produccionMes?.torreSeleccionada || state.produccionMes?.torre || 0;
+}
+
+function actualizarFuncionActiva(idx, funcion) {
+  state.filasCierre[idx].funcionActiva = funcion;
+  state.filasCierre[idx].cargo = funcion;
+  // Recalcular bonos con la nueva función
+  const cargo = state.cargos.find(c =>
+    c.nombre.toUpperCase() === funcion.toUpperCase() ||
+    funcion.toUpperCase().includes(c.nombre.toUpperCase())
+  );
+  const prod = state.produccionMes;
+  if (prod) {
+    const prodTorre = _prodTorre();
+    const base = calcularBonos(cargo, prod.total, prodTorre, 0);
+    Object.assign(state.filasCierre[idx], base);
+  }
+  recalcularFila(idx);
+  document.querySelector(`tr[data-idx="${idx}"] .td-total`) &&
+    (document.getElementById(`total-fila-${idx}`).textContent = fmtMoney(state.filasCierre[idx].totalBono));
+}
+
+function actualizarDiasExtra(idx, valor) {
+  state.filasCierre[idx].diasExtra = parseInt(valor) || 0;
+  // Solo dato informativo — no afecta cálculo de bonos
+}
+
+function actualizarNoAccidentes(idx, valor) {
+  state.filasCierre[idx].noAccidentesX = parseInt(valor) || 1;
   recalcularFila(idx);
 }
 
@@ -2709,7 +2821,12 @@ function actualizarObs(idx, obs) {
 
 function recalcularFila(idx) {
   const f = state.filasCierre[idx];
-  const totalFijos = (f.bonosFijosCalc || []).reduce((s, b) => s + (b.aplica ? b.monto : 0), 0);
+  const totalFijos = (f.bonosFijosCalc || []).reduce((s, b) => {
+    if (!b.aplica) return s;
+    // No Accidentes se multiplica por noAccidentesX
+    const mult = b.nombre === '🦺 No Accidentes' ? (f.noAccidentesX || 1) : 1;
+    return s + (b.monto * mult);
+  }, 0);
   f.totalBono = (f.bonoProduccion || 0) + totalFijos;
   const el = document.getElementById(`total-fila-${idx}`);
   if (el) el.textContent = fmtMoney(f.totalBono);
