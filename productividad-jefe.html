@@ -890,6 +890,7 @@ window.agregarEquipo = function (datos) {
     ciclosWyssen: datos?.ciclosWyssen ?? "",
     arbolesWyssen: datos?.arbolesWyssen ?? "",
     asistencia: datos?.asistencia || "",
+    numCancha: datos?.numCancha || "",
     cambioLinea: datos?.cambioLinea || "",
     horasCambioLinea: datos?.horasCambioLinea ?? "",
     lineaSoportes: datos?.lineaSoportes || "",
@@ -1101,6 +1102,13 @@ function camposPorTipo(eq) {
     <div class="msg-error" id="err-${eq.id}-${campo}">Seleccione una opción</div>`;
 
   if (eq.tipo === "TORRE") {
+    html += `
+    <div style="flex:1">
+      <label>N° de cancha <span class="req">*</span></label>
+      <input type="text" id="in-${eq.id}-numCancha" inputmode="numeric" value="${esc(eq.numCancha)}"
+        placeholder="Ej: 12" oninput="setCampo('${eq.id}','numCancha',this.value,false)">
+      <div class="msg-error" id="err-${eq.id}-numCancha">Ingrese el N° de cancha</div>
+    </div>`;
     html += selSiNo("cambioLinea", "¿Hubo cambio de línea?", ["SÍ", "NO"]);
     if (eq.cambioLinea === "SÍ") {
       html += `
@@ -1561,6 +1569,7 @@ function validar() {
     marcarError(`err-${eq.id}-detenciones`, false);
 
     if (eq.tipo === "TORRE") {
+      m("numCancha", !eq.numCancha);
       m("cambioLinea", !eq.cambioLinea);
       if (eq.cambioLinea === "SÍ") {
         m("horasCambioLinea", !esNum(eq.horasCambioLinea));
@@ -1705,6 +1714,7 @@ function armarDocumento() {
       if (eq.operativo === "NO") return base; // sin campos de producción
 
       if (eq.tipo === "TORRE") {
+        base.numCancha = eq.numCancha || "";
         base.cambioLinea = eq.cambioLinea;
         if (eq.cambioLinea === "SÍ") {
           base.horasCambioLinea = parseDec(eq.horasCambioLinea) || 0;
@@ -2079,6 +2089,7 @@ window.verReporte = function (id) {
     campos.push({ l:"Hrs trabajo", v:fmtComa(e.horasTrabajo||0) });
     if (e.operativo === "NO") campos.push({ l:"Estado", v:"⛔ NO OPERATIVO" });
     if (e.tipo === "TORRE") {
+      campos.push({ l:"N° Cancha", v:e.numCancha||"—" });
       campos.push({ l:"Cambio línea", v:e.cambioLinea||"—" });
       if (e.cambioLinea === "SÍ") {
         campos.push({ l:"Hrs cambio", v:fmtComa(e.horasCambioLinea||0) });
@@ -2246,6 +2257,7 @@ window.editarReporte = function (id) {
       arbolesWyssen: e.arbolesWyssen !== undefined ? String(e.arbolesWyssen) : "",
       horasCambioLinea: e.horasCambioLinea !== undefined ? fmtComa(e.horasCambioLinea) : "",
       reportaOEE: e.reportaOEE === true ? "SI" : e.reportaOEE === false ? "NO" : "",
+      numCancha: e.numCancha || "",
       cuerdaTirada: e.cuerdaTirada || "",
       cumplePerfil: e.cumplePerfil || "",
       asistencia: e.huincheAsistencia ?? e.asistencia ?? "",
@@ -2398,7 +2410,7 @@ window.compartirReporte = async function (id) {
       /* Campos específicos por tipo */
       const camposExtra = [];
       if (eq.tipo==="TORRE") {
-        camposExtra.push([["Cambio linea", eq.cambioLinea||""],["Carro", eq.tipoCarro||""],["",""],["",""]]);
+        camposExtra.push([["N° Cancha", eq.numCancha||""],["Cambio linea", eq.cambioLinea||""],["Carro", eq.tipoCarro||""],["",""]]);
         if (eq.tipoCarro==="MIXTO") {
           camposExtra.push([
             ["BEREUTER Ciclos", eq.ciclosBereuter||0],["BEREUTER Arb.", eq.arbolesBereuter||0],
