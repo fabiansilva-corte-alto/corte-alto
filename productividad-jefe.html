@@ -497,7 +497,7 @@
 <section id="vista-historial" style="display:none">
   <div class="buscador-hist">
     <span style="font-size:18px;color:#aaa">🔍</span>
-    <input type="search" id="buscador-hist" placeholder="Buscar por fecha, fundo, línea, equipo, jefe…"
+    <input type="search" id="buscador-hist" placeholder="Buscar por fecha, fundo, línea, equipo, jefe, operador…"
       oninput="filtrarHistorial(this.value)">
     <button class="limpiar" onclick="document.getElementById('buscador-hist').value='';filtrarHistorial('')" title="Limpiar">✕</button>
   </div>
@@ -2030,7 +2030,8 @@ window.filtrarHistorial = function (texto) {
   const filtrado = historialCache.filter(r => {
     const haystack = [
       r.fecha, r.fundo, r.codigoFundo, r.linea, r.jefe,
-      ...(r.equipos || []).map(e => e.equipo)
+      ...(r.equipos || []).map(e => e.equipo),
+      ...(r.equipos || []).map(e => e.operador || "")
     ].join(" ").toLowerCase();
     return haystack.includes(q);
   });
