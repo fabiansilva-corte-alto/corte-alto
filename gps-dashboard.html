@@ -367,11 +367,13 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
 }
 /* KPI DESTACADO PEOR/MEJOR */
 .kpi.peor{background:var(--rojo-s);border:1.5px solid #f5b7b1;}
-.kpi.peor .kv{color:var(--rojo);}
+.kpi.peor .kv{color:var(--rojo);font-size:14px;}
 .kpi.peor .kl{color:#922b21;}
 .kpi.mejor{background:#eaf4fb;border:1.5px solid #aed6f1;}
-.kpi.mejor .kv{color:#1a6fa8;}
+.kpi.mejor .kv{color:#1a6fa8;font-size:14px;}
 .kpi.mejor .kl{color:#1a6fa8;}
+.kpi-sublabel{font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:2px;opacity:.75;}
 .kpi-ico{font-size:15px;margin-bottom:2px;line-height:1;}
 .kpi.naranja{background:#fef9ec;border:1.5px solid #f9d67a;}
 .kpi.naranja .kv{color:#b7770d;}
@@ -801,11 +803,11 @@ function renderKPIs() {
       <div class="ks">${sub}</div>
     </div>`;
 
-  // tarjeta con badge de flota
+  // tarjeta con badge de flota — label es el subtítulo tipo "Geocerca" / "Vel en ruta"
   const kpiB = (cls, bCls, bTxt, label, val, sub) =>
     `<div class="kpi ${cls}">
       <span class="kpi-badge ${bCls}">${bTxt}</span>
-      <div class="kl">${label}</div>
+      <div class="kpi-sublabel">${label}</div>
       <div class="kv">${val}</div>
       <div class="ks">${sub}</div>
     </div>`;
@@ -845,7 +847,7 @@ function renderKPIs() {
     `</div></div>`;
 
   // ══ PEORES ══
-  html += `<div class="kpi-seccion-wrap">` + secH('🔴','Peores del período') +
+  html += `<div class="kpi-seccion-wrap">` + secH('🔴','Conductores con más infracciones en:') +
     `<div class="kpi-fila-6">`;
   FLOTAS.forEach((f,i) => {
     const arr = tot[f.key].arr;
@@ -856,19 +858,19 @@ function renderKPIs() {
     const condPGeo = peorGeo ? (resolverConductor(peorGeo.patente, null, null, cond1(peorGeo)||'')) : '—';
     const condPVel = peorVel ? (resolverConductor(peorVel.patente, null, null, cond1(peorVel)||'')) : '—';
     html += peorGeo
-      ? kpiB('peor',f.badge,f.label,'Peor geocerca',
+      ? kpiB('peor',f.badge,f.label,'Geocerca',
           condPGeo, peorGeo.excGeo+' eventos · '+peorGeo.patente)
       : kpiB('verde',f.badge,f.label,'Geocerca','—','Sin infracciones');
     html += peorVel
-      ? kpiB('peor',f.badge,f.label,'Peor velocidad',
+      ? kpiB('peor',f.badge,f.label,'Vel en ruta',
           condPVel, peorVel.excRuta+' excesos · '+peorVel.patente)
-      : kpiB('verde',f.badge,f.label,'Velocidad','—','Sin infracciones');
+      : kpiB('verde',f.badge,f.label,'Vel en ruta','—','Sin infracciones');
     html += `</div>`;
   });
   html += `</div></div>`;
 
   // ══ MEJORES ══
-  html += `<div class="kpi-seccion-wrap">` + secH('🔵','Mejor comportamiento') +
+  html += `<div class="kpi-seccion-wrap">` + secH('🔵','Conductores con menos infracciones en:') +
     `<div class="kpi-fila-6">`;
   FLOTAS.forEach((f,i) => {
     const arr = tot[f.key].arr.filter(m=>m.km>0);
@@ -881,17 +883,17 @@ function renderKPIs() {
     const condMGeo = sinGeo ? (resolverConductor(sinGeo.patente, null, null, cond1(sinGeo)||'')) : '—';
     const condMVel = sinVel ? (resolverConductor(sinVel.patente, null, null, cond1(sinVel)||'')) : '—';
     html += sinGeo
-      ? kpiB('mejor',f.badge,f.label,'Comportamiento geocerca',
+      ? kpiB('mejor',f.badge,f.label,'Geocerca',
           condMGeo,
           sinGeo.excGeo===0?'Sin eventos · '+sinGeo.patente+' · '+Math.round(sinGeo.km)+' km'
                            :sinGeo.excGeo+' eventos (menor) · '+sinGeo.patente)
       : kpiB('azul',f.badge,f.label,'Geocerca','—','Sin datos');
     html += sinVel
-      ? kpiB('mejor',f.badge,f.label,'Comportamiento velocidad',
+      ? kpiB('mejor',f.badge,f.label,'Vel en ruta',
           condMVel,
           sinVel.excRuta===0?'Sin excesos · '+sinVel.patente+' · '+Math.round(sinVel.km)+' km'
                             :sinVel.excRuta+' excesos (menor) · '+sinVel.patente)
-      : kpiB('azul',f.badge,f.label,'Velocidad','—','Sin datos');
+      : kpiB('azul',f.badge,f.label,'Vel en ruta','—','Sin datos');
     html += `</div>`;
   });
   html += `</div></div>`;
