@@ -602,15 +602,21 @@ async function cargarBitacora(fechas) {
   } catch(e) { console.warn('cargarBitacora:', e.message); }
 }
 
+// Normaliza patente quitando guiones para comparar con lo que guarda bitácora
+// ej: 'VLGL81' → 'VLGL81', 'VLGL-81' → 'VLGL81'
+function normPatente(p) { return (p||'').replace(/-/g,'').toUpperCase(); }
+
 function conductorBitacora(patente, fecha, hora) {
+  const normP = normPatente(patente);
+  const matchPat = r => normPatente(r.patente) === normP;
   if (!fecha) {
     for (const f of Object.keys(bitacoraCache).sort().reverse()) {
-      const regs = (bitacoraCache[f]||[]).filter(r => r.patente === patente);
+      const regs = (bitacoraCache[f]||[]).filter(matchPat);
       if (regs.length > 0) return regs[regs.length-1].conductor || null;
     }
     return null;
   }
-  const regs = (bitacoraCache[fecha]||[]).filter(r => r.patente === patente);
+  const regs = (bitacoraCache[fecha]||[]).filter(matchPat);
   if (regs.length === 0) return null;
   if (!hora) return regs[regs.length-1].conductor || null;
   const h = hora.slice(0,5);
@@ -655,9 +661,10 @@ function apellidoDeNombre(nombre) {
 function matchBitacoraPorApellido(patente, apellidoCSV) {
   if (!apellidoCSV) return null;
   const conductoresVistos = new Set();
+  const normP2 = normPatente(patente);
   for (const regs of Object.values(bitacoraCache)) {
     for (const r of regs) {
-      if (r.patente === patente && r.conductor) {
+      if (normPatente(r.patente) === normP2 && r.conductor) {
         conductoresVistos.add(r.conductor);
       }
     }
@@ -698,7 +705,13 @@ const MAPA_FLOTAS = {
   'RRZC-83':'PickUp','SFCP-18':'PickUp','SFCP-19':'PickUp','SLGB-66':'PickUp',
   'STWW-57':'PickUp','STWW-61':'PickUp','STWW43':'PickUp','SZGB-73':'PickUp',
   'TSKK-30':'PickUp','VDSZ-52':'PickUp','VLGL-81':'PickUp','VPXT-63':'PickUp',
-  'TWPT56':'Máquina',
+  'STWW-43':'PickUp','STWW-46':'PickUp',
+  'TWPT56':'Máquina','625H1':'Máquina','625H2':'Máquina',
+  'VLGL81':'PickUp',
+};
+// Alias de display para máquinas
+const ALIAS_PATENTE = {
+  '625H1':'SK625N1','625H2':'SK625N2','TWPT56':'SK625N3',
 };
 function flotaDe(patente) { return MAPA_FLOTAS[patente] || 'Otro'; }
 
@@ -908,6 +921,7 @@ function agruparPorMovil() {
   datos.forEach(dia => {
     (dia.moviles||[]).forEach(m => {
       const p = m.patente;
+      if (flotaDe(p) === 'Máquina') return; // excluir máquinas de KPIs y gráficos
       if (!map[p]) map[p] = {
         patente: p, tipo: flotaDe(p), km: 0,
         excGeo: 0, excRuta: 0, velMaxRuta: 0,
@@ -1077,7 +1091,8 @@ function cambiarGrafico(btn) {
 /* ─── RANKING ─── */
 function renderRanking() {
   const porMovil = agruparPorMovil();
-  const sorted = Object.values(porMovil).sort((a,b) => b.excRuta - a.excRuta);
+  // Excluir máquinas del ranking de velocidad
+  const sorted = Object.values(porMovil).filter(m => m.tipo !== 'Máquina').sort((a,b) => b.excRuta - a.excRuta);
 
   const tbody = document.getElementById('tbody-ranking');
   tbody.innerHTML = '';
@@ -1196,6 +1211,7 @@ function renderRankingConductores() {
   datos.forEach(dia => {
     (dia.moviles||[]).forEach(m => {
       if (!m.patente) return;
+      if (flotaDe(m.patente) === 'Máquina') return; // excluir máquinas del ranking conductores
       const turnosBit = (bitacoraCache[dia.fecha]||[]).filter(r => r.patente === m.patente);
       if (turnosBit.length > 0) {
         turnosBit.forEach(t => {
@@ -1600,7 +1616,7 @@ function actualizarAlertaSinGPS() {
       <div>
         <strong>Móviles con 5+ días consecutivos sin movimiento o señal GPS</strong>
         <div class="patentes-sin-gps">
-          ${[...sinGPS5dias].sort().map(p => `<span class="tag-sin-gps">${p}</span>`).join('')}
+          ${[...sinGPS5dias].sort().map(p => `<span class="tag-sin-gps">${ALIAS_PATENTE[p]||p}</span>`).join('')}
         </div>
       </div>
     </div>` : '';
@@ -1835,6 +1851,7 @@ function renderDetalleGeo() {
   eventosGeoCache.forEach(ev => {
     const p = ev.patente;
     if (!p) return;
+    if (flotaDe(p) === 'Máquina') return; // excluir máquinas de geocerca
     if (!porPat[p]) porPat[p] = { patente:p, tipo:flotaDe(p), conductores:new Set(), eventos:[] };
     porPat[p].eventos.push(ev);
     const condGeo = resolverConductor(p, ev.fecha||'', ev.hora||'', ev.conductor||'');
