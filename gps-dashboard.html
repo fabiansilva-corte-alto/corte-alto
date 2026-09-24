@@ -620,8 +620,69 @@ function conductorBitacora(patente, fecha, hora) {
   return regs[regs.length-1].conductor || null;
 }
 
+/* Palabras que indican que el campo conductor del CSV no es un nombre real */
+const CSV_PALABRAS_INVALIDAS = new Set([
+  'furgon','furgón','pickup','pick-up','camion','camión','maquina','máquina',
+  'taller','nochero','compras','otro','sin','asignar','conductor','chofer',
+  'r1','r2','r77','l1','l2','n1','n2'
+]);
+function csvEsNombreValido(nombre) {
+  if (!nombre) return false;
+  const partes = nombre.trim().split(/\s+/);
+  if (partes.length < 2) return false; // necesita al menos nombre y apellido
+  return !partes.some(p => CSV_PALABRAS_INVALIDAS.has(p.toLowerCase()));
+}
+
+const INICIO_BITACORA = '2026-09-11';
+
+/* Normaliza un nombre quitando tildes para comparar/deduplicar */
+function normNombre(n) {
+  return (n||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+}
+
+/* Dado un nombre CSV como "F. Silva", "C.Vergara" o "I.Manzano", extrae el apellido */
+function apellidoDeNombre(nombre) {
+  if (!nombre) return '';
+  // Separar por espacios o por punto seguido de mayúscula (ej: "I.Manzano" → ["I","Manzano"])
+  const partes = nombre.trim().split(/[\s.]+/).filter(Boolean);
+  return partes[partes.length - 1].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+
+/* Busca en TODO el historial de bitácora de esa patente si el apellido del CSV
+   coincide con algún conductor registrado → devuelve el nombre completo */
+function matchBitacoraPorApellido(patente, apellidoCSV) {
+  if (!apellidoCSV) return null;
+  const conductoresVistos = new Set();
+  for (const regs of Object.values(bitacoraCache)) {
+    for (const r of regs) {
+      if (r.patente === patente && r.conductor) {
+        conductoresVistos.add(r.conductor);
+      }
+    }
+  }
+  for (const nombre of conductoresVistos) {
+    const ap = apellidoDeNombre(nombre);
+    if (ap === apellidoCSV) return nombre;
+  }
+  return null;
+}
+
 function resolverConductor(patente, fecha, hora, conductorCSV) {
-  return conductorBitacora(patente, fecha, hora) || conductorCSV || '';
+  // Desde el inicio de la bitácora: usar bitácora (confiable)
+  if (fecha >= INICIO_BITACORA) {
+    return conductorBitacora(patente, fecha, hora) || 'Sin registro';
+  }
+  // Antes del inicio: intentar bitácora primero
+  const bit = conductorBitacora(patente, fecha, hora);
+  if (bit) return bit;
+  // Luego intentar match por apellido con historial de bitácora
+  if (csvEsNombreValido(conductorCSV)) {
+    const apellido = apellidoDeNombre(conductorCSV);
+    const match = matchBitacoraPorApellido(patente, apellido);
+    if (match) return match;
+    return conductorCSV; // nombre CSV válido pero sin match en bitácora, dejarlo como está
+  }
+  return 'Sin registro';
 }
 
 /* ─── MAPA FIJO PATENTES → FLOTA ─── */
@@ -792,8 +853,8 @@ function renderKPIs() {
     const peorVel = [...arr].filter(m=>m.excRuta>0).sort((a,b)=>b.excRuta-a.excRuta)[0];
     if (i>0) html += `<div class="kpi-sep-flota"></div>`;
     html += `<div class="kpi-grupo-flota">`;
-    const condPGeo = peorGeo ? (conductorBitacora(peorGeo.patente, null, null) || cond1(peorGeo) || peorGeo.patente) : '—';
-    const condPVel = peorVel ? (conductorBitacora(peorVel.patente, null, null) || cond1(peorVel) || peorVel.patente) : '—';
+    const condPGeo = peorGeo ? (resolverConductor(peorGeo.patente, null, null, cond1(peorGeo)||'')) : '—';
+    const condPVel = peorVel ? (resolverConductor(peorVel.patente, null, null, cond1(peorVel)||'')) : '—';
     html += peorGeo
       ? kpiB('peor',f.badge,f.label,'Peor geocerca',
           condPGeo, peorGeo.excGeo+' eventos · '+peorGeo.patente)
@@ -817,8 +878,8 @@ function renderKPIs() {
       || [...arr].sort((a,b)=>a.excRuta-b.excRuta)[0];
     if (i>0) html += `<div class="kpi-sep-flota"></div>`;
     html += `<div class="kpi-grupo-flota">`;
-    const condMGeo = sinGeo ? (conductorBitacora(sinGeo.patente, null, null) || cond1(sinGeo) || sinGeo.patente) : '—';
-    const condMVel = sinVel ? (conductorBitacora(sinVel.patente, null, null) || cond1(sinVel) || sinVel.patente) : '—';
+    const condMGeo = sinGeo ? (resolverConductor(sinGeo.patente, null, null, cond1(sinGeo)||'')) : '—';
+    const condMVel = sinVel ? (resolverConductor(sinVel.patente, null, null, cond1(sinVel)||'')) : '—';
     html += sinGeo
       ? kpiB('mejor',f.badge,f.label,'Comportamiento geocerca',
           condMGeo,
@@ -856,8 +917,8 @@ function agruparPorMovil() {
       map[p].excRuta += m.excRuta || 0;
       if ((m.velMaxRuta||0) > map[p].velMaxRuta) map[p].velMaxRuta = m.velMaxRuta||0;
       map[p].dias++;
-      const condReal = conductorBitacora(p, dia.fecha, null) || m.conductor || '';
-      if (condReal) map[p].conductores.add(condReal);
+      const condReal = resolverConductor(p, dia.fecha, null, m.conductor || '');
+      if (condReal && condReal !== 'Sin registro') map[p].conductores.add(normNombre(condReal));
       // Acumular eventos detallados de velocidad
       if (Array.isArray(m.eventosVel)) map[p].eventosVel.push(...m.eventosVel);
     });
@@ -1215,7 +1276,7 @@ function renderConductores() {
   const mapCond = {};
   datos.forEach(dia => {
     (dia.moviles||[]).forEach(m => {
-      const condReal2 = conductorBitacora(m.patente, dia.fecha, null) || m.conductor || '';
+      const condReal2 = resolverConductor(m.patente, dia.fecha, null, m.conductor || '');
       const c = condReal2.trim() || 'Sin asignar';
       if (!mapCond[c]) mapCond[c] = { nombre:c, km:0, excGeo:0, excRuta:0, dias:0, patentes:new Set() };
       mapCond[c].km      += m.km||0;
@@ -1575,17 +1636,13 @@ async function verificarDiasFaltantes() {
     const diasSinGPS = diasRango.filter(f => !diasConGPS.has(f));
 
     // --- Días sin bitácora de conductores ---
-    // Verificamos cuáles fechas tienen al menos 1 registro en subcolección 'registros'
-    let diasConRegistros = new Set();
-    try {
-      const snapReg = await db.collectionGroup('registros').get();
-      snapReg.docs.forEach(d => diasConRegistros.add(d.ref.parent.parent.id));
-    } catch(e2) {
-      // Fallback: si no hay índice, verificar docs padre en bitacora_conductores
-      const snapBit = await db.collection('bitacora_conductores').get();
-      snapBit.docs.forEach(doc => diasConRegistros.add(doc.id));
-    }
-    const diasSinBit = diasRango.filter(f => !diasConRegistros.has(f));
+    // INICIO_BITACORA definida globalmente arriba (2026-09-11)
+    const diasRangoBit = diasRango.filter(f => f >= INICIO_BITACORA);
+
+    // Usamos bitacoraCache que ya fue cargado en la consulta principal
+    // Sus claves son "YYYY-MM-DD" → array de registros del día
+    const diasConRegistros = new Set(Object.keys(bitacoraCache));
+    const diasSinBit = diasRangoBit.filter(f => !diasConRegistros.has(f));
 
     // Formato de fecha: "17 sep", "18 sep"
     const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -1741,7 +1798,10 @@ async function cargarEventosGeo() {
       if (!d.exists) return;
       (d.data().eventos || []).forEach(ev => {
         const _pat = ev.patente || '';
-        const _hora = ev.fechaEvento || '';
+        // fechaEvento viene como "DD-MM-YYYY HH:MM:SS" — extraer solo HH:MM
+        const _fe = ev.fechaEvento || '';
+        const _horaMatch = _fe.match(/(\d{2}:\d{2})(?::\d{2})?$/);
+        const _hora = _horaMatch ? _horaMatch[1] : '';
         const _condCSV = ev.nombreMovil ? ev.nombreMovil.replace(new RegExp('^'+_pat+'\s*','i'),'').trim() : '';
         eventosGeoCache.push({
           fecha:      d.id,
@@ -1750,7 +1810,7 @@ async function cargarEventosGeo() {
           geocerca:   ev.geocerca   || '',
           velLimite:  ev.velLimite  || 0,
           velEvento:  ev.velEvento  || 0,
-          hora:       ev.fechaEvento|| '',
+          hora:       _fe,
         });
       });
     });
@@ -1775,7 +1835,8 @@ function renderDetalleGeo() {
     if (!p) return;
     if (!porPat[p]) porPat[p] = { patente:p, tipo:flotaDe(p), conductores:new Set(), eventos:[] };
     porPat[p].eventos.push(ev);
-    if (ev.conductor) porPat[p].conductores.add(ev.conductor);
+    const condGeo = resolverConductor(p, ev.fecha||'', ev.hora||'', ev.conductor||'');
+    if (condGeo && condGeo !== 'Sin registro') porPat[p].conductores.add(normNombre(condGeo));
   });
 
   const sorted = Object.values(porPat).sort((a,b) => b.eventos.length - a.eventos.length);
