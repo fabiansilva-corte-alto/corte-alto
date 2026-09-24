@@ -1400,6 +1400,15 @@ function fmtFechaCorta(iso) {
 }
 function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+// Convierte límite real de Firestore al valor visual que muestra el dashboard
+function limiteVisual(v) {
+  const n = Number(v) || 0;
+  if (n === 45) return 40;
+  if (n === 65) return 60;
+  if (n === 105) return 100;
+  return n; // 25, 27 y cualquier otro quedan igual
+}
+
 // Límite de velocidad fijo por tipo de flota (independiente del CSV)
 function limiteFlota(tipo) {
   if (tipo === 'PickUp') return 120;
@@ -1897,7 +1906,7 @@ function renderDetalleGeo() {
         <td>${e.hora||'—'}</td>
         <td>${escH(e.conductor||'—')}</td>
         <td style="font-size:11px;">${escH(e.geocerca||'—')}</td>
-        <td class="r" style="color:var(--ts);">${e.velLimite > 0 ? e.velLimite+' km/h' : '—'}</td>
+        <td class="r" style="color:var(--ts);">${e.velLimite > 0 ? limiteVisual(e.velLimite)+' km/h' : '—'}</td>
         <td class="r"><span class="${cv}">${vel > 0 ? vel+' km/h' : '—'}</span></td>
       </tr>`;
     }).join('');
@@ -1989,7 +1998,7 @@ function exportarPDFGeo(patente, tipo, evs) {
   const filas = evs.map(e => [
     fmtFecha(e.fecha)||'—', e.hora||'—', e.conductor||'—',
     e.geocerca||'—',
-    e.velLimite > 0 ? `${e.velLimite} km/h` : '—',
+    e.velLimite > 0 ? `${limiteVisual(e.velLimite)} km/h` : '—',
     `${Number(e.velEvento)||0} km/h`,
   ]);
 
@@ -2027,7 +2036,7 @@ function exportarExcelGeo(patente, tipo, evs) {
     'Hora':           e.hora||'—',
     'Conductor':      e.conductor||'—',
     'Geocerca':       e.geocerca||'—',
-    'Límite (km/h)':  e.velLimite||'—',
+    'Límite (km/h)':  e.velLimite ? limiteVisual(e.velLimite) : '—',
     'Vel. evento (km/h)': Number(e.velEvento)||0,
   }));
   const ws = XLSX.utils.json_to_sheet(filas);
