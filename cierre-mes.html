@@ -262,10 +262,13 @@
       padding: 7px 8px;
       border-bottom: 1px solid var(--gris-1);
       border-radius: 6px;
-      transition: background .12s;
-      cursor: default;
+      transition: background .12s, border-color .12s;
+      cursor: pointer;
     }
-    .bono-tipo-row:hover { background: var(--gris-0); }
+    .bono-tipo-row:hover {
+      background: #dde8d0;
+      border-color: var(--gris-2);
+    }
     .bono-tipo-row:last-child { border-bottom: none; }
     .bono-tipo-nombre {
       flex: 1;
@@ -1847,6 +1850,9 @@ const TIPOS_BONO_EXTRA = {
   'Motosierrista': [
     { id: 'desgaste_herramienta', nombre: '🪚 Desgaste Herramienta', desc: 'Bono por desgaste y mantención de motosierra', fijo: true },
   ],
+  'Calibrador': [
+    { id: 'calibracion_2_solitario', nombre: '📏 Calibración 2° Equipo en Solitario', desc: 'Bono por operar un segundo equipo sin apoyo', fijo: true },
+  ],
 };
 
 // Formatea número como $70.000
@@ -1868,13 +1874,15 @@ function renderBonosConfig() {
     const monto = tc.monto || 0;
     const activo = tc.activo !== false;
     const inputId = `bono-inp-${fun.replace(/\s/g,'_')}-${tipo.id}`;
-    return `<div class="bono-tipo-row">
+    const chkId = `bono-chk-${fun.replace(/\s/g,'_')}-${tipo.id}`;
+    return `<div class="bono-tipo-row"
+      onclick="(function(e){if(e.target.tagName==='INPUT')return; var c=document.getElementById('${chkId}'); c.checked=!c.checked; setBonoCfg('${fun}','${tipo.id}','activo',c.checked);})(event)">
       <div class="bono-tipo-nombre">
         <strong>${tipo.nombre}</strong>
         <div style="font-size:12px; color:var(--gris-3);">${tipo.desc}</div>
       </div>
       ${tipo.fijo
-        ? `<div style="position:relative; display:inline-block;">
+        ? `<div style="position:relative; display:inline-block;" onclick="event.stopPropagation()">
             <input type="text" id="${inputId}" class="bono-tipo-input"
               placeholder="$0"
               value="${monto ? fmtPesos(monto) : ''}"
@@ -1883,8 +1891,8 @@ function renderBonosConfig() {
               onblur="formatBonoInputBlur(this,'${fun}','${tipo.id}')">
            </div>`
         : '<span style="font-size:12px;color:var(--gris-3)">Automático</span>'}
-      <label class="bono-tipo-activo">
-        <input type="checkbox" ${activo ? 'checked' : ''}
+      <label class="bono-tipo-activo" onclick="event.stopPropagation()" style="cursor:pointer">
+        <input type="checkbox" id="${chkId}" ${activo ? 'checked' : ''}
           onchange="setBonoCfg('${fun}','${tipo.id}','activo',this.checked)"
           style="accent-color:var(--verde); width:16px; height:16px;">
         Aplicar
