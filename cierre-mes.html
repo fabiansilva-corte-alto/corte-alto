@@ -501,6 +501,70 @@
     }
     .tramo-row label { font-size: 11px; color: var(--gris-3); white-space: nowrap; flex: none; }
     .tramo-row input { flex: 1; min-width: 70px; }
+    /* ── Rangos VMA: tarjeta de cargo con 3 columnas ── */
+    .vma-cargo-card {
+      background: #fff;
+      border: 1px solid var(--gris-1);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .vma-cargo-hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .vma-cargo-nombre {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gris-5);
+    }
+    .vma-base-badge {
+      font-size: 10px;
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-weight: 600;
+    }
+    .vma-base-torre { background: #e8f4e8; color: #2d5a2d; }
+    .vma-base-faena { background: #e8eef4; color: #2d4a6a; }
+
+    .vma-3col {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .vma-col {
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .vma-col-alto  { background: #f0f7ec; }
+    .vma-col-medio { background: #f3f7ee; }
+    .vma-col-bajo  { background: #f5f5f0; }
+
+    .vma-col-hdr {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gris-3);
+      text-transform: uppercase;
+      letter-spacing: .3px;
+      margin-bottom: 7px;
+      white-space: nowrap;
+    }
+    .vma-pills { display: flex; flex-direction: column; gap: 4px; }
+    .vma-pill {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      border: 1px solid var(--gris-1);
+      border-radius: 6px;
+      padding: 4px 8px;
+      gap: 8px;
+    }
+    .vma-pill-rango { font-size: 11px; color: var(--gris-3); }
+    .vma-pill-bono  { font-size: 12px; font-weight: 700; color: var(--verde); white-space: nowrap; }
+
     .tramo-columnas {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -785,25 +849,24 @@
         🌲 MODO VMA — Volumen por árbol del bosque
       </label>
       <p style="font-size:13px; color:#555; margin:0 0 12px;">
-        El VMA define qué tabla de bonos se aplica. Consulta el catastro del fundo si no estás seguro.
-        <strong>Mayor o igual (≥)</strong> significa bosque con árboles grandes (alto VMA);
-        <strong>menor que (&lt;)</strong> significa bosque con árboles más pequeños (bajo VMA).
+        El VMA ponderado define qué tabla de bonos se aplica. Hay tres tramos según el correo del 24-Sep-2026.
+        Calcula el VMA ponderado como: Σ(prod equipo × VMA equipo) / prod total faena.
       </p>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:9px 16px;
-                      background:#fff; border:2px solid #2d5a2d; border-radius:20px; font-size:15px; font-weight:600; color:#2d5a2d;">
-          <input type="radio" name="modo-vma" value="alto" checked style="accent-color:#2d5a2d; width:16px; height:16px;">
-          Mayor o igual a 0,56 m³/árbol &nbsp;<span style="opacity:.6; font-weight:400">(≥ 0,56)</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:9px 16px;
                       background:#fff; border:2px solid #888; border-radius:20px; font-size:15px; font-weight:600; color:#444;">
           <input type="radio" name="modo-vma" value="bajo" style="accent-color:#2d5a2d; width:16px; height:16px;">
-          Menor a 0,56 m³/árbol &nbsp;<span style="opacity:.6; font-weight:400">(&lt; 0,56)</span>
+          🌳 Tramo 3 &nbsp;<span style="opacity:.6; font-weight:400">(VMA menor que 0,35)</span>
         </label>
         <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:9px 16px;
-                      background:#fff; border:2px solid #888; border-radius:20px; font-size:15px; font-weight:600; color:#444;">
-          <input type="radio" name="modo-vma" value="pendiente" style="accent-color:#2d5a2d; width:16px; height:16px;">
-          ⏳ Por confirmar
+                      background:#fff; border:2px solid #5a8a2d; border-radius:20px; font-size:15px; font-weight:600; color:#3a5a1a;">
+          <input type="radio" name="modo-vma" value="medio" style="accent-color:#2d5a2d; width:16px; height:16px;">
+          🌿 Tramo 2 &nbsp;<span style="opacity:.6; font-weight:400">(VMA entre 0,35 y 0,55)</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:9px 16px;
+                      background:#fff; border:2px solid #2d5a2d; border-radius:20px; font-size:15px; font-weight:600; color:#2d5a2d;">
+          <input type="radio" name="modo-vma" value="alto" checked style="accent-color:#2d5a2d; width:16px; height:16px;">
+          🌲 Tramo 1 &nbsp;<span style="opacity:.6; font-weight:400">(VMA mayor o igual a 0,56)</span>
         </label>
       </div>
       <p id="vma-sugerencia" style="font-size:13px; color:#666; margin:10px 0 0;"></p>
@@ -976,43 +1039,18 @@
 
   <!-- ── SUB-TAB 3: RANGOS VMA ── -->
   <div id="subview-rangos-vma" class="subview">
-    <!-- VMA Umbral -->
-    <div class="card">
-      <div class="card-title">Umbral VMA</div>
-      <p class="text-muted fs-12" style="margin-bottom:12px">
-        Define los puntos de corte del VMA para aplicar las tablas de tramos correctas.
-        VMA Alto: ≥ umbral. VMA Bajo: &lt; umbral.
-      </p>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Umbral VMA Alto / Bajo</label>
-          <input type="number" id="cfg-vma-umbral" step="0.01" value="0.56" placeholder="0.56" />
-        </div>
-        <div class="form-group">
-          <label>Umbral VMA Muy Bajo</label>
-          <input type="number" id="cfg-vma-umbral2" step="0.01" value="0.35" placeholder="0.35" />
-        </div>
-      </div>
-      <button class="btn btn-primary btn-sm" id="btn-guardar-vma">Guardar umbrales</button>
+
+    <!-- Header mínimo -->
+    <div style="display:flex; justify-content:flex-end; margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" id="btn-nuevo-cargo">+ Agregar Cargo</button>
     </div>
 
-    <!-- Cargos y tramos -->
-    <div class="card">
-      <div class="flex-between" style="margin-bottom:12px">
-        <div class="card-title" style="margin:0">Cargos y Tramos de Bono</div>
-        <button class="btn btn-primary btn-sm" id="btn-nuevo-cargo">+ Cargo</button>
-      </div>
-      <p class="text-muted fs-12" style="margin-bottom:12px">
-        Configura cada cargo con su tipo de remuneración y tramos. Los cambios se aplican al próximo cierre.
-      </p>
-      <div id="lista-cargos" class="tramos-grid">
-        <div class="loader"><div class="spinner"></div>Cargando configuración…</div>
-      </div>
+    <!-- Cargos con 3 columnas -->
+    <div id="lista-cargos">
+      <div class="loader"><div class="spinner"></div>Cargando configuración…</div>
     </div>
 
-    <div style="padding-bottom: 32px; text-align: center;">
-      <button class="btn btn-primary" id="btn-guardar-config">💾 Guardar Configuración</button>
-    </div>
+    <div style="padding-bottom: 32px;"></div>
   </div>
 
 </div>
@@ -1061,12 +1099,15 @@
             <option value="torre">Producción solo de la Torre Alpine</option>
           </select>
         </div>
-        <div class="tramo-sub-title">Tramos — VMA Alto (≥ umbral)</div>
+        <div class="tramo-sub-title">🌲 Tramos — VMA Tramo 1 (≥ umbral alto)</div>
         <div id="tramos-alto"></div>
-        <button class="btn btn-secondary btn-sm mt-12" id="btn-add-tramo-alto">+ Tramo VMA Alto</button>
-        <div class="tramo-sub-title mt-12">Tramos — VMA Bajo (&lt; umbral)</div>
+        <button class="btn btn-secondary btn-sm mt-12" id="btn-add-tramo-alto">+ Tramo T1</button>
+        <div class="tramo-sub-title mt-12">🌿 Tramos — VMA Tramo 2 (entre umbrales)</div>
+        <div id="tramos-medio"></div>
+        <button class="btn btn-secondary btn-sm mt-12" id="btn-add-tramo-medio">+ Tramo T2</button>
+        <div class="tramo-sub-title mt-12">🌳 Tramos — VMA Tramo 3 (&lt; umbral bajo)</div>
         <div id="tramos-bajo"></div>
-        <button class="btn btn-secondary btn-sm mt-12" id="btn-add-tramo-bajo">+ Tramo VMA Bajo</button>
+        <button class="btn btn-secondary btn-sm mt-12" id="btn-add-tramo-bajo">+ Tramo T3</button>
       </div>
       <div id="cargo-config-trato" style="display:none">
         <div class="tramo-sub-title">Parámetros de trato</div>
@@ -1091,9 +1132,22 @@
       <div id="bonos-fijos-lista"></div>
       <button class="btn btn-secondary btn-sm mt-12" id="btn-add-bono-fijo">+ Bono fijo</button>
       <hr class="divider" />
-      <div class="flex" style="gap:8px; margin-top:8px">
+      <!-- Umbrales VMA dentro del modal -->
+      <div class="tramo-sub-title" style="margin-bottom:6px">Umbrales de corte VMA</div>
+      <p class="text-muted fs-12" style="margin-bottom:8px">Define el VMA ponderado que separa cada tramo. Aplica a todos los cargos.</p>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px">
+        <div class="form-group" style="margin:0">
+          <label>Tramo 1 / 2 (mayor o igual a)</label>
+          <input type="number" id="cfg-vma-umbral" step="0.01" value="0.56" placeholder="0.56" style="max-width:110px" />
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Tramo 2 / 3 (menor que)</label>
+          <input type="number" id="cfg-vma-umbral2" step="0.01" value="0.35" placeholder="0.35" style="max-width:110px" />
+        </div>
+      </div>
+      <div class="flex" style="gap:8px; margin-top:4px">
         <button class="btn btn-secondary" style="flex:1" id="btn-cancelar-cargo">Cancelar</button>
-        <button class="btn btn-primary" style="flex:1" id="btn-guardar-cargo">Guardar Cargo</button>
+        <button class="btn btn-primary" style="flex:1" id="btn-guardar-cargo">💾 Guardar</button>
       </div>
     </div>
   </div>
@@ -1202,7 +1256,7 @@ let state = {
   cargos: [],          // config de cargos desde Firestore
   vmaUmbral: 0.56,
   vmaUmbral2: 0.35,
-  modoVma: 'alto',     // 'alto' | 'bajo' | 'pendiente'
+  modoVma: 'alto',     // 'alto' | 'medio' | 'bajo'
   produccionMes: null, // objeto con totales del mes
   fundoActivo: null,   // documento del fundo
   trabajadores: [],    // de RRHH/documentos
@@ -1287,9 +1341,7 @@ function inicializarApp() {
   document.getElementById('btn-exportar').addEventListener('click', exportarPDF);
   document.getElementById('btn-cargar-hist').addEventListener('click', cargarHistorial);
 
-  // Config
-  document.getElementById('btn-guardar-vma').addEventListener('click', guardarVMA);
-  document.getElementById('btn-guardar-config').addEventListener('click', guardarConfig);
+  // Config — guardar umbrales + cargos desde el modal
   document.getElementById('btn-nuevo-cargo').addEventListener('click', () => abrirModalCargo());
 
   // Modal cargo
@@ -1297,8 +1349,9 @@ function inicializarApp() {
   document.getElementById('btn-cancelar-cargo').addEventListener('click', cerrarModalCargo);
   document.getElementById('btn-guardar-cargo').addEventListener('click', guardarCargo);
   document.getElementById('cargo-tipo').addEventListener('change', toggleCargoTipo);
-  document.getElementById('btn-add-tramo-alto').addEventListener('click', () => addTramo('alto'));
-  document.getElementById('btn-add-tramo-bajo').addEventListener('click', () => addTramo('bajo'));
+  document.getElementById('btn-add-tramo-alto').addEventListener('click',  () => addTramo('alto'));
+  document.getElementById('btn-add-tramo-medio').addEventListener('click', () => addTramo('medio'));
+  document.getElementById('btn-add-tramo-bajo').addEventListener('click',  () => addTramo('bajo'));
   document.getElementById('btn-add-bono-fijo').addEventListener('click', addBonoFijo);
 
   // Modal historial
@@ -1333,71 +1386,91 @@ async function cargarConfigFirestore() {
 }
 
 function cargosPorDefecto() {
-  // ── TABLAS REALES de bonos (según PDF Rangos de Producciones) ──────────────
-  // tramosAlto = VMA por árbol ≥ 0,56 m³  |  tramosBajo = VMA < 0,56 m³
+  // ── TABLAS REALES de bonos (correo Pablo Giroz, 24-Sep-2026) ───────────────
+  // tramosAlto  = VMA ponderado ≥ 0,56 m³/árbol
+  // tramosMedio = VMA ponderado 0,35 – 0,55 m³/árbol
+  // tramosBajo  = VMA ponderado < 0,35 m³/árbol
   // baseProd: 'torre' usa producción del equipo de volteo/tala
   //           'faena' usa producción total de la faena (procesamiento)
   return [
-    // ── TORRE ──────────────────────────────────────────────────────────────
+    // ── TORRE MECANIZADA ──────────────────────────────────────────────────
     {
       nombre: 'ESTROBERO', tipo: 'tramo', baseProd: 'torre',
       tramosAlto: [
-        {desde:5000, hasta:4999, bono:25000},   // typo PDF: rango real 4.500-4.999
-        {desde:4500, hasta:4999, bono:25000},
+        {desde:4000, hasta:4999, bono:25000},
         {desde:5500, hasta:5999, bono:45000},
         {desde:6000, hasta:6299, bono:60000},
         {desde:6300, hasta:null, bono:80000},
       ],
-      tramosBajo: [
+      tramosMedio: [
         {desde:4000, hasta:4499, bono:25000},
         {desde:4500, hasta:4999, bono:45000},
         {desde:5000, hasta:5499, bono:60000},
         {desde:5500, hasta:null, bono:80000},
       ],
+      tramosBajo: [
+        {desde:3812, hasta:4188, bono:25000},
+        {desde:4189, hasta:4609, bono:45000},
+        {desde:4610, hasta:4950, bono:60000},
+        {desde:4951, hasta:null, bono:80000},
+      ],
       bonosFijos: [],
     },
     {
       nombre: 'OP TORRE', tipo: 'tramo', baseProd: 'torre',
-      // Usa misma tabla que Op Torre, Garra, Procesador, Op Clasificado (faena)
-      // pero referenciando producción torre — pendiente confirmar rangos específicos
       tramosAlto: [
-        {desde:13500, hasta:13999, bono:40000},
-        {desde:14000, hasta:14999, bono:80000},
-        {desde:15000, hasta:null,  bono:120000},
+        {desde:5500, hasta:6000, bono:40000},
+        {desde:6001, hasta:6300, bono:80000},
+        {desde:6301, hasta:null, bono:120000},
+      ],
+      tramosMedio: [
+        {desde:4400, hasta:4800, bono:40000},
+        {desde:4801, hasta:5040, bono:80000},
+        {desde:5401, hasta:null, bono:120000},
       ],
       tramosBajo: [
-        {desde:11000, hasta:11500, bono:40000},
-        {desde:11501, hasta:12000, bono:80000},
-        {desde:12501, hasta:null,  bono:120000},
+        {desde:3688, hasta:4019, bono:40000},
+        {desde:4020, hasta:4524, bono:80000},
+        {desde:4525, hasta:null, bono:120000},
       ],
       bonosFijos: [],
     },
     {
       nombre: 'OP GARRA ORDENAMIENTO', tipo: 'tramo', baseProd: 'torre',
       tramosAlto: [
-        {desde:13500, hasta:13999, bono:40000},
-        {desde:14000, hasta:14999, bono:80000},
-        {desde:15000, hasta:null,  bono:120000},
+        {desde:5500, hasta:6000, bono:40000},
+        {desde:6001, hasta:6300, bono:80000},
+        {desde:6301, hasta:null, bono:120000},
+      ],
+      tramosMedio: [
+        {desde:4400, hasta:4800, bono:40000},
+        {desde:4801, hasta:5040, bono:80000},
+        {desde:5401, hasta:null, bono:120000},
       ],
       tramosBajo: [
-        {desde:11000, hasta:11500, bono:40000},
-        {desde:11501, hasta:12000, bono:80000},
-        {desde:12501, hasta:null,  bono:120000},
+        {desde:3688, hasta:4019, bono:40000},
+        {desde:4020, hasta:4524, bono:80000},
+        {desde:4525, hasta:null, bono:120000},
       ],
       bonosFijos: [],
     },
     // ── FAENA ──────────────────────────────────────────────────────────────
     {
-      nombre: 'OP TORRE FAENA', tipo: 'tramo', baseProd: 'faena',
+      nombre: 'OP PROCESADOR', tipo: 'tramo', baseProd: 'faena',
       tramosAlto: [
         {desde:13500, hasta:13999, bono:40000},
-        {desde:14000, hasta:14999, bono:80000},
-        {desde:15000, hasta:null,  bono:120000},
+        {desde:14000, hasta:14499, bono:80000},
+        {desde:14500, hasta:null,  bono:120000},
+      ],
+      tramosMedio: [
+        {desde:12000, hasta:12500, bono:40000},
+        {desde:12501, hasta:13000, bono:80000},
+        {desde:13001, hasta:null,  bono:120000},
       ],
       tramosBajo: [
-        {desde:11000, hasta:11500, bono:40000},
-        {desde:11501, hasta:12000, bono:80000},
-        {desde:12501, hasta:null,  bono:120000},
+        {desde:10155, hasta:10574, bono:40000},
+        {desde:10575, hasta:10994, bono:80000},
+        {desde:10995, hasta:null,  bono:120000},
       ],
       bonosFijos: [],
     },
@@ -1405,71 +1478,18 @@ function cargosPorDefecto() {
       nombre: 'OP GARRA CLASIFICADO', tipo: 'tramo', baseProd: 'faena',
       tramosAlto: [
         {desde:13500, hasta:13999, bono:40000},
-        {desde:14000, hasta:14999, bono:80000},
-        {desde:15000, hasta:null,  bono:120000},
+        {desde:14000, hasta:14499, bono:80000},
+        {desde:14500, hasta:null,  bono:120000},
+      ],
+      tramosMedio: [
+        {desde:12000, hasta:12500, bono:40000},
+        {desde:12501, hasta:13000, bono:80000},
+        {desde:13001, hasta:null,  bono:120000},
       ],
       tramosBajo: [
-        {desde:11000, hasta:11500, bono:40000},
-        {desde:11501, hasta:12000, bono:80000},
-        {desde:12501, hasta:null,  bono:120000},
-      ],
-      bonosFijos: [],
-    },
-    {
-      nombre: 'OP PROCESADOR', tipo: 'tramo', baseProd: 'faena',
-      tramosAlto: [
-        {desde:13500, hasta:13999, bono:40000},
-        {desde:14000, hasta:14999, bono:80000},
-        {desde:15000, hasta:null,  bono:120000},
-      ],
-      tramosBajo: [
-        {desde:11000, hasta:11500, bono:40000},
-        {desde:11501, hasta:12000, bono:80000},
-        {desde:12501, hasta:null,  bono:120000},
-      ],
-      bonosFijos: [],
-    },
-    {
-      nombre: 'OP SKIDDER', tipo: 'tramo', baseProd: 'faena',
-      tramosAlto: [
-        {desde:13500, hasta:13999, bono:40000},
-        {desde:14000, hasta:14999, bono:80000},
-        {desde:15000, hasta:null,  bono:120000},
-      ],
-      tramosBajo: [
-        {desde:11000, hasta:11500, bono:40000},
-        {desde:11501, hasta:12000, bono:80000},
-        {desde:12501, hasta:null,  bono:120000},
-      ],
-      bonosFijos: [],
-    },
-    {
-      // Bono imponible — se paga solo el tramo más alto que califica (no se suman)
-      nombre: 'OP SHOVEL', tipo: 'tramo', baseProd: 'faena',
-      tramosAlto: [
-        {desde:13500, hasta:13999, bono:70000},
-        {desde:14000, hasta:14499, bono:100000},
-        {desde:14500, hasta:null,  bono:150000},
-      ],
-      tramosBajo: [
-        {desde:11000, hasta:11500, bono:70000},
-        {desde:11501, hasta:12000, bono:100000},
-        {desde:12001, hasta:null,  bono:150000},
-      ],
-      bonosFijos: [],
-    },
-    {
-      nombre: 'MOTOSERRISTA', tipo: 'tramo', baseProd: 'faena',
-      // Bono imponible
-      tramosAlto: [
-        {desde:13500, hasta:13999, bono:25000},
-        {desde:14000, hasta:14499, bono:50000},
-        {desde:14500, hasta:null,  bono:80000},
-      ],
-      tramosBajo: [
-        {desde:11000, hasta:11500, bono:25000},
-        {desde:11501, hasta:12000, bono:50000},
-        {desde:12001, hasta:null,  bono:80000},
+        {desde:10155, hasta:10574, bono:40000},
+        {desde:10575, hasta:10994, bono:80000},
+        {desde:10995, hasta:null,  bono:120000},
       ],
       bonosFijos: [],
     },
@@ -1480,31 +1500,98 @@ function cargosPorDefecto() {
         {desde:14000, hasta:14499, bono:80000},
         {desde:14500, hasta:null,  bono:120000},
       ],
+      tramosMedio: [
+        {desde:12000, hasta:12500, bono:40000},
+        {desde:12501, hasta:13000, bono:80000},
+        {desde:13001, hasta:null,  bono:120000},
+      ],
       tramosBajo: [
-        {desde:11000, hasta:11500, bono:40000},
-        {desde:11501, hasta:12000, bono:80000},
-        {desde:12001, hasta:null,  bono:120000},
+        {desde:10155, hasta:10574, bono:40000},
+        {desde:10575, hasta:10994, bono:80000},
+        {desde:10995, hasta:null,  bono:120000},
       ],
       bonosFijos: [],
     },
     {
-      nombre: 'SUPERVISOR', tipo: 'tramo', baseProd: 'faena',
-      // Bono producción Línea 1
+      nombre: 'OP SKIDDER', tipo: 'tramo', baseProd: 'faena',
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:40000},
+        {desde:14000, hasta:14499, bono:80000},
+        {desde:14500, hasta:null,  bono:120000},
+      ],
+      tramosMedio: [
+        {desde:12000, hasta:12500, bono:40000},
+        {desde:12501, hasta:13000, bono:80000},
+        {desde:13001, hasta:null,  bono:120000},
+      ],
+      tramosBajo: [
+        {desde:10155, hasta:10574, bono:40000},
+        {desde:10575, hasta:10994, bono:80000},
+        {desde:10995, hasta:null,  bono:120000},
+      ],
+      bonosFijos: [],
+    },
+    {
+      nombre: 'MOTOSERRISTA', tipo: 'tramo', baseProd: 'faena',
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:25000},
+        {desde:14000, hasta:14499, bono:50000},
+        {desde:14500, hasta:null,  bono:80000},
+      ],
+      tramosMedio: [
+        {desde:12000, hasta:12500, bono:25000},
+        {desde:12501, hasta:13000, bono:50000},
+        {desde:13001, hasta:null,  bono:80000},
+      ],
+      tramosBajo: [
+        {desde:10155, hasta:10574, bono:25000},
+        {desde:10575, hasta:10994, bono:50000},
+        {desde:10995, hasta:null,  bono:80000},
+      ],
+      bonosFijos: [],
+    },
+    {
+      // Bono imponible — se paga solo el tramo más alto que califica (no se suman)
+      nombre: 'OP SHOVEL', tipo: 'tramo', baseProd: 'faena',
       tramosAlto: [
         {desde:13500, hasta:13999, bono:100000},
         {desde:14000, hasta:14499, bono:150000},
         {desde:14500, hasta:null,  bono:250000},
       ],
+      tramosMedio: [
+        {desde:12000, hasta:12500, bono:100000},
+        {desde:12501, hasta:13000, bono:150000},
+        {desde:13001, hasta:null,  bono:250000},
+      ],
       tramosBajo: [
-        {desde:11000, hasta:11500, bono:100000},
-        {desde:11501, hasta:12000, bono:150000},
-        {desde:12001, hasta:null,  bono:250000},
+        {desde:10155, hasta:10574, bono:100000},
+        {desde:10575, hasta:10994, bono:150000},
+        {desde:10995, hasta:null,  bono:250000},
+      ],
+      bonosFijos: [],
+    },
+    {
+      nombre: 'SUPERVISOR', tipo: 'tramo', baseProd: 'faena',
+      tramosAlto: [
+        {desde:13500, hasta:13999, bono:100000},
+        {desde:14000, hasta:14499, bono:150000},
+        {desde:14500, hasta:null,  bono:250000},
+      ],
+      tramosMedio: [
+        {desde:12000, hasta:12500, bono:100000},
+        {desde:12501, hasta:13000, bono:150000},
+        {desde:13001, hasta:null,  bono:250000},
+      ],
+      tramosBajo: [
+        {desde:10155, hasta:10574, bono:100000},
+        {desde:10575, hasta:10994, bono:150000},
+        {desde:10995, hasta:null,  bono:250000},
       ],
       bonosFijos: [],
     },
     {
       nombre: 'CALIBRADOR', tipo: 'fijo', baseProd: 'faena',
-      tramosAlto: [], tramosBajo: [],
+      tramosAlto: [], tramosMedio: [], tramosBajo: [],
       bonosFijos: [],
     },
   ];
@@ -1961,50 +2048,69 @@ async function cargarBonosConfig() {
   } catch (e) { /* ignorar */ }
 }
 
-// ── RENDER LISTA CARGOS ───────────────────────────────────────
+// ── RENDER LISTA CARGOS — 3 columnas de tramo ────────────────
 function renderListaCargos() {
   const cont = document.getElementById('lista-cargos');
   if (!state.cargos.length) {
-    cont.innerHTML = '<div class="empty-state"><p>No hay cargos configurados.</p></div>';
+    cont.innerHTML = '<div class="empty-state" style="padding:24px; text-align:center"><p>No hay cargos configurados.</p></div>';
     return;
   }
-  cont.innerHTML = state.cargos.map((c, i) => {
-    const tipoBadge = c.tipo === 'tramo'
-      ? '<span class="tramo-tipo-badge badge-tramo">Tramo</span>'
-      : c.tipo === 'trato'
-        ? '<span class="tramo-tipo-badge badge-trato">Trato</span>'
-        : '<span class="tramo-tipo-badge badge-fijo">Fijo</span>';
 
-    let detalleHTML = '';
-    if (c.tipo === 'tramo' && c.tramosAlto?.length) {
-      detalleHTML = `<div class="tramo-columnas">
-        <div>
-          <div class="tramo-col-title">VMA Alto (≥${state.vmaUmbral})</div>
-          ${c.tramosAlto.map(t=>`<div class="fs-12 text-muted">${fmt(t.desde)}${t.hasta?'–'+fmt(t.hasta):'+'} m³ → ${fmtMoney(t.bono)}</div>`).join('')}
-        </div>
-        <div>
-          <div class="tramo-col-title">VMA Bajo (&lt;${state.vmaUmbral})</div>
-          ${(c.tramosBajo||[]).map(t=>`<div class="fs-12 text-muted">${fmt(t.desde)}${t.hasta?'–'+fmt(t.hasta):'+'} m³ → ${fmtMoney(t.bono)}</div>`).join('')}
-        </div>
-      </div>`;
+  const u1 = (state.vmaUmbral  || 0.56).toFixed(2).replace('.',',');
+  const u2 = (state.vmaUmbral2 || 0.35).toFixed(2).replace('.',',');
+
+  function renderPillsTramo(tramos) {
+    if (!tramos?.length) return `<span style="font-size:11px; color:var(--gris-2); font-style:italic">—</span>`;
+    return tramos.map(t =>
+      `<div class="vma-pill">
+        <span class="vma-pill-rango">${fmt(t.desde)}${t.hasta ? ' – '+fmt(t.hasta) : '+'} m³</span>
+        <span class="vma-pill-bono">${fmtMoney(t.bono)}</span>
+      </div>`
+    ).join('');
+  }
+
+  cont.innerHTML = state.cargos.map((c, i) => {
+    const baseBadge = c.baseProd === 'torre'
+      ? `<span class="vma-base-badge vma-base-torre">🪵 Torre</span>`
+      : `<span class="vma-base-badge vma-base-faena">🌲 Faena</span>`;
+
+    let body = '';
+    if (c.tipo === 'tramo') {
+      body = `
+        <div class="vma-3col">
+          <div class="vma-col vma-col-bajo">
+            <div class="vma-col-hdr">🌳 Tramo 3 — Menor que ${u2}</div>
+            <div class="vma-pills">${renderPillsTramo(c.tramosBajo)}</div>
+          </div>
+          <div class="vma-col vma-col-medio">
+            <div class="vma-col-hdr">🌿 Tramo 2 — Entre ${u2} y ${u1}</div>
+            <div class="vma-pills">${renderPillsTramo(c.tramosMedio)}</div>
+          </div>
+          <div class="vma-col vma-col-alto">
+            <div class="vma-col-hdr">🌲 Tramo 1 — Mayor o igual a ${u1}</div>
+            <div class="vma-pills">${renderPillsTramo(c.tramosAlto)}</div>
+          </div>
+        </div>`;
     } else if (c.tipo === 'trato') {
-      detalleHTML = `<div class="fs-12 text-muted">$${c.tratoValor}/m³ trato · $${c.tratoDesgaste}/m³ desgaste · ÷${c.tratoEquipos} equipos</div>`;
+      body = `<div class="fs-12 text-muted" style="padding:8px 0">$${c.tratoValor}/m³ trato · $${c.tratoDesgaste}/m³ desgaste · ÷${c.tratoEquipos} equipos</div>`;
     }
 
     const bonosFijosHTML = (c.bonosFijos||[]).length
-      ? `<div class="fs-12 text-muted mt-12">Fijos: ${c.bonosFijos.map(b=>`${b.nombre} ${fmtMoney(b.monto)}`).join(' | ')}</div>`
+      ? `<div class="fs-12 text-muted" style="padding:6px 0 0; border-top:1px solid var(--gris-1); margin-top:8px">Fijos: ${c.bonosFijos.map(b=>`${b.nombre} ${fmtMoney(b.monto)}`).join(' · ')}</div>`
       : '';
 
-    return `<div class="tramo-card">
-      <div class="tramo-card-header">
-        <span class="tramo-card-title">${c.nombre}</span>
-        <div style="display:flex;gap:6px;align-items:center">
-          ${tipoBadge}
+    return `<div class="vma-cargo-card">
+      <div class="vma-cargo-hdr">
+        <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap">
+          <span class="vma-cargo-nombre">${c.nombre}</span>
+          ${baseBadge}
+        </div>
+        <div style="display:flex; gap:5px; align-items:center">
           <button class="btn btn-secondary btn-sm btn-icon" onclick="abrirModalCargo(${i})">✏️</button>
           <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarCargo(${i})">🗑</button>
         </div>
       </div>
-      ${detalleHTML}
+      ${body}
       ${bonosFijosHTML}
     </div>`;
   }).join('');
@@ -2024,8 +2130,9 @@ function abrirModalCargo(idx) {
   document.getElementById('trato-equipos').value = c?.tratoEquipos ?? 2;
 
   // Tramos
-  renderTramos('alto', c?.tramosAlto ?? []);
-  renderTramos('bajo', c?.tramosBajo ?? []);
+  renderTramos('alto',  c?.tramosAlto  ?? []);
+  renderTramos('medio', c?.tramosMedio ?? []);
+  renderTramos('bajo',  c?.tramosBajo  ?? []);
 
   // Bonos fijos
   renderBonosFijos(c?.bonosFijos ?? []);
@@ -2120,7 +2227,7 @@ function leerBonosFijos() {
   })).filter(b => b.nombre);
 }
 
-function guardarCargo() {
+async function guardarCargo() {
   const nombre = document.getElementById('cargo-nombre').value.trim();
   if (!nombre) { toast('Ingresa un nombre de cargo','error'); return; }
   const tipo = document.getElementById('cargo-tipo').value;
@@ -2129,8 +2236,9 @@ function guardarCargo() {
     nombre,
     tipo,
     baseProd: document.getElementById('cargo-base-prod').value,
-    tramosAlto: leerTramos('alto'),
-    tramosBajo: leerTramos('bajo'),
+    tramosAlto:  leerTramos('alto'),
+    tramosMedio: leerTramos('medio'),
+    tramosBajo:  leerTramos('bajo'),
     tratoValor:    parseFloat(document.getElementById('trato-valor').value) || 0,
     tratoDesgaste: parseFloat(document.getElementById('trato-desgaste').value) || 0,
     tratoEquipos:  parseFloat(document.getElementById('trato-equipos').value) || 2,
@@ -2142,9 +2250,23 @@ function guardarCargo() {
   } else {
     state.cargos.push(cargo);
   }
-  renderListaCargos();
-  cerrarModalCargo();
-  toast('Cargo guardado (no olvides guardar configuración)');
+
+  // Leer umbrales del modal y persistir todo en Firestore
+  state.vmaUmbral  = parseFloat(document.getElementById('cfg-vma-umbral').value)  || 0.56;
+  state.vmaUmbral2 = parseFloat(document.getElementById('cfg-vma-umbral2').value) || 0.35;
+  try {
+    await db.collection('config_cierre_mes').doc('parametros').set({
+      vmaUmbral:  state.vmaUmbral,
+      vmaUmbral2: state.vmaUmbral2,
+      cargos:     state.cargos,
+      updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    renderListaCargos();
+    cerrarModalCargo();
+    toast('Configuración guardada ✓', 'success');
+  } catch (e) {
+    toast('Error al guardar: ' + e.message, 'error');
+  }
 }
 
 function eliminarCargo(idx) {
@@ -2364,9 +2486,13 @@ function _buildFila(t, dot, prodTotal, prodTorre, overrideLinea) {
 function calcularBonos(cargo, prodTotal, prodTorre, vma) {
   if (!cargo) return { bonoProduccion: 0, bonosFijosCalc: [], totalBono: 0 };
 
-  // Usar modoVma del estado; 'pendiente' se trata como 'alto' hasta confirmar
-  const esAltoVma = state.modoVma === 'alto' || state.modoVma === 'pendiente';
-  const tramos    = esAltoVma ? (cargo.tramosAlto || []) : (cargo.tramosBajo || []);
+  // Usar modoVma del estado: 'alto' | 'medio' | 'bajo'
+  const modo = state.modoVma;
+  const tramos = modo === 'medio'
+    ? (cargo.tramosMedio || cargo.tramosAlto || [])
+    : modo === 'bajo'
+      ? (cargo.tramosBajo || [])
+      : (cargo.tramosAlto || []);
   const prod      = cargo.baseProd === 'torre' ? prodTorre : prodTotal;
 
   let bonoProduccion = 0;
@@ -2405,10 +2531,12 @@ function calcularBonos(cargo, prodTotal, prodTorre, vma) {
 // ── META REFERENCIAL SEGÚN MODO VMA ──────────────────────────
 // Usa el tramo más alto de faena (Supervisor) como referencia de meta máxima
 function metaReferencialPorModo() {
-  const esAlto = state.modoVma === 'alto' || state.modoVma === 'pendiente';
-  // El umbral más bajo del último tramo de la mayoría de cargos faena en VMA alto es 14.500
-  // En VMA bajo es 12.001. Usamos esos como "meta para bono máximo"
-  return esAlto ? 14500 : 12001;
+  // Umbral más bajo del último tramo (bono máximo) según modo VMA
+  // Alto (≥0,56): faena 14.500 | Medio (0,35-0,55): faena 13.001 | Bajo (<0,35): faena 10.995
+  const modo = state.modoVma;
+  if (modo === 'medio') return 13001;
+  if (modo === 'bajo')  return 10995;
+  return 14500; // 'alto'
 }
 
 // ── RENDER RESUMEN ────────────────────────────────────────────
@@ -2424,10 +2552,11 @@ function renderResumen(mes, anio, linea, prodTotal, prodTorre, fundo, vma) {
     ? `VMA catastro: ${vma} m³/árbol`
     : '⚠️ Sin fundo activo en config_fundos';
 
-  const esAlto = state.modoVma === 'alto' || state.modoVma === 'pendiente';
-  const modoLabel = state.modoVma === 'pendiente'
-    ? 'por confirmar'
-    : (esAlto ? '≥ 0,56' : '< 0,56');
+  const modoLabel = state.modoVma === 'alto'
+    ? 'Mayor o igual a 0,56'
+    : state.modoVma === 'medio'
+    ? 'Entre 0,35 y 0,55'
+    : 'Menor que 0,35';
   const metaRef = metaReferencialPorModo();
   document.getElementById('stat-meta').textContent = fmtM3(metaRef);
   document.getElementById('stat-vma').textContent = modoLabel;
@@ -2527,26 +2656,31 @@ function recalcularDesdeEquipos() {
   const p = state.produccionMes;
   if (!p) return;
 
-  // Recalcular prod torre según equipos ALPINE seleccionados
   let prodTorreSel = 0;
-  // Si hay datos en cartolas guardados, usarlos; si no, estimación proporcional
+  let prodTotalSel = 0;
+
   if (state.cartolasRaw?.length) {
+    // Sumar producción solo de equipos seleccionados, desde cartolas
     state.cartolasRaw.forEach(c => {
+      if (!state.equiposSeleccionados.includes(c.equipo)) return;
       const esAlpine = (c.equipo||'').toUpperCase().includes('ALPINE')
                     || (c.volteo||'').toUpperCase().includes('ALPINE');
-      if (esAlpine && state.equiposSeleccionados.includes(c.equipo)) {
-        prodTorreSel += c.total || 0;
-      }
+      const vol = c.total || 0;
+      prodTotalSel += vol;
+      if (esAlpine) prodTorreSel += vol;
     });
   } else {
+    // Sin cartolas — usar totales originales
+    prodTotalSel = p.total;
     prodTorreSel = p.torre;
   }
 
   state.produccionMes.torreSeleccionada = prodTorreSel;
+  state.produccionMes.totalSeleccionado  = prodTotalSel;
 
   // Reconstruir filas con nueva producción
-  state.filasCierre = construirFilasCierre(state.trabajadores, p.total, prodTorreSel, 0);
-  renderSecciones(0, p.total, prodTorreSel);
+  state.filasCierre = construirFilasCierre(state.trabajadores, prodTotalSel, prodTorreSel, 0);
+  renderSecciones(0, prodTotalSel, prodTorreSel);
 }
 
 // ── RENDER SECCIONES ──────────────────────────────────────────
@@ -2579,11 +2713,11 @@ function renderSecciones(vma, prodTotal, prodTorre) {
 
   // Definir qué secciones usan prod torre vs faena
   const SEC_TORRE = new Set(['TORRE']); // Torre Alpine usa prodTorre
-  const modoLabel = state.modoVma === 'pendiente'
-    ? '⏳ VMA por confirmar (usando ≥0,56)'
-    : state.modoVma === 'alto'
-    ? '🌲 VMA ≥ 0,56 m³/árbol'
-    : '🌳 VMA < 0,56 m³/árbol';
+  const modoLabel = state.modoVma === 'alto'
+    ? '🌲 VMA Tramo 1 — mayor o igual a 0,56 m³/árbol'
+    : state.modoVma === 'medio'
+    ? '🌿 VMA Tramo 2 — entre 0,35 y 0,55 m³/árbol'
+    : '🌳 VMA Tramo 3 — menor que 0,35 m³/árbol';
 
   // Banner modo VMA activo
   const metaRef = metaReferencialPorModo();
