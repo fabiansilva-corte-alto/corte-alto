@@ -475,7 +475,7 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
         <table class="tabla-rank" id="tabla-ranking">
           <thead>
             <tr>
-              <th>#</th><th>Tipo</th><th>Conductor(es)</th>
+              <th>#</th><th>Conductor</th><th>Móvil(es)</th>
               <th class="r">N° Excesos</th>
               <th class="r">Vel. Máx.</th>
               <th></th>
@@ -532,7 +532,7 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
       <div style="overflow-x:auto;">
         <table class="tabla-rank" id="tabla-ranking-geo">
           <thead><tr>
-            <th>#</th><th>Tipo</th><th>Conductor(es)</th>
+            <th>#</th><th>Conductor</th><th>Móvil(es)</th>
             <th class="r">N° Eventos</th><th class="r">Vel. Máx.</th><th></th>
           </tr></thead>
           <tbody id="tbody-ranking-geo"></tbody>
@@ -1086,116 +1086,114 @@ function cambiarGrafico(btn) {
   renderGrafico();
 }
 
-/* ─── RANKING ─── */
+/* ─── RANKING POR CONDUCTOR ─── */
 function renderRanking() {
+  // Agrupar eventos de velocidad por conductor usando resolverConductor
+  const porCond = {};
   const porMovil = agruparPorMovil();
-  // Excluir máquinas del ranking de velocidad
-  const sorted = Object.values(porMovil).filter(m => m.tipo !== 'Máquina').sort((a,b) => b.excRuta - a.excRuta);
 
+  Object.values(porMovil).forEach(m => {
+    if (m.tipo === 'Máquina') return;
+    const evs = m.eventosVel || [];
+    evs.forEach(e => {
+      const fechaISO = (e.fecha||'').split('-').reverse().join('-');
+      const cond = resolverConductor(m.patente, fechaISO, e.horaIni, e.conductor||'');
+      const key = cond || 'Sin registro';
+      if (!porCond[key]) porCond[key] = { nombre: key, excRuta: 0, velMax: 0, moviles: new Set(), eventos: [] };
+      porCond[key].excRuta++;
+      porCond[key].moviles.add(m.patente);
+      const vel = Number(e.velMax)||0;
+      if (vel > porCond[key].velMax) porCond[key].velMax = vel;
+      porCond[key].eventos.push({ ...e, patente: m.patente, tipo: m.tipo, fechaISO });
+    });
+  });
+
+  const sorted = Object.values(porCond).sort((a,b) => b.excRuta - a.excRuta);
   const tbody = document.getElementById('tbody-ranking');
   tbody.innerHTML = '';
 
-  sorted.forEach((m, i) => {
-    const conductores = [...m.conductores].join(', ') || '—';
-    const n = m.excRuta;
+  sorted.forEach((c, i) => {
+    const n = c.excRuta;
     const clsN = n > 20 ? 'exc-alto' : n > 5 ? 'exc-medio' : n > 0 ? 'exc-bajo' : 'exc-ok';
-    const evs  = m.eventosVel || [];
-    const velMax = evs.length > 0
-      ? Math.max(...evs.map(e => Number(e.velMax)||0))
-      : (m.velMaxRuta || 0);
-    const clsVel = velMax > 140 ? 'exc-alto' : velMax > 100 ? 'exc-medio' : velMax > 0 ? 'exc-bajo' : 'exc-ok';
-    const tieneDetalle = evs.length > 0;
+    const clsVel = c.velMax > 140 ? 'exc-alto' : c.velMax > 100 ? 'exc-medio' : c.velMax > 0 ? 'exc-bajo' : 'exc-ok';
+    const movilesStr = [...c.moviles].sort().join(', ');
 
-    // ── Fila resumen ──
     const tr = document.createElement('tr');
     tr.className = 'fila-rank';
-    tr.dataset.pat = m.patente;
     tr.innerHTML = `
       <td><span class="num-rank ${i < 3 && n > 0 ? 'top' : ''}">${i+1}</span></td>
-      <td>${badgeTipo(m.tipo)}</td>
-      <td style="font-size:11px;color:var(--ts);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${conductores}">${conductores}</td>
+      <td style="font-weight:600;font-size:12px;">${escH(c.nombre)}</td>
+      <td style="font-size:11px;color:var(--ts);">${escH(movilesStr)}</td>
       <td class="r"><span class="${clsN}">${n > 0 ? n : '—'}</span></td>
-      <td class="r"><span class="${clsVel}">${velMax > 0 ? velMax+' km/h' : '—'}</span></td>
-      <td style="color:var(--ts);font-size:11px;">${tieneDetalle ? '▾ ver detalle' : ''}</td>`;
+      <td class="r"><span class="${clsVel}">${c.velMax > 0 ? c.velMax+' km/h' : '—'}</span></td>
+      <td style="color:var(--ts);font-size:11px;">${c.eventos.length > 0 ? '▾ ver detalle' : ''}</td>`;
     tbody.appendChild(tr);
 
-    // ── Fila detalle (oculta por defecto) ──
+    // ── Fila detalle ──
     const trDet = document.createElement('tr');
     trDet.className = 'fila-detalle';
     trDet.style.display = 'none';
-    trDet.dataset.pat = m.patente;
 
-    if (tieneDetalle) {
-      // Ordenar eventos por fecha y hora
-      const evsOrd = [...evs].sort((a,b) => {
-        const fa = (a.fecha||'').split('-').reverse().join('') + (a.horaIni||'');
-        const fb = (b.fecha||'').split('-').reverse().join('') + (b.horaIni||'');
-        return fa.localeCompare(fb);
+    if (c.eventos.length > 0) {
+      // Agrupar eventos por patente para mostrar secciones por móvil
+      const porPat = {};
+      c.eventos.forEach(e => {
+        if (!porPat[e.patente]) porPat[e.patente] = { tipo: e.tipo, eventos: [] };
+        porPat[e.patente].eventos.push(e);
       });
 
-      const limVel = limiteFlota(m.tipo);
-      const filas = evsOrd.map(e => {
-        const vel = Number(e.velMax)||0;
-        const cv  = vel > 140 ? 'exc-alto' : vel > 100 ? 'exc-medio' : 'exc-bajo';
-        const ubic = (e.ubicacion||'—').length > 50
-          ? (e.ubicacion||'').slice(0,48)+'…' : (e.ubicacion||'—');
-        return `<tr>
-          <td>${e.fecha||'—'}</td>
-          <td>${e.horaIni||'—'}</td>
-          <td>${escH(resolverConductor(m.patente, (e.fecha||'').split('-').reverse().join('-'), e.horaIni, e.conductor||''))}</td>
-          <td class="r" style="color:var(--ts);">${limVel} km/h</td>
-          <td class="r"><span class="${cv}">${vel > 0 ? vel+' km/h' : '—'}</span></td>
-          <td class="c">${e.duracion||'—'}</td>
-          <td style="color:var(--ts);" title="${escH(e.ubicacion||'')}">${escH(ubic)}</td>
-        </tr>`;
-      }).join('');
-
-      const patSnap = m.patente;
-      const tipoSnap = m.tipo;
-      const evsSnap = JSON.stringify(evsOrd).replace(/'/g,"\'");
-
-      trDet.innerHTML = `<td colspan="7">
-        <div class="detalle-inner">
-          <div class="det-acciones">
-            <button class="btn-exp pdf" onclick='exportarPDF("${m.patente}","${m.tipo}",${JSON.stringify(evsOrd)})'>
-              📄 PDF
-            </button>
-            <button class="btn-exp xls" onclick='exportarExcel("${m.patente}","${m.tipo}",${JSON.stringify(evsOrd)})'>
-              📊 Excel
-            </button>
-          </div>
-          <div class="det-titulo">📋 Detalle de excesos — ${m.patente} (${evsOrd.length} evento${evsOrd.length>1?'s':''})</div>
-          <div style="overflow-x:auto;">
+      const seccionesPat = Object.entries(porPat).map(([pat, datos]) => {
+        const evsOrd = [...datos.eventos].sort((a,b) => {
+          const fa = (a.fecha||'').split('-').reverse().join('') + (a.horaIni||'');
+          const fb = (b.fecha||'').split('-').reverse().join('') + (b.horaIni||'');
+          return fa.localeCompare(fb);
+        });
+        const limVel = limiteFlota(datos.tipo);
+        const filas = evsOrd.map(e => {
+          const vel = Number(e.velMax)||0;
+          const cv = vel > 140 ? 'exc-alto' : vel > 100 ? 'exc-medio' : 'exc-bajo';
+          const ubic = (e.ubicacion||'—').length > 50 ? (e.ubicacion||'').slice(0,48)+'…' : (e.ubicacion||'—');
+          return `<tr>
+            <td>${e.fecha||'—'}</td>
+            <td>${e.horaIni||'—'}</td>
+            <td class="r" style="color:var(--ts);">${limVel} km/h</td>
+            <td class="r"><span class="${cv}">${vel > 0 ? vel+' km/h' : '—'}</span></td>
+            <td class="c">${e.duracion||'—'}</td>
+            <td style="color:var(--ts);" title="${escH(e.ubicacion||'')}">${escH(ubic)}</td>
+          </tr>`;
+        }).join('');
+        return `
+          <div style="margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;color:var(--vd);margin-bottom:6px;">
+              ${badgeTipo(datos.tipo)} ${escH(pat)} — ${evsOrd.length} exceso${evsOrd.length>1?'s':''}
+            </div>
             <table class="tabla-detalle-vel">
               <thead><tr>
-                <th>Fecha</th><th>Hora</th><th>Conductor</th>
+                <th>Fecha</th><th>Hora</th>
                 <th class="r">Límite</th><th class="r">Vel. evento</th>
                 <th class="c">Duración</th><th>Ubicación</th>
               </tr></thead>
               <tbody>${filas}</tbody>
             </table>
-          </div>
+          </div>`;
+      }).join('');
+
+      trDet.innerHTML = `<td colspan="6">
+        <div class="detalle-inner">
+          <div class="det-titulo">📋 Detalle de excesos — ${escH(c.nombre)} (${c.eventos.length} evento${c.eventos.length>1?'s':''})</div>
+          <div style="overflow-x:auto;">${seccionesPat}</div>
         </div>
       </td>`;
     } else {
-      trDet.innerHTML = `<td colspan="7">
-        <div class="detalle-inner" style="color:var(--ts);font-size:11px;">
-          Sin detalle de eventos — datos del período anterior al nuevo formato.
-        </div>
-      </td>`;
+      trDet.innerHTML = `<td colspan="6"><div class="detalle-inner" style="color:var(--ts);font-size:11px;">Sin detalle disponible.</div></td>`;
     }
     tbody.appendChild(trDet);
 
-    // Toggle al pinchar la fila resumen
     tr.addEventListener('click', () => {
       const abierto = trDet.style.display !== 'none';
-      // Cerrar todos los demás
       tbody.querySelectorAll('.fila-detalle').forEach(r => r.style.display = 'none');
       tbody.querySelectorAll('.fila-rank').forEach(r => r.classList.remove('expandida'));
-      if (!abierto) {
-        trDet.style.display = '';
-        tr.classList.add('expandida');
-      }
+      if (!abierto) { trDet.style.display = ''; tr.classList.add('expandida'); }
     });
   });
 }
@@ -1848,92 +1846,94 @@ function renderDetalleGeo() {
   tbody.innerHTML = '';
 
   if (eventosGeoCache.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--ts);">
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ts);">
       Sin datos de geocerca en este período.</td></tr>`;
     return;
   }
 
-  // Agrupar por patente
-  const porPat = {};
+  // Agrupar por conductor
+  const porCond = {};
   eventosGeoCache.forEach(ev => {
     const p = ev.patente;
     if (!p) return;
-    if (flotaDe(p) === 'Máquina') return; // excluir máquinas de geocerca
-    if (!porPat[p]) porPat[p] = { patente:p, tipo:flotaDe(p), conductores:new Set(), eventos:[] };
-    porPat[p].eventos.push(ev);
-    const condGeo = resolverConductor(p, ev.fecha||'', ev.hora||'', ev.conductor||'');
-    if (condGeo && condGeo !== 'Sin registro') porPat[p].conductores.add(normNombre(condGeo));
+    if (flotaDe(p) === 'Máquina') return;
+    const cond = resolverConductor(p, ev.fecha||'', ev.hora||'', ev.conductor||'');
+    const key = (cond && cond !== 'Sin registro') ? cond : 'Sin registro';
+    if (!porCond[key]) porCond[key] = { nombre: key, velMax: 0, moviles: new Set(), eventos: [] };
+    porCond[key].moviles.add(p);
+    porCond[key].eventos.push({ ...ev, patente: p, tipo: flotaDe(p) });
+    const vel = Number(ev.velEvento)||0;
+    if (vel > porCond[key].velMax) porCond[key].velMax = vel;
   });
 
-  const sorted = Object.values(porPat).sort((a,b) => b.eventos.length - a.eventos.length);
+  const sorted = Object.values(porCond).sort((a,b) => b.eventos.length - a.eventos.length);
 
-  sorted.forEach((m, i) => {
-    const conductores = [...m.conductores].join(', ') || '—';
-    const n = m.eventos.length;
+  sorted.forEach((c, i) => {
+    const n = c.eventos.length;
     const clsN = n > 20 ? 'exc-alto' : n > 5 ? 'exc-medio' : n > 0 ? 'exc-bajo' : 'exc-ok';
-    const velMax = Math.max(...m.eventos.map(e => Number(e.velEvento)||0));
-    const clsVel = velMax > 80 ? 'exc-alto' : velMax > 50 ? 'exc-medio' : velMax > 0 ? 'exc-bajo' : 'exc-ok';
+    const clsVel = c.velMax > 80 ? 'exc-alto' : c.velMax > 50 ? 'exc-medio' : c.velMax > 0 ? 'exc-bajo' : 'exc-ok';
+    const movilesStr = [...c.moviles].sort().join(', ');
 
-    // ── Fila resumen ──
     const tr = document.createElement('tr');
     tr.className = 'fila-rank';
-    tr.dataset.pat = m.patente;
     tr.innerHTML = `
       <td><span class="num-rank ${i < 3 && n > 0 ? 'top' : ''}">${i+1}</span></td>
-      <td>${badgeTipo(m.tipo)}</td>
-      <td style="font-size:11px;color:var(--ts);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${conductores}">${conductores}</td>
+      <td style="font-weight:600;font-size:12px;">${escH(c.nombre)}</td>
+      <td style="font-size:11px;color:var(--ts);">${escH(movilesStr)}</td>
       <td class="r"><span class="${clsN}">${n}</span></td>
-      <td class="r"><span class="${clsVel}">${velMax > 0 ? velMax+' km/h' : '—'}</span></td>
+      <td class="r"><span class="${clsVel}">${c.velMax > 0 ? c.velMax+' km/h' : '—'}</span></td>
       <td style="color:var(--ts);font-size:11px;">▾ ver detalle</td>`;
     tbody.appendChild(tr);
 
-    // ── Fila detalle (oculta) ──
+    // ── Fila detalle ──
     const trDet = document.createElement('tr');
     trDet.className = 'fila-detalle';
     trDet.style.display = 'none';
-    trDet.dataset.pat = m.patente;
 
-    const evsOrd = [...m.eventos].sort((a,b) =>
-      (a.fecha||'').localeCompare(b.fecha||'') || (a.hora||'').localeCompare(b.hora||''));
+    // Agrupar por patente dentro del detalle
+    const porPat = {};
+    c.eventos.forEach(e => {
+      if (!porPat[e.patente]) porPat[e.patente] = { tipo: e.tipo, eventos: [] };
+      porPat[e.patente].eventos.push(e);
+    });
 
-    const filasHTML = evsOrd.map(e => {
-      const vel = Number(e.velEvento)||0;
-      const cv  = vel > 80 ? 'exc-alto' : vel > 50 ? 'exc-medio' : 'exc-bajo';
-      return `<tr>
-        <td>${fmtFecha(e.fecha)||'—'}</td>
-        <td>${e.hora||'—'}</td>
-        <td>${escH(e.conductor||'—')}</td>
-        <td style="font-size:11px;">${escH(e.geocerca||'—')}</td>
-        <td class="r" style="color:var(--ts);">${e.velLimite > 0 ? limiteVisual(e.velLimite)+' km/h' : '—'}</td>
-        <td class="r"><span class="${cv}">${vel > 0 ? vel+' km/h' : '—'}</span></td>
-      </tr>`;
-    }).join('');
-
-    trDet.innerHTML = `<td colspan="7">
-      <div class="detalle-inner">
-        <div class="det-acciones">
-          <button class="btn-exp pdf" onclick='exportarPDFGeo("${m.patente}","${m.tipo}",${JSON.stringify(evsOrd)})'>
-            📄 PDF
-          </button>
-          <button class="btn-exp xls" onclick='exportarExcelGeo("${m.patente}","${m.tipo}",${JSON.stringify(evsOrd)})'>
-            📊 Excel
-          </button>
-        </div>
-        <div class="det-titulo">📍 Detalle geocerca — ${m.patente} (${evsOrd.length} evento${evsOrd.length>1?'s':''})</div>
-        <div style="overflow-x:auto;">
+    const seccionesPat = Object.entries(porPat).map(([pat, datos]) => {
+      const evsOrd = [...datos.eventos].sort((a,b) =>
+        (a.fecha||'').localeCompare(b.fecha||'') || (a.hora||'').localeCompare(b.hora||''));
+      const filasHTML = evsOrd.map(e => {
+        const vel = Number(e.velEvento)||0;
+        const cv = vel > 80 ? 'exc-alto' : vel > 50 ? 'exc-medio' : 'exc-bajo';
+        return `<tr>
+          <td>${fmtFecha(e.fecha)||'—'}</td>
+          <td>${e.hora||'—'}</td>
+          <td style="font-size:11px;">${escH(e.geocerca||'—')}</td>
+          <td class="r" style="color:var(--ts);">${e.velLimite > 0 ? limiteVisual(e.velLimite)+' km/h' : '—'}</td>
+          <td class="r"><span class="${cv}">${vel > 0 ? vel+' km/h' : '—'}</span></td>
+        </tr>`;
+      }).join('');
+      return `
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;color:var(--vd);margin-bottom:6px;">
+            ${badgeTipo(datos.tipo)} ${escH(pat)} — ${evsOrd.length} evento${evsOrd.length>1?'s':''}
+          </div>
           <table class="tabla-detalle-vel">
             <thead><tr>
-              <th>Fecha</th><th>Hora</th><th>Conductor</th><th>Geocerca</th>
+              <th>Fecha</th><th>Hora</th><th>Geocerca</th>
               <th class="r">Límite</th><th class="r">Vel. evento</th>
             </tr></thead>
             <tbody>${filasHTML}</tbody>
           </table>
-        </div>
+        </div>`;
+    }).join('');
+
+    trDet.innerHTML = `<td colspan="6">
+      <div class="detalle-inner">
+        <div class="det-titulo">📍 Detalle geocerca — ${escH(c.nombre)} (${c.eventos.length} evento${c.eventos.length>1?'s':''})</div>
+        <div style="overflow-x:auto;">${seccionesPat}</div>
       </div>
     </td>`;
     tbody.appendChild(trDet);
 
-    // Toggle
     tr.addEventListener('click', () => {
       const abierto = trDet.style.display !== 'none';
       tbody.querySelectorAll('.fila-detalle').forEach(r => r.style.display = 'none');
