@@ -462,13 +462,11 @@ main{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:col
     </div>
   </div>
 
-  <!-- TABS: RANKING / POR MÓVIL / POR CONDUCTOR -->
+  <!-- TABS: RANKING / GEOCERCA -->
   <div class="card" id="sec-tabs" style="display:none;">
     <div class="tabs">
-      <button class="tab-btn on" onclick="cambiarTab(this,'tab-ranking')">🏆 Vel. en ruta</button>
-      <button class="tab-btn" onclick="cambiarTab(this,'tab-movil')">🚙 Por móvil</button>
-      <button class="tab-btn" onclick="cambiarTab(this,'tab-conductor')">👤 Por conductor</button>
-      <button class="tab-btn" onclick="cambiarTab(this,'tab-geocerca')">📍 Detalle geocerca</button>
+      <button class="tab-btn on" onclick="cambiarTab(this,'tab-ranking')">🏆 Ranking exceso velocidad en ruta</button>
+      <button class="tab-btn" onclick="cambiarTab(this,'tab-geocerca')">📍 Ranking exceso en geocercas</button>
     </div>
 
     <!-- TAB: RANKING -->
@@ -1144,7 +1142,7 @@ function renderRanking() {
         return `<tr>
           <td>${e.fecha||'—'}</td>
           <td>${e.horaIni||'—'}</td>
-          <td>${escH(e.conductor||'—')}</td>
+          <td>${escH(resolverConductor(m.patente, (e.fecha||'').split('-').reverse().join('-'), e.horaIni, e.conductor||''))}</td>
           <td class="r" style="color:var(--ts);">${limVel} km/h</td>
           <td class="r"><span class="${cv}">${vel > 0 ? vel+' km/h' : '—'}</span></td>
           <td class="c">${e.duracion||'—'}</td>
