@@ -1018,8 +1018,13 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
   let filas='',tipoActual='';
 
   // Helper: dot+patente clickeable para ciclar estado
-  function patEstadoHtml(pat,estado){
+  function patEstadoHtml(pat,estado,bloqueado=false){
     const dotCls=`dot-${estado}`;
+    if(bloqueado){
+      return`<span class="pat-estado" title="Usa el botón ✏️ para cambiar estado">
+        <span class="dot-estado ${dotCls}"></span><strong>${pat}</strong>
+      </span>`;
+    }
     return`<span class="pat-estado" onclick="ciclarEstado('${pat}')" title="Clic para cambiar estado">
       <span class="dot-estado ${dotCls}"></span><strong>${pat}</strong>
     </span>`;
@@ -1038,24 +1043,35 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
       filas+=`<tr class="fila-seccion"><td colspan="8">${ico} Flota ${tipo}</td></tr>`;
     }
 
-    // ── Sin uso / En panne: fila coloreada sin inputs ──
-    if(estado==='sinuso'||estado==='panne'){
-      const clsFila=estado==='sinuso'?'fila-sinuso':'fila-panne';
-      const badge=estado==='sinuso'
+    // ── Leer registros siempre primero ──
+    const regs=porPat[pat]||[];
+    const ultimo=regs.length>0?regs[regs.length-1]:null;
+    // Estado efectivo: si hay registro guardado, usar el del registro; si no, el de config_flota_gps
+    const estadoEfectivo=ultimo?.estado||estado;
+
+    // ── Sin uso / En panne: fila coloreada ──
+    if(estadoEfectivo==='sinuso'||estadoEfectivo==='panne'){
+      const clsFila=estadoEfectivo==='sinuso'?'fila-sinuso':'fila-panne';
+      const badge=estadoEfectivo==='sinuso'
         ?`<span class="badge-estado badge-sinuso">🟠 Sin uso</span>`
         :`<span class="badge-estado badge-panne">🔴 En panne</span>`;
+      // Si tiene registro guardado → mostrar botón ✏️ para poder cambiar estado
+      const editBtn=ultimo
+        ?`<button class="btn-accion btn-edit" onclick="abrirEditModal('${ultimo.id}','${fecha}','${escH(ultimo.conductor||'')}','${ultimo.horaIni||''}','${ultimo.horaFin||''}','${escH(ultimo.comentario||'')}','${pat}','${estadoEfectivo}')">✏️</button>
+           <button class="btn-accion btn-del" onclick="eliminarRegistro('${ultimo.id}','${fecha}')">🗑</button>`
+        :'';
+      const hint=ultimo
+        ?``
+        :`<span style="font-size:11px;color:var(--ts);">— Clic en patente para cambiar estado</span>`;
       filas+=`<tr class="${clsFila}" id="fila-inp-${pat}">
         <td>${badgeTipo(tipo)}</td>
-        <td>${patEstadoHtml(pat,estado)}</td>
+        <td>${patEstadoHtml(pat,estadoEfectivo,!!ultimo)}</td>
         <td style="font-size:11px;">${modelo}</td>
-        <td colspan="5">${badge} <span style="font-size:11px;color:var(--ts);">— Clic en patente para cambiar estado</span></td>
+        <td colspan="4">${badge} ${hint}</td>
+        <td style="white-space:nowrap;">${editBtn}</td>
       </tr>`;
       return;
     }
-
-    // ── Operativo ──
-    const regs=porPat[pat]||[];
-    const ultimo=regs.length>0?regs[regs.length-1]:null;
     const tieneAlertaGps=!ultimo&&patsGpsEnFecha.has(pat)&&!borrador[pat]?.conductor;
 
     if(ultimo){
