@@ -774,6 +774,61 @@
     .toggle-aplica.si  { background: #f0fdf4; color: #15803d; border-color: #86efac; }
     .toggle-aplica.no  { background: #f1f5f9; color: #94a3b8; border-color: #cbd5e1; text-decoration: line-through; }
 
+    /* ── Toggle pill para bonos fijos / control Mininco ── */
+    .bono-toggle {
+      display: inline-flex; align-items: center; gap: 8px;
+      cursor: pointer; user-select: none;
+      margin-bottom: 5px; padding: 6px 10px 6px 6px;
+      border-radius: 22px; border: 1.5px solid #e2e8f0;
+      background: #f8fafc; transition: background .15s, border-color .15s;
+      min-height: 36px; max-width: 220px;
+    }
+    .bono-toggle:hover { border-color: #94a3b8; background: #f1f5f9; }
+    .bono-toggle.activo  { background: #f0fdf4; border-color: #86efac; }
+    .bono-toggle.activo:hover  { background: #dcfce7; }
+    .bono-toggle.inactivo { background: #f8fafc; border-color: #e2e8f0; opacity: .72; }
+    .bono-toggle.perdido { background: #fff1f2; border-color: #fca5a5; }
+    .bono-toggle.perdido:hover { background: #fee2e2; }
+    .bono-toggle.override { background: #fff7ed; border-color: #fdba74; }
+    .bono-toggle.override:hover { background: #ffedd5; }
+    /* Pill interruptor */
+    .bono-toggle .pill-sw {
+      position: relative; width: 36px; height: 20px; flex-shrink: 0;
+      background: #cbd5e1; border-radius: 10px;
+      transition: background .2s;
+    }
+    .bono-toggle.activo .pill-sw  { background: #22c55e; }
+    .bono-toggle.perdido .pill-sw { background: #ef4444; }
+    .bono-toggle .pill-sw::after {
+      content:''; position:absolute; top:2px; left:2px;
+      width:16px; height:16px; border-radius:50%;
+      background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25);
+      transition: transform .2s;
+    }
+    .bono-toggle.activo .pill-sw::after  { transform: translateX(16px); }
+    .bono-toggle.perdido .pill-sw::after { transform: translateX(16px); }
+    /* Texto dentro del toggle */
+    .bono-toggle .pill-label {
+      font-size: 12.5px; line-height: 1.35; flex: 1; min-width: 0;
+    }
+    .bono-toggle .pill-label .pill-nombre {
+      font-weight: 700; display: block; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .bono-toggle .pill-label .pill-monto {
+      font-size: 11px; font-weight: 400; display: block;
+    }
+    .bono-toggle.activo  .pill-nombre { color: #15803d; }
+    .bono-toggle.activo  .pill-monto  { color: #16a34a; }
+    .bono-toggle.inactivo .pill-nombre { color: #94a3b8; text-decoration: line-through; }
+    .bono-toggle.inactivo .pill-monto  { color: #cbd5e1; }
+    .bono-toggle.perdido  .pill-nombre { color: #dc2626; }
+    .bono-toggle.perdido  .pill-monto  { color: #ef4444; }
+    .bono-toggle.override .pill-sw     { background: #f97316; }
+    .bono-toggle.override .pill-sw::after { transform: translateX(16px); }
+    .bono-toggle.override .pill-nombre { color: #c2410c; font-weight: 700; }
+    .bono-toggle.override .pill-monto  { color: #ea580c; }
+
     /* Botón excluir fila del cierre */
     .btn-excluir {
       display: inline-flex; align-items: center; justify-content: center;
@@ -3318,52 +3373,58 @@ function renderFilasSec(secKey, filas) {
     const chipControl = ic ? (() => {
       const label = _labelControl[ic.rol] || '📋 Control Mininco';
       if (ic.esDefault) {
-        // Sin controles en el mes → bono por defecto contractual
-        return `<label style="display:flex;align-items:center;gap:4px;margin-bottom:3px;cursor:pointer;"
+        const estaActivo = f.bonoControlMininco > 0;
+        return `<div class="bono-toggle ${estaActivo?'activo':'inactivo'}" onclick="toggleBonoControl(${f._idx})"
            title="Sin controles este mes — bono vigente por defecto (contrato)">
-           <input type="checkbox" checked
-             onchange="toggleBonoControl(${f._idx},this.checked)" />
-           <span style="font-size:11px;color:#6b7280;">
-             🕐 ${label} — sin control este mes ($${fmtMiles(f.bonoControlMininco)})
+           <span class="pill-sw"></span>
+           <span class="pill-label">
+             <span class="pill-nombre">🕐 ${label}</span>
+             <span class="pill-monto">sin control · $${fmtMiles(f.bonoControlMininco)}</span>
            </span>
-         </label>`;
+         </div>`;
       } else if (ic.gana) {
-        // Ganó bono con nota real
-        return `<label style="display:flex;align-items:center;gap:4px;margin-bottom:3px;cursor:pointer;"
+        const estaActivo = f.bonoControlMininco > 0;
+        return `<div class="bono-toggle ${estaActivo?'activo':'inactivo'}" onclick="toggleBonoControl(${f._idx})"
            title="Control Mininco: nota promedio ${ic.prom} (${ic.n} control${ic.n>1?'es':''})">
-           <input type="checkbox" checked
-             onchange="toggleBonoControl(${f._idx},this.checked)" />
-           <span style="font-size:11px;color:#15803d;font-weight:700;">
-             ${label} — nota ${ic.prom} ✓ ($${fmtMiles(f.bonoControlMininco)})
+           <span class="pill-sw"></span>
+           <span class="pill-label">
+             <span class="pill-nombre">${label}</span>
+             <span class="pill-monto">nota ${ic.prom} ✓ · $${fmtMiles(f.bonoControlMininco)}</span>
            </span>
-         </label>`;
+         </div>`;
       } else {
-        // Perdió bono
-        return `<label style="display:flex;align-items:center;gap:4px;margin-bottom:3px;cursor:pointer;"
-           title="Control Mininco: nota promedio ${ic.prom} (${ic.n} control${ic.n>1?'es':''}) — no califica">
-           <input type="checkbox"
-             onchange="toggleBonoControl(${f._idx},this.checked)" />
-           <span style="font-size:11px;color:#dc2626;">
-             ${label} — nota ${ic.prom} ✗ (no califica)
+        // Perdió bono — puede activarse manualmente (naranja = pagado a pesar de mala nota)
+        const overrideActivo = f.bonoControlMininco > 0;
+        return `<div class="bono-toggle ${overrideActivo?'override':'perdido'}" onclick="toggleBonoControl(${f._idx})"
+           title="${overrideActivo?'Pagado manualmente a pesar de mala nota — click para quitar':'nota '+ic.prom+' — no califica. Click para pagar igual'}">
+           <span class="pill-sw"></span>
+           <span class="pill-label">
+             <span class="pill-nombre">${label}</span>
+             <span class="pill-monto">${overrideActivo ? 'nota '+ic.prom+' ✗ · pagado igualmente · $'+fmtMiles(f.bonoControlMininco) : 'nota '+ic.prom+' ✗ · no califica'}</span>
            </span>
-         </label>`;
+         </div>`;
       }
     })() : '';
-    const bonosFijosCell = `<td style="min-width:160px;">${f.bonosFijosCalc?.length ? f.bonosFijosCalc.map(b => {
-          // Para no_accidentes del Supervisor: mostrar multiplicador × N
-          const esNoAcc = b.nombre === '🦺 No Accidentes';
-          return `<label style="display:flex;align-items:center;gap:4px;margin-bottom:3px;cursor:pointer">
-            <input type="checkbox" ${b.aplica?'checked':''}
-              onchange="toggleBonoFijo(${f._idx},'${b.nombre}',this.checked)" />
-            <span style="font-size:11px;${b.aplica?'':'color:#aaa;text-decoration:line-through;'}">${b.nombre} ($${fmtMiles(b.monto)})</span>
-            ${esNoAcc ? `<span style="font-size:11px;color:var(--gris-3);">×</span>
-              <input type="number" min="1" max="10" value="${f.noAccidentesX||1}"
-                title="N° de líneas sin accidente"
-                onchange="actualizarNoAccidentes(${f._idx},this.value)"
-                style="width:36px;text-align:center;font-size:12px;padding:2px 4px;" />
-              <span style="font-size:11px;color:var(--gris-3);">líneas = $${fmtMiles((b.monto||0)*(f.noAccidentesX||1))}</span>` : ''}
-          </label>`;
-        }).join('') : '<span style="font-size:11px;color:#ccc;font-style:italic;">—</span>'}${chipControl}</td>`;
+    const _pillBonoFijo = (b, idx2, noAccX) => {
+      const esNoAcc = b.nombre === '🦺 No Accidentes';
+      const cls = b.aplica ? 'activo' : 'inactivo';
+      const montoStr = b.aplica
+        ? (esNoAcc ? `$${fmtMiles(b.monto)} × ${noAccX||1} = $${fmtMiles((b.monto||0)*(noAccX||1))}` : `$${fmtMiles(b.monto)}`)
+        : 'desactivado';
+      return `<div class="bono-toggle ${cls}" onclick="toggleBonoFijo(${idx2},'${b.nombre}',${!b.aplica})">
+          <span class="pill-sw"></span>
+          <span class="pill-label">
+            <span class="pill-nombre">${b.nombre}</span>
+            <span class="pill-monto">${montoStr}${esNoAcc && b.aplica
+              ? ` &nbsp;<input type="number" min="1" max="10" value="${noAccX||1}" title="N° de líneas" onclick="event.stopPropagation()" onchange="event.stopPropagation();actualizarNoAccidentes(${idx2},this.value)" style="width:28px;text-align:center;font-size:11px;padding:1px 2px;border:1px solid #86efac;border-radius:3px;" /> líneas`
+              : ''}</span>
+          </span>
+        </div>`;
+    };
+    const bonosFijosHtml = f.bonosFijosCalc?.length
+      ? f.bonosFijosCalc.map(b => _pillBonoFijo(b, f._idx, f.noAccidentesX)).join('')
+      : (chipControl ? '' : '<span style="font-size:11px;color:#ccc;font-style:italic;">—</span>');
+    const bonosFijosCell = `<td style="min-width:190px;">${bonosFijosHtml}${chipControl}</td>`;
 
     // Selector función activa (solo si tiene 2+ funciones)
     const funcSelect = f.funciones?.length > 1
@@ -3430,16 +3491,91 @@ function actualizarBonoProduccion(idx, valor) {
   recalcularFila(idx);
 }
 
+function _rerenderOtrosBonos(idx) {
+  // Re-renderiza solo la celda de Otros Bonos del row sin reconstruir toda la tabla
+  const tr = document.querySelector(`tr[data-idx="${idx}"]`);
+  if (!tr) return;
+  const f = state.filasCierre[idx];
+  // La celda otros bonos es la 5ª td (0-indexed: nombre=0, cargo=1, prod=2, bonoProd=3, otrosBonos=4)
+  const celdas = tr.querySelectorAll('td');
+  const celda = celdas[4]; // td otros bonos
+  if (!celda) return;
+  // Reconstruir chipControl igual que en el render original
+  const ic = f.infoControlMininco;
+  const _labelControl = {
+    jefe: '📋 Pauta Supervisión', calibrador: '📋 Control Calidad',
+    trozado: '✅ Calidad (trozado)', volteo: '✅ Calidad (volteo)',
+    clasificado: '✅ Calidad (arrumado)',
+  };
+  let chipControl = '';
+  if (ic) {
+    const label = _labelControl[ic.rol] || '📋 Control Mininco';
+    if (ic.esDefault) {
+      const estaActivo = f.bonoControlMininco > 0;
+      chipControl = `<div class="bono-toggle ${estaActivo?'activo':'inactivo'}" onclick="toggleBonoControl(${idx})"
+         title="Sin controles este mes — bono vigente por defecto (contrato)">
+         <span class="pill-sw"></span>
+         <span class="pill-label">
+           <span class="pill-nombre">🕐 ${label}</span>
+           <span class="pill-monto">sin control · $${fmtMiles(f.bonoControlMininco)}</span>
+         </span>
+       </div>`;
+    } else if (ic.gana) {
+      const estaActivo = f.bonoControlMininco > 0;
+      chipControl = `<div class="bono-toggle ${estaActivo?'activo':'inactivo'}" onclick="toggleBonoControl(${idx})"
+         title="Control Mininco: nota promedio ${ic.prom} (${ic.n} control${ic.n>1?'es':''})">
+         <span class="pill-sw"></span>
+         <span class="pill-label">
+           <span class="pill-nombre">${label}</span>
+           <span class="pill-monto">nota ${ic.prom} ✓ · $${fmtMiles(f.bonoControlMininco)}</span>
+         </span>
+       </div>`;
+    } else {
+      const overrideActivo = f.bonoControlMininco > 0;
+      chipControl = `<div class="bono-toggle ${overrideActivo?'override':'perdido'}" onclick="toggleBonoControl(${idx})"
+         title="${overrideActivo?'Pagado manualmente a pesar de mala nota — click para quitar':'nota '+ic.prom+' — no califica. Click para pagar igual'}">
+         <span class="pill-sw"></span>
+         <span class="pill-label">
+           <span class="pill-nombre">${label}</span>
+           <span class="pill-monto">${overrideActivo ? 'nota '+ic.prom+' ✗ · pagado igualmente · $'+fmtMiles(f.bonoControlMininco) : 'nota '+ic.prom+' ✗ · no califica'}</span>
+         </span>
+       </div>`;
+    }
+  }
+  const _pillR = (b) => {
+    const esNoAcc = b.nombre === '🦺 No Accidentes';
+    const cls = b.aplica ? 'activo' : 'inactivo';
+    const montoStr = b.aplica
+      ? (esNoAcc ? `$${fmtMiles(b.monto)} × ${f.noAccidentesX||1} = $${fmtMiles((b.monto||0)*(f.noAccidentesX||1))}` : `$${fmtMiles(b.monto)}`)
+      : 'desactivado';
+    return `<div class="bono-toggle ${cls}" onclick="toggleBonoFijo(${idx},'${b.nombre}',${!b.aplica})">
+      <span class="pill-sw"></span>
+      <span class="pill-label">
+        <span class="pill-nombre">${b.nombre}</span>
+        <span class="pill-monto">${montoStr}${esNoAcc && b.aplica
+          ? ` &nbsp;<input type="number" min="1" max="10" value="${f.noAccidentesX||1}" title="N° de líneas" onclick="event.stopPropagation()" onchange="event.stopPropagation();actualizarNoAccidentes(${idx},this.value)" style="width:28px;text-align:center;font-size:11px;padding:1px 2px;border:1px solid #86efac;border-radius:3px;" /> líneas`
+          : ''}</span>
+      </span>
+    </div>`;
+  };
+  const fijosStr = f.bonosFijosCalc?.length
+    ? f.bonosFijosCalc.map(_pillR).join('')
+    : (chipControl ? '' : '<span style="font-size:11px;color:#ccc;font-style:italic;">—</span>');
+  celda.innerHTML = fijosStr + chipControl;
+}
+
 function toggleBonoFijo(idx, nombre, aplica) {
   const bf = state.filasCierre[idx].bonosFijosCalc?.find(b => b.nombre === nombre);
   if (bf) bf.aplica = aplica;
   recalcularFila(idx);
+  _rerenderOtrosBonos(idx);
 }
 
-function toggleBonoControl(idx, aplica) {
+function toggleBonoControl(idx) {
   const f = state.filasCierre[idx];
   if (!f) return;
-  // Buscar monto configurado: calidad > control (por compatibilidad)
+  // Toggle: si tiene bono → quitar; si no tiene → poner (override manual)
+  const tieneActivo = f.bonoControlMininco > 0;
   const bonosCfg = state.bonosConfig || {};
   const cfgNombre = f.cargo;
   let cfgFun = bonosCfg[cfgNombre] || {};
@@ -3458,9 +3594,10 @@ function toggleBonoControl(idx, aplica) {
     : rol === 'calibrador'
       ? (_m('calibracion_2_solitario') || _m('calidad') || _m('control'))
       : (_m('calidad') || _m('control'));
-  f.bonoControlMininco = aplica ? monto : 0;
-  if (f.infoControlMininco) f.infoControlMininco._overrideAplica = aplica;
+  f.bonoControlMininco = tieneActivo ? 0 : monto;
+  if (f.infoControlMininco) f.infoControlMininco._overrideAplica = !tieneActivo;
   recalcularFila(idx);
+  _rerenderOtrosBonos(idx);
 }
 
 function _prodTorre() {
@@ -3536,17 +3673,16 @@ function actualizarObs(idx, obs) {
     }
   }
   recalcularFila(idx);
-  // Re-render fila
+  _rerenderOtrosBonos(idx);
+  // Re-render input bono producción
   const tr = document.querySelector(`tr[data-idx="${idx}"]`);
   if (tr) {
-    const bpInput = tr.querySelector('input[type="number"]');
-    if (bpInput) bpInput.value = state.filasCierre[idx].bonoProduccion;
-    const cbs = tr.querySelectorAll('input[type="checkbox"]');
-    cbs.forEach(cb => {
-      const nombre = cb.nextElementSibling?.textContent?.split(' (')[0]?.trim();
-      const bf = state.filasCierre[idx].bonosFijosCalc?.find(b => b.nombre === nombre);
-      if (bf) cb.checked = bf.aplica;
-    });
+    const f = state.filasCierre[idx];
+    const bpInput = tr.querySelector('input[type="text"][data-raw]');
+    if (bpInput) {
+      bpInput.dataset.raw = f.bonoProduccion ?? 0;
+      bpInput.value = '$' + Math.round(f.bonoProduccion || 0).toLocaleString('es-CL');
+    }
   }
 }
 
