@@ -897,6 +897,7 @@ window.agregarEquipo = function (datos) {
     preInstalado: datos?.preInstalado || "",
     cuerdaTirada: datos?.cuerdaTirada || "",
     cumplePerfil: datos?.cumplePerfil || "",
+    motivoModificacion: datos?.motivoModificacion || "",
     reportaOEE: datos?.reportaOEE ?? "",
     shoveleo: datos?.shoveleo || "",
     arbolesShoveleo: datos?.arbolesShoveleo ?? "",
@@ -1117,6 +1118,7 @@ function camposPorTipo(eq) {
         oninput="this.value=this.value.replace(/\\./g,',');setCampo('${eq.id}','horasCambioLinea',this.value,false)">
       <div class="msg-error" id="err-${eq.id}-horasCambioLinea">Ingrese las horas del cambio de línea</div>
       ${selSiNo("cumplePerfil", "¿El cambio de línea cumple con el perfil o se pidió modificación?", ["SÍ", "NO, se pide modificar perfil"])}
+      ${eq.cumplePerfil === "NO, se pide modificar perfil" ? selSiNo("motivoModificacion", "¿Cuál fue el motivo de la modificación?", ["Perfil no daba altura", "Perfil tenía soportes que no servían", "Otro problema no de perfileros"]) : ""}
       ${selSiNo("cuerdaTirada", "¿Línea tenía cuerda tirada?", ["SÍ", "NO", "INCOMPLETA"])}
       ${selSiNo("lineaSoportes", "¿La línea tenía soportes y/o árbol de cola?", ["SÍ", "NO"])}
       ${eq.lineaSoportes === "SÍ" ? selSiNo("preInstalado", "¿El o los soportes estaban pre-instalados?", ["SÍ", "NO", "INCOMPLETO"]) : ""}`;
@@ -1379,7 +1381,7 @@ function refrescarSubListas(eq) {
 }
 
 /* ---- setCampo genérico ---- */
-const CAMPOS_RERENDER = ["tipo", "equipo", "operador", "operativo", "cambioLinea", "cuerdaTirada", "cumplePerfil", "lineaSoportes", "shoveleo", "tipoCarro", "reportaOEE"];
+const CAMPOS_RERENDER = ["tipo", "equipo", "operador", "operativo", "cambioLinea", "cuerdaTirada", "cumplePerfil", "motivoModificacion", "lineaSoportes", "shoveleo", "tipoCarro", "reportaOEE"];
 window.setCampo = function (id, campo, valor, rerender = true) {
   const eq = equipos.find(e => e.id === id);
   eq[campo] = valor;
@@ -1586,6 +1588,7 @@ function validar() {
         m("horasCambioLinea", !esNum(eq.horasCambioLinea));
         m("cuerdaTirada", !eq.cuerdaTirada);
         m("cumplePerfil", !eq.cumplePerfil);
+        if (eq.cumplePerfil === "NO, se pide modificar perfil") m("motivoModificacion", !eq.motivoModificacion);
         m("lineaSoportes", !eq.lineaSoportes);
         if (eq.lineaSoportes === "SÍ") m("preInstalado", !eq.preInstalado);
       }
@@ -1731,6 +1734,7 @@ function armarDocumento() {
           base.horasCambioLinea = parseDec(eq.horasCambioLinea) || 0;
           base.cuerdaTirada = eq.cuerdaTirada;
           base.cumplePerfil = eq.cumplePerfil;
+          if (eq.cumplePerfil === "NO, se pide modificar perfil") base.motivoModificacion = eq.motivoModificacion || "";
           base.lineaSoportes = eq.lineaSoportes;
           if (eq.lineaSoportes === "SÍ") base.preInstalado = eq.preInstalado;
         }
@@ -2107,6 +2111,7 @@ window.verReporte = function (id) {
         campos.push({ l:"Hrs cambio", v:fmtComa(e.horasCambioLinea||0) });
         campos.push({ l:"Cuerda tirada", v:e.cuerdaTirada||"—" });
         campos.push({ l:"Cumple perfil", v:e.cumplePerfil||"—" });
+        if (e.cumplePerfil === "NO, se pide modificar perfil") campos.push({ l:"Motivo modificación", v:e.motivoModificacion||"—" });
         campos.push({ l:"Soportes y/o árbol cola", v:e.lineaSoportes||"—" });
         if (e.lineaSoportes === "SÍ") campos.push({ l:"Soportes pre-inst.", v:e.preInstalado||"—" });
       }
@@ -2272,6 +2277,7 @@ window.editarReporte = function (id) {
       numCancha: e.numCancha || "",
       cuerdaTirada: e.cuerdaTirada || "",
       cumplePerfil: e.cumplePerfil || "",
+      motivoModificacion: e.motivoModificacion || "",
       asistencia: e.huincheAsistencia ?? e.asistencia ?? "",
       operador: esOtroOp ? "OTRO" : (e.operador || ""),
       operadorOtro: esOtroOp ? e.operador : "",
