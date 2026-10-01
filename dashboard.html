@@ -156,6 +156,15 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
 .vol-eq-val{font-size:16px;font-weight:800;color:var(--green)}
 .vol-eq-unit{font-size:10px;color:var(--text3)}
 
+/* CHIPS FILTRO LÍNEA TABLA */
+.tabla-linea-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.tlc-btn{font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--text2);cursor:pointer;font-family:var(--font);letter-spacing:.03em;transition:all .15s}
+.tlc-btn:hover{border-color:var(--text2);color:var(--text)}
+.tlc-active{background:var(--text);color:#fff;border-color:var(--text)}
+.tlc-btn.tlc-active.tlc-t1{background:var(--blue);border-color:var(--blue);color:#fff}
+.tlc-btn.tlc-active.tlc-t2{background:var(--green);border-color:var(--green);color:#fff}
+.tlc-btn.tlc-active.tlc-t3{background:var(--amber);border-color:var(--amber);color:#fff}
+
 /* TARJETA RODALES */
 .rodal-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem;margin-bottom:.75rem}
 .rodal-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
@@ -206,11 +215,16 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
 .pie-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
 .pie-card{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;display:flex;flex-direction:column;align-items:center}
 .pie-card-title{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:.5rem;display:flex;align-items:center;justify-content:center;gap:5px;text-align:center}
-.pie-canvas-wrap{width:110px;height:110px}
+.pie-canvas-wrap{width:100px;height:100px}
 .pie-legend{display:flex;flex-direction:row;flex-wrap:wrap;gap:4px 8px;margin-top:8px;width:100%;justify-content:center}
 .pie-legend .leg-row{display:flex;align-items:center;gap:4px}
 .pie-legend .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .pie-legend .leg-name{font-size:10px;color:var(--text2);white-space:nowrap}
+
+/* UTILIZACIÓN POR LÍNEA */
+.util-lineas{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.util-col{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem .75rem;display:flex;flex-direction:column;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.util-col-header{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem;text-align:center}
 
 /* COMPARADOR RENDIMIENTO */
 .comp-table{width:100%;border-collapse:collapse;font-size:12px}
@@ -344,7 +358,18 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
 .varas-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:.75rem}
 .varas-bar-fill{height:100%;border-radius:4px;transition:width .4s}
 
-/* CAMBIO DE LÍNEA */
+/* CAMBIO DE LÍNEA — layout 3 columnas */
+.cl-lineas{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.cl-col{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem .75rem;display:flex;flex-direction:column;gap:0}
+.cl-col-header{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding-bottom:.5rem;margin-bottom:.625rem;text-align:center}
+.cl-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:.75rem}
+.cl-kpi{text-align:center;background:var(--bg);border-radius:6px;padding:5px 3px}
+.cl-kpi-val{font-size:15px;font-weight:800;line-height:1.1}
+.cl-kpi-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin-top:2px}
+.cl-cond{margin-bottom:10px}
+.cl-cond-label{font-size:11px;font-weight:600;color:var(--text);margin-bottom:5px;display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.cl-nodata{font-size:11px;color:var(--text3)}
+/* clases antiguas (por si quedan referencias en otra parte) */
 .cl-header{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem}
 .cl-stat{border-radius:var(--radius-sm);padding:.75rem;display:flex;align-items:center;gap:10px}
 .cl-stat.blue{background:var(--blue-bg);border:1px solid #C0D5F0}
@@ -356,8 +381,6 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
 .cl-label{font-size:10px;color:var(--text3);margin-top:2px}
 .cl-sub{font-size:10px;font-weight:600;color:var(--text2);margin-top:2px}
 .cl-cond-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;padding-top:10px;border-top:1px solid var(--border)}
-.cl-cond{margin-bottom:14px}
-.cl-cond-label{font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px}
 .seg-bar{height:22px;border-radius:6px;overflow:hidden;display:flex;width:100%;margin-bottom:5px}
 .seg{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;min-width:0;overflow:hidden}
 .seg span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 5px}
@@ -525,42 +548,21 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
     </div>
   </div>
 
-  <!-- ═══ BANDA EJECUTIVA ═══ -->
+  <!-- ═══ 1. BANDA EJECUTIVA ═══ -->
   <div id="exec-wrap" style="display:none">
-    <!-- Consolidado -->
     <div class="exec-band" id="exec-consolidado"></div>
-    <!-- 3 columnas líneas -->
     <div class="lineas-grid" id="exec-lineas"></div>
   </div>
 
-  <!-- ═══ BLOQUE ÚLTIMOS 3 DÍAS ═══ -->
+  <!-- ═══ 2. ÚLTIMOS 3 DÍAS ═══ -->
   <div class="section" id="seccion-ultimos3" style="display:none">
     <div class="section-title"><i class="ti ti-history"></i> Últimos 3 días — cumplimiento diario</div>
     <div id="ultimos3-wrap"></div>
   </div>
 
-  <!-- ═══ BLOQUE 2: PRODUCCIÓN ═══ -->
+  <!-- ═══ 3. GRÁFICO PRODUCCIÓN DIARIA VS. META ═══ -->
   <div class="section">
-    <div class="section-title"><i class="ti ti-stack-3"></i> Producción</div>
-
-    <!-- KPI cards eliminadas: vol/meta/cumplimiento ahora en banda ejecutiva -->
-    <div id="kpi-prod" style="display:none">
-    </div>
-
-    <!-- Tabla producción diaria por equipo/operador -->
-    <div id="vol-eq-card">
-      <div class="kpi-label" style="margin-bottom:0"><i class="ti ti-table"></i> Producción diaria por equipo y operador</div>
-      <div class="loading-block"><div class="spinner"></div></div>
-    </div>
-
-    <!-- Volumen por rodal -->
-    <div class="rodal-card" id="rodal-card">
-      <div class="kpi-label"><i class="ti ti-trees"></i> Volumen por rodal</div>
-      <div class="loading-block"><div class="spinner"></div></div>
-    </div>
-
-    <!-- Gráfico producción diaria -->
-    <div class="section-title" style="margin-top:.5rem"><i class="ti ti-chart-bar"></i> Producción diaria vs. meta</div>
+    <div class="section-title"><i class="ti ti-chart-bar"></i> Producción diaria vs. meta</div>
     <div class="chart-wrap" id="chart-wrap">
       <canvas id="chart-prod"></canvas>
     </div>
@@ -570,57 +572,32 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
     </div>
   </div>
 
-  <!-- ═══ BLOQUES OEE + UTILIZACIÓN (2 col en escritorio) ═══ -->
-  <div class="desktop-2col">
-
-  <!-- ═══ BLOQUE 3: PRODUCTIVIDAD OEE ═══ -->
-  <div class="section" id="seccion-oee">
-    <div class="section-title"><i class="ti ti-settings-2"></i> Productividad OEE</div>
-
-    <!-- Selector equipo procesador -->
-    <div class="oee-equipo-row">
-      <label><i class="ti ti-engine"></i> Equipo</label>
-      <select id="f-proc" onchange="renderOEE()">
-        <option value="">— Seleccionar procesador —</option>
-      </select>
-    </div>
-
-    <!-- Números OEE -->
-    <div class="oee-nums" id="oee-nums">
-      <div class="oee-num-card oee-na"><div class="oee-num-label">OEE</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 66%</div></div>
-      <div class="oee-num-card oee-na"><div class="oee-num-label">FD</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 75%</div></div>
-      <div class="oee-num-card oee-na"><div class="oee-num-label">FE</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 88%</div></div>
-    </div>
-
-    <!-- Mini stats TP/TOB/TOC -->
-    <div id="oee-mini" style="display:none;background:#f8f8f8;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:1rem"></div>
-
-    <!-- Top 5 causales -->
-    <div class="section-title" style="margin-top:.25rem"><i class="ti ti-clock-pause"></i> Top 5 causales de pérdida (TPOB)</div>
-    <div id="causal-wrap">
-      <div class="empty-state">Selecciona un procesador para ver causales</div>
+  <!-- ═══ 4. PRODUCCIÓN DIARIA POR EQUIPO Y OPERADOR ═══ -->
+  <div class="section">
+    <div id="kpi-prod" style="display:none"></div>
+    <div id="vol-eq-card">
+      <div class="kpi-label" style="margin-bottom:0"><i class="ti ti-table"></i> Producción diaria por equipo y operador</div>
+      <div class="loading-block"><div class="spinner"></div></div>
     </div>
   </div>
 
-  <!-- ═══ BLOQUE 5: UTILIZACIÓN DE EQUIPOS ═══ -->
+  <!-- ═══ 5. VOLUMEN POR FUNDO Y RODAL ═══ -->
   <div class="section">
-    <div class="section-title"><i class="ti ti-chart-pie"></i> Utilización de equipos</div>
+    <div class="rodal-card" id="rodal-card">
+      <div class="kpi-label"><i class="ti ti-trees"></i> Volumen por fundo y rodal</div>
+      <div class="loading-block"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- ═══ 6. UTILIZACIÓN DE EQUIPOS ═══ -->
+  <div style="background:transparent;padding:0;margin-bottom:1rem">
+    <div class="section-title" style="padding:0 .25rem;margin-bottom:.5rem"><i class="ti ti-chart-pie"></i> Utilización de equipos</div>
     <div id="util-wrap">
       <div class="loading-block"><div class="spinner"></div> Cargando...</div>
     </div>
   </div>
 
-  </div><!-- /desktop-2col OEE+Utilización -->
-
-  <!-- ═══ BLOQUE 7: VARAS EN PISO ═══ -->
-  <div class="section">
-    <div class="section-title"><i class="ti ti-stack-2"></i> Varas en piso por fundo</div>
-    <div id="varas-wrap">
-      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
-    </div>
-  </div>
-
-  <!-- ═══ BLOQUE 6: CAMBIOS DE LÍNEA ═══ -->
+  <!-- ═══ 7. CAMBIOS DE LÍNEA ═══ -->
   <div class="section">
     <div class="section-title"><i class="ti ti-refresh"></i> Cambios de línea — Torre / Alpine</div>
     <div id="cambio-wrap">
@@ -628,7 +605,7 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
     </div>
   </div>
 
-  <!-- ═══ BLOQUE ÁRBOLES (ancho completo) ═══ -->
+  <!-- ═══ 8. ÁRBOLES POR TIPO DE EQUIPO ═══ -->
   <div class="section">
     <div class="section-title"><i class="ti ti-trees"></i> Árboles por tipo de equipo</div>
     <div id="arb-wrap">
@@ -636,10 +613,31 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
     </div>
   </div>
 
-  <!-- ═══ BLOQUES CAUSALES (2 col en escritorio) ═══ -->
+  <!-- ═══ 9. PRODUCTIVIDAD OEE + TOP 5 CAUSALES TPOB ═══ -->
+  <div class="section" id="seccion-oee">
+    <div class="section-title"><i class="ti ti-settings-2"></i> Productividad OEE — Top 5 causales de pérdida (TPOB)</div>
+    <div class="oee-equipo-row">
+      <label><i class="ti ti-engine"></i> Equipo</label>
+      <select id="f-proc" onchange="renderOEE()">
+        <option value="">— Seleccionar procesador —</option>
+      </select>
+    </div>
+    <div class="oee-nums" id="oee-nums">
+      <div class="oee-num-card oee-na"><div class="oee-num-label">OEE</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 66%</div></div>
+      <div class="oee-num-card oee-na"><div class="oee-num-label">FD</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 75%</div></div>
+      <div class="oee-num-card oee-na"><div class="oee-num-label">FE</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 88%</div></div>
+    </div>
+    <div id="oee-mini" style="display:none;background:#f8f8f8;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:1rem"></div>
+    <div class="section-title" style="margin-top:.25rem"><i class="ti ti-clock-pause"></i> Top 5 causales de pérdida (TPOB)</div>
+    <div id="causal-wrap">
+      <div class="empty-state">Selecciona un procesador para ver causales</div>
+    </div>
+  </div>
+
+  <!-- ═══ 10+11. CAUSALES MADEREO + VOLTEO (2 col en escritorio) ═══ -->
   <div class="desktop-2col">
 
-  <!-- ═══ BLOQUE MADEREO: CAUSALES TORRE/SKIDDER ═══ -->
+  <!-- ═══ CAUSALES MADEREO ═══ -->
   <div class="section">
     <div class="section-title"><i class="ti ti-clock-pause"></i> Top 5 causales de pérdida — Madereo (Torre / Skidder)</div>
     <div class="oee-equipo-row">
@@ -653,7 +651,7 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
     </div>
   </div>
 
-  <!-- ═══ BLOQUE VOLTEO: CAUSALES SHOVEL ═══ -->
+  <!-- ═══ CAUSALES VOLTEO ═══ -->
   <div class="section">
     <div class="section-title"><i class="ti ti-clock-pause"></i> Top 5 causales de pérdida — Volteo (Shovel)</div>
     <div class="oee-equipo-row">
@@ -964,15 +962,6 @@ window.consultar = async function() {
     // jefeLinea → OEE, Causales Volteo (filtro LÍNEA)
     let jefeLinea = linea ? jefeTodo.filter(d=>(d.linea||'')===linea) : jefeTodo;
 
-    // jefeVaras → Varas en piso: siempre hasta HOY (fecha actual de revisión)
-    // independiente del rango seleccionado en el filtro
-    const hoyISO = toISO(new Date());
-    let jefeVarasSnap = await getDocs(query(collection(db,'productividad_jefe'),
-      where('fecha','<=',hoyISO), orderBy('fecha')));
-    let jefeVaras = [];
-    jefeVarasSnap.forEach(d => jefeVaras.push(d.data()));
-    if(linea) jefeVaras = jefeVaras.filter(d=>(d.linea||'')===linea);
-
     // jefeEqm → Tabla diaria, Utilización, Causales Madereo, Cambios de línea (filtro EQ.MADEREO)
     let jefeEqm = jefeTodo.map(d => ({
       ...d,
@@ -1001,9 +990,9 @@ window.consultar = async function() {
     // Bloques por LÍNEA
     renderProduccion();          // KPI cards (usa G.prod) — gráfico al final
     renderOEE();
-    await renderVarasEnPiso(jefeVaras);
 
     // Bloques por EQ.MADEREO
+    _tablaLineaFiltro = 'TODAS'; // resetear filtro al cargar nuevos datos
     renderTablaDiariaEqm();
     renderRodalesFundoEqm(jefeLinea);
     renderUtilizacion(jefeEqm);
@@ -1447,24 +1436,38 @@ function renderProduccion() {
 }
 
 // ── TABLA DIARIA (filtro EQ.MADEREO) ────────────────────────────────────
-function renderTablaDiariaEqm() {
+// Estado global para el filtro de línea de la tabla
+let _tablaLineaFiltro = 'TODAS';
+
+// Exponer globalmente para que los onclick en innerHTML puedan llamarla
+window.renderTablaDiariaEqm = function renderTablaDiariaEqm(lineaFiltro) {
+  // Si se llama sin argumento, usar el estado actual
+  if(lineaFiltro !== undefined) _tablaLineaFiltro = lineaFiltro;
+  const filtro = _tablaLineaFiltro;
+
   const { prodEqm:prod, desde, hasta } = G;
   // ── Volumen por equipo/operador (tabla diaria) y por procesador (bloque 4) ──
   const volEqM = {}, volEqP = {};
   // Estructura: prodDiaria[fecha][equipo][opMadereo] = vol
+  // eqLinea: equipo → linea (para filtrar columnas)
   const prodDiaria = {};
-  prod.forEach(d => (d.cartolas||[]).forEach(c => {
-    let v = 0; (c.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
-    if(c.equipo)     volEqM[c.equipo]     = (volEqM[c.equipo]||0) + v;
-    if(c.procesador) volEqP[c.procesador] = (volEqP[c.procesador]||0) + v;
-    // Solo equipos madereo con opMadereo
-    if(c.equipo && v > 0) {
-      const op = (c.opMadereo||'Sin op.').trim();
-      if(!prodDiaria[d.fecha]) prodDiaria[d.fecha] = {};
-      if(!prodDiaria[d.fecha][c.equipo]) prodDiaria[d.fecha][c.equipo] = {};
-      prodDiaria[d.fecha][c.equipo][op] = (prodDiaria[d.fecha][c.equipo][op]||0) + v;
-    }
-  }));
+  const eqLinea = {}; // equipo → linea
+  prod.forEach(d => {
+    const lin = d.linea || d.codLinea || '';
+    (d.cartolas||[]).forEach(c => {
+      let v = 0; (c.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
+      if(c.equipo)     volEqM[c.equipo]     = (volEqM[c.equipo]||0) + v;
+      if(c.procesador) volEqP[c.procesador] = (volEqP[c.procesador]||0) + v;
+      // Solo equipos madereo con opMadereo
+      if(c.equipo && v > 0) {
+        const op = (c.opMadereo||'Sin op.').trim();
+        if(lin) eqLinea[c.equipo] = lin;
+        if(!prodDiaria[d.fecha]) prodDiaria[d.fecha] = {};
+        if(!prodDiaria[d.fecha][c.equipo]) prodDiaria[d.fecha][c.equipo] = {};
+        prodDiaria[d.fecha][c.equipo][op] = (prodDiaria[d.fecha][c.equipo][op]||0) + v;
+      }
+    });
+  });
 
   // Construir tabla: equipos y operadores con producción
   // Columnas: equipo → operadores únicos con producción
@@ -1484,12 +1487,31 @@ function renderTablaDiariaEqm() {
     if(n.includes('SHOVEL')) return 2;
     return 3;
   };
-  const equiposOrden = Object.keys(colsEq).sort((a,b)=>TIPO_EQ(a)-TIPO_EQ(b)||a.localeCompare(b));
+
+  // Detectar líneas disponibles para los chips
+  const lineasDisp = [...new Set(Object.keys(colsEq).map(eq=>eqLinea[eq]).filter(Boolean))].sort();
+
+  // Filtrar equipos por línea seleccionada
+  const todosEquipos = Object.keys(colsEq).sort((a,b)=>TIPO_EQ(a)-TIPO_EQ(b)||a.localeCompare(b));
+  const equiposOrden = (filtro === 'TODAS')
+    ? todosEquipos
+    : todosEquipos.filter(eq => (eqLinea[eq]||'') === filtro);
+
+  // Chips de línea
+  const chipsHTML = lineasDisp.length > 1 ? `
+    <div class="tabla-linea-chips">
+      <button class="tlc-btn${filtro==='TODAS'?' tlc-active':''}" onclick="renderTablaDiariaEqm('TODAS')">Todas</button>
+      ${lineasDisp.map(lin => {
+        const short = lin.replace('LÍNEA ','');
+        return `<button class="tlc-btn${filtro===lin?' tlc-active tlc-'+short.toLowerCase().replace(' ',''):''}" onclick="renderTablaDiariaEqm('${lin}')">${short}</button>`;
+      }).join('')}
+    </div>` : '';
 
   if(!equiposOrden.length) {
     document.getElementById('vol-eq-card').innerHTML =
       `<div class="kpi-label"><i class="ti ti-table"></i> Producción diaria por equipo y operador</div>
-       <div class="empty-state" style="padding:1rem;font-size:12px">Sin datos de producción</div>`;
+       ${chipsHTML}
+       <div class="empty-state" style="padding:1rem;font-size:12px">Sin datos de producción para esta línea</div>`;
     return;
   }
 
@@ -1587,6 +1609,7 @@ function renderTablaDiariaEqm() {
 
   document.getElementById('vol-eq-card').innerHTML =
     `<div class="kpi-label" style="margin-bottom:4px"><i class="ti ti-table"></i> Producción diaria por equipo y operador</div>
+     ${chipsHTML}
      <div class="prod-wrap">
        <table class="prod-table">
          <thead>${headTipo}${headOp}</thead>
@@ -2107,50 +2130,34 @@ function renderRendimiento() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// BLOQUE 5: UTILIZACIÓN DE EQUIPOS (pie charts)
+// BLOQUE 5: UTILIZACIÓN DE EQUIPOS (pie charts por línea)
 // ══════════════════════════════════════════════════════════════════════════
-let pieTorre = null, pieSkid = null;
+let pieCharts = []; // array de instancias Chart.js activas
 
 function renderUtilizacion(jefe) {
-  // ── Torre: conteo por tipoCarro ──
-  const carro = {};
-  // ── Skidder: conteo por huincheAsistencia ──
-  const huinche = {};
+  const wrap = document.getElementById('util-wrap');
 
-  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
-    const tipo = (eq.tipo||'').toUpperCase();
-    if(tipo === 'TORRE' || tipo === 'ALPINE') {
-      const k = (eq.tipoCarro||'').replace('CARRO ','').trim() || 'Sin dato';
-      carro[k] = (carro[k]||0) + 1;
-    }
-    if(tipo === 'SKIDDER') {
-      const h = (eq.huincheAsistencia||'Sin dato').trim();
-      huinche[h] = (huinche[h]||0) + 1;
-    }
-  }));
+  // Destruir charts anteriores
+  pieCharts.forEach(c => c.destroy());
+  pieCharts = [];
 
-  // Orden fijo carro
+  // Constantes
   const CARRO_ORDEN  = ['BEREUTER','WYSSEN','MIXTO'];
+  const CARRO_LABELS = ['Bereuter','Wyssen','Mixto'];
   const CARRO_COLORS = ['#D97706','#1D5FAD','#7C5C3A'];
-  // Orden fijo huinche
   const HUI_ORDEN    = ['NO','SÍ','MIXTO'];
   const HUI_LABELS   = ['Sin asistencia','Con asistencia','Mixto'];
   const HUI_COLORS   = ['#3B6D11','#D97706','#A3C97A'];
+  const LIN_COLORS   = ['#1D5FAD','#3B6D11','#854F0B'];
 
   const buildData = (map, orden) =>
     orden.map(k => Object.entries(map).find(([key]) =>
       key.toUpperCase()===k.toUpperCase())?.[1] || 0);
 
-  const dataCarro  = buildData(carro, CARRO_ORDEN);
-  const dataHuinche= buildData(huinche, HUI_ORDEN);
-
-  const totalCarro  = dataCarro.reduce((s,v)=>s+v,0);
-  const totalHuinche= dataHuinche.reduce((s,v)=>s+v,0);
-
-  const makePie = (canvasId, labels, data, colors, dias) => {
+  const makePie = (canvasId, labels, data, colors) => {
     const ctx = document.getElementById(canvasId);
     if(!ctx) return null;
-    return new Chart(ctx, {
+    const chart = new Chart(ctx, {
       type: 'pie',
       data: {
         labels,
@@ -2164,313 +2171,252 @@ function renderUtilizacion(jefe) {
           tooltip: {
             callbacks: {
               label: c => {
-                const d = dias[c.dataIndex];
-                const total = dias.reduce((s,v)=>s+v,0);
-                const pct = total>0 ? Math.round((d/total)*100) : 0;
-                return ` ${c.label}: ${pct}% · ${d} día${d!==1?'s':''}`;
+                const v = data[c.dataIndex];
+                const total = data.reduce((s,x)=>s+x,0);
+                const pct = total>0 ? Math.round((v/total)*100) : 0;
+                return ` ${c.label}: ${pct}% · ${v} día${v!==1?'s':''}`;
               }
             }
           }
         }
       }
     });
+    pieCharts.push(chart);
+    return chart;
   };
 
-  // Destruir charts anteriores si existen
-  if(pieTorre) { pieTorre.destroy(); pieTorre=null; }
-  if(pieSkid)  { pieSkid.destroy();  pieSkid=null; }
+  const makeLegend = (labels, colors, data, total) =>
+    labels.map((l,i) => data[i]>0
+      ? `<div class="leg-row">
+           <div class="leg-dot" style="background:${colors[i]}"></div>
+           <div class="leg-name">${l}</div>
+           <div class="leg-pct">${Math.round(data[i]/total*100)}%</div>
+         </div>`
+      : '').join('');
 
-  // Sin datos
-  const sinDatos = '<div class="empty-state" style="padding:1rem;font-size:12px">Sin datos</div>';
+  const sinDatos = '<div style="font-size:11px;color:var(--text3);padding:.5rem 0;text-align:center">Sin datos</div>';
 
-  if(totalCarro===0 && totalHuinche===0) {
-    document.getElementById('util-wrap').innerHTML = sinDatos;
+  // Detectar líneas presentes en jefe
+  const lineas = [...new Set(jefe.map(d=>(d.linea||'').trim().toUpperCase()).filter(Boolean))].sort();
+
+  if(!lineas.length) {
+    wrap.innerHTML = sinDatos;
     return;
   }
 
-  document.getElementById('util-wrap').innerHTML = `
-    <div class="pie-row">
-      <!-- Torre -->
-      <div class="pie-card" id="pie-card-torre">
-        <div class="pie-card-title">🏔 Torre / Alpine</div>
-        ${totalCarro>0
-          ? `<div class="pie-canvas-wrap"><canvas id="pie-torre"></canvas></div>
-             <div class="pie-legend">
-               <div class="leg-row"><div class="leg-dot" style="background:#D97706"></div><div class="leg-name">Bereuter</div><div class="leg-pct">${dataCarro[0]>0?Math.round(dataCarro[0]/totalCarro*100)+'%':''}</div></div>
-               <div class="leg-row"><div class="leg-dot" style="background:#1D5FAD"></div><div class="leg-name">Wyssen</div><div class="leg-pct">${dataCarro[1]>0?Math.round(dataCarro[1]/totalCarro*100)+'%':''}</div></div>
-               <div class="leg-row"><div class="leg-dot" style="background:#7C5C3A"></div><div class="leg-name">Mixto</div><div class="leg-pct">${dataCarro[2]>0?Math.round(dataCarro[2]/totalCarro*100)+'%':''}</div></div>
-             </div>`
-          : sinDatos}
-      </div>
-      <!-- Skidder -->
-      <div class="pie-card" id="pie-card-skid">
-        <div class="pie-card-title">🚜 Skidder</div>
-        ${totalHuinche>0
-          ? `<div class="pie-canvas-wrap"><canvas id="pie-skid"></canvas></div>
-             <div class="pie-legend">
-               <div class="leg-row"><div class="leg-dot" style="background:#3B6D11"></div><div class="leg-name">Sin asistencia</div><div class="leg-pct">${dataHuinche[0]>0?Math.round(dataHuinche[0]/totalHuinche*100)+'%':''}</div></div>
-               <div class="leg-row"><div class="leg-dot" style="background:#D97706"></div><div class="leg-name">Con asistencia</div><div class="leg-pct">${dataHuinche[1]>0?Math.round(dataHuinche[1]/totalHuinche*100)+'%':''}</div></div>
-               <div class="leg-row"><div class="leg-dot" style="background:#A3C97A"></div><div class="leg-name">Mixto</div><div class="leg-pct">${dataHuinche[2]>0?Math.round(dataHuinche[2]/totalHuinche*100)+'%':''}</div></div>
-             </div>`
-          : sinDatos}
-      </div>
+  // Construir columnas por línea
+  const columnas = lineas.map((lin, li) => {
+    const color = LIN_COLORS[li % LIN_COLORS.length];
+    const docs = jefe.filter(d=>(d.linea||'').trim().toUpperCase()===lin);
+    const slug = lin.replace(/\s+/g,'-').toLowerCase();
+
+    const carro = {}, huinche = {};
+    docs.forEach(d => (d.equipos||[]).forEach(eq => {
+      const tipo = (eq.tipo||'').toUpperCase();
+      if(tipo==='TORRE'||tipo==='ALPINE') {
+        const k = (eq.tipoCarro||'').replace('CARRO ','').trim()||'Sin dato';
+        carro[k] = (carro[k]||0)+1;
+      }
+      if(tipo==='SKIDDER') {
+        const h = (eq.huincheAsistencia||'Sin dato').trim();
+        huinche[h] = (huinche[h]||0)+1;
+      }
+    }));
+
+    const dataCarro   = buildData(carro,   CARRO_ORDEN);
+    const dataHuinche = buildData(huinche,  HUI_ORDEN);
+    const totalCarro   = dataCarro.reduce((s,v)=>s+v,0);
+    const totalHuinche = dataHuinche.reduce((s,v)=>s+v,0);
+
+    const pieCarroId  = `pie-carro-${slug}`;
+    const pieHuinId   = `pie-hui-${slug}`;
+
+    const bloqTorre = totalCarro > 0
+      ? `<div class="pie-card-title" style="font-size:10px">🏔 Torre / Alpine</div>
+         <div class="pie-canvas-wrap"><canvas id="${pieCarroId}"></canvas></div>
+         <div class="pie-legend">${makeLegend(CARRO_LABELS, CARRO_COLORS, dataCarro, totalCarro)}</div>`
+      : `<div class="pie-card-title" style="font-size:10px">🏔 Torre / Alpine</div>${sinDatos}`;
+
+    const bloqSkid = totalHuinche > 0
+      ? `<div class="pie-card-title" style="font-size:10px;margin-top:.75rem">🚜 Skidder</div>
+         <div class="pie-canvas-wrap"><canvas id="${pieHuinId}"></canvas></div>
+         <div class="pie-legend">${makeLegend(HUI_LABELS, HUI_COLORS, dataHuinche, totalHuinche)}</div>`
+      : `<div class="pie-card-title" style="font-size:10px;margin-top:.75rem">🚜 Skidder</div>${sinDatos}`;
+
+    return { slug, color, lin, bloqTorre, bloqSkid,
+             totalCarro, dataCarro, totalHuinche, dataHuinche,
+             pieCarroId, pieHuinId };
+  });
+
+  // Render HTML — 3 columnas
+  wrap.innerHTML = `
+    <div class="util-lineas">
+      ${columnas.map(c => `
+        <div class="util-col" style="border-top:3px solid ${c.color};border-color:${c.color};border-width:1px;border-top-width:3px;border-style:solid">
+          <div class="util-col-header" style="color:${c.color}">${c.lin}</div>
+          ${c.bloqTorre}
+          ${c.bloqSkid}
+        </div>`).join('')}
     </div>`;
 
-  if(totalCarro>0)
-    pieTorre = makePie('pie-torre', CARRO_ORDEN, dataCarro, CARRO_COLORS, dataCarro);
-  if(totalHuinche>0)
-    pieSkid = makePie('pie-skid', HUI_LABELS, dataHuinche, HUI_COLORS, dataHuinche);
+  // Instanciar charts tras render
+  columnas.forEach(c => {
+    if(c.totalCarro>0)   makePie(c.pieCarroId,  CARRO_LABELS, c.dataCarro,   CARRO_COLORS);
+    if(c.totalHuinche>0) makePie(c.pieHuinId,   HUI_LABELS,   c.dataHuinche, HUI_COLORS);
+  });
 }
 
 // ── INICIO ────────────────────────────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════════
-// BLOQUE 7: VARAS EN PISO
-// ══════════════════════════════════════════════════════════════════════════
-async function renderVarasEnPiso(jefe) {
-  // Cargar ajuste inicial desde Firestore config_varas_piso
-  const AJUSTE_ARB = {};
-  try {
-    const snap = await getDocs(collection(db, 'config_varas_piso'));
-    snap.forEach(d => {
-      const data = d.data();
-      if(data.fundo) {
-        const val = data.ajusteInicial != null
-          ? parseInt(data.ajusteInicial)||0
-          : parseInt(data.stockInicial)||0;
-        AJUSTE_ARB[data.fundo] = val;
-      }
-    });
-  } catch(e) {}
-
-  // Acumular por fundo: árboles madereados, árboles procesados, m³ trozados
-  const fundos = {};
-  jefe.forEach(d => {
-    const fundo = d.fundo || 'Sin fundo';
-    if(!fundos[fundo]) fundos[fundo] = { madereados:0, arbProc:0, m3Proc:0 };
-    const F = fundos[fundo];
-    (d.equipos||[]).forEach(eq => {
-      const tipo = (eq.tipo||'').toUpperCase();
-      if(tipo==='TORRE'||tipo==='ALPINE'||tipo==='SKIDDER')
-        F.madereados += parseInt(eq.arboles)||0;
-      if(tipo==='PROCESADOR')
-        F.arbProc += parseInt(eq.arboles)||0;
-    });
-  });
-
-  // m³ exactos por fundo desde cartolas (campo procesador)
-  // usamos prod (G.prod) que ya está cargado
-  G.prod.forEach(d => {
-    const fundo = d.fundo || 'Sin fundo';
-    if(!fundos[fundo]) fundos[fundo] = { madereados:0, arbProc:0, m3Proc:0 };
-    (d.cartolas||[]).forEach(c => {
-      let v = 0; (c.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
-      fundos[fundo].m3Proc += v;
-    });
-  });
-
-  const entradas = Object.entries(fundos);
-  if(!entradas.length) {
-    document.getElementById('varas-wrap').innerHTML =
-      '<div class="empty-state"><i class="ti ti-stack-2" style="font-size:26px;display:block;margin-bottom:.5rem"></i>Sin datos para el período</div>';
-    return;
-  }
-
-  const datos = entradas.map(([fundo,v]) => {
-    const ajusteArb = AJUSTE_ARB[fundo] || 0;
-    // VMA del fundo: m³ procesados / árboles procesados (promedio ponderado)
-    const vma = v.arbProc > 0 ? v.m3Proc / v.arbProc : 0;
-    // Árboles en piso
-    const varasArb = Math.max(ajusteArb + v.madereados - v.arbProc, 0);
-    // M³ en piso: ajuste en m³ + madereados en m³ - trozados m³ exactos
-    const ajusteM3 = ajusteArb * vma;
-    const madereM3 = v.madereados * vma;
-    const varasM3 = Math.max(ajusteM3 + madereM3 - v.m3Proc, 0);
-    // Consistencia: varasArb * vma vs varasM3
-    const esperadoM3 = varasArb * vma;
-    const difM3 = varasM3 - esperadoM3;
-    const margen = vma * 50; // 50 árboles × VMA
-    const inconsistente = Math.abs(difM3) > margen;
-    return { fundo, ajusteArb, madereados:v.madereados, arbProc:v.arbProc,
-             m3Proc:v.m3Proc, vma, varasArb, varasM3, esperadoM3, difM3, margen, inconsistente };
-  }).sort((a,b) => b.varasArb - a.varasArb);
-
-  const maxVaras = datos[0].varasArb || 1;
-
-  document.getElementById('varas-wrap').innerHTML = `
-    <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">
-      Árboles madereados (Torre+Skidder) − Árboles trozados (Procesador) = estimación varas en piso
-    </div>
-    <div class="varas-grid">
-      ${datos.map((d,i) => `
-        <div class="varas-card normal">
-          <div class="varas-linea">
-            <span>${d.fundo}</span>
-            <span style="display:flex;align-items:center;gap:6px">
-              ${d.inconsistente?`<span style="background:#FEF3E2;color:#854F0B;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">⚠ INCONSISTENCIA</span>`:''}
-            </span>
-          </div>
-
-          <!-- FILA ÁRBOLES -->
-          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">🌳 En árboles</div>
-          <div class="varas-nums" style="grid-template-columns:repeat(4,1fr);margin-bottom:10px">
-            <div class="varas-num">
-              <div class="varas-num-label">Ajuste</div>
-              <div class="varas-num-val" style="color:var(--text3);font-size:15px">${fmt0(d.ajusteArb)}</div>
-            </div>
-            <div class="varas-num">
-              <div class="varas-num-label">Madereados</div>
-              <div class="varas-num-val" style="color:var(--blue);font-size:18px">${fmt0(d.madereados)}</div>
-            </div>
-            <div class="varas-num">
-              <div class="varas-num-label">Trozados</div>
-              <div class="varas-num-val" style="color:var(--green);font-size:18px">${fmt0(d.arbProc)}</div>
-            </div>
-            <div class="varas-num">
-              <div class="varas-num-label">En piso</div>
-              <div class="varas-num-val" style="color:var(--amber);font-size:18px">${fmt0(d.varasArb)}</div>
-            </div>
-          </div>
-
-          <!-- FILA M³ -->
-          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">📦 En m³ <span style="font-weight:400;text-transform:none;letter-spacing:0">(VMA: ${fmt2(d.vma)} m³/árb)</span></div>
-          <div class="varas-nums" style="grid-template-columns:repeat(4,1fr);margin-bottom:8px">
-            <div class="varas-num">
-              <div class="varas-num-label">Ajuste</div>
-              <div class="varas-num-val" style="color:var(--text3);font-size:15px">${fmt0(d.ajusteArb*d.vma)}</div>
-            </div>
-            <div class="varas-num">
-              <div class="varas-num-label">Madereados</div>
-              <div class="varas-num-val" style="color:var(--blue);font-size:18px">${fmt0(d.madereados*d.vma)}</div>
-            </div>
-            <div class="varas-num">
-              <div class="varas-num-label">Trozados</div>
-              <div class="varas-num-val" style="color:var(--green);font-size:18px">${fmt0(d.m3Proc)}</div>
-            </div>
-            <div class="varas-num">
-              <div class="varas-num-label">En piso</div>
-              <div class="varas-num-val" style="color:var(--amber);font-size:18px">${fmt0(d.varasM3)}</div>
-            </div>
-          </div>
-
-          <!-- CONSISTENCIA -->
-          ${d.vma>0?`<div style="background:${d.inconsistente?'#FEF3E2':'#f0f0f0'};border-radius:6px;padding:6px 10px;font-size:11px;color:${d.inconsistente?'var(--amber)':'var(--text3)'}">
-            ${d.inconsistente
-              ? `⚠ Inconsistencia: árboles en piso (${fmt0(d.varasArb)}) × VMA = ${fmt0(d.esperadoM3)} m³, pero m³ calculados = ${fmt0(d.varasM3)} m³ (dif: ${fmt0(Math.abs(d.difM3))} m³, margen ±${fmt0(d.margen)} m³)`
-              : `✓ Consistente: diferencia ${fmt0(Math.abs(d.difM3))} m³ dentro del margen ±${fmt0(d.margen)} m³`}
-          </div>`:''}
-
-          <div class="varas-bar" style="margin-top:8px">
-            <div class="varas-bar-fill" style="width:${maxVaras>0?(d.varasArb/maxVaras*100).toFixed(1):0}%;background:var(--amber)"></div>
-          </div>
-        </div>`).join('')}
-    </div>
-    <div style="font-size:10px;color:var(--text3);margin-top:8px;line-height:1.5">
-      * Árboles: Ajuste + Madereados − Trozados · M³: árboles × VMA del fundo (promedio ponderado de procesadores) excepto Trozados que es volumen exacto de cartolas<br>
-      * Margen de consistencia = VMA × 50 árboles (a mayor VMA, mayor margen permitido)
-    </div>`;
-}
 
 // ══════════════════════════════════════════════════════════════════════════
 // BLOQUE 6: CAMBIOS DE LÍNEA
 // ══════════════════════════════════════════════════════════════════════════
 function renderCambioLinea(jefe) {
-  let totalCambios=0, totalHoras=0;
-  const cuerda   = {'SÍ':0,'NO':0,'INCOMPLETA':0};
-  const soportes = {'SÍ':0,'NO':0};
-  const preInst  = {'SÍ':0,'NO':0};
-  const perfil   = {'Según perfil':0,'Con modificación':0};
+  const wrap = document.getElementById('cambio-wrap');
 
-  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
-    const tipo=(eq.tipo||'').toUpperCase();
-    if(tipo!=='TORRE'&&tipo!=='ALPINE') return;
-    if((eq.cambioLinea||'').toUpperCase()!=='SÍ') return;
-    totalCambios++;
-    totalHoras += parseFloat(eq.horasCambioLinea)||0;
-    const ct=(eq.cuerdaTirada||'').toUpperCase();
-    if(ct==='SÍ') cuerda['SÍ']++;
-    else if(ct==='NO') cuerda['NO']++;
-    else if(ct==='INCOMPLETA') cuerda['INCOMPLETA']++;
-    const ls=(eq.lineaSoportes||'').toUpperCase();
-    if(ls==='SÍ') soportes['SÍ']++;
-    else if(ls==='NO') soportes['NO']++;
-    if(ls==='SÍ') {
-      const pi=(eq.preInstalado||'').toUpperCase();
-      if(pi==='SÍ') preInst['SÍ']++;
-      else if(pi==='NO') preInst['NO']++;
-      else preInst['Sin dato']++;
-    }
-    // cumplePerfil: detección flexible — normaliza tildes y mayúsculas
-    const cpRaw=(eq.cumplePerfil||'').trim();
-    const cp=cpRaw.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    if(cp==='SI'||cp.startsWith('SI ')||cp.startsWith('SEGUN'))
-      perfil['Según perfil']++;
-    else if(cpRaw)
-      perfil['Con modificación']++;
-  }));
+  // Acumulador por línea
+  const LIN_COLORS = {'LÍNEA T1':'#1D5FAD','LÍNEA T2':'#3B6D11','LÍNEA T3':'#854F0B'};
+  const linMap = {}; // linea → stats
 
-  if(totalCambios===0) {
-    document.getElementById('cambio-wrap').innerHTML =
-      '<div class="empty-state"><i class="ti ti-refresh-off" style="font-size:26px;display:block;margin-bottom:.5rem"></i>Sin cambios de línea en el período</div>';
+  const initLin = () => ({
+    cambios:0, horas:0,
+    cuerda:{'SÍ':0,'NO':0,'INCOMPLETA':0},
+    soportes:{'SÍ':0,'NO':0},
+    preInst:{'SÍ':0,'NO':0,'Sin dato':0},
+    perfil:{'Según perfil':0,'Con modificación':0},
+    motivoMod:{'Perfil no daba altura':0,'Perfil tenía soportes que no servían':0,'Otro problema no de perfileros':0}
+  });
+
+  jefe.forEach(d => {
+    const lin = (d.linea||'').trim() || 'SIN LÍNEA';
+    (d.equipos||[]).forEach(eq => {
+      const tipo=(eq.tipo||'').toUpperCase();
+      if(tipo!=='TORRE'&&tipo!=='ALPINE') return;
+      if((eq.cambioLinea||'').toUpperCase()!=='SÍ') return;
+      if(!linMap[lin]) linMap[lin] = initLin();
+      const L = linMap[lin];
+      L.cambios++;
+      L.horas += parseFloat(eq.horasCambioLinea)||0;
+      const ct=(eq.cuerdaTirada||'').toUpperCase();
+      if(ct==='SÍ') L.cuerda['SÍ']++;
+      else if(ct==='NO') L.cuerda['NO']++;
+      else if(ct==='INCOMPLETA') L.cuerda['INCOMPLETA']++;
+      const ls=(eq.lineaSoportes||'').toUpperCase();
+      if(ls==='SÍ') L.soportes['SÍ']++;
+      else if(ls==='NO') L.soportes['NO']++;
+      if(ls==='SÍ') {
+        const pi=(eq.preInstalado||'').toUpperCase();
+        if(pi==='SÍ') L.preInst['SÍ']++;
+        else if(pi==='NO') L.preInst['NO']++;
+        else L.preInst['Sin dato']++;
+      }
+      const cpRaw=(eq.cumplePerfil||'').trim();
+      const cp=cpRaw.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if(cp==='SI'||cp.startsWith('SI ')||cp.startsWith('SEGUN'))
+        L.perfil['Según perfil']++;
+      else if(cpRaw)
+        L.perfil['Con modificación']++;
+      // Motivo de modificación (solo cuando cumplePerfil = NO)
+      if(cp!=='SI'&&!cp.startsWith('SI ')&&!cp.startsWith('SEGUN')&&cpRaw){
+        const mm=(eq.motivoModificacion||'').trim();
+        if(mm==='Perfil no daba altura') L.motivoMod['Perfil no daba altura']++;
+        else if(mm==='Perfil tenía soportes que no servían') L.motivoMod['Perfil tenía soportes que no servían']++;
+        else if(mm) L.motivoMod['Otro problema no de perfileros']++;
+      }
+    });
+  });
+
+  const lineas = Object.keys(linMap).sort();
+  if(!lineas.length) {
+    wrap.innerHTML = '<div class="empty-state"><i class="ti ti-refresh-off" style="font-size:26px;display:block;margin-bottom:.5rem"></i>Sin cambios de línea en el período</div>';
     return;
   }
 
-  const promHoras = totalHoras/totalCambios;
-
+  // Barra segmentada compacta
   const segBar = (data, colors) => {
-    const total=Object.values(data).reduce((s,v)=>s+v,0);
-    if(!total) return '<div style="font-size:12px;color:var(--text3)">Sin datos</div>';
-    const segs=Object.entries(data).filter(([,v])=>v>0)
-      .map(([k,v],i)=>`<div class="seg" style="width:${(v/total*100).toFixed(1)}%;background:${colors[i]}"><span>${v}</span></div>`).join('');
-    const legs=Object.entries(data).filter(([,v])=>v>0)
-      .map(([k,v],i)=>`<div class="seg-leg"><div class="seg-dot" style="background:${colors[i]}"></div>${k} (${v} cambio${v!==1?'s':''})</div>`).join('');
+    const entries = Object.entries(data).filter(([,v])=>v>0);
+    const total = entries.reduce((s,[,v])=>s+v,0);
+    if(!total) return '<div class="cl-nodata">Sin datos</div>';
+    const segs = entries.map(([,v],i)=>
+      `<div class="seg" style="width:${(v/total*100).toFixed(1)}%;background:${colors[i]}"><span>${v}</span></div>`
+    ).join('');
+    const legs = entries.map(([k,v],i)=>
+      `<div class="seg-leg"><div class="seg-dot" style="background:${colors[i]}"></div>${k}</div>`
+    ).join('');
     return `<div class="seg-bar">${segs}</div><div class="seg-legend">${legs}</div>`;
   };
 
-  const totalConSop=soportes['SÍ'];
-  document.getElementById('cambio-wrap').innerHTML = `
-    <div class="cl-header">
-      <div class="cl-stat blue">
-        <div class="cl-icon">🔄</div>
-        <div>
-          <div class="cl-val blue">${totalCambios}</div>
-          <div class="cl-label">Cambios de línea</div>
-          <div class="cl-sub">en el período</div>
+  const colHTML = lineas.map(lin => {
+    const L = linMap[lin];
+    const color = LIN_COLORS[lin] || '#555';
+    const prom = L.cambios ? (L.horas/L.cambios) : 0;
+    const totalConSop = L.soportes['SÍ'];
+    const totalPerfil = L.perfil['Según perfil'] + L.perfil['Con modificación'];
+    const pctPerfil = totalPerfil ? Math.round(L.perfil['Según perfil']/totalPerfil*100) : null;
+    const short = lin.replace('LÍNEA ','');
+
+    return `
+    <div class="cl-col">
+      <div class="cl-col-header" style="color:${color};border-bottom:2px solid ${color}">
+        ${short}
+      </div>
+      <div class="cl-kpis">
+        <div class="cl-kpi">
+          <div class="cl-kpi-val" style="color:${color}">${L.cambios}</div>
+          <div class="cl-kpi-label">Cambios</div>
+        </div>
+        <div class="cl-kpi">
+          <div class="cl-kpi-val" style="color:var(--amber)">${fmt2(L.horas)} h</div>
+          <div class="cl-kpi-label">Total</div>
+        </div>
+        <div class="cl-kpi">
+          <div class="cl-kpi-val" style="color:var(--text2)">${fmt2(prom)} h</div>
+          <div class="cl-kpi-label">Prom/cambio</div>
         </div>
       </div>
-      <div class="cl-stat amber">
-        <div class="cl-icon">⏱</div>
-        <div>
-          <div class="cl-val amber">${fmt2(totalHoras)} h</div>
-          <div class="cl-label">Horas acumuladas</div>
-          <div class="cl-sub">prom: ${fmt2(promHoras)} h/cambio</div>
+      <div class="cl-cond">
+        <div class="cl-cond-label">🪢 Cuerda tirada</div>
+        ${segBar(L.cuerda,['#3B6D11','#A32D2D','#854F0B'])}
+      </div>
+      <div class="cl-cond">
+        <div class="cl-cond-label">🏗 Soportes</div>
+        ${segBar(L.soportes,['#1D5FAD','#A32D2D'])}
+      </div>
+      <div class="cl-cond">
+        <div class="cl-cond-label">⚡ Preinstalado
+          <span style="font-size:9px;color:var(--text3)">(${totalConSop} con sop.)</span>
         </div>
+        ${totalConSop>0
+          ? segBar(L.preInst,['#3B6D11','#A32D2D','#888'])
+          : '<div class="cl-nodata">Sin cambios con soportes</div>'}
       </div>
-    </div>
-    <div class="cl-cond-title">Condición al momento del cambio</div>
-    <div class="cl-cond">
-      <div class="cl-cond-label">🪢 Cuerda tirada</div>
-      ${segBar(cuerda,['#3B6D11','#A32D2D','#854F0B'])}
-    </div>
-    <div class="cl-cond">
-      <div class="cl-cond-label">🏗 Tenía soportes</div>
-      ${segBar(soportes,['#1D5FAD','#A32D2D'])}
-    </div>
-    <div class="cl-cond">
-      <div class="cl-cond-label">⚡ Preinstalado <span style="font-size:10px;font-weight:400;color:var(--text3)">(de ${totalConSop} cambio${totalConSop!==1?'s':''} con soportes)</span></div>
-      ${totalConSop>0?segBar(preInst,['#3B6D11','#A32D2D','#888888']):'<div style="font-size:12px;color:var(--text3)">Sin cambios con soportes</div>'}
-    </div>
-    <div class="cl-cond">
-      <div class="cl-cond-label">📐 Asertividad del perfil
-        ${(perfil['Según perfil']+perfil['Con modificación'])>0
-          ? `<span style="font-size:10px;font-weight:700;color:var(--green);margin-left:6px">
-              ${Math.round(perfil['Según perfil']/(perfil['Según perfil']+perfil['Con modificación'])*100)}% según perfil
-             </span>`
-          : ''}
+      <div class="cl-cond">
+        <div class="cl-cond-label">📐 Perfil
+          ${pctPerfil!==null?`<span style="font-size:10px;font-weight:700;color:var(--green);margin-left:4px">${pctPerfil}% ok</span>`:''}
+        </div>
+        ${totalPerfil>0
+          ? segBar({'✅ Según perfil':L.perfil['Según perfil'],'🔧 Con modificación':L.perfil['Con modificación']},['#3B6D11','#A32D2D'])
+          : '<div class="cl-nodata">Sin datos</div>'}
       </div>
-      ${(perfil['Según perfil']+perfil['Con modificación'])>0
-        ? segBar({'✅ Según perfil':perfil['Según perfil'],'🔧 Con modificación':perfil['Con modificación']},['#3B6D11','#A32D2D'])
-        : '<div style="font-size:12px;color:var(--text3)">Sin datos de perfil registrados</div>'}
+      ${totalPerfil>0 ? `
+      <div class="cl-cond" style="margin-top:-2px">
+        <div class="cl-cond-label" style="font-size:10px;color:var(--text3)">Motivo modificación</div>
+        ${[
+          ['Perfil no daba altura','#854F0B'],
+          ['Perfil tenía soportes que no servían','#1D5FAD'],
+          ['Otro problema no de perfileros','#888']
+        ].map(([k,c]) => {
+          const n = L.motivoMod[k]||0;
+          return '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">'
+            + '<div style="width:8px;height:8px;border-radius:50%;background:'+(n>0?c:'#ccc')+';flex-shrink:0"></div>'
+            + '<div style="font-size:10px;color:'+(n>0?'var(--text)':'var(--text3)')+';line-height:1.3">'+k+' <strong style="color:'+(n>0?c:'var(--text3)')+'"> ('+n+')</strong></div>'
+            + '</div>';
+        }).join('')}
+      </div>` : ''}
     </div>`;
+  }).join('');
+
+  wrap.innerHTML = `<div class="cl-lineas">${colHTML}</div>`;
 }
 
 // ══════════════════════════════════════════════════════════════════════════
