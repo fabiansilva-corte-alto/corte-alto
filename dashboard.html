@@ -941,6 +941,26 @@ window.consultar = async function() {
       where('fecha','>=',desde), where('fecha','<=',hasta), orderBy('fecha')));
     let prodTodo = []; snap.forEach(d => prodTodo.push(d.data()));
 
+    // ── Producción extra: últimos días antes del período (para bloque Últimos 3 días) ──
+    // Necesitamos al menos 3 fechas distintas; si el período tiene menos, buscamos hacia atrás
+    const fechasEnPeriodo = [...new Set(prodTodo.map(d=>d.fecha))].sort();
+    let prodHistorico = [...prodTodo];
+    if(fechasEnPeriodo.length < 3) {
+      const snapAntes = await getDocs(query(collection(db,'reportes_produccion'),
+        where('fecha','<',desde), orderBy('fecha','desc')));
+      const antesData = []; snapAntes.forEach(d => antesData.push(d.data()));
+      // Agregar hasta completar 3 fechas distintas
+      const fechasVistas = new Set(fechasEnPeriodo);
+      const fechasExtra = new Set();
+      // Primero identificar qué fechas extra necesitamos
+      for(const d of antesData) {
+        if(fechasVistas.size + fechasExtra.size >= 3) break;
+        if(!fechasVistas.has(d.fecha)) fechasExtra.add(d.fecha);
+      }
+      // Luego agregar TODOS los registros de esas fechas extra
+      antesData.forEach(d => { if(fechasExtra.has(d.fecha)) prodHistorico.push(d); });
+    }
+
     // prod para KPI cards y gráfico → filtro LÍNEA
     let prod = linea ? prodTodo.filter(d=>(d.linea||d.codLinea||'')===linea) : prodTodo;
 
@@ -981,7 +1001,7 @@ window.consultar = async function() {
     G = { prod, prodEqm, jefe:jefeLinea, jefeEqm, meta, inicio, desde, hasta };
 
     // ── Banda ejecutiva (solo en modo mes completo) ───────────────────────
-    await renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr);
+    await renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHistorico);
     // renderUltimos3 es llamado desde dentro de renderEjecutivo (tiene acceso a metasPorLinea)
 
     // Poblar selector procesadores (por LÍNEA)
@@ -1032,7 +1052,7 @@ async function cargarMetaLinea(lin, mesStr) {
   } catch(e){ return { total:0, porDia:{} }; }
 }
 
-async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr) {
+async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHistorico) {
   const wrap = document.getElementById('exec-wrap');
   // Solo mostrar si tenemos datos
   if(!prodTodo.length && !jefeTodo.length) { wrap.style.display='none'; return; }
@@ -1070,11 +1090,14 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr) {
     }
   }
 
-  // Meta acumulada hasta hoy (hasta), igual que el bloque Producción
+  // Meta acumulada hasta ayer (no incluir día de consulta si aún no hay producción)
+  const _ayer = new Date(); _ayer.setDate(_ayer.getDate()-1);
+  const ayerISO = toISO(_ayer);
+  const hastaMetaAcum = hasta < ayerISO ? hasta : ayerISO;
   let metaAcum = 0;
   lineasReales.forEach(lin => {
     if(!metasPorLinea[lin]) return;
-    Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f>=desde && f<=hasta) metaAcum+=v; });
+    Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f>=desde && f<=hastaMetaAcum) metaAcum+=v; });
   });
 
   const cumpl     = metaAcum>0 ? volTotal/metaAcum*100 : NaN;
@@ -1142,10 +1165,10 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr) {
     const volLin   = prodLin.reduce((s,d)=>s+(parseFloat(d.totalGlobal)||0),0);
     const metaLin  = metasPorLinea[lin]?.total || 0;
 
-    // Meta acumulada de esta línea hasta hoy (hasta)
+    // Meta acumulada de esta línea hasta ayer (no incluir día de consulta)
     let metaAcumLin = 0;
     if(metasPorLinea[lin]) {
-      Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f>=desde && f<=hasta) metaAcumLin+=v; });
+      Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f>=desde && f<=hastaMetaAcum) metaAcumLin+=v; });
     }
 
     const cumplLin  = metaAcumLin>0 ? volLin/metaAcumLin*100 : NaN;
@@ -1278,11 +1301,11 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr) {
   }
 
   // ── Últimos 3 días ────────────────────────────────────────────────────────
-  renderUltimos3(prodTodo, metasPorLinea);
+  await renderUltimos3(prodHistorico || prodTodo, metasPorLinea);
 }
 
 // ── ÚLTIMOS 3 DÍAS POR LÍNEA ──────────────────────────────────────────────
-function renderUltimos3(prodTodo, metasPorLinea) {
+async function renderUltimos3(prodTodo, metasPorLinea) {
   const sec  = document.getElementById('seccion-ultimos3');
   const wrap = document.getElementById('ultimos3-wrap');
   if(!sec || !wrap) return;
@@ -1290,6 +1313,26 @@ function renderUltimos3(prodTodo, metasPorLinea) {
   // Líneas presentes
   const lineas = [...new Set(prodTodo.map(d=>d.linea||d.codLinea||'').filter(Boolean))].sort();
   if(!lineas.length){ sec.style.display='none'; return; }
+
+  // Cargar metas de meses anteriores que aparezcan en prodHistorico
+  const mesesEnDatos = [...new Set(prodTodo.map(d=>d.fecha?.slice(0,7)).filter(Boolean))];
+  const mesesEnMetasPorLinea = Object.values(metasPorLinea||{}).flatMap(m=>Object.keys(m.porDia||{}).map(f=>f.slice(0,7)));
+  const mesesExtra = mesesEnDatos.filter(mes=>!mesesEnMetasPorLinea.includes(mes));
+  const metasExtra = {}; // { linea: { fecha: valor } }
+  for(const mes of mesesExtra) {
+    for(const lin of lineas) {
+      try {
+        const snap = await getDoc(doc(db,'config_volumen_meta',`${lin}_${mes}`));
+        if(!snap.exists()) continue;
+        const [a,m] = mes.split('-');
+        if(!metasExtra[lin]) metasExtra[lin] = {};
+        (snap.data().valores||[]).forEach((v,i)=>{
+          const f=`${a}-${m}-${String(i+1).padStart(2,'0')}`;
+          metasExtra[lin][f] = parseFloat(v)||0;
+        });
+      } catch(e){}
+    }
+  }
 
   const diasLabels  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const mesesLabels = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -1312,15 +1355,19 @@ function renderUltimos3(prodTodo, metasPorLinea) {
       </div>`;
   };
 
+  // Últimas 3 fechas GLOBALES (de cualquier línea) — todas las líneas usan las mismas fechas
+  const fechasGlobales = [...new Set(prodTodo.map(d=>d.fecha).filter(Boolean))].sort().slice(-3);
+
   const bloques = lineas.map((lin, li) => {
     const prodLin = prodTodo.filter(d=>(d.linea||d.codLinea||'')===lin);
-    // Últimas 3 fechas con producción en esta línea
-    const fechas = [...new Set(prodLin.map(d=>d.fecha))].sort().slice(-3);
+    // Usar las fechas globales (no solo las de esta línea)
+    const fechas = fechasGlobales;
     const metaLin = metasPorLinea?.[lin];
 
     const cards = fechas.map(fecha => {
       const volDia  = prodLin.filter(d=>d.fecha===fecha).reduce((s,d)=>s+(parseFloat(d.totalGlobal)||0),0);
-      const metaDia = parseFloat(metaLin?.porDia?.[fecha]) || 0;
+      // Buscar meta: primero en metasPorLinea del período, luego en metasExtra (meses anteriores)
+      const metaDia = parseFloat(metaLin?.porDia?.[fecha]) || parseFloat(metasExtra?.[lin]?.[fecha]) || 0;
       return makeDayCard(fecha, volDia, metaDia);
     });
 
