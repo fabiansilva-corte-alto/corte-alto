@@ -9,6 +9,7 @@
 <link rel="apple-touch-icon" href="logo.png">
 <link rel="icon" type="image/png" href="logo.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
     --verde-oscuro:#1a3a1a;
@@ -268,6 +269,54 @@
   .btn-eliminar-hist:active{background:#f5c0bb}
 
   /* ==== Modal Ver Reporte ==== */
+  /* === Modal Exportar Excel === */
+  .modal-export-overlay{
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,.6);z-index:200;
+    overflow-y:auto;padding:16px;
+  }
+  .modal-export-overlay.visible{display:block}
+  .modal-export{
+    background:#fff;border-radius:14px;
+    max-width:480px;margin:40px auto;
+    overflow:hidden;
+  }
+  .modal-export-header{
+    background:linear-gradient(135deg,var(--verde-oscuro),var(--verde-medio));
+    color:#fff;padding:14px 16px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .modal-export-header h2{font-size:15px;font-weight:700}
+  .modal-export-header .btn-cerrar{
+    background:rgba(255,255,255,.2);border:none;color:#fff;
+    width:32px;height:32px;border-radius:8px;font-size:18px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .modal-export-body{padding:16px;display:flex;flex-direction:column;gap:14px}
+  .export-field label{font-size:12px;font-weight:600;color:var(--verde-oscuro);margin-bottom:4px;display:block}
+  .export-field input[type=date]{
+    width:100%;padding:9px 10px;border:1px solid #ccc;border-radius:8px;font-size:14px;
+  }
+  .export-multichk{
+    display:flex;flex-direction:column;gap:6px;
+    max-height:160px;overflow-y:auto;
+    border:1px solid #ddd;border-radius:8px;padding:8px 10px;background:#f9f9f9;
+  }
+  .export-multichk label{
+    display:flex;align-items:center;gap:8px;
+    font-size:13px;cursor:pointer;
+  }
+  .export-multichk input[type=checkbox]{width:16px;height:16px;cursor:pointer}
+  .export-fila-fechas{display:flex;gap:10px}
+  .export-fila-fechas .export-field{flex:1}
+  .btn-exportar{
+    background:var(--verde-oscuro);color:#fff;border:none;
+    padding:11px;border-radius:10px;font-size:14px;font-weight:700;
+    cursor:pointer;width:100%;margin-top:4px;
+  }
+  .btn-exportar:hover{background:var(--verde-medio)}
+  .btn-exportar:disabled{background:#aaa;cursor:not-allowed}
+  /* === fin modal export === */
   .modal-ver-overlay{
     display:none;position:fixed;inset:0;
     background:rgba(0,0,0,.6);z-index:200;
@@ -501,10 +550,47 @@
       oninput="filtrarHistorial(this.value)">
     <button class="limpiar" onclick="document.getElementById('buscador-hist').value='';filtrarHistorial('')" title="Limpiar">✕</button>
   </div>
+  <div style="padding:0 16px 10px;text-align:right">
+    <button onclick="abrirModalExport()" style="background:var(--verde-oscuro);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+      📊 Exportar Excel
+    </button>
+  </div>
   <div id="lista-historial">
     <div class="vacio">Cargando historial…</div>
   </div>
 </section>
+
+<!-- ===== MODAL EXPORTAR EXCEL ===== -->
+<div class="modal-export-overlay" id="modal-export">
+  <div class="modal-export">
+    <div class="modal-export-header">
+      <h2>📊 Exportar a Excel</h2>
+      <button class="btn-cerrar" onclick="cerrarModalExport()">✕</button>
+    </div>
+    <div class="modal-export-body">
+      <div class="export-fila-fechas">
+        <div class="export-field">
+          <label>Fecha desde</label>
+          <input type="date" id="exp-fecha-desde">
+        </div>
+        <div class="export-field">
+          <label>Fecha hasta</label>
+          <input type="date" id="exp-fecha-hasta">
+        </div>
+      </div>
+      <div class="export-field">
+        <label>Fundo (dejar vacío = todos)</label>
+        <div class="export-multichk" id="exp-fundos"></div>
+      </div>
+      <div class="export-field">
+        <label>Línea (dejar vacío = todas)</label>
+        <div class="export-multichk" id="exp-lineas"></div>
+      </div>
+      <div id="exp-info" style="font-size:12px;color:#666;text-align:center"></div>
+      <button class="btn-exportar" id="btn-generar-excel" onclick="generarExcel()">⬇️ Descargar Excel</button>
+    </div>
+  </div>
+</div>
 
 </main>
 
@@ -2071,6 +2157,190 @@ async function cargarHistorial() {
 
 window.cerrarVer = function () {
   document.getElementById("modal-ver").classList.remove("visible");
+};
+
+/* ============================================================
+   EXPORTAR EXCEL
+   ============================================================ */
+window.abrirModalExport = function () {
+  // Poblar fundos y líneas únicos desde historialCache
+  const fundos = [...new Set(historialCache.map(r => r.fundo).filter(Boolean))].sort();
+  const lineas = [...new Set(historialCache.map(r => r.linea).filter(Boolean))].sort();
+
+  const chkFundos = document.getElementById("exp-fundos");
+  const chkLineas = document.getElementById("exp-lineas");
+
+  chkFundos.innerHTML = fundos.map(f =>
+    `<label><input type="checkbox" value="${esc(f)}"> ${esc(f)}</label>`
+  ).join("") || '<span style="color:#999;font-size:12px">Sin fundos en historial</span>';
+
+  chkLineas.innerHTML = lineas.map(l =>
+    `<label><input type="checkbox" value="${esc(l)}"> ${esc(l)}</label>`
+  ).join("") || '<span style="color:#999;font-size:12px">Sin líneas en historial</span>';
+
+  // Fechas por defecto: últimos 7 días
+  const hoy = new Date();
+  const hace7 = new Date(); hace7.setDate(hoy.getDate() - 7);
+  const fmt = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  document.getElementById("exp-fecha-desde").value = fmt(hace7);
+  document.getElementById("exp-fecha-hasta").value = fmt(hoy);
+  document.getElementById("exp-info").textContent = "";
+
+  document.getElementById("modal-export").classList.add("visible");
+};
+
+window.cerrarModalExport = function () {
+  document.getElementById("modal-export").classList.remove("visible");
+};
+
+window.generarExcel = function () {
+  const desde = document.getElementById("exp-fecha-desde").value;
+  const hasta = document.getElementById("exp-fecha-hasta").value;
+  const fundosSel = [...document.querySelectorAll("#exp-fundos input:checked")].map(c => c.value);
+  const lineasSel = [...document.querySelectorAll("#exp-lineas input:checked")].map(c => c.value);
+
+  // Filtrar reportes
+  const reportes = historialCache.filter(r => {
+    if (desde && r.fecha < desde) return false;
+    if (hasta && r.fecha > hasta) return false;
+    if (fundosSel.length && !fundosSel.includes(r.fundo)) return false;
+    if (lineasSel.length && !lineasSel.includes(r.linea)) return false;
+    return true;
+  });
+
+  if (!reportes.length) {
+    document.getElementById("exp-info").textContent = "⚠️ No hay reportes con esos filtros.";
+    return;
+  }
+
+  document.getElementById("exp-info").textContent = `Generando Excel con ${reportes.length} reporte(s)…`;
+  document.getElementById("btn-generar-excel").disabled = true;
+
+  try {
+    const wb = XLSX.utils.book_new();
+    const TIPOS = ["TORRE", "SKIDDER", "PROCESADOR", "SHOVEL"];
+
+    // Encabezados base (comunes a todos los tipos)
+    const COLS_BASE = [
+      "Fecha","Fundo","Cód. Fundo","Línea","Jefe Faena","Versión",
+      "Tipo Equipo","Equipo","Operador","Operativo",
+      "Horómetro Inicial","Horómetro Final","Hrs Trabajo"
+    ];
+
+    // Columnas específicas por tipo
+    const COLS_EXTRA = {
+      "TORRE": ["N° Cancha","Cambio Línea","Hrs Cambio Línea","Cumple Perfil","Motivo Modif.","Cuerda Tirada","Soportes/Árbol Cola","Pre-instalado","Tipo Carro","Ciclos","Árboles"],
+      "SKIDDER": ["Ciclos","Árboles","Huinche Asistencia"],
+      "PROCESADOR": ["Reporta OEE","TP (hrs)","TOC (hrs)","TOB (hrs)","FD","FE","OEE"],
+      "SHOVEL": ["Árboles Shoveleados"]
+    };
+
+    const COLS_DET = ["Det. Código","Det. Responsable","Det. Horas","Det. Subcodigo/Motivo"];
+
+    TIPOS.forEach(tipo => {
+      // Filas de equipos de este tipo
+      const filas = [];
+      reportes.forEach(r => {
+        const eqs = (r.equipos || []).filter(e => e.tipo === tipo);
+        eqs.forEach(e => {
+          const row = {
+            "Fecha": r.fecha || "",
+            "Fundo": r.fundo || "",
+            "Cód. Fundo": r.codigoFundo || "",
+            "Línea": r.linea || "",
+            "Jefe Faena": r.jefe || "",
+            "Versión": r.version || 1,
+            "Tipo Equipo": e.tipo || "",
+            "Equipo": e.equipo || "",
+            "Operador": e.operador || "",
+            "Operativo": e.operativo || "",
+            "Horómetro Inicial": e.horometroInicial !== undefined ? e.horometroInicial : "",
+            "Horómetro Final": e.horometroFinal !== undefined ? e.horometroFinal : "",
+            "Hrs Trabajo": e.horasTrabajo !== undefined ? e.horasTrabajo : ""
+          };
+
+          // Campos por tipo
+          if (tipo === "TORRE") {
+            row["N° Cancha"] = e.numCancha || "";
+            row["Cambio Línea"] = e.cambioLinea || "";
+            row["Hrs Cambio Línea"] = e.horasCambioLinea !== undefined ? e.horasCambioLinea : "";
+            row["Cumple Perfil"] = e.cumplePerfil || "";
+            row["Motivo Modif."] = e.motivoModificacion || "";
+            row["Cuerda Tirada"] = e.cuerdaTirada || "";
+            row["Soportes/Árbol Cola"] = e.lineaSoportes || "";
+            row["Pre-instalado"] = e.preInstalado || "";
+            row["Tipo Carro"] = e.tipoCarro || "";
+            row["Ciclos"] = e.tipoCarro === "MIXTO"
+              ? (e.ciclosBereuter||0) + (e.ciclosWyssen||0)
+              : (e.ciclos !== undefined ? e.ciclos : "");
+            row["Árboles"] = e.tipoCarro === "MIXTO"
+              ? (e.arbolesBereuter||0) + (e.arbolesWyssen||0)
+              : (e.arboles !== undefined ? e.arboles : "");
+          } else if (tipo === "SKIDDER") {
+            row["Ciclos"] = e.ciclos !== undefined ? e.ciclos : "";
+            row["Árboles"] = e.arboles !== undefined ? e.arboles : "";
+            row["Huinche Asistencia"] = e.asistencia || "";
+          } else if (tipo === "PROCESADOR") {
+            row["Reporta OEE"] = e.reportaOEE || "";
+            row["TP (hrs)"] = e.horasPlanificadas !== undefined ? e.horasPlanificadas : "";
+            row["TOC (hrs)"] = e.toc !== undefined ? e.toc : "";
+            row["TOB (hrs)"] = e.tob !== undefined ? e.tob : "";
+            row["FD"] = e.fd !== undefined ? e.fd : "";
+            row["FE"] = e.fe !== undefined ? e.fe : "";
+            row["OEE"] = e.oee !== undefined ? e.oee : "";
+          } else if (tipo === "SHOVEL") {
+            row["Árboles Shoveleados"] = e.arbolesShoveleo !== undefined ? e.arbolesShoveleo : "";
+          }
+
+          // Detenciones — expandir hasta 5 columnas de grupos
+          const dets = e.detenciones || [];
+          dets.forEach((d, idx) => {
+            const n = idx + 1;
+            row[`Det${n} Código`] = d.codigo !== undefined ? d.codigo : "";
+            row[`Det${n} Resp.`] = d.resp || "";
+            row[`Det${n} Horas`] = d.horas !== undefined ? d.horas : "";
+            row[`Det${n} Motivo`] = d.motivo || d.subcodigo || d.motivoOtro || "";
+          });
+
+          filas.push(row);
+        });
+      });
+
+      if (!filas.length) {
+        // Hoja vacía con mensaje
+        const ws = XLSX.utils.aoa_to_sheet([["Sin datos para este tipo de equipo en el rango seleccionado"]]);
+        XLSX.utils.book_append_sheet(wb, ws, tipo);
+        return;
+      }
+
+      const ws = XLSX.utils.json_to_sheet(filas);
+
+      // Ancho de columnas automático
+      const colWidths = {};
+      filas.forEach(row => {
+        Object.entries(row).forEach(([k, v]) => {
+          const len = Math.max(String(k).length, String(v).length);
+          colWidths[k] = Math.max(colWidths[k] || 0, Math.min(len, 40));
+        });
+      });
+      ws["!cols"] = Object.values(colWidths).map(w => ({ wch: w + 2 }));
+
+      XLSX.utils.book_append_sheet(wb, ws, tipo);
+    });
+
+    // Nombre del archivo
+    const d1 = desde || "inicio";
+    const d2 = hasta || "hoy";
+    const nombreArchivo = `Productividad_${d1}_al_${d2}.xlsx`;
+
+    XLSX.writeFile(wb, nombreArchivo);
+    document.getElementById("exp-info").textContent = `✅ Descargado: ${nombreArchivo}`;
+  } catch (err) {
+    console.error(err);
+    document.getElementById("exp-info").textContent = "❌ Error al generar el archivo. Intente de nuevo.";
+  } finally {
+    document.getElementById("btn-generar-excel").disabled = false;
+  }
 };
 
 window.verReporte = function (id) {
