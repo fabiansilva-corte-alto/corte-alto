@@ -155,6 +155,7 @@ textarea{resize:vertical;min-height:72px}
 .btn-hist{flex:1;border:none;padding:9px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
 .btn-editar{background:var(--azul-bg);color:var(--azul)}
 .btn-tarjeta{background:var(--verde-claro);color:var(--verde-medio)}
+.btn-eliminar{background:var(--rojo-bg);color:var(--rojo);flex:0 0 auto;padding:9px 14px}
 /* MODAL EDICIÓN */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end;justify-content:center}
 .modal-overlay.visible{display:flex}
@@ -367,6 +368,8 @@ textarea{resize:vertical;min-height:72px}
     <input type="number" id="edit-esporada" step="0.001" inputmode="decimal" placeholder="0.000" oninput="recalcEdit()">
     <label>Madera Manchada (m³)</label>
     <input type="number" id="edit-manchada" step="0.001" inputmode="decimal" placeholder="0.000" oninput="recalcEdit()">
+    <label>Producción adicional (m³) — ej: prod. día anterior</label>
+    <input type="number" id="edit-prod-adicional" step="0.001" inputmode="decimal" placeholder="0.000" oninput="recalcEdit()">
     <label>Portal Mininco — F. Corte Alto (m³)</label>
     <input type="number" id="edit-portal" step="0.001" inputmode="decimal" placeholder="0.000" oninput="recalcEdit()">
     <label>Observaciones</label>
@@ -395,7 +398,7 @@ textarea{resize:vertical;min-height:72px}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, setDoc, doc, updateDoc,
+import { getFirestore, collection, addDoc, getDocs, setDoc, doc, updateDoc, deleteDoc,
   query, orderBy, where, Timestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -726,6 +729,7 @@ function renderLista(lista){
       <div class="hist-acciones">
         <button class="btn-hist btn-editar" onclick="abrirEdicion('${r.id}')">✏️ Editar</button>
         <button class="btn-hist btn-tarjeta" onclick="abrirTarjeta('${r.id}')">📤 Tarjeta</button>
+        <button class="btn-hist btn-eliminar" onclick="eliminarRegistro('${r.id}','${r.fundoNombre} ${fmtFecha(r.fecha)}')">🗑 Eliminar</button>
       </div>
     </div>`;
   }).join('');
@@ -741,6 +745,9 @@ function _abrirEdicion(id){
   document.getElementById('edit-fresca').value=r.volFresca||'';
   document.getElementById('edit-esporada').value=r.volEsporada||'';
   document.getElementById('edit-manchada').value=r.volManchada||'';
+  // prod adicional: suma de todos los items
+  const prodTotal=(r.produccionAdicional||[]).reduce((s,p)=>s+(p.volumen||0),0);
+  document.getElementById('edit-prod-adicional').value=prodTotal||'';
   document.getElementById('edit-portal').value=r.portalMininco||'';
   document.getElementById('edit-obs').value=r.observaciones||'';
   recalcEdit();
@@ -751,14 +758,18 @@ window.recalcEdit=function(){
   const f=parseFloat(document.getElementById('edit-fresca').value)||0;
   const e=parseFloat(document.getElementById('edit-esporada').value)||0;
   const m=parseFloat(document.getElementById('edit-manchada').value)||0;
+  const pa=parseFloat(document.getElementById('edit-prod-adicional').value)||0;
   const p=parseFloat(document.getElementById('edit-portal').value)||0;
-  const total=f+e+m, brecha=total-p;
+  const calidades=f+e+m;
+  const totalInterno=calidades+pa;
+  const brecha=totalInterno-p;
   const cls=brecha>=0?'tag-pos':'tag-neg', sgn=brecha>=0?'+':'';
   document.getElementById('edit-resumen-body').innerHTML=`
     <div class="resumen-row sub"><span>🌿 Fresca</span><span>${fmt(f)} m³</span></div>
     <div class="resumen-row sub"><span>🍂 Esporada</span><span>${fmt(e)} m³</span></div>
     <div class="resumen-row sub"><span>🟤 Manchada</span><span>${fmt(m)} m³</span></div>
-    <div class="resumen-row"><span><strong>Total interno</strong></span><span><strong>${fmt(total)} m³</strong></span></div>
+    ${pa>0?`<div class="resumen-row sub"><span>➕ Prod. adicional</span><span>${fmt(pa)} m³</span></div>`:''}
+    <div class="resumen-row"><span><strong>Total interno</strong></span><span><strong>${fmt(totalInterno)} m³</strong></span></div>
     <div class="resumen-row"><span>Portal Mininco</span><span>${fmt(p)} m³</span></div>
     <div class="resumen-row total-line"><span>Diferencia</span><span class="${cls}">${sgn}${fmt(brecha)} m³</span></div>`;
 };
@@ -768,19 +779,52 @@ window.guardarEdicion=async function(){
   const f=parseFloat(document.getElementById('edit-fresca').value)||0;
   const e=parseFloat(document.getElementById('edit-esporada').value)||0;
   const m=parseFloat(document.getElementById('edit-manchada').value)||0;
+  const pa=parseFloat(document.getElementById('edit-prod-adicional').value)||0;
   const p=parseFloat(document.getElementById('edit-portal').value)||0;
   const obs=document.getElementById('edit-obs').value.trim();
-  const total=f+e+m, brecha=total-p;
+  const calidades=f+e+m;
+  const totalInterno=calidades+pa;
+  const brecha=totalInterno-p;
+  // Reconstruir produccionAdicional preservando el label si existía
+  const r=todosReg.find(x=>x.id===id);
+  const prevProds=r?.produccionAdicional||[];
+  let nuevasProds=prevProds;
+  if(pa>0){
+    // Si ya hay un único item, actualizar su volumen; si hay varios, consolidar
+    if(prevProds.length===1){
+      nuevasProds=[{...prevProds[0],volumen:pa}];
+    } else if(prevProds.length===0){
+      nuevasProds=[{tipo:'prod-dia-anterior',label:'Prod. día anterior',volumen:pa}];
+    } else {
+      // varios items: reemplazar con uno consolidado
+      nuevasProds=[{tipo:'ajuste-manual',label:'Ajuste manual',volumen:pa}];
+    }
+  } else {
+    nuevasProds=[];
+  }
   try{
     await updateDoc(doc(db,COL,id),{
       volFresca:f,volEsporada:e,volManchada:m,
-      inventarioCalidades:total,inventarioInterno:total,
+      inventarioCalidades:calidades,produccionTotal:pa,
+      produccionAdicional:nuevasProds,
+      inventarioInterno:totalInterno,
       portalMininco:p,brecha,observaciones:obs
     });
     cerrarModal('modal-edicion');
     mostrarToast('✅ Registro actualizado');
     await cargarHistorial();
   }catch(err){console.error(err);mostrarToast('Error al actualizar');}
+};
+
+window.eliminarRegistro=function(id, desc){
+  pedirClave(async()=>{
+    if(!confirm(`¿Eliminar registro "${desc}"?\n\nEsta acción no se puede deshacer.`)) return;
+    try{
+      await deleteDoc(doc(db,COL,id));
+      mostrarToast('🗑 Registro eliminado');
+      await cargarHistorial();
+    }catch(e){console.error(e);mostrarToast('Error al eliminar');}
+  });
 };
 
 // ── MODAL TARJETA
