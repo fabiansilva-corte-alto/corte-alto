@@ -165,10 +165,11 @@ window.CA = (function(){
     {id:'equipo',     label:'Equipo',      nivel:'cartola'},
     {id:'tipo',       label:'Tipo',        nivel:'producto'},
     {id:'turno',      label:'Turno',       nivel:'cartola'},
-    {id:'procesador', label:'Procesador',  nivel:'cartola'}
+    {id:'procesador', label:'Procesador',  nivel:'cartola'},
+    {id:'volteo',     label:'Volteo',      nivel:'cartola'}
   ];
   const CAMPOS_REPORTE = ['fundo','linea','calibrador'];
-  const CAMPOS_CARTOLA = ['rodal','turno','opMadereo','opTrozado','equipo','procesador'];
+  const CAMPOS_CARTOLA = ['rodal','turno','opMadereo','opTrozado','equipo','procesador','volteo'];
   const CAMPOS_GENERAL = ['fundo','linea','equipo'];
 
   function fmtVol(n){
@@ -293,6 +294,7 @@ window.CA = (function(){
           opMadereo: listaUnica(grupo.map(c => String(c.opMadereo || ''))),
           equipo: listaUnica(grupo.map(c => String(c.equipo || ''))),
           procesador: listaUnica(grupo.map(c => String(c.procesador || ''))),
+          volteo: listaUnica(grupo.map(c => String(c.volteo || ''))),
           tipo: listaUnica(tipos) || '—',
           turno: turnoTexto(grupo),
           calibrador: doc.calibrador || '',
