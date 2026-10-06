@@ -1178,8 +1178,13 @@ function renderRanking() {
           </div>`;
       }).join('');
 
+      const evsCondSnap = JSON.stringify(c.eventos);
       trDet.innerHTML = `<td colspan="6">
         <div class="detalle-inner">
+          <div class="det-acciones">
+            <button class="btn-exp pdf" onclick='exportarPDFConductor(${JSON.stringify(escH(c.nombre))},${evsCondSnap})'>📄 PDF</button>
+            <button class="btn-exp xls" onclick='exportarExcelConductor(${JSON.stringify(escH(c.nombre))},${evsCondSnap})'>📊 Excel</button>
+          </div>
           <div class="det-titulo">📋 Detalle de excesos — ${escH(c.nombre)} (${c.eventos.length} evento${c.eventos.length>1?'s':''})</div>
           <div style="overflow-x:auto;">${seccionesPat}</div>
         </div>
@@ -1545,6 +1550,202 @@ function exportarExcel(patente, tipo, evs) {
   const hoy = new Date().toLocaleDateString('es-CL').replace(/\//g,'-');
   XLSX.writeFile(wb, `Excesos_Velocidad_${patente}_${hoy}.xlsx`);
 }
+// ── Exportar PDF por conductor (vel. en ruta) ──
+function exportarPDFConductor(nombre, evs) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const hoy = new Date();
+  const fechaGen = hoy.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  try { doc.addImage(LOGO_B64,'PNG',10,6,28,22); } catch(e){}
+  doc.setFillColor(26,58,26);
+  doc.rect(42,6,W-52,16,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text('INFORME DE EXCESOS DE VELOCIDAD EN RUTA', 42+(W-52)/2, 13, {align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text('Forestal Corte Alto Ltda.', 42+(W-52)/2, 19, {align:'center'});
+  const velMax = evs.length > 0 ? Math.max(...evs.map(e=>Number(e.velMax)||0)) : 0;
+  const fechas = [...new Set(evs.map(e=>e.fecha||''))].filter(Boolean).sort();
+  const periodo = fechas.length > 1 ? `${fechas[0]} al ${fechas[fechas.length-1]}` : (fechas[0]||'—');
+  let y = 35;
+  doc.setFillColor(232,240,232);
+  doc.rect(10,y,W-20,18,'F');
+  doc.setTextColor(26,58,26); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text(`Conductor: ${nombre}`, 15, y+6);
+  doc.text(`Total excesos: ${evs.length}`, 15, y+12);
+  doc.text(`Vel. máx.: ${velMax > 0 ? velMax+' km/h' : '—'}`, W/2, y+6);
+  doc.text(`Período: ${periodo}`, W/2, y+12);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7);
+  doc.setTextColor(120,120,120);
+  doc.text(`Generado: ${fechaGen}`, W-15, y+6, {align:'right'});
+  y += 24;
+  // Mensaje formativo ruta
+  const msgRuta = 'Los límites de velocidad en ruta son establecidos por las autoridades de tránsito y su incumplimiento constituye una infracción legal que puede derivar en multas, suspensión de licencia u otras sanciones. Más allá de las consecuencias legales, conducir a exceso de velocidad pone en riesgo la vida del conductor, de los compañeros de trabajo y de terceros. Le solicitamos respetar siempre los límites indicados como parte del compromiso con la seguridad y el autocuidado.';
+  doc.setFillColor(255,248,220); doc.rect(10,y,W-20,20,'F');
+  doc.setDrawColor(200,160,0); doc.rect(10,y,W-20,20,'S');
+  doc.setTextColor(100,70,0); doc.setFont('helvetica','italic'); doc.setFontSize(8.5);
+  const linesRuta = doc.splitTextToSize(msgRuta, W-26);
+  doc.text(linesRuta, 14, y+5.5);
+  y += 23;
+  // Agrupar por patente
+  const porPat = {};
+  evs.forEach(e => {
+    if (!porPat[e.patente]) porPat[e.patente] = { tipo: e.tipo||flotaDe(e.patente), eventos: [] };
+    porPat[e.patente].eventos.push(e);
+  });
+  Object.entries(porPat).forEach(([pat, datos]) => {
+    const lim = limiteFlota(datos.tipo);
+    doc.setFillColor(44,85,44); doc.rect(10,y,W-20,7,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text(`${pat} — ${datos.tipo} (${datos.eventos.length} excesos)`, 14, y+5);
+    y += 10;
+    const headers = ['Fecha','Hora','Límite','Vel. evento','Duración','Ubicación'];
+    const colW = [22,20,20,22,20,W-20-104];
+    doc.setFillColor(60,100,60); doc.rect(10,y,W-20,6,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+    let x = 12;
+    headers.forEach((h,i) => { doc.text(h, x, y+4.5); x += colW[i]; });
+    y += 7;
+    datos.eventos.sort((a,b)=>{
+      const fa=(a.fecha||'').split('-').reverse().join('')+(a.horaIni||'');
+      const fb=(b.fecha||'').split('-').reverse().join('')+(b.horaIni||'');
+      return fa.localeCompare(fb);
+    }).forEach((e,idx) => {
+      if (y > 185) { doc.addPage(); y = 15; }
+      doc.setFillColor(idx%2===0?245:255, idx%2===0?250:255, idx%2===0?245:255);
+      doc.rect(10,y,W-20,6,'F');
+      doc.setTextColor(30,30,30); doc.setFont('helvetica','normal'); doc.setFontSize(7);
+      const vel = Number(e.velMax)||0;
+      if (vel > 140) doc.setTextColor(192,57,43);
+      else if (vel > 100) doc.setTextColor(230,126,34);
+      const row = [e.fecha||'—', e.horaIni||'—', lim+' km/h', vel>0?vel+' km/h':'—', e.duracion||'—', (e.ubicacion||'—').slice(0,60)];
+      x = 12;
+      row.forEach((v,i) => { doc.setTextColor(i===3&&vel>100?(vel>140?'#c0392b':'#e67e22'):30); doc.text(String(v),x,y+4.5); x+=colW[i]; });
+      doc.setTextColor(30,30,30);
+      y += 6;
+    });
+    y += 4;
+  });
+  const hoyStr = hoy.toLocaleDateString('es-CL').replace(/\//g,'-');
+  doc.save(`Excesos_Velocidad_${nombre.replace(/\s+/g,'_')}_${hoyStr}.pdf`);
+}
+
+// ── Exportar Excel por conductor (vel. en ruta) ──
+function exportarExcelConductor(nombre, evs) {
+  const filas = evs.map(e => ({
+    'Conductor':         nombre,
+    'Patente':           e.patente||'—',
+    'Tipo':              e.tipo||flotaDe(e.patente)||'—',
+    'Fecha':             e.fecha||'—',
+    'Hora inicio':       e.horaIni||'—',
+    'Hora fin':          e.horaFin||'—',
+    'Límite (km/h)':     limiteFlota(e.tipo||flotaDe(e.patente)),
+    'Vel. evento (km/h)':Number(e.velMax)||0,
+    'Duración':          e.duracion||'—',
+    'Ubicación':         e.ubicacion||'—',
+  }));
+  const ws = XLSX.utils.json_to_sheet(filas);
+  ws['!cols'] = [{wch:22},{wch:12},{wch:10},{wch:12},{wch:12},{wch:12},{wch:14},{wch:16},{wch:14},{wch:50}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Excesos');
+  const hoy = new Date().toLocaleDateString('es-CL').replace(/\//g,'-');
+  XLSX.writeFile(wb, `Excesos_Velocidad_${nombre.replace(/\s+/g,'_')}_${hoy}.xlsx`);
+}
+
+// ── Exportar PDF por conductor (geocercas) ──
+function exportarPDFGeoConductor(nombre, evs) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const hoy = new Date();
+  const fechaGen = hoy.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  try { doc.addImage(LOGO_B64,'PNG',10,6,28,22); } catch(e){}
+  doc.setFillColor(26,58,26);
+  doc.rect(42,6,W-52,16,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text('INFORME DE EXCESOS DE VELOCIDAD EN GEOCERCAS', 42+(W-52)/2, 13, {align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text('Forestal Corte Alto Ltda.', 42+(W-52)/2, 19, {align:'center'});
+  const velMax = evs.length > 0 ? Math.max(...evs.map(e=>Number(e.velEvento)||0)) : 0;
+  const fechas = [...new Set(evs.map(e=>e.fecha||''))].filter(Boolean).sort();
+  const periodo = fechas.length > 1 ? `${fechas[0]} al ${fechas[fechas.length-1]}` : (fechas[0]||'—');
+  let y = 35;
+  doc.setFillColor(232,240,232);
+  doc.rect(10,y,W-20,18,'F');
+  doc.setTextColor(26,58,26); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text(`Conductor: ${nombre}`, 15, y+6);
+  doc.text(`Total eventos: ${evs.length}`, 15, y+12);
+  doc.text(`Vel. máx.: ${velMax > 0 ? velMax+' km/h' : '—'}`, W/2, y+6);
+  doc.text(`Período: ${periodo}`, W/2, y+12);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7);
+  doc.setTextColor(120,120,120);
+  doc.text(`Generado: ${fechaGen}`, W-15, y+6, {align:'right'});
+  y += 24;
+  // Mensaje formativo geocercas
+  const msgGeo = 'Los límites de velocidad en geocercas son restricciones internas de Forestal Corte Alto Ltda., no normativa legal, pero responden a la necesidad de proteger al conductor, a los compañeros que trabajan en esas zonas y a terceros. Le pedimos respetar estas restricciones como parte del compromiso con la seguridad operacional.';
+  doc.setFillColor(255,248,220); doc.rect(10,y,W-20,18,'F');
+  doc.setDrawColor(200,160,0); doc.rect(10,y,W-20,18,'S');
+  doc.setTextColor(100,70,0); doc.setFont('helvetica','italic'); doc.setFontSize(8.5);
+  const linesGeo = doc.splitTextToSize(msgGeo, W-26);
+  doc.text(linesGeo, 14, y+5.5);
+  y += 21;
+  const porPat = {};
+  evs.forEach(e => {
+    if (!porPat[e.patente]) porPat[e.patente] = { tipo: e.tipo||flotaDe(e.patente), eventos: [] };
+    porPat[e.patente].eventos.push(e);
+  });
+  Object.entries(porPat).forEach(([pat, datos]) => {
+    doc.setFillColor(44,85,44); doc.rect(10,y,W-20,7,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text(`${pat} — ${datos.tipo} (${datos.eventos.length} eventos)`, 14, y+5);
+    y += 10;
+    const headers = ['Fecha','Hora','Geocerca','Límite','Vel. evento'];
+    const colW = [22,20,W-20-104,22,22];
+    doc.setFillColor(60,100,60); doc.rect(10,y,W-20,6,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+    let x = 12;
+    headers.forEach((h,i) => { doc.text(h,x,y+4.5); x+=colW[i]; });
+    y += 7;
+    datos.eventos.sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||'')||(a.hora||'').localeCompare(b.hora||''))
+    .forEach((e,idx) => {
+      if (y > 185) { doc.addPage(); y = 15; }
+      doc.setFillColor(idx%2===0?245:255,idx%2===0?250:255,idx%2===0?245:255);
+      doc.rect(10,y,W-20,6,'F');
+      doc.setTextColor(30,30,30); doc.setFont('helvetica','normal'); doc.setFontSize(7);
+      const vel = Number(e.velEvento)||0;
+      const row = [fmtFecha(e.fecha)||'—', e.hora||'—', (e.geocerca||'—').slice(0,45), e.velLimite>0?limiteVisual(e.velLimite)+' km/h':'—', vel>0?vel+' km/h':'—'];
+      x = 12;
+      row.forEach((v,i) => { doc.text(String(v),x,y+4.5); x+=colW[i]; });
+      y += 6;
+    });
+    y += 4;
+  });
+  const hoyStr = hoy.toLocaleDateString('es-CL').replace(/\//g,'-');
+  doc.save(`Excesos_Geocerca_${nombre.replace(/\s+/g,'_')}_${hoyStr}.pdf`);
+}
+
+// ── Exportar Excel por conductor (geocercas) ──
+function exportarExcelGeoConductor(nombre, evs) {
+  const filas = evs.map(e => ({
+    'Conductor':         nombre,
+    'Patente':           e.patente||'—',
+    'Tipo':              e.tipo||flotaDe(e.patente)||'—',
+    'Fecha':             fmtFecha(e.fecha)||'—',
+    'Hora':              e.hora||'—',
+    'Geocerca':          e.geocerca||'—',
+    'Límite (km/h)':     e.velLimite>0 ? limiteVisual(e.velLimite) : '—',
+    'Vel. evento (km/h)':Number(e.velEvento)||0,
+  }));
+  const ws = XLSX.utils.json_to_sheet(filas);
+  ws['!cols'] = [{wch:22},{wch:12},{wch:10},{wch:12},{wch:12},{wch:35},{wch:14},{wch:16}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Geocercas');
+  const hoy = new Date().toLocaleDateString('es-CL').replace(/\//g,'-');
+  XLSX.writeFile(wb, `Excesos_Geocerca_${nombre.replace(/\s+/g,'_')}_${hoy}.xlsx`);
+}
+
 function toast(msg, tipo='ok') {
   const el = document.createElement('div');
   el.style.cssText = `
@@ -1926,8 +2127,13 @@ function renderDetalleGeo() {
         </div>`;
     }).join('');
 
+    const evsGeoCondSnap = JSON.stringify(c.eventos);
     trDet.innerHTML = `<td colspan="6">
       <div class="detalle-inner">
+        <div class="det-acciones">
+          <button class="btn-exp pdf" onclick='exportarPDFGeoConductor(${JSON.stringify(escH(c.nombre))},${evsGeoCondSnap})'>📄 PDF</button>
+          <button class="btn-exp xls" onclick='exportarExcelGeoConductor(${JSON.stringify(escH(c.nombre))},${evsGeoCondSnap})'>📊 Excel</button>
+        </div>
         <div class="det-titulo">📍 Detalle geocerca — ${escH(c.nombre)} (${c.eventos.length} evento${c.eventos.length>1?'s':''})</div>
         <div style="overflow-x:auto;">${seccionesPat}</div>
       </div>
