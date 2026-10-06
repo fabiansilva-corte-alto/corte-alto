@@ -715,24 +715,24 @@ let _ultimoPorPat={}; // último porPat cargado para re-render desde ciclarEstad
 function actualizarBarraGuardar(){
   const barra=document.getElementById('barra-guardar');
   const pendientes=Object.keys(borrador).length;
-  if(pendientes>0||modoRevision){
-    barra.style.display='flex';
-    document.getElementById('bg-pendientes-txt').textContent=
-      pendientes>0
-        ?`${pendientes} móvil(es) con cambios pendientes de guardar`
-        :'Revisa las asignaciones y presiona Guardar día';
-  } else {
-    barra.style.display='none';
-  }
+  // La barra siempre visible en tab asignación diaria
+  barra.style.display='flex';
+  document.getElementById('bg-pendientes-txt').textContent=
+    pendientes>0
+      ?`${pendientes} móvil(es) con cambios pendientes de guardar`
+      :modoRevision
+        ?'Revisa las asignaciones y presiona Guardar día'
+        :'Presiona Guardar día para registrar el estado actual de la flota';
 }
 
 // Captura cambio en inputs del borrador
 function onInputBorrador(pat){
   const cond=document.getElementById(`inp-cond-${pat}`)?.value.trim()||'';
-  const ini=document.getElementById(`inp-ini-${pat}`)?.value||'';
-  const fin=document.getElementById(`inp-fin-${pat}`)?.value||'';
   const com=document.getElementById(`inp-com-${pat}`)?.value.trim()||'';
   const todoDia=borrador[pat]?.todoDia||false;
+  // Si todoDia está activo, los inputs de hora no existen en el DOM → usar valores fijos
+  const ini=todoDia?'00:01':(document.getElementById(`inp-ini-${pat}`)?.value||'');
+  const fin=todoDia?'23:59':(document.getElementById(`inp-fin-${pat}`)?.value||'');
   if(cond){
     borrador[pat]={conductor:cond,horaIni:ini,horaFin:fin,comentario:com,todoDia};
   } else {
@@ -959,7 +959,7 @@ async function cargarHistorial(fecha){
   // Reset botón limpiar
   const btnL=document.getElementById('btn-limpiar-dia');
   btnL.textContent='🗑 Limpiar día'; btnL.disabled=false; btnL.style.display='none';
-  document.getElementById('barra-guardar').style.display='none';
+  // barra siempre visible — no ocultar
   const wrap=document.getElementById('tabla-wrap');
   const lbl=document.getElementById('lbl-registros');
   wrap.innerHTML='<div class="empty-bit"><h3>Cargando...</h3></div>';
