@@ -315,6 +315,8 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
   <div class="contenido">
 
     <!-- Bandeja de clasificación (REAL) -->
+    <datalist id="fundos-catalogo-datalist"></datalist>
+
     <div id="seccion-bandeja" class="seccion">
       <div class="contenido-header">
         <div>
@@ -366,6 +368,10 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 
       <div id="boveda-revision" class="hidden" style="margin-top:1.2rem">
         <div class="bandeja-match-card" id="boveda-match-card"></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0">
+          <input class="field-input" id="boveda-filtro-documentos" type="text" placeholder="Filtrar por fundo o nombre de archivo…" oninput="renderDocumentosBoveda()" style="max-width:360px;margin:0">
+          <span class="status-note" id="boveda-filtro-contador" style="margin:0"></span>
+        </div>
         <div id="boveda-documentos-cont"></div>
       </div>
     </div>
@@ -441,19 +447,65 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
       <div class="contenido-header">
         <div>
           <div class="contenido-titulo">Configuración</div>
-          <div class="contenido-sub">Catálogo de tipos de documento — se usa en la Bandeja de clasificación y en la Bóveda.</div>
+          <div class="contenido-sub">Catálogos usados por la Bandeja, la Bóveda y Cuadrilla diaria.</div>
         </div>
-        <button class="btn-primary" onclick="abrirModalTipo()">+ Nuevo tipo de documento</button>
       </div>
-      <div class="tabla-wrap" style="max-width:620px">
-        <table class="tabla">
-          <thead>
-            <tr><th>Tipo de documento</th><th>Origen</th><th></th></tr>
-          </thead>
-          <tbody id="config-tipos-tabla-body"></tbody>
-        </table>
+
+      <div class="tabs" id="config-tabs">
+        <button class="tab active" data-tab="tipos" onclick="cambiarTabConfiguracion('tipos')">Tipos de documento</button>
+        <button class="tab" data-tab="fundos" onclick="cambiarTabConfiguracion('fundos')">Fundos</button>
       </div>
-      <p style="font-size:12px;color:var(--text3);margin-top:10px;max-width:560px">Los tipos predeterminados no se pueden eliminar (son los que usa el sistema para "Anexo — cambio de fundo" y el resto de las reglas), pero sí puedes cambiarles el nombre. Los tipos personalizados que agregues se pueden editar y eliminar libremente, salvo que ya tengan documentos subidos.</p>
+
+      <div id="config-tab-tipos">
+        <div class="contenido-header">
+          <div></div>
+          <button class="btn-primary" onclick="abrirModalTipo()">+ Nuevo tipo de documento</button>
+        </div>
+        <div class="tabla-wrap" style="max-width:620px">
+          <table class="tabla">
+            <thead>
+              <tr><th>Tipo de documento</th><th>Origen</th><th></th></tr>
+            </thead>
+            <tbody id="config-tipos-tabla-body"></tbody>
+          </table>
+        </div>
+        <p style="font-size:12px;color:var(--text3);margin-top:10px;max-width:560px">Los tipos predeterminados no se pueden eliminar (son los que usa el sistema para "Anexo — cambio de fundo" y el resto de las reglas), pero sí puedes cambiarles el nombre. Los tipos personalizados que agregues se pueden editar y eliminar libremente, salvo que ya tengan documentos subidos.</p>
+      </div>
+
+      <div id="config-tab-fundos" class="hidden">
+        <div class="contenido-header">
+          <div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-secondary" onclick="detectarFundosSimilares()">Detectar fundos similares</button>
+            <button class="btn-primary" onclick="abrirModalFundo()">+ Nuevo fundo</button>
+          </div>
+        </div>
+        <div class="tabla-wrap" style="max-width:900px">
+          <table class="tabla">
+            <thead>
+              <tr><th>Nombre del fundo</th><th>Centros asociados</th><th>Variantes conocidas</th><th></th></tr>
+            </thead>
+            <tbody id="config-fundos-tabla-body"></tbody>
+          </table>
+        </div>
+        <p style="font-size:12px;color:var(--text3);margin-top:10px;max-width:620px">Este es el nombre que verá el jefe de faena al elegir el fundo en Cuadrilla diaria. Los centros asociados son solo una ayuda para marcar vigencia masiva — no reemplazan lo que informa cada jefe de faena en Cuadrilla diaria. "Detectar fundos similares" revisa los anexos de cambio de fundo ya subidos y te sugiere agrupar variantes de escritura (ej. "Los Alpes", "Los Alpes Hij", "Los Alpes Hijuela 1") bajo un solo nombre, y actualiza esos documentos para que queden escritos igual.</p>
+        <div id="fundo-masivo-panel" class="hidden" style="margin-top:16px;border:1px solid var(--border);border-radius:10px;padding:14px;max-width:680px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div class="contenido-titulo" style="font-size:15px" id="fundo-masivo-titulo">Marcar vigente masivo</div>
+            <button class="btn-secondary" onclick="cerrarFundoMasivo()">Cerrar</button>
+          </div>
+          <div id="fundo-masivo-cont"></div>
+        </div>
+        <div id="fundos-sospechosos-panel" class="hidden" style="margin-top:16px">
+          <div class="contenido-titulo" style="font-size:15px;margin-bottom:4px">Sin fundo reconocible</div>
+          <p style="font-size:12px;color:var(--text3);margin:0 0 8px;max-width:620px">Estos quedaron con un valor que parece el número del escaneo y no un nombre de fundo real (ej. "Fundo024"). Ábrelos con "Ver" y escribe el fundo correcto.</p>
+          <div id="fundos-sospechosos-cont"></div>
+        </div>
+        <div id="fundos-similares-panel" class="hidden" style="margin-top:16px">
+          <div class="contenido-titulo" style="font-size:15px;margin-bottom:8px">Fundos por revisar</div>
+          <div id="fundos-similares-cont"></div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -533,6 +585,30 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
   </div>
 </div>
 
+<!-- ===== MODAL: NUEVO / EDITAR FUNDO ===== -->
+<div id="modal-fundo" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-titulo" id="mf-titulo">Nuevo fundo</div>
+    <input type="hidden" id="mf-id">
+    <label class="field-label" for="mf-nombre">Nombre del fundo (como debe aparecer para el jefe de faena)</label>
+    <input class="field-input" id="mf-nombre" type="text" placeholder="Ej: Los Alpes Hijuela 1">
+    <label class="field-label" for="mf-alias" style="margin-top:12px">Otras formas en que aparece (separadas por coma, opcional)</label>
+    <textarea class="field-input" id="mf-alias" style="height:80px;padding:9px 12px;resize:vertical" placeholder="Ej: Los Alpes, Los Alpes Hij"></textarea>
+    <div class="field-label" style="margin-top:12px">Centros asociados (opcional — puede ser más de uno)</div>
+    <div id="mf-centros" style="display:flex;flex-wrap:wrap;gap:4px 14px">
+      <label class="chk-row"><input type="checkbox" value="FORMIN 1"> FORMIN 1</label>
+      <label class="chk-row"><input type="checkbox" value="FORMIN 2"> FORMIN 2</label>
+      <label class="chk-row"><input type="checkbox" value="FORMIN 3"> FORMIN 3</label>
+      <label class="chk-row"><input type="checkbox" value="TALLER_COIHUE"> Taller Coihue</label>
+      <label class="chk-row"><input type="checkbox" value="ROTATIVO"> Rotativo</label>
+    </div>
+    <p class="status-note" style="margin-top:4px">Ayuda para "Marcar vigente masivo" — no limita a quién puede subir o ver documentos de este fundo.</p>
+    <div class="msg-error" id="modal-fundo-error"></div>
+    <button class="btn-primary full" id="mf-guardar" style="margin-top:10px" onclick="guardarFundo()">Guardar</button>
+    <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModalFundo()">Cancelar</button>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -562,6 +638,13 @@ const TIPOS_DOCUMENTO_DEFECTO = [
 ];
 let TIPOS_DOCUMENTO = TIPOS_DOCUMENTO_DEFECTO.slice();
 let tiposDocumentoCargados = false;
+
+let FUNDOS_CATALOGO = []; // [{id, nombre, alias:[...]}] — catálogo canónico, también usado por cuadrilla-diaria.html (colección config_fundos)
+let fundosCatalogoCargados = false;
+let fundosSimilaresGrupos = null;
+let fundosSospechososLista = null; // [{id, textoOriginal, nombreArchivo, trabajadorNombre, storagePath}] — fundos que parecen número de escaneo, no un nombre real
+let fundoMasivoActual = null; // el fundo sobre el que se está corriendo "Marcar vigente masivo"
+let fundoMasivoCandidatos = null; // [{trabajadorId, nombre, docId, estado: 'marcar'|'al_dia'|'sin_anexo', incluir}]
 
 const NOMBRES_ROL = { admin: "Administrador maestro", rrhh: "RRHH", jefe_centro: "Jefe de centro" };
 const NOMBRES_CENTRO = { "FORMIN 1": "FORMIN 1", "FORMIN 2": "FORMIN 2", "FORMIN 3": "FORMIN 3", TALLER_COIHUE: "Taller Coihue", ROTATIVO: "Rotativo" };
@@ -597,6 +680,9 @@ window.mostrarSeccion = function(id){
   if(id === "bandeja" && dotDatosTodos === null){
     fetchDotacionTodos().catch(()=>{});
   }
+  if(id === "bandeja" && !fundosCatalogoCargados){
+    fetchFundosCatalogo().then(renderFundosDatalist).catch(()=>{});
+  }
   if(id === "boveda"){
     // entrar a la Bóveda (incluso re-hacer clic estando ya adentro) siempre vuelve a la lista completa
     bovedaTrabajadorSeleccionado = null;
@@ -619,6 +705,22 @@ window.mostrarSeccion = function(id){
       fetchTiposDocumento().then(renderConfiguracionTipos).catch(()=>renderConfiguracionTipos());
     }else{
       renderConfiguracionTipos();
+    }
+    if(fundosCatalogoCargados) renderConfiguracionFundos();
+  }
+};
+
+window.cambiarTabConfiguracion = function(tab){
+  document.querySelectorAll("#config-tabs .tab").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.tab === tab);
+  });
+  document.getElementById("config-tab-tipos").classList.toggle("hidden", tab !== "tipos");
+  document.getElementById("config-tab-fundos").classList.toggle("hidden", tab !== "fundos");
+  if(tab === "fundos"){
+    if(!fundosCatalogoCargados){
+      fetchFundosCatalogo().then(renderConfiguracionFundos).catch(()=>renderConfiguracionFundos());
+    }else{
+      renderConfiguracionFundos();
     }
   }
 };
@@ -1304,7 +1406,7 @@ function renderBandejaArchivosCarpeta(card){
           ${TIPOS_DOCUMENTO.map(td => `<option value="${td.slug}" ${a.tipo === td.slug ? "selected" : ""}>${td.label}</option>`).join("")}
         </select>
       </td>
-      <td>${a.tipo === "anexo_fundo" ? `<input class="bandeja-input-fundo" value="${escapeHtml(a.fundo)}" placeholder="Nombre del fundo" oninput="actualizarFundoArchivoBandeja('${card.id}', ${i}, this.value)">` : "—"}</td>
+      <td>${a.tipo === "anexo_fundo" ? `<input class="bandeja-input-fundo" list="fundos-catalogo-datalist" value="${escapeHtml(a.fundo)}" placeholder="Nombre del fundo" oninput="actualizarFundoArchivoBandeja('${card.id}', ${i}, this.value)">` : "—"}</td>
       <td style="text-align:center">${a.tipo === "anexo_fundo" ? `<input type="checkbox" ${a.vigente ? "checked" : ""} onchange="marcarVigenteArchivoBandeja('${card.id}', ${i}, this.checked)">` : "—"}</td>
       <td style="text-align:center"><input type="checkbox" ${a.incluir ? "checked" : ""} onchange="marcarIncluirArchivoBandeja('${card.id}', ${i}, this.checked)" title="${a.duplicado ? "Ya estaba subido — márcalo para subirlo de todas formas" : "Subir este archivo"}"></td>
       <td><button class="bandeja-quitar" onclick="quitarArchivoBandeja('${card.id}', ${i})" aria-label="Quitar">✕</button></td>
@@ -1338,10 +1440,11 @@ window.actualizarFundoArchivoBandeja = function(cardId, i, valor){
 
 window.marcarVigenteArchivoBandeja = function(cardId, i, marcado){
   const card = encontrarCarpetaBandeja(cardId);
-  if(!card) return;
-  card.archivos.forEach((a, idx) => {
-    if(a.tipo === "anexo_fundo") a.vigente = (idx === i) ? marcado : false;
-  });
+  if(!card || !card.archivos[i]) return;
+  // Un trabajador puede quedar con más de un anexo de cambio de fundo vigente a la vez
+  // (ej. transición entre fundos, o mecánicos autorizados en varios), así que no se
+  // desmarcan los demás archivos de esta misma carga.
+  card.archivos[i].vigente = marcado;
   renderBandejaArchivosCarpeta(card);
 };
 
@@ -1378,23 +1481,9 @@ async function subirArchivosDeCarpeta(card, onProgreso){
 
   const centroCarpeta = t.centro || "SIN_CENTRO";
 
-  // Si algún anexo de cambio de fundo queda marcado como vigente, desmarcar los anteriores del mismo trabajador
-  const marcaVigenteNueva = aSubir.some(a => a.tipo === "anexo_fundo" && a.vigente);
-  if(marcaVigenteNueva){
-    try{
-      const previos = await getDocs(query(collection(db, "documentos"), where("trabajadorId", "==", t.id)));
-      const actualizaciones = [];
-      previos.forEach(d => {
-        const data = d.data();
-        if(data.tipo === "anexo_fundo" && data.vigente === true){
-          actualizaciones.push(setDoc(doc(db, "documentos", d.id), { vigente: false }, { merge: true }));
-        }
-      });
-      await Promise.all(actualizaciones);
-    }catch(e){
-      // si falla la desmarcación de anexos anteriores, seguimos igual con la subida
-    }
-  }
+  // Nota: un trabajador puede tener más de un anexo de cambio de fundo vigente a la vez
+  // (ej. transición entre fundos, o mecánicos autorizados en varios), así que al subir
+  // un anexo marcado vigente ya NO se desmarcan los anexos anteriores de este trabajador.
 
   let ok = 0, conError = 0, terminados = 0;
   const CONCURRENCIA = 4; // subir varios archivos en paralelo en vez de uno por uno
@@ -1621,6 +1710,10 @@ window.bovedaElegirTrabajador = function(id){
   bovedaTrabajadorSeleccionado = t || { id, nombre: fb.nombre || "(sin nombre)", rut: "", centro: fb.centro || "", empresa: "", __sinDotacion: true };
   document.getElementById("boveda-lista-wrap").classList.add("hidden");
   document.getElementById("boveda-revision").classList.remove("hidden");
+  const filtroInput = document.getElementById("boveda-filtro-documentos");
+  if(filtroInput) filtroInput.value = "";
+  const filtroContador = document.getElementById("boveda-filtro-contador");
+  if(filtroContador) filtroContador.textContent = "";
   renderBovedaMatch();
   cargarDocumentosBoveda();
 };
@@ -1667,9 +1760,13 @@ async function cargarDocumentosBoveda(){
   }
 }
 
-function renderDocumentosBoveda(){
+window.renderDocumentosBoveda = function renderDocumentosBoveda(){
   const cont = document.getElementById("boveda-documentos-cont");
+  const filtroInput = document.getElementById("boveda-filtro-documentos");
+  const filtroContador = document.getElementById("boveda-filtro-contador");
+
   if(!bovedaDocumentos.length){
+    if(filtroContador) filtroContador.textContent = "";
     cont.innerHTML = `
       <div class="estado-vacio-desktop">
         <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></div>
@@ -1680,15 +1777,34 @@ function renderDocumentosBoveda(){
     return;
   }
 
+  // Filtro en vivo por nombre de fundo o de archivo (útil para trabajadores con muchos
+  // anexos de cambio de fundo acumulados, ej. mecánicos rotativos)
+  const filtroTexto = normalizar((filtroInput && filtroInput.value) || "").trim();
+  let docsVisibles = bovedaDocumentos;
+  if(filtroTexto){
+    docsVisibles = bovedaDocumentos.filter(d => {
+      const enFundo = d.fundo && normalizar(d.fundo).includes(filtroTexto);
+      const enNombre = d.nombreArchivo && normalizar(d.nombreArchivo).includes(filtroTexto);
+      return enFundo || enNombre;
+    });
+  }
+  if(filtroContador){
+    filtroContador.textContent = filtroTexto ? `${docsVisibles.length} de ${bovedaDocumentos.length} documentos` : "";
+  }
+  if(filtroTexto && !docsVisibles.length){
+    cont.innerHTML = `<div class="status-note" style="margin-top:4px">Sin documentos que coincidan con "${escapeHtml(filtroInput.value.trim())}".</div>`;
+    return;
+  }
+
   const tiposOrdenados = TIPOS_DOCUMENTO.slice().sort((a,b) => (a.orden||99) - (b.orden||99));
   const grupos = tiposOrdenados.map(td => ({
     tipo: td,
-    docs: bovedaDocumentos.filter(d => d.tipo === td.slug)
+    docs: docsVisibles.filter(d => d.tipo === td.slug)
   })).filter(g => g.docs.length);
 
   // Por si algún documento quedó con un tipo que ya no existe en el catálogo
   const slugsConocidos = new Set(TIPOS_DOCUMENTO.map(td => td.slug));
-  const sinTipo = bovedaDocumentos.filter(d => !slugsConocidos.has(d.tipo));
+  const sinTipo = docsVisibles.filter(d => !slugsConocidos.has(d.tipo));
   if(sinTipo.length) grupos.push({ tipo: { label: "Otro / sin clasificar" }, docs: sinTipo });
 
   cont.innerHTML = grupos.map(g => `
@@ -1703,6 +1819,11 @@ function renderDocItem(d){
   const fecha = d.fechaSubida ? new Date(d.fechaSubida).toLocaleDateString("es-CL") : "—";
   const detalleFundo = d.tipo === "anexo_fundo" && d.fundo ? ` · Fundo ${escapeHtml(d.fundo)}` : "";
   const vigenteBadge = d.tipo === "anexo_fundo" && d.vigente ? `<span class="badge-vigente">Vigente</span>` : "";
+  const vigenteBtn = d.tipo === "anexo_fundo"
+    ? (d.vigente
+        ? `<button class="btn-secondary" style="color:var(--red)" onclick="bovedaQuitarVigencia('${d.id}', this)">Quitar vigencia</button>`
+        : `<button class="btn-secondary" onclick="bovedaMarcarVigente('${d.id}', this)">Marcar vigente</button>`)
+    : "";
   return `
     <div class="doc-item">
       <div>
@@ -1710,12 +1831,53 @@ function renderDocItem(d){
         <div class="doc-item-meta">Subido ${fecha}${d.subidoPor ? " · " + escapeHtml(d.subidoPor) : ""}${detalleFundo}</div>
       </div>
       <div class="doc-item-acciones">
+        ${vigenteBtn}
         <button class="btn-secondary" onclick="bovedaVerDocumento('${escapeHtml(d.storagePath).replace(/'/g,"\\'")}', this)">Ver</button>
         <button class="btn-secondary" style="color:var(--red)" onclick="bovedaEliminarDocumento('${d.id}', '${escapeHtml(d.storagePath).replace(/'/g,"\\'")}', '${escapeHtml(d.nombreArchivo||"").replace(/'/g,"\\'")}')">Eliminar</button>
       </div>
     </div>
   `;
 }
+
+// Un trabajador puede tener varios anexos de cambio de fundo vigentes a la vez
+// (ej. un mecánico autorizado en más de un fundo, o un cambio de fundo en transición).
+// Marcar o quitar vigencia es independiente por documento, no exclusivo.
+window.bovedaMarcarVigente = async function(docId, boton){
+  const target = bovedaDocumentos.find(d => d.id === docId);
+  if(!target || target.tipo !== "anexo_fundo") return;
+  const original = boton.textContent;
+  boton.disabled = true;
+  boton.textContent = "Guardando…";
+  try{
+    await setDoc(doc(db, "documentos", docId), { vigente: true }, { merge: true });
+    target.vigente = true;
+    renderDocumentosBoveda();
+    // Anexos pendientes se recalcula la próxima vez que se abra esa sección
+    anexosDatos = null;
+  }catch(e){
+    alert("No se pudo marcar como vigente. Intenta de nuevo.");
+    boton.disabled = false;
+    boton.textContent = original;
+  }
+};
+
+window.bovedaQuitarVigencia = async function(docId, boton){
+  const target = bovedaDocumentos.find(d => d.id === docId);
+  if(!target || target.tipo !== "anexo_fundo") return;
+  const original = boton.textContent;
+  boton.disabled = true;
+  boton.textContent = "Guardando…";
+  try{
+    await setDoc(doc(db, "documentos", docId), { vigente: false }, { merge: true });
+    target.vigente = false;
+    renderDocumentosBoveda();
+    anexosDatos = null;
+  }catch(e){
+    alert("No se pudo quitar la vigencia. Intenta de nuevo.");
+    boton.disabled = false;
+    boton.textContent = original;
+  }
+};
 
 window.bovedaVerDocumento = async function(storagePath, boton){
   const original = boton.textContent;
@@ -1753,7 +1915,7 @@ window.bovedaEliminarDocumento = async function(docId, storagePath, nombreArchiv
 
 // ================= ANEXOS PENDIENTES =================
 
-let anexosDatos = null; // [{id, trabajador, fundoActual, fechaCuadrilla, jefeFaena, anexoVigente, estado}]
+let anexosDatos = null; // [{id, trabajador, fundoActual, fechaCuadrilla, jefeFaena, anexosVigentes, estado}]
 
 function normalizarFundo(s){
   return normalizar(s).replace(/[^a-z0-9]+/g, " ").trim();
@@ -1818,16 +1980,16 @@ window.fetchAnexosPendientes = async function(forzar){
       });
     });
 
-    // Anexo de cambio de fundo VIGENTE más reciente por trabajador
-    const anexoVigentePorTrabajador = {};
+    // Anexos de cambio de fundo VIGENTES por trabajador (puede haber más de uno a la vez:
+    // transición entre fundos, mecánicos autorizados en varios, etc.)
+    const anexosVigentesPorTrabajador = {};
     snapAnexos.forEach(d => {
       const data = d.data();
       if(data.vigente !== true) return;
-      const actual = anexoVigentePorTrabajador[data.trabajadorId];
-      if(!actual || (data.fechaSubida || "") > (actual.fechaSubida || "")){
-        anexoVigentePorTrabajador[data.trabajadorId] = { fundo: data.fundo || "", fechaSubida: data.fechaSubida || "", nombreArchivo: data.nombreArchivo || "" };
-      }
+      const lista = anexosVigentesPorTrabajador[data.trabajadorId] || (anexosVigentesPorTrabajador[data.trabajadorId] = []);
+      lista.push({ fundo: data.fundo || "", fechaSubida: data.fechaSubida || "", nombreArchivo: data.nombreArchivo || "" });
     });
+    Object.values(anexosVigentesPorTrabajador).forEach(lista => lista.sort((a,b) => (b.fechaSubida||"").localeCompare(a.fechaSubida||"")));
 
     const dotPorId = {};
     (dotDatosTodos || []).forEach(t => dotPorId[t.id] = t);
@@ -1837,12 +1999,12 @@ window.fetchAnexosPendientes = async function(forzar){
       const t = dotPorId[id];
       if(!t || t.activo === false) return; // solo trabajadores activos y conocidos en Dotación
       const cuadrilla = ultimaCuadrillaPorTrabajador[id];
-      const anexo = anexoVigentePorTrabajador[id] || null;
-      const alDia = !!(anexo && fundosCoinciden(anexo.fundo, cuadrilla.fundo));
+      const anexos = anexosVigentesPorTrabajador[id] || [];
+      const alDia = anexos.some(anexo => fundosCoinciden(anexo.fundo, cuadrilla.fundo));
       filas.push({
         id, trabajador: t,
         fundoActual: cuadrilla.fundo, fechaCuadrilla: cuadrilla.fecha, jefeFaena: cuadrilla.jefeFaena,
-        anexoVigente: anexo,
+        anexosVigentes: anexos,
         estado: alDia ? "al_dia" : "pendiente"
       });
     });
@@ -1890,8 +2052,8 @@ window.renderAnexosPendientes = function(){
   cuerpo.innerHTML = filas.map(f => {
     const t = f.trabajador;
     const etiquetaCentro = t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente";
-    const anexoTxt = f.anexoVigente
-      ? `${escapeHtml(f.anexoVigente.fundo || "(sin fundo)")} <span style="color:var(--text3)">· ${fechaLegibleAnexos(f.anexoVigente.fechaSubida)}</span>`
+    const anexoTxt = f.anexosVigentes && f.anexosVigentes.length
+      ? f.anexosVigentes.map(a => `${escapeHtml(a.fundo || "(sin fundo)")} <span style="color:var(--text3)">· ${fechaLegibleAnexos(a.fechaSubida)}</span>`).join("<br>")
       : `<span style="color:var(--text3)">Sin anexo vigente</span>`;
     const estadoBadge = f.estado === "pendiente"
       ? `<span class="badge-inactivo">Pendiente</span>`
@@ -2036,6 +2198,440 @@ window.eliminarTipo = async function(slug){
   }catch(e){
     alert("No se pudo eliminar el tipo de documento. Intenta de nuevo.");
   }
+};
+
+// ================= CONFIGURACIÓN — CATÁLOGO DE FUNDOS (solo RRHH/Admin) =================
+// Fuente única de verdad para el nombre de cada fundo: la usa tanto la Bóveda (clasificación
+// de anexos) como el selector de fundo del jefe de faena en cuadrilla-diaria.html (colección
+// config_fundos, campo "nombre"). Cada fundo puede guardar "alias": otras formas en que ha
+// aparecido escrito, para que el buscador de fundos similares deje de sugerirlas de nuevo.
+
+async function fetchFundosCatalogo(){
+  const snap = await getDocs(collection(db, "config_fundos"));
+  const datos = [];
+  snap.forEach(d => datos.push({ id: d.id, nombre: d.data().nombre || d.data().fundo || d.id, alias: d.data().alias || [], centros: d.data().centros || [] }));
+  datos.sort((a,b) => a.nombre.localeCompare(b.nombre, "es"));
+  FUNDOS_CATALOGO = datos;
+  fundosCatalogoCargados = true;
+  renderFundosDatalist();
+}
+
+function renderFundosDatalist(){
+  const dl = document.getElementById("fundos-catalogo-datalist");
+  if(!dl) return;
+  dl.innerHTML = FUNDOS_CATALOGO.map(f => `<option value="${escapeHtml(f.nombre)}">`).join("");
+}
+
+function generarSlugFundo(nombre){
+  let base = normalizar(nombre).replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  if(!base) base = "fundo";
+  let slug = base;
+  let i = 2;
+  while(FUNDOS_CATALOGO.some(f => f.id === slug)){
+    slug = `${base}_${i}`;
+    i++;
+  }
+  return slug;
+}
+
+function renderConfiguracionFundos(){
+  const cont = document.getElementById("config-fundos-tabla-body");
+  if(!cont) return;
+  if(!FUNDOS_CATALOGO.length){
+    cont.innerHTML = `<tr><td colspan="4" style="color:var(--text3)">No hay fundos cargados todavía.</td></tr>`;
+    return;
+  }
+  cont.innerHTML = FUNDOS_CATALOGO.map(f => `
+    <tr>
+      <td class="nombre-cell">${escapeHtml(f.nombre)}</td>
+      <td>${(f.centros||[]).length ? f.centros.map(c => `<span class="badge-centro">${escapeHtml(NOMBRES_CENTRO[c] || c)}</span>`).join(" ") : `<span style="color:var(--text3)">—</span>`}</td>
+      <td style="color:var(--text3);font-size:12.5px">${(f.alias||[]).length ? escapeHtml(f.alias.join(", ")) : "—"}</td>
+      <td style="text-align:right;white-space:nowrap">
+        ${(f.centros||[]).length ? `<button class="btn-secondary" style="margin-right:6px" onclick="abrirMasivoFundo('${f.id}')">Marcar vigente masivo</button>` : ""}
+        <button class="accion-editar" title="Editar" onclick="abrirModalFundo('${f.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+        <button class="accion-editar" title="Eliminar" style="color:var(--red);margin-left:6px" onclick="eliminarFundo('${f.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+window.abrirModalFundo = function(id){
+  const modal = document.getElementById("modal-fundo");
+  const idField = document.getElementById("mf-id");
+  const nombre = document.getElementById("mf-nombre");
+  const alias = document.getElementById("mf-alias");
+  const titulo = document.getElementById("mf-titulo");
+  const centrosChks = document.querySelectorAll("#mf-centros input[type=checkbox]");
+  document.getElementById("modal-fundo-error").textContent = "";
+  if(id){
+    const f = FUNDOS_CATALOGO.find(x => x.id === id);
+    titulo.textContent = "Editar fundo";
+    idField.value = id;
+    nombre.value = f ? f.nombre : "";
+    alias.value = f && f.alias ? f.alias.join(", ") : "";
+    const centrosActuales = (f && f.centros) || [];
+    centrosChks.forEach(c => { c.checked = centrosActuales.includes(c.value); });
+  }else{
+    titulo.textContent = "Nuevo fundo";
+    idField.value = "";
+    nombre.value = "";
+    alias.value = "";
+    centrosChks.forEach(c => { c.checked = false; });
+  }
+  modal.classList.remove("hidden");
+  nombre.focus();
+};
+
+window.cerrarModalFundo = function(){
+  document.getElementById("modal-fundo").classList.add("hidden");
+};
+
+window.guardarFundo = async function(){
+  const idField = document.getElementById("mf-id");
+  const nombreInput = document.getElementById("mf-nombre");
+  const nombre = nombreInput.value.trim();
+  const aliasTxt = document.getElementById("mf-alias").value;
+  const alias = aliasTxt.split(",").map(s => s.trim()).filter(Boolean);
+  const centros = Array.from(document.querySelectorAll("#mf-centros input[type=checkbox]:checked")).map(c => c.value);
+  const errorBox = document.getElementById("modal-fundo-error");
+  errorBox.textContent = "";
+  if(!nombre){
+    errorBox.textContent = "Ingresa el nombre del fundo.";
+    nombreInput.focus();
+    return;
+  }
+  const boton = document.getElementById("mf-guardar");
+  boton.disabled = true;
+  boton.textContent = "Guardando…";
+  try{
+    const id = idField.value || generarSlugFundo(nombre);
+    await setDoc(doc(db, "config_fundos", id), { nombre, alias, centros });
+    await fetchFundosCatalogo();
+    renderConfiguracionFundos();
+    window.cerrarModalFundo();
+  }catch(e){
+    errorBox.textContent = "No se pudo guardar. Intenta de nuevo.";
+  }finally{
+    boton.disabled = false;
+    boton.textContent = "Guardar";
+  }
+};
+
+window.eliminarFundo = async function(id){
+  const f = FUNDOS_CATALOGO.find(x => x.id === id);
+  if(!f) return;
+  if(!confirm(`¿Eliminar "${f.nombre}" del catálogo de fundos? Esto no borra ni cambia los documentos ya subidos, solo deja de aparecer en el selector de la cuadrilla diaria.`)) return;
+  try{
+    await deleteDoc(doc(db, "config_fundos", id));
+    await fetchFundosCatalogo();
+    renderConfiguracionFundos();
+  }catch(e){
+    alert("No se pudo eliminar. Intenta de nuevo.");
+  }
+};
+
+// ---- Marcar vigente masivo (por centros asociados a un fundo) ----
+// Toma los trabajadores activos cuyo centro está asociado a este fundo y, para cada uno,
+// revisa sus anexo_fundo ya subidos (no solo los vigentes): si ya tiene uno vigente que
+// coincide, no hace nada; si tiene uno que coincide pero no está vigente, lo deja
+// seleccionado para marcarlo con un clic; si no tiene ningún anexo de este fundo, lo deja
+// señalado aparte porque ahí hay que generar y firmar un anexo nuevo (eso no lo hace el sistema).
+window.abrirMasivoFundo = async function(fundoId){
+  const fundo = FUNDOS_CATALOGO.find(f => f.id === fundoId);
+  if(!fundo) return;
+  fundoMasivoActual = fundo;
+  fundoMasivoCandidatos = null;
+  const panel = document.getElementById("fundo-masivo-panel");
+  const cont = document.getElementById("fundo-masivo-cont");
+  const titulo = document.getElementById("fundo-masivo-titulo");
+  titulo.textContent = `Marcar vigente masivo — ${fundo.nombre}`;
+  panel.classList.remove("hidden");
+  cont.innerHTML = `<p class="status-note">Analizando trabajadores…</p>`;
+  panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  try{
+    if(dotDatosTodos === null) await fetchDotacionTodos();
+    const centros = fundo.centros || [];
+    const candidatos = (dotDatosTodos || []).filter(t => t.activo !== false && centros.includes(t.centro));
+    if(!candidatos.length){
+      cont.innerHTML = `<p class="status-note">No hay trabajadores activos en los centros asociados a este fundo.</p>`;
+      return;
+    }
+    const snap = await getDocs(query(collection(db, "documentos"), where("tipo", "==", "anexo_fundo")));
+    const porTrabajador = {};
+    snap.forEach(d => {
+      const data = d.data();
+      (porTrabajador[data.trabajadorId] = porTrabajador[data.trabajadorId] || []).push({ id: d.id, fundo: data.fundo || "", vigente: data.vigente === true });
+    });
+    fundoMasivoCandidatos = candidatos.map(t => {
+      const docsT = porTrabajador[t.id] || [];
+      const match = docsT.find(d => fundosCoinciden(d.fundo, fundo.nombre) || (fundo.alias || []).some(a => fundosCoinciden(d.fundo, a)));
+      let estado;
+      if(match && match.vigente) estado = "al_dia";
+      else if(match) estado = "marcar";
+      else estado = "sin_anexo";
+      return { trabajadorId: t.id, nombre: t.nombre, docId: match ? match.id : null, estado, incluir: estado === "marcar" };
+    });
+    fundoMasivoCandidatos.sort((a,b) => a.nombre.localeCompare(b.nombre, "es"));
+    renderFundoMasivo();
+  }catch(e){
+    cont.innerHTML = `<p class="status-note" style="color:var(--red)">No se pudo analizar. Intenta de nuevo.</p>`;
+  }
+};
+
+function renderFundoMasivo(){
+  const cont = document.getElementById("fundo-masivo-cont");
+  if(!cont || !fundoMasivoCandidatos) return;
+  const conIndice = fundoMasivoCandidatos.map((c, i) => ({ ...c, i }));
+  const marcar = conIndice.filter(c => c.estado === "marcar");
+  const alDia = conIndice.filter(c => c.estado === "al_dia");
+  const sinAnexo = conIndice.filter(c => c.estado === "sin_anexo");
+
+  if(!marcar.length && !alDia.length && !sinAnexo.length){
+    cont.innerHTML = `<p class="status-note">No hay trabajadores activos en los centros asociados a este fundo.</p>`;
+    return;
+  }
+
+  let html = "";
+  if(marcar.length){
+    html += `<div class="doc-grupo-titulo">Tienen anexo de este fundo, falta marcarlo vigente (${marcar.length})</div>`;
+    html += marcar.map(c => `<label class="chk-row"><input type="checkbox" ${c.incluir ? "checked" : ""} onchange="marcarIncluirFundoMasivo(${c.i}, this.checked)"> ${escapeHtml(c.nombre)}</label>`).join("");
+    html += `<button class="btn-primary" style="margin-top:10px" onclick="confirmarFundoMasivo()">Marcar vigente a los seleccionados</button>`;
+  }
+  if(alDia.length){
+    html += `<div class="doc-grupo-titulo" style="margin-top:18px">Ya están al día (${alDia.length})</div><p class="status-note">${alDia.map(c => escapeHtml(c.nombre)).join(", ")}</p>`;
+  }
+  if(sinAnexo.length){
+    html += `<div class="doc-grupo-titulo" style="margin-top:18px;color:var(--red)">Sin ningún anexo de este fundo — falta generarlo y firmarlo (${sinAnexo.length})</div><p class="status-note">${sinAnexo.map(c => escapeHtml(c.nombre)).join(", ")}</p>`;
+  }
+  cont.innerHTML = html;
+}
+
+window.marcarIncluirFundoMasivo = function(i, checked){
+  if(fundoMasivoCandidatos && fundoMasivoCandidatos[i]) fundoMasivoCandidatos[i].incluir = checked;
+};
+
+window.confirmarFundoMasivo = async function(){
+  const seleccionados = (fundoMasivoCandidatos || []).filter(c => c.estado === "marcar" && c.incluir && c.docId);
+  if(!seleccionados.length) return;
+  const boton = document.querySelector("#fundo-masivo-cont .btn-primary");
+  if(boton){ boton.disabled = true; boton.textContent = "Guardando…"; }
+  try{
+    await Promise.all(seleccionados.map(c => setDoc(doc(db, "documentos", c.docId), { vigente: true }, { merge: true })));
+    anexosDatos = null;
+    bovedaConteos = null;
+    const nombreFundo = fundoMasivoActual ? fundoMasivoActual.nombre : "";
+    document.getElementById("fundo-masivo-cont").innerHTML = `<p class="status-note" style="color:var(--green2)">${seleccionados.length} trabajador${seleccionados.length === 1 ? "" : "es"} marcado${seleccionados.length === 1 ? "" : "s"} como vigente en ${escapeHtml(nombreFundo)}.</p>`;
+  }catch(e){
+    alert("No se pudo guardar. Intenta de nuevo.");
+    if(boton){ boton.disabled = false; boton.textContent = "Marcar vigente a los seleccionados"; }
+  }
+};
+
+window.cerrarFundoMasivo = function(){
+  document.getElementById("fundo-masivo-panel").classList.add("hidden");
+  fundoMasivoCandidatos = null;
+  fundoMasivoActual = null;
+};
+
+// ---- Detectar fundos similares ----
+// Revisa todos los anexos de cambio de fundo ya subidos, agrupa los nombres de fundo que
+// probablemente son el mismo (misma lógica de coincidencia difusa que usa Anexos pendientes)
+// y que todavía no están en el catálogo, y deja que RRHH confirme con qué nombre canónico
+// guardarlos. Al confirmar, actualiza el catálogo y reescribe los documentos afectados.
+
+function fundoYaCatalogado(raw){
+  return FUNDOS_CATALOGO.some(f => fundosCoinciden(raw, f.nombre) || (f.alias||[]).some(a => fundosCoinciden(raw, a)));
+}
+
+// Valores que casi siempre son el número de página/secuencia del escaneo (ej. "Fundo024",
+// "024") y no un nombre de fundo real — no tiene sentido agruparlos por similitud de texto,
+// cada uno hay que abrirlo y corregirlo a mano.
+function fundoEsSospechoso(raw){
+  const t = String(raw || "").trim();
+  if(!t) return false;
+  if(/^fundo[\s_-]*0*\d+$/i.test(t)) return true;
+  if(/^0*\d+$/.test(t)) return true;
+  if(normalizar(t).replace(/[^a-z0-9]/g, "").length <= 2) return true;
+  return false;
+}
+
+function agruparFundosSimilares(items){
+  const n = items.length;
+  const padre = items.map((_,i) => i);
+  function encontrar(x){ while(padre[x] !== x){ x = padre[x]; } return x; }
+  function unir(a,b){ const ra = encontrar(a), rb = encontrar(b); if(ra !== rb) padre[ra] = rb; }
+  for(let i = 0; i < n; i++){
+    for(let j = i+1; j < n; j++){
+      if(fundosCoinciden(items[i].texto, items[j].texto)) unir(i, j);
+    }
+  }
+  const grupos = {};
+  for(let i = 0; i < n; i++){
+    const r = encontrar(i);
+    (grupos[r] = grupos[r] || []).push(items[i]);
+  }
+  return Object.values(grupos);
+}
+
+window.detectarFundosSimilares = async function(){
+  const panelSosp = document.getElementById("fundos-sospechosos-panel");
+  const contSosp = document.getElementById("fundos-sospechosos-cont");
+  const panel = document.getElementById("fundos-similares-panel");
+  const cont = document.getElementById("fundos-similares-cont");
+  panelSosp.classList.remove("hidden");
+  panel.classList.remove("hidden");
+  contSosp.innerHTML = `<p style="color:var(--text3);font-size:13px">Analizando documentos…</p>`;
+  cont.innerHTML = "";
+  try{
+    if(!fundosCatalogoCargados) await fetchFundosCatalogo();
+    const snap = await getDocs(query(collection(db, "documentos"), where("tipo", "==", "anexo_fundo")));
+
+    // Documentos con fundo "sospechoso" (parece número de escaneo) — se revisan uno por uno,
+    // no se agrupan por texto porque números de página distintos no implican fundos distintos.
+    const sospechosos = [];
+    const conteos = {};
+    snap.forEach(d => {
+      const data = d.data();
+      const f = (data.fundo || "").trim();
+      if(!f) return;
+      if(fundoEsSospechoso(f)){
+        sospechosos.push({ id: d.id, textoOriginal: f, nombreArchivo: data.nombreArchivo || "", trabajadorNombre: data.trabajadorNombre || "", storagePath: data.storagePath || "" });
+        return;
+      }
+      conteos[f] = (conteos[f] || 0) + 1;
+    });
+    fundosSospechososLista = sospechosos;
+    renderFundosSospechosos();
+
+    const items = Object.keys(conteos).map(texto => ({ texto, count: conteos[texto] }));
+    const sinCatalogar = items.filter(it => !fundoYaCatalogado(it.texto));
+    if(!sinCatalogar.length){
+      fundosSimilaresGrupos = [];
+      cont.innerHTML = `<p style="color:var(--text3);font-size:13px">No se encontraron fundos sin catalogar. 🎉</p>`;
+      return;
+    }
+    const grupos = agruparFundosSimilares(sinCatalogar);
+    grupos.forEach(g => g.sort((a,b) => b.count - a.count));
+    grupos.sort((a,b) => b.length - a.length);
+    fundosSimilaresGrupos = grupos;
+    renderFundosSimilares();
+  }catch(e){
+    contSosp.innerHTML = `<p style="color:var(--red);font-size:13px">No se pudo analizar. Intenta de nuevo.</p>`;
+    cont.innerHTML = "";
+  }
+};
+
+function renderFundosSospechosos(){
+  const cont = document.getElementById("fundos-sospechosos-cont");
+  if(!cont) return;
+  if(!fundosSospechososLista || !fundosSospechososLista.length){
+    cont.innerHTML = `<p style="color:var(--text3);font-size:13px">No se encontraron fundos sin reconocer. 🎉</p>`;
+    return;
+  }
+  cont.innerHTML = fundosSospechososLista.map((it, i) => `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;max-width:680px">
+      <div style="font-size:12.5px;color:var(--text3);margin-bottom:8px">"${escapeHtml(it.textoOriginal)}" · ${escapeHtml(it.nombreArchivo || "—")}${it.trabajadorNombre ? " · " + escapeHtml(it.trabajadorNombre) : ""}</div>
+      <label class="field-label">Fundo correcto</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input class="field-input" list="fundos-catalogo-datalist" id="fundo-sospechoso-nombre-${i}" placeholder="Escribe el fundo real" style="flex:1;min-width:180px">
+        ${it.storagePath ? `<button class="btn-secondary" onclick="bovedaVerDocumento('${escapeHtml(it.storagePath).replace(/'/g,"\\'")}', this)">Ver</button>` : ""}
+        <button class="btn-primary" onclick="confirmarFundoSospechoso(${i})">Guardar</button>
+        <button class="btn-secondary" onclick="descartarFundoSospechoso(${i})">Descartar</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+window.confirmarFundoSospechoso = async function(i){
+  const item = fundosSospechososLista && fundosSospechososLista[i];
+  if(!item) return;
+  const input = document.getElementById(`fundo-sospechoso-nombre-${i}`);
+  const nombre = input.value.trim();
+  if(!nombre){ input.focus(); return; }
+  try{
+    await setDoc(doc(db, "documentos", item.id), { fundo: nombre }, { merge: true });
+    if(typeof bovedaDocumentos !== "undefined"){
+      const local = bovedaDocumentos.find(d => d.id === item.id);
+      if(local) local.fundo = nombre;
+    }
+    fundosSospechososLista.splice(i, 1);
+    renderFundosSospechosos();
+    anexosDatos = null;
+    bovedaConteos = null;
+  }catch(e){
+    alert("No se pudo guardar. Intenta de nuevo.");
+  }
+};
+
+window.descartarFundoSospechoso = function(i){
+  if(!fundosSospechososLista) return;
+  fundosSospechososLista.splice(i, 1);
+  renderFundosSospechosos();
+};
+
+function renderFundosSimilares(){
+  const cont = document.getElementById("fundos-similares-cont");
+  if(!cont) return;
+  if(!fundosSimilaresGrupos || !fundosSimilaresGrupos.length){
+    cont.innerHTML = `<p style="color:var(--text3);font-size:13px">No quedan fundos por revisar. 🎉</p>`;
+    return;
+  }
+  cont.innerHTML = fundosSimilaresGrupos.map((g, gi) => `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;max-width:620px">
+      <div style="font-size:12.5px;color:var(--text3);margin-bottom:8px">${g.map(v => `"${escapeHtml(v.texto)}" (${v.count})`).join(" · ")}</div>
+      <label class="field-label">Guardar como</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input class="field-input" id="fundo-similar-nombre-${gi}" value="${escapeHtml(g[0].texto)}" style="flex:1;min-width:180px">
+        <button class="btn-primary" onclick="confirmarFundoSimilar(${gi})">Guardar</button>
+        <button class="btn-secondary" onclick="descartarFundoSimilar(${gi})">Descartar</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+window.confirmarFundoSimilar = async function(gi){
+  const g = fundosSimilaresGrupos && fundosSimilaresGrupos[gi];
+  if(!g) return;
+  const input = document.getElementById(`fundo-similar-nombre-${gi}`);
+  const nombre = input.value.trim();
+  if(!nombre){ input.focus(); return; }
+  try{
+    const destino = FUNDOS_CATALOGO.find(f => normalizarFundo(f.nombre) === normalizarFundo(nombre));
+    const variantes = g.map(v => v.texto);
+    if(destino){
+      const aliasNuevos = Array.from(new Set([...(destino.alias||[]), ...variantes.filter(v => normalizarFundo(v) !== normalizarFundo(destino.nombre))]));
+      await setDoc(doc(db, "config_fundos", destino.id), { nombre: destino.nombre, alias: aliasNuevos });
+    }else{
+      const slug = generarSlugFundo(nombre);
+      const aliasNuevos = variantes.filter(v => normalizarFundo(v) !== normalizarFundo(nombre));
+      await setDoc(doc(db, "config_fundos", slug), { nombre, alias: aliasNuevos });
+    }
+    // Reescribe los documentos que usaban alguna de las variantes para que queden con el nombre canónico
+    const nombreFinal = destino ? destino.nombre : nombre;
+    const snap = await getDocs(query(collection(db, "documentos"), where("tipo", "==", "anexo_fundo")));
+    const escrituras = [];
+    snap.forEach(d => {
+      const f = (d.data().fundo || "").trim();
+      if(variantes.includes(f) && f !== nombreFinal){
+        escrituras.push(setDoc(doc(db, "documentos", d.id), { fundo: nombreFinal }, { merge: true }));
+      }
+    });
+    await Promise.all(escrituras);
+    await fetchFundosCatalogo();
+    renderConfiguracionFundos();
+    fundosSimilaresGrupos.splice(gi, 1);
+    renderFundosSimilares();
+    anexosDatos = null; // los fundos cambiaron, se recalcula el cruce la próxima vez que se abra esa sección
+    bovedaConteos = null;
+  }catch(e){
+    alert("No se pudo guardar. Intenta de nuevo.");
+  }
+};
+
+window.descartarFundoSimilar = function(gi){
+  if(!fundosSimilaresGrupos) return;
+  fundosSimilaresGrupos.splice(gi, 1);
+  renderFundosSimilares();
 };
 </script>
 
