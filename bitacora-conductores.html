@@ -191,6 +191,9 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
 /* ESTADOS DE MÓVIL — solo en asignación diaria */
 /* Fondo por estado */
 .fila-operativo td{background:#f0faf2 !important;}
+.fila-turno-extra td{background:#f0faf2 !important;}
+.fila-turno-extra td:first-child{border-left:3px solid var(--vd);}
+.fila-turno-extra td:nth-child(1),.fila-turno-extra td:nth-child(2),.fila-turno-extra td:nth-child(3){opacity:0;pointer-events:none;}
 .fila-sinuso td{background:#fff8f0 !important;}
 .fila-panne td{background:#fff0f0 !important;}
 /* Alerta GPS */
@@ -1075,31 +1078,54 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
     const tieneAlertaGps=!ultimo&&patsGpsEnFecha.has(pat)&&!borrador[pat]?.conductor;
 
     if(ultimo){
-      // Ya guardado: fila lectura con +turno
-      const fin=ultimo.todoDia
+      // Ordenar todos los registros por horaIni
+      const regsOrdenados=[...regs].sort((a,b)=>(a.horaIni||'').localeCompare(b.horaIni||''));
+      // Fila principal: primer turno del día
+      const primero=regsOrdenados[0];
+      const finP=primero.todoDia
         ?`<span class="lbl-todo-dia">☀ Todo el día</span>`
-        :ultimo.horaFin
-          ?`${ultimo.horaFin}${ultimo.horaFinCalculada?' <span class="fin-calc">(auto)</span>':''}`
+        :primero.horaFin
+          ?`${primero.horaFin}${primero.horaFinCalculada?' <span class="fin-calc">(auto)</span>':''}`
           :'<span class="fin-calc">pendiente</span>';
-      const ini=ultimo.todoDia?`<span class="lbl-todo-dia">—</span>`:(ultimo.horaIni||'—');
-      const histBtn=regs.length>1
-        ?`<button class="btn-accion btn-edit" style="font-size:10px;margin-right:2px;" onclick="verHistorial('${pat}','${fecha}')">+${regs.length} turnos</button>`:'';
+      const iniP=primero.todoDia?`<span class="lbl-todo-dia">—</span>`:(primero.horaIni||'—');
       filas+=`<tr class="asignado fila-operativo" id="fila-vis-${pat}">
         <td>${badgeTipo(tipo)}</td>
-        <td>${patEstadoHtml(pat,ultimo.estado||estado)}</td>
+        <td>${patEstadoHtml(pat,primero.estado||estado)}</td>
         <td style="font-size:11px;color:var(--ts);">${modelo}</td>
-        <td>${puntoFijo}<span style="font-weight:600;">${escH(ultimo.conductor)}</span></td>
-        <td style="font-size:12px;">${ini}</td>
-        <td style="font-size:12px;">${fin}</td>
-        <td style="font-size:11px;color:var(--ts);">${escH(ultimo.comentario||'')}</td>
+        <td>${puntoFijo}<span style="font-weight:600;">${escH(primero.conductor)}</span></td>
+        <td style="font-size:12px;">${iniP}</td>
+        <td style="font-size:12px;">${finP}</td>
+        <td style="font-size:11px;color:var(--ts);">${escH(primero.comentario||'')}</td>
         <td style="white-space:nowrap;display:flex;gap:3px;align-items:center;">
-          ${histBtn}
-          <button class="btn-accion btn-edit" onclick="abrirEditModal('${ultimo.id}','${fecha}','${escH(ultimo.conductor)}','${ultimo.horaIni||''}','${ultimo.horaFin||''}','${escH(ultimo.comentario||'')}','${pat}','${ultimo.estado||estado}')">✏️</button>
-          <button class="btn-accion btn-del" onclick="eliminarRegistro('${ultimo.id}','${fecha}')">🗑</button>
+          <button class="btn-accion btn-edit" onclick="abrirEditModal('${primero.id}','${fecha}','${escH(primero.conductor)}','${primero.horaIni||''}','${primero.horaFin||''}','${escH(primero.comentario||'')}','${pat}','${primero.estado||estado}')">✏️</button>
+          <button class="btn-accion btn-del" onclick="eliminarRegistro('${primero.id}','${fecha}')">🗑</button>
           <button class="btn-asignar" onclick="mostrarFilaInline('${pat}','${fecha}')">+turno</button>
         </td>
-      </tr>
-      <tr class="fila-edicion" id="edit-turno-${pat}" style="display:none;">
+      </tr>`;
+      // Filas secundarias: turnos adicionales
+      regsOrdenados.slice(1).forEach(r=>{
+        const finR=r.todoDia
+          ?`<span class="lbl-todo-dia">☀ Todo el día</span>`
+          :r.horaFin
+            ?`${r.horaFin}${r.horaFinCalculada?' <span class="fin-calc">(auto)</span>':''}`
+            :'<span class="fin-calc">pendiente</span>';
+        const iniR=r.todoDia?`<span class="lbl-todo-dia">—</span>`:(r.horaIni||'—');
+        filas+=`<tr class="fila-turno-extra">
+          <td></td>
+          <td></td>
+          <td></td>
+          <td style="padding-left:18px;font-size:12px;border-left:3px solid var(--vd);"><span style="font-weight:600;">${escH(r.conductor)}</span></td>
+          <td style="font-size:12px;">${iniR}</td>
+          <td style="font-size:12px;">${finR}</td>
+          <td style="font-size:11px;color:var(--ts);">${escH(r.comentario||'')}</td>
+          <td style="white-space:nowrap;display:flex;gap:3px;align-items:center;">
+            <button class="btn-accion btn-edit" onclick="abrirEditModal('${r.id}','${fecha}','${escH(r.conductor)}','${r.horaIni||''}','${r.horaFin||''}','${escH(r.comentario||'')}','${pat}','${r.estado||estado}')">✏️</button>
+            <button class="btn-accion btn-del" onclick="eliminarRegistro('${r.id}','${fecha}')">🗑</button>
+          </td>
+        </tr>`;
+      });
+      // Fila inline para nuevo turno
+      filas+=`<tr class="fila-edicion" id="edit-turno-${pat}" style="display:none;">
         <td colspan="2" style="font-size:11px;font-weight:700;color:var(--vd);">✏️ Nuevo turno ${pat}</td>
         <td><input type="text" id="inp-cond-turno-${pat}" placeholder="Conductor *" list="list-conductores" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></td>
         <td><input type="time" id="inp-ini-turno-${pat}"></td>
