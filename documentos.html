@@ -422,7 +422,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
       <div class="contenido-header">
         <div>
           <div class="contenido-titulo">Anexos pendientes</div>
-          <div class="contenido-sub">Cruza el último registro de Cuadrilla diaria de cada trabajador (últimos 45 días) con su anexo de cambio de fundo vigente, para detectar a quién le falta generarlo.</div>
+          <div class="contenido-sub">Cruza el último registro de Cuadrilla diaria de cada trabajador (últimos 45 días) con su anexo de cambio de fundo vigente. Si falta, indica si ya tiene el anexo (solo falta marcarlo vigente) o si hay que generarlo desde cero.</div>
         </div>
         <button class="btn-secondary" onclick="fetchAnexosPendientes(true)">Actualizar</button>
       </div>
@@ -1983,13 +1983,20 @@ window.fetchAnexosPendientes = async function(forzar){
     // Anexos de cambio de fundo VIGENTES por trabajador (puede haber más de uno a la vez:
     // transición entre fundos, mecánicos autorizados en varios, etc.)
     const anexosVigentesPorTrabajador = {};
+    // Todos los anexo_fundo del trabajador (vigentes o no) — para distinguir, cuando está
+    // "Pendiente", si ya tiene el documento del fundo actual y solo falta marcarlo vigente,
+    // o si de verdad no existe ningún documento de ese fundo (caso "Pedrito").
+    const anexosTodosPorTrabajador = {};
     snapAnexos.forEach(d => {
       const data = d.data();
-      if(data.vigente !== true) return;
-      const lista = anexosVigentesPorTrabajador[data.trabajadorId] || (anexosVigentesPorTrabajador[data.trabajadorId] = []);
-      lista.push({ fundo: data.fundo || "", fechaSubida: data.fechaSubida || "", nombreArchivo: data.nombreArchivo || "" });
+      const item = { id: d.id, fundo: data.fundo || "", vigente: data.vigente === true, fechaSubida: data.fechaSubida || "", nombreArchivo: data.nombreArchivo || "" };
+      (anexosTodosPorTrabajador[data.trabajadorId] || (anexosTodosPorTrabajador[data.trabajadorId] = [])).push(item);
+      if(item.vigente){
+        (anexosVigentesPorTrabajador[data.trabajadorId] || (anexosVigentesPorTrabajador[data.trabajadorId] = [])).push(item);
+      }
     });
     Object.values(anexosVigentesPorTrabajador).forEach(lista => lista.sort((a,b) => (b.fechaSubida||"").localeCompare(a.fechaSubida||"")));
+    Object.values(anexosTodosPorTrabajador).forEach(lista => lista.sort((a,b) => (b.fechaSubida||"").localeCompare(a.fechaSubida||"")));
 
     const dotPorId = {};
     (dotDatosTodos || []).forEach(t => dotPorId[t.id] = t);
@@ -2001,11 +2008,18 @@ window.fetchAnexosPendientes = async function(forzar){
       const cuadrilla = ultimaCuadrillaPorTrabajador[id];
       const anexos = anexosVigentesPorTrabajador[id] || [];
       const alDia = anexos.some(anexo => fundosCoinciden(anexo.fundo, cuadrilla.fundo));
+      let subEstado = null, anexoSugerido = null;
+      if(!alDia){
+        const todos = anexosTodosPorTrabajador[id] || [];
+        anexoSugerido = todos.find(a => !a.vigente && fundosCoinciden(a.fundo, cuadrilla.fundo)) || null;
+        subEstado = anexoSugerido ? "tiene_no_vigente" : "sin_anexo";
+      }
       filas.push({
         id, trabajador: t,
         fundoActual: cuadrilla.fundo, fechaCuadrilla: cuadrilla.fecha, jefeFaena: cuadrilla.jefeFaena,
         anexosVigentes: anexos,
-        estado: alDia ? "al_dia" : "pendiente"
+        estado: alDia ? "al_dia" : "pendiente",
+        subEstado, anexoSugerido
       });
     });
 
@@ -2055,9 +2069,23 @@ window.renderAnexosPendientes = function(){
     const anexoTxt = f.anexosVigentes && f.anexosVigentes.length
       ? f.anexosVigentes.map(a => `${escapeHtml(a.fundo || "(sin fundo)")} <span style="color:var(--text3)">· ${fechaLegibleAnexos(a.fechaSubida)}</span>`).join("<br>")
       : `<span style="color:var(--text3)">Sin anexo vigente</span>`;
-    const estadoBadge = f.estado === "pendiente"
-      ? `<span class="badge-inactivo">Pendiente</span>`
-      : `<span style="color:var(--green2);font-weight:700;font-size:12.5px">Al día</span>`;
+    let estadoBadge;
+    if(f.estado !== "pendiente"){
+      estadoBadge = `<span style="color:var(--green2);font-weight:700;font-size:12.5px">Al día</span>`;
+    }else if(f.subEstado === "tiene_no_vigente" && f.anexoSugerido){
+      // Ya tiene el anexo del fundo actual, solo falta marcarlo vigente (caso "Pedrito"): un clic resuelve.
+      estadoBadge = `
+        <span class="badge-inactivo">Pendiente</span>
+        <div style="margin-top:4px;font-size:12px;color:var(--text3)">Ya tiene anexo de ${escapeHtml(f.anexoSugerido.fundo || f.fundoActual)}, falta marcarlo vigente</div>
+        <button class="btn-secondary" style="margin-top:4px;padding:4px 10px;font-size:12.5px" onclick="marcarVigenteDesdeAnexosPendientes('${f.anexoSugerido.id}', '${f.id}', this)">Marcar vigente</button>
+      `;
+    }else{
+      // No existe ningún anexo_fundo para el fundo actual: hay que generar uno nuevo y hacerlo firmar.
+      estadoBadge = `
+        <span class="badge-inactivo">Pendiente</span>
+        <div style="margin-top:4px;font-size:12px;color:var(--red)">Sin anexo de ${escapeHtml(f.fundoActual || "este fundo")} — generar y firmar uno nuevo</div>
+      `;
+    }
     return `
       <tr>
         <td class="nombre-cell">${escapeHtml(t.nombre)}</td>
@@ -2068,6 +2096,33 @@ window.renderAnexosPendientes = function(){
       </tr>
     `;
   }).join("");
+};
+
+// Un clic desde la fila "Pendiente": el trabajador ya tiene un anexo_fundo del fundo donde está
+// hoy según la cuadrilla, solo que no estaba marcado vigente (ej. el jefe de faena nuevo lo informó
+// pero nadie lo marcó). Marca ese documento vigente y refresca la fila sin tener que ir a la Bóveda.
+window.marcarVigenteDesdeAnexosPendientes = async function(docId, filaId, boton){
+  const original = boton.textContent;
+  boton.disabled = true;
+  boton.textContent = "Guardando…";
+  try{
+    await setDoc(doc(db, "documentos", docId), { vigente: true }, { merge: true });
+    bovedaConteos = null;
+    const fila = (anexosDatos || []).find(f => f.id === filaId);
+    if(fila){
+      const anexoMarcado = (fila.anexoSugerido && fila.anexoSugerido.id === docId) ? fila.anexoSugerido : { id: docId, fundo: fila.fundoActual, fechaSubida: new Date().toISOString() };
+      anexoMarcado.vigente = true;
+      fila.anexosVigentes = (fila.anexosVigentes || []).concat([anexoMarcado]);
+      fila.estado = "al_dia";
+      fila.subEstado = null;
+      fila.anexoSugerido = null;
+    }
+    renderAnexosPendientes();
+  }catch(e){
+    alert("No se pudo marcar como vigente. Intenta de nuevo.");
+    boton.disabled = false;
+    boton.textContent = original;
+  }
 };
 
 // ================= CONFIGURACIÓN — CATÁLOGO DE TIPOS DE DOCUMENTO (solo RRHH/Admin) =================
