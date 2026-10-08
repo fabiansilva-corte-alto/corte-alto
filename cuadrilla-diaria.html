@@ -20,16 +20,20 @@
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--fondo);color:var(--texto)}
   .hidden{display:none!important}
 
-  /* ---- Pantalla de clave ---- */
-  #pantalla-clave{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--verde) 0%,var(--verde2) 100%);padding:20px}
+  /* ---- Pantalla de acceso (login) y sin acceso ---- */
+  #pantalla-clave, #pantalla-sinacceso{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--verde) 0%,var(--verde2) 100%);padding:20px}
   .clave-card{background:#fff;border-radius:16px;padding:36px 32px;max-width:360px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.25);text-align:center}
   .clave-card h1{font-size:20px;margin:0 0 6px}
   .clave-card p{color:var(--texto2);font-size:14px;margin:0 0 20px}
-  .clave-card input{width:100%;padding:12px 14px;border:1.5px solid var(--borde);border-radius:10px;font-size:16px;text-align:center;letter-spacing:2px}
+  .clave-card input{width:100%;padding:12px 14px;border:1.5px solid var(--borde);border-radius:10px;font-size:15px;text-align:left}
+  .clave-card input + input{margin-top:10px}
   .clave-card button{width:100%;margin-top:14px;padding:12px;border:none;border-radius:10px;background:var(--verde);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
   .clave-card button:hover{background:var(--verde2)}
+  .clave-card button.secundario{background:#fff;color:var(--verde);border:1.5px solid var(--verde)}
+  .clave-card button.secundario:hover{background:var(--verde-claro)}
   .clave-error{color:var(--rojo);font-size:13px;margin-top:10px;min-height:16px}
   .clave-volver{display:inline-block;margin-top:18px;color:var(--texto2);font-size:13px;text-decoration:none}
+  .jefe-nota-fija{font-size:12px;color:var(--texto3);margin-top:6px}
 
   /* ---- App ---- */
   header{background:linear-gradient(135deg,var(--verde) 0%,var(--verde2) 100%);color:#fff;padding:18px 20px}
@@ -93,10 +97,20 @@
 <div id="pantalla-clave">
   <div class="clave-card">
     <h1>Cuadrilla diaria</h1>
-    <p>Ingresa la clave para registrar tu cuadrilla del día.</p>
-    <input type="password" id="input-clave" inputmode="numeric" placeholder="Clave de acceso" maxlength="10">
-    <button onclick="intentarAcceso()">Ingresar</button>
+    <p>Ingresa con tu correo y contraseña para registrar tu cuadrilla del día.</p>
+    <input type="email" id="input-correo" placeholder="Correo" autocomplete="username">
+    <input type="password" id="input-clave" placeholder="Contraseña" autocomplete="current-password">
+    <button id="btn-ingresar" onclick="iniciarSesion()">Ingresar</button>
     <div class="clave-error" id="clave-error"></div>
+    <a class="clave-volver" href="index.html">← Volver al menú principal</a>
+  </div>
+</div>
+
+<div id="pantalla-sinacceso" class="hidden">
+  <div class="clave-card">
+    <h1>Sin acceso</h1>
+    <p>Tu cuenta no tiene habilitado el acceso a este módulo. Contacta a RRHH o Administración si crees que es un error.</p>
+    <button class="secundario" onclick="cerrarSesion()">Cerrar sesión</button>
     <a class="clave-volver" href="index.html">← Volver al menú principal</a>
   </div>
 </div>
@@ -123,6 +137,7 @@
         <div class="campo">
           <label for="sel-jefe">Jefe de faena</label>
           <select id="sel-jefe" onchange="onCambioContexto()"><option value="">Cargando…</option></select>
+          <p class="jefe-nota-fija hidden" id="jefe-nota-fija">Tu cuenta está vinculada a este nombre.</p>
         </div>
         <div class="campo">
           <label for="sel-fecha">Fecha</label>
@@ -152,9 +167,9 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { initializeFirestore, persistentLocalCache, collection, doc, getDoc, getDocs, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-const CLAVE_ACCESO = "7734"; // clave provisoria — cámbiala aquí cuando definan la definitiva
-const CLAVE_SESION_KEY = "cuadrilla_sesion_abierta";
+const ROLES_PERMITIDOS = ["admin", "rrhh", "jefe_centro"];
 
 const firebaseConfig = {
   apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
@@ -166,6 +181,7 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const auth = getAuth(app);
 
 const NOMBRES_CENTRO = { "FORMIN 1": "FORMIN 1", "FORMIN 2": "FORMIN 2", "FORMIN 3": "FORMIN 3", TALLER_COIHUE: "Taller Coihue", ROTATIVO: "Rotativo" };
 
@@ -195,55 +211,76 @@ let dotDatos = null;
 let seleccionados = new Set();
 let contextoActual = null; // {jefe, fecha, fundo, docId}
 let docExistenteActual = null; // doc que ya existía para el contexto (edición) o null
+let usuarioActual = null; // {rol, nombre, centro}
 
-function sesionGuardadaActiva(){
-  try{ return localStorage.getItem(CLAVE_SESION_KEY) === "1"; }
-  catch(e){ return false; }
-}
-function guardarSesionAbierta(){
-  try{ localStorage.setItem(CLAVE_SESION_KEY, "1"); }catch(e){ /* almacenamiento no disponible, seguimos igual */ }
-}
-function borrarSesionGuardada(){
-  try{ localStorage.removeItem(CLAVE_SESION_KEY); }catch(e){ /* nada que limpiar */ }
+function mostrarPantalla(id){
+  ["pantalla-clave", "pantalla-sinacceso", "pantalla-app"].forEach(v => {
+    document.getElementById(v).classList.toggle("hidden", v !== id);
+  });
 }
 
-function entrarAlApp(){
-  document.getElementById("pantalla-clave").classList.add("hidden");
-  document.getElementById("pantalla-app").classList.remove("hidden");
-  iniciarApp();
-}
+window.iniciarSesion = async function(){
+  const correo = document.getElementById("input-correo").value.trim();
+  const clave = document.getElementById("input-clave").value;
+  const errorBox = document.getElementById("clave-error");
+  errorBox.textContent = "";
 
-window.intentarAcceso = function(){
-  const val = document.getElementById("input-clave").value.trim();
-  if(val === CLAVE_ACCESO){
-    guardarSesionAbierta();
-    entrarAlApp();
-  }else{
-    document.getElementById("clave-error").textContent = "Clave incorrecta.";
+  if(!correo || !clave){
+    errorBox.textContent = "Ingresa tu correo y contraseña.";
+    return;
+  }
+
+  const boton = document.getElementById("btn-ingresar");
+  boton.disabled = true;
+  boton.textContent = "Ingresando…";
+  try{
+    await signInWithEmailAndPassword(auth, correo, clave);
+  }catch(e){
+    let texto = "No se pudo iniciar sesión. Intenta de nuevo.";
+    if(e.code === "auth/invalid-credential" || e.code === "auth/wrong-password" || e.code === "auth/user-not-found"){
+      texto = "Correo o contraseña incorrectos.";
+    }
+    errorBox.textContent = texto;
+  }finally{
+    boton.disabled = false;
+    boton.textContent = "Ingresar";
   }
 };
-document.getElementById("input-clave").addEventListener("keydown", e => { if(e.key === "Enter") window.intentarAcceso(); });
+document.getElementById("input-correo").addEventListener("keydown", e => { if(e.key === "Enter") window.iniciarSesion(); });
+document.getElementById("input-clave").addEventListener("keydown", e => { if(e.key === "Enter") window.iniciarSesion(); });
 
-window.cerrarSesion = function(){
-  borrarSesionGuardada();
-  // limpiamos el estado del formulario para que la próxima persona que ingrese la clave empiece de cero
-  jefesDatos = [];
-  fundosDatos = [];
-  dotDatos = null;
-  seleccionados = new Set();
-  contextoActual = null;
-  docExistenteActual = null;
-  document.getElementById("input-clave").value = "";
-  document.getElementById("clave-error").textContent = "";
-  document.getElementById("pantalla-app").classList.add("hidden");
-  document.getElementById("pantalla-clave").classList.remove("hidden");
+window.cerrarSesion = async function(){
+  await signOut(auth);
 };
 
-// Si ya había una sesión abierta (no se cerró explícitamente con "Cerrar sesión"),
-// entramos directo a la app sin volver a pedir la clave.
-if(sesionGuardadaActiva()){
-  entrarAlApp();
-}
+onAuthStateChanged(auth, async (user) => {
+  if(!user){
+    jefesDatos = [];
+    fundosDatos = [];
+    dotDatos = null;
+    seleccionados = new Set();
+    contextoActual = null;
+    docExistenteActual = null;
+    usuarioActual = null;
+    document.getElementById("input-clave").value = "";
+    document.getElementById("clave-error").textContent = "";
+    mostrarPantalla("pantalla-clave");
+    return;
+  }
+  try{
+    const snap = await getDoc(doc(db, "usuarios", user.uid));
+    const u = snap.exists() ? snap.data() : null;
+    if(!u || u.activo !== true || !ROLES_PERMITIDOS.includes(u.rol)){
+      mostrarPantalla("pantalla-sinacceso");
+      return;
+    }
+    usuarioActual = { rol: u.rol, nombre: u.nombre || user.email, centro: u.centro || null };
+    mostrarPantalla("pantalla-app");
+    await iniciarApp();
+  }catch(e){
+    mostrarPantalla("pantalla-sinacceso");
+  }
+});
 
 function hoyISO(){
   const d = new Date();
@@ -254,6 +291,28 @@ function hoyISO(){
 async function iniciarApp(){
   document.getElementById("sel-fecha").value = hoyISO();
   await Promise.all([cargarJefes(), cargarFundos()]);
+  aplicarBloqueoJefe();
+}
+
+// Las cuentas de rol "jefe_centro" quedan fijadas a su propio nombre (no pueden
+// informar la cuadrilla de otro jefe). Admin/RRHH mantienen el selector libre,
+// útil para pruebas o para cargar un registro en nombre de un jefe sin cuenta propia.
+function aplicarBloqueoJefe(){
+  const sel = document.getElementById("sel-jefe");
+  const nota = document.getElementById("jefe-nota-fija");
+  if(!usuarioActual || usuarioActual.rol !== "jefe_centro"){
+    sel.disabled = false;
+    nota.classList.add("hidden");
+    return;
+  }
+  const nombre = usuarioActual.nombre;
+  if(!jefesDatos.some(j => j.nombre === nombre)){
+    sel.insertAdjacentHTML("beforeend", `<option value="${escapeHtml(nombre)}">${escapeHtml(nombre)}</option>`);
+  }
+  sel.value = nombre;
+  sel.disabled = true;
+  nota.classList.remove("hidden");
+  window.onCambioContexto();
 }
 
 async function cargarJefes(){

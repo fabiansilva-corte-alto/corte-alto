@@ -246,27 +246,60 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
   </div>
 </div>
 
-<!-- ===== PANTALLA: JEFE DE CENTRO (vista provisoria, mobile) ===== -->
+<!-- ===== PANTALLA: JEFE DE CENTRO (vista de consulta, solo lectura, mobile) ===== -->
 <div id="pantalla-jefe" class="shell-angosto hidden">
   <div class="header-angosto">
     <a href="index.html" class="header-back" aria-label="Volver"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></a>
     <div class="header-top">Sistema de gestión forestal</div>
     <div class="header-brand"><div class="header-logo">📁</div><div class="header-title">Documentos &amp; RRHH</div></div>
-    <div class="header-sub">Acceso restringido — inicia sesión con tu cuenta</div>
+    <div class="header-sub">Vista de consulta — solo lectura</div>
   </div>
-  <div class="card-angosto status-card">
-    <div class="status-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.3l2.4 2.4 4.6-5.2"/></svg></div>
-    <div class="status-name" id="jefe-nombre">—</div>
-    <div class="status-role" id="jefe-rol">—</div>
-    <div class="status-detail">
-      <div>Rol: <strong id="jefe-detalle-rol">—</strong></div>
-      <div>Centro: <strong id="jefe-detalle-centro">—</strong></div>
-      <div>Correo: <strong id="jefe-detalle-correo">—</strong></div>
+
+  <div class="card-angosto" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+    <div>
+      <div class="status-name" id="jefe-nombre" style="font-size:16px;text-align:left">—</div>
+      <div style="font-size:12px;color:var(--text3)" id="jefe-detalle-centro-linea">—</div>
     </div>
-    <div class="status-note">
-      Tu vista de consulta (documentos de tu centro, solo lectura) se está construyendo como un módulo aparte, pensado para tablet y celular. Te avisamos apenas esté lista.
+    <button class="btn-secondary" onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>
+
+  <!-- vista de listas: cuadrilla informada + búsqueda de cualquier trabajador -->
+  <div id="jefe-vista-listas">
+    <div class="card-angosto" style="margin-bottom:12px">
+      <label for="jefe-buscar-trabajador" style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Buscar cualquier trabajador</label>
+      <input type="text" id="jefe-buscar-trabajador" class="field-input" placeholder="Nombre o RUT…" oninput="renderBusquedaJefe()" style="margin-top:6px;margin-bottom:0">
+      <p class="status-note" style="margin-top:8px">Puedes buscar a cualquier trabajador, incluso si no anda contigo hoy — por ejemplo si Mininco o la Inspección del Trabajo te pide sus documentos. Esa consulta queda registrada para RRHH.</p>
     </div>
-    <button class="btn-secondary full" style="margin-top:18px" onclick="cerrarSesion()">Cerrar sesión</button>
+
+    <div id="jefe-resultados-busqueda"></div>
+
+    <div style="padding:0 1.1rem;margin-bottom:6px;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em" id="jefe-cuadrilla-titulo">Tu cuadrilla informada</div>
+    <div id="jefe-lista-cuadrilla" class="card-angosto"><p class="status-note">Cargando…</p></div>
+  </div>
+
+  <!-- vista de documentos de un trabajador -->
+  <div id="jefe-vista-documentos" class="hidden">
+    <button class="btn-secondary" style="margin:0 1.1rem 10px" onclick="jefeVolverALista()">← Volver</button>
+    <div class="card-angosto" style="margin-bottom:12px">
+      <div class="status-name" id="jefe-doc-trabajador-nombre" style="font-size:15px;text-align:left">—</div>
+      <div style="font-size:12px;color:var(--text3)" id="jefe-doc-trabajador-meta">—</div>
+    </div>
+    <div id="jefe-doc-aviso"></div>
+    <div id="jefe-doc-lista" class="card-angosto"><p class="status-note">Cargando…</p></div>
+  </div>
+</div>
+
+<!-- ===== MODAL: VISOR DE DOCUMENTO PARA JEFE DE FAENA (con marca de agua) ===== -->
+<div id="modal-visor-jefe" class="modal-overlay hidden" style="z-index:90">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:760px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <div class="modal-titulo" id="visor-jefe-titulo" style="margin:0;font-size:14px">Documento</div>
+      <button class="btn-secondary" onclick="cerrarVisorJefe()">Cerrar</button>
+    </div>
+    <div style="position:relative;flex:1;overflow:auto;background:#2b2b2b;display:flex;align-items:center;justify-content:center;min-height:320px">
+      <div id="visor-jefe-contenido" style="width:100%;height:100%;min-height:320px;display:flex;align-items:center;justify-content:center"></div>
+      <div id="visor-jefe-marca" style="position:absolute;inset:0;pointer-events:none"></div>
+    </div>
   </div>
 </div>
 
@@ -296,6 +329,11 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
         Anexos pendientes
         <span class="nav-badge hidden" id="badge-anexos-pendientes">0</span>
+      </button>
+      <button class="nav-item" data-seccion="revisiones" onclick="mostrarSeccion('revisiones')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>
+        Revisiones irregulares
+        <span class="nav-badge hidden" id="badge-revisiones-irregulares">0</span>
       </button>
       <button class="nav-item" data-seccion="configuracion" onclick="mostrarSeccion('configuracion')">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.16.31.44.55.77.66.14.05.29.08.43.09H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
@@ -438,6 +476,27 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
             <tr><th>Trabajador</th><th>Centro</th><th>Fundo actual (cuadrilla)</th><th>Anexo vigente</th><th>Estado</th></tr>
           </thead>
           <tbody id="anexos-tabla-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Revisiones irregulares (REAL) -->
+    <div id="seccion-revisiones" class="seccion hidden">
+      <div class="contenido-header">
+        <div>
+          <div class="contenido-titulo">Revisiones irregulares</div>
+          <div class="contenido-sub">Cada vez que un jefe de faena consulta, desde su vista de solo lectura, los documentos de un trabajador que no informó como parte de su cuadrilla, queda registrado acá — por ejemplo cuando Mininco o la Inspección del Trabajo le pide datos de alguien que no anda con él ese día.</div>
+        </div>
+        <button class="btn-secondary" onclick="fetchRevisionesIrregulares(true)">Actualizar</button>
+      </div>
+
+      <div class="contador-desktop" id="revisiones-contador">Cargando…</div>
+      <div class="tabla-wrap">
+        <table class="tabla">
+          <thead>
+            <tr><th>Jefe de faena</th><th>Trabajador</th><th>Centro del jefe</th><th>Fecha y hora</th><th>Estado</th><th></th></tr>
+          </thead>
+          <tbody id="revisiones-tabla-body"></tbody>
         </table>
       </div>
     </div>
@@ -668,7 +727,7 @@ function mostrarPantalla(id){
 }
 
 window.mostrarSeccion = function(id){
-  ["bandeja","boveda","dotacion","anexos","configuracion"].forEach(s=>{
+  ["bandeja","boveda","dotacion","anexos","revisiones","configuracion"].forEach(s=>{
     document.getElementById("seccion-"+s).classList.toggle("hidden", s !== id);
   });
   document.querySelectorAll(".nav-item").forEach(btn=>{
@@ -699,6 +758,9 @@ window.mostrarSeccion = function(id){
   }
   if(id === "anexos"){
     fetchAnexosPendientes(false);
+  }
+  if(id === "revisiones"){
+    fetchRevisionesIrregulares(false);
   }
   if(id === "configuracion"){
     if(!tiposDocumentoCargados){
@@ -809,18 +871,275 @@ onAuthStateChanged(auth, async (user) => {
       mostrarPantalla("pantalla-escritorio");
       mostrarSeccion("bandeja");
       fetchTiposDocumento().catch(()=>{});
-    }else{
+    }else if(u.rol === "jefe_centro"){
       document.getElementById("jefe-nombre").textContent = u.nombre || user.email;
-      document.getElementById("jefe-rol").textContent = NOMBRES_ROL[u.rol] || u.rol;
-      document.getElementById("jefe-detalle-rol").textContent = NOMBRES_ROL[u.rol] || u.rol;
-      document.getElementById("jefe-detalle-centro").textContent = u.centro ? (NOMBRES_CENTRO[u.centro] || u.centro) : "—";
-      document.getElementById("jefe-detalle-correo").textContent = user.email;
+      document.getElementById("jefe-detalle-centro-linea").textContent = (NOMBRES_ROL[u.rol] || u.rol) + (u.centro ? " · " + (NOMBRES_CENTRO[u.centro] || u.centro) : "");
       mostrarPantalla("pantalla-jefe");
+      iniciarVistaJefe();
+    }else{
+      // cualquier otro rol (de otro módulo del sistema, ej. "bitacora") no tiene
+      // ningún tipo de acceso a documentos — ni al escritorio RRHH ni a la vista de jefe.
+      mostrarPantalla("pantalla-sinacceso");
     }
   }catch(e){
     mostrarPantalla("pantalla-sinacceso");
   }
 });
+
+// ================= VISTA DE CONSULTA — JEFE DE CENTRO (solo lectura) =================
+// El jefe de faena ve primero a los trabajadores que él mismo informó en Cuadrilla diaria
+// (sin registro, es su gente normal). También puede buscar a CUALQUIER trabajador —activo
+// o no— por si una fiscalización (Mininco, Inspección del Trabajo) le pide documentos de
+// alguien que no anda con él ese día; esa consulta queda en "Revisiones irregulares" para
+// que RRHH la revise (no es una acusación, solo trazabilidad). Cada documento se muestra
+// con una marca de agua (nombre del jefe + fecha/hora) — una página web no puede impedir
+// una captura de pantalla real, pero así cualquier captura que circule queda identificable.
+
+let jefeCuadrillaTrabajadores = []; // [{id, nombre, rut, centro, activo}] — su cuadrilla informada reciente
+let jefeTrabajadorActual = null;
+
+async function iniciarVistaJefe(){
+  document.getElementById("jefe-vista-documentos").classList.add("hidden");
+  document.getElementById("jefe-vista-listas").classList.remove("hidden");
+  document.getElementById("jefe-buscar-trabajador").value = "";
+  document.getElementById("jefe-resultados-busqueda").innerHTML = "";
+  document.getElementById("jefe-cuadrilla-titulo").classList.remove("hidden");
+  document.getElementById("jefe-lista-cuadrilla").classList.remove("hidden");
+  jefeCuadrillaTrabajadores = [];
+  document.getElementById("jefe-lista-cuadrilla").innerHTML = `<p class="status-note">Cargando…</p>`;
+
+  try{
+    if(dotDatosTodos === null) await fetchDotacionTodos();
+    if(!tiposDocumentoCargados) await fetchTiposDocumento();
+
+    const hoy = new Date();
+    const haceRato = new Date(hoy.getTime() - 45*24*60*60*1000);
+    const fechaCorte = haceRato.toISOString().slice(0,10);
+    const snapCuadrilla = await getDocs(query(
+      collection(db, "cuadrilla_diaria"),
+      where("jefeFaena", "==", usuarioActual.nombre),
+      where("fecha", ">=", fechaCorte)
+    ));
+
+    const dotPorId = {};
+    (dotDatosTodos || []).forEach(t => dotPorId[t.id] = t);
+    const idsVistos = new Set();
+    const lista = [];
+    snapCuadrilla.forEach(d => {
+      (d.data().trabajadorIds || []).forEach(id => {
+        if(idsVistos.has(id)) return;
+        idsVistos.add(id);
+        if(dotPorId[id]) lista.push(dotPorId[id]);
+      });
+    });
+    lista.sort((a,b) => String(a.nombre||"").localeCompare(String(b.nombre||""), "es"));
+    jefeCuadrillaTrabajadores = lista;
+  }catch(e){
+    document.getElementById("jefe-lista-cuadrilla").innerHTML = `<p class="status-note" style="color:var(--red)">No se pudo cargar tu cuadrilla. Intenta de nuevo.</p>`;
+    return;
+  }
+
+  renderListaCuadrillaJefe();
+}
+
+function renderListaCuadrillaJefe(){
+  const cont = document.getElementById("jefe-lista-cuadrilla");
+  if(!jefeCuadrillaTrabajadores.length){
+    cont.innerHTML = `<p class="status-note">Aún no has informado trabajadores en Cuadrilla diaria en los últimos 45 días.</p>`;
+    return;
+  }
+  cont.innerHTML = jefeCuadrillaTrabajadores.map(t => `
+    <div class="doc-item">
+      <div>
+        <div class="doc-item-nombre">${escapeHtml(t.nombre || "—")}</div>
+        <div class="doc-item-meta">${escapeHtml(limpiarRut(t.rut || ""))}</div>
+      </div>
+      <div class="doc-item-acciones">
+        <button class="btn-secondary" onclick="jefeAbrirTrabajador('${t.id}')">Ver documentos</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+window.renderBusquedaJefe = function(){
+  const textoBusqueda = document.getElementById("jefe-buscar-trabajador").value.trim();
+  const val = normalizar(textoBusqueda);
+  const cont = document.getElementById("jefe-resultados-busqueda");
+  const tituloCuadrilla = document.getElementById("jefe-cuadrilla-titulo");
+  const listaCuadrilla = document.getElementById("jefe-lista-cuadrilla");
+
+  if(!val){
+    cont.innerHTML = "";
+    tituloCuadrilla.classList.remove("hidden");
+    listaCuadrilla.classList.remove("hidden");
+    return;
+  }
+  tituloCuadrilla.classList.add("hidden");
+  listaCuadrilla.classList.add("hidden");
+
+  const resultados = (dotDatosTodos || []).filter(t =>
+    normalizar(t.nombre || "").includes(val) || normalizar(limpiarRut(t.rut || "")).includes(val)
+  ).slice(0, 30);
+
+  if(!resultados.length){
+    cont.innerHTML = `<div class="card-angosto"><p class="status-note">Sin resultados para "${escapeHtml(textoBusqueda)}".</p></div>`;
+    return;
+  }
+
+  cont.innerHTML = `<div class="card-angosto" style="margin-bottom:12px">` + resultados.map(t => `
+    <div class="doc-item">
+      <div>
+        <div class="doc-item-nombre">${escapeHtml(t.nombre || "—")}${t.activo === false ? ' <span class="badge-inactivo">Inactivo</span>' : ""}</div>
+        <div class="doc-item-meta">${escapeHtml(limpiarRut(t.rut || ""))}${t.centro ? " · " + escapeHtml(NOMBRES_CENTRO[t.centro] || t.centro) : ""}</div>
+      </div>
+      <div class="doc-item-acciones">
+        <button class="btn-secondary" onclick="jefeAbrirTrabajador('${t.id}')">Ver documentos</button>
+      </div>
+    </div>
+  `).join("") + `</div>`;
+};
+
+window.jefeAbrirTrabajador = async function(trabajadorId){
+  const dotPorId = {};
+  (dotDatosTodos || []).forEach(t => dotPorId[t.id] = t);
+  const t = dotPorId[trabajadorId];
+  if(!t) return;
+
+  const enCuadrilla = jefeCuadrillaTrabajadores.some(c => c.id === trabajadorId);
+  jefeTrabajadorActual = t;
+
+  document.getElementById("jefe-vista-listas").classList.add("hidden");
+  document.getElementById("jefe-vista-documentos").classList.remove("hidden");
+  document.getElementById("jefe-doc-trabajador-nombre").textContent = t.nombre || "—";
+  document.getElementById("jefe-doc-trabajador-meta").textContent =
+    `${limpiarRut(t.rut || "")}${t.centro ? " · " + (NOMBRES_CENTRO[t.centro] || t.centro) : ""}${t.activo === false ? " · Inactivo" : ""}`;
+
+  const avisoCont = document.getElementById("jefe-doc-aviso");
+  const listaCont = document.getElementById("jefe-doc-lista");
+  listaCont.innerHTML = `<p class="status-note">Cargando…</p>`;
+
+  if(!enCuadrilla){
+    avisoCont.innerHTML = `<div class="card-angosto" style="margin-bottom:12px;background:var(--amber-bg);border:none"><p class="status-note" style="color:var(--amber);margin-top:0">Este trabajador no está en tu cuadrilla informada. Esta consulta queda registrada para RRHH.</p></div>`;
+    registrarRevisionIrregular(t);
+  }else{
+    avisoCont.innerHTML = "";
+  }
+
+  try{
+    const snap = await getDocs(query(collection(db, "documentos"), where("trabajadorId", "==", trabajadorId)));
+    const docs = [];
+    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+    docs.sort((a,b) => (b.fechaSubida||"").localeCompare(a.fechaSubida||""));
+    renderDocumentosJefe(docs);
+  }catch(e){
+    listaCont.innerHTML = `<p class="status-note" style="color:var(--red)">No se pudieron cargar los documentos. Intenta de nuevo.</p>`;
+  }
+};
+
+function renderDocumentosJefe(docs){
+  const cont = document.getElementById("jefe-doc-lista");
+  if(!docs.length){
+    cont.innerHTML = `<p class="status-note">Este trabajador no tiene documentos subidos.</p>`;
+    return;
+  }
+  const tiposOrdenados = TIPOS_DOCUMENTO.slice().sort((a,b) => (a.orden ?? 999) - (b.orden ?? 999));
+  const slugsConocidos = new Set(TIPOS_DOCUMENTO.map(td => td.slug));
+  const grupos = tiposOrdenados.map(td => ({ tipo: td, docs: docs.filter(d => d.tipo === td.slug) })).filter(g => g.docs.length);
+  const sinTipo = docs.filter(d => !slugsConocidos.has(d.tipo));
+  if(sinTipo.length) grupos.push({ tipo: { label: "Otro / sin clasificar" }, docs: sinTipo });
+
+  cont.innerHTML = grupos.map(g => `
+    <div class="doc-grupo">
+      <div class="doc-grupo-titulo">${escapeHtml(g.tipo.label)} <span class="doc-grupo-count">(${g.docs.length})</span></div>
+      ${g.docs.map(d => `
+        <div class="doc-item">
+          <div>
+            <div class="doc-item-nombre">${escapeHtml(d.nombreArchivo || "—")}${d.tipo === "anexo_fundo" && d.vigente ? '<span class="badge-vigente">Vigente</span>' : ""}</div>
+            <div class="doc-item-meta">${d.fechaSubida ? new Date(d.fechaSubida).toLocaleDateString("es-CL") : "—"}${d.tipo === "anexo_fundo" && d.fundo ? " · Fundo " + escapeHtml(d.fundo) : ""}</div>
+          </div>
+          <div class="doc-item-acciones">
+            <button class="btn-secondary" onclick="jefeVerDocumento('${escapeHtml(d.storagePath || "").replace(/'/g,"\\'")}', '${escapeHtml(d.nombreArchivo || "documento").replace(/'/g,"\\'")}')">Ver</button>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `).join("");
+}
+
+window.jefeVolverALista = function(){
+  document.getElementById("jefe-vista-documentos").classList.add("hidden");
+  document.getElementById("jefe-vista-listas").classList.remove("hidden");
+  jefeTrabajadorActual = null;
+};
+
+async function registrarRevisionIrregular(t){
+  try{
+    await setDoc(doc(collection(db, "revisiones_irregulares")), {
+      jefeUid: auth.currentUser ? auth.currentUser.uid : "",
+      jefeNombre: usuarioActual ? usuarioActual.nombre : "",
+      jefeCentro: usuarioActual ? usuarioActual.centro : null,
+      trabajadorId: t.id,
+      trabajadorNombre: t.nombre || "",
+      trabajadorActivo: t.activo !== false,
+      fecha: new Date().toISOString(),
+      revisado: false
+    });
+  }catch(e){
+    // si falla el registro no bloqueamos la consulta del jefe — RRHH simplemente no verá esta entrada puntual
+  }
+}
+
+// ---- Visor de documento con marca de agua (nombre del jefe + fecha/hora) ----
+// No existe forma real de impedir una captura de pantalla desde una página web —
+// esto no la evita, pero deja cualquier captura identificable: quién la vio y cuándo.
+
+function construirMarcaAgua(texto){
+  // Texto oscuro semitransparente: la gran mayoría de los documentos son escaneos
+  // claros (blanco/gris), así que un marcador oscuro es el que realmente se ve
+  // sobre el contenido real. Se dibuja dos veces (un trazo blanco detrás) para
+  // que siga siendo legible incluso si el documento tiene fondo oscuro.
+  const t = escapeHtml(texto);
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='320' height='170'>
+    <text x='0' y='95' font-size='15' fill='rgba(255,255,255,0.55)' stroke='rgba(255,255,255,0.55)' stroke-width='3' font-family='Arial,sans-serif' transform='rotate(-28 160 85)'>${t}</text>
+    <text x='0' y='95' font-size='15' fill='rgba(0,0,0,0.3)' font-family='Arial,sans-serif' transform='rotate(-28 160 85)'>${t}</text>
+  </svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
+window.jefeVerDocumento = async function(storagePath, nombreArchivo){
+  const modal = document.getElementById("modal-visor-jefe");
+  const titulo = document.getElementById("visor-jefe-titulo");
+  const contenido = document.getElementById("visor-jefe-contenido");
+  const marca = document.getElementById("visor-jefe-marca");
+
+  titulo.textContent = nombreArchivo || "Documento";
+  contenido.innerHTML = `<p style="color:#fff;font-size:13px">Cargando…</p>`;
+  const ahora = new Date();
+  const textoMarca = `${usuarioActual ? usuarioActual.nombre : ""} · ${ahora.toLocaleDateString("es-CL")} ${ahora.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}`;
+  marca.style.backgroundImage = construirMarcaAgua(textoMarca);
+  marca.style.backgroundRepeat = "repeat";
+  marca.style.zIndex = "2";
+  modal.classList.remove("hidden");
+
+  try{
+    const url = await getDownloadURL(storageRef(storage, storagePath));
+    const ext = (nombreArchivo || "").split(".").pop().toLowerCase();
+    if(["jpg","jpeg","png","gif","webp"].includes(ext)){
+      contenido.innerHTML = `<img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain">`;
+    }else if(ext === "pdf"){
+      contenido.innerHTML = `<iframe src="${url}" style="width:100%;height:70vh;border:none;background:#fff"></iframe>`;
+    }else{
+      contenido.innerHTML = `<div style="color:#fff;text-align:center;padding:30px"><p style="margin-bottom:14px">Este tipo de archivo no se puede previsualizar acá.</p><a href="${url}" target="_blank" style="color:#9fd39f;font-weight:700">Abrir en una pestaña nueva</a></div>`;
+    }
+  }catch(e){
+    contenido.innerHTML = `<p style="color:#fff">No se pudo abrir el documento.</p>`;
+  }
+};
+
+window.cerrarVisorJefe = function(){
+  document.getElementById("modal-visor-jefe").classList.add("hidden");
+  document.getElementById("visor-jefe-contenido").innerHTML = "";
+};
 
 // ================= DOTACIÓN DE PERSONAL (solo RRHH/Admin) =================
 
@@ -2120,6 +2439,94 @@ window.marcarVigenteDesdeAnexosPendientes = async function(docId, filaId, boton)
     renderAnexosPendientes();
   }catch(e){
     alert("No se pudo marcar como vigente. Intenta de nuevo.");
+    boton.disabled = false;
+    boton.textContent = original;
+  }
+};
+
+// ================= REVISIONES IRREGULARES (solo RRHH/Admin) =================
+// Cada fila viene de la colección revisiones_irregulares, escrita por la vista de solo
+// lectura del jefe de faena (pantalla-jefe) cada vez que consulta a alguien que no
+// informó en su propia cuadrilla. No implica necesariamente mal uso — puede ser una
+// fiscalización legítima (Mininco, Inspección del Trabajo) — por eso queda como
+// registro a revisar, no como una alerta de infracción.
+
+let revisionesDatos = null; // [{id, jefeNombre, jefeCentro, trabajadorNombre, fecha, revisado}]
+
+window.fetchRevisionesIrregulares = async function(forzar){
+  if(revisionesDatos !== null && !forzar){ renderRevisionesIrregulares(); return; }
+
+  const cuerpo = document.getElementById("revisiones-tabla-body");
+  const contador = document.getElementById("revisiones-contador");
+  if(!cuerpo) return;
+  contador.textContent = "Cargando…";
+  cuerpo.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">Cargando…</td></tr>`;
+
+  try{
+    const snap = await getDocs(collection(db, "revisiones_irregulares"));
+    const filas = [];
+    snap.forEach(d => filas.push({ id: d.id, ...d.data() }));
+    filas.sort((a,b) => (b.fecha||"").localeCompare(a.fecha||""));
+    revisionesDatos = filas;
+  }catch(e){
+    cuerpo.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--red);padding:20px">No se pudo cargar. Intenta de nuevo.</td></tr>`;
+    contador.textContent = "Error al cargar.";
+    revisionesDatos = null;
+    return;
+  }
+
+  renderRevisionesIrregulares();
+};
+
+function fechaHoraLegible(iso){
+  if(!iso) return "—";
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("es-CL") + " · " + d.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+}
+
+function renderRevisionesIrregulares(){
+  const cuerpo = document.getElementById("revisiones-tabla-body");
+  const contador = document.getElementById("revisiones-contador");
+  if(!cuerpo || revisionesDatos === null) return;
+
+  const sinRevisar = revisionesDatos.filter(r => r.revisado !== true).length;
+  contador.textContent = `${sinRevisar} sin revisar de ${revisionesDatos.length} en total`;
+
+  const badge = document.getElementById("badge-revisiones-irregulares");
+  if(badge){
+    badge.textContent = sinRevisar;
+    badge.classList.toggle("hidden", sinRevisar === 0);
+  }
+
+  if(!revisionesDatos.length){
+    cuerpo.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">Sin registros todavía.</td></tr>`;
+    return;
+  }
+
+  cuerpo.innerHTML = revisionesDatos.map(r => `
+    <tr>
+      <td class="nombre-cell">${escapeHtml(r.jefeNombre || "—")}</td>
+      <td>${escapeHtml(r.trabajadorNombre || "—")}${r.trabajadorActivo === false ? ' <span class="badge-inactivo">Inactivo</span>' : ""}</td>
+      <td>${r.jefeCentro ? `<span class="badge-centro">${escapeHtml(NOMBRES_CENTRO[r.jefeCentro] || r.jefeCentro)}</span>` : "—"}</td>
+      <td>${fechaHoraLegible(r.fecha)}</td>
+      <td>${r.revisado === true ? `<span style="color:var(--green2);font-weight:700;font-size:12.5px">Revisado</span>` : `<span class="badge-inactivo">Sin revisar</span>`}</td>
+      <td style="text-align:right">${r.revisado === true ? "" : `<button class="btn-secondary" onclick="marcarRevisionRevisada('${r.id}', this)">Marcar revisado</button>`}</td>
+    </tr>
+  `).join("");
+}
+
+window.marcarRevisionRevisada = async function(id, boton){
+  const original = boton.textContent;
+  boton.disabled = true;
+  boton.textContent = "Guardando…";
+  try{
+    await setDoc(doc(db, "revisiones_irregulares", id), { revisado: true, revisadoPor: usuarioActual ? usuarioActual.nombre : "", revisadoFecha: new Date().toISOString() }, { merge: true });
+    const fila = (revisionesDatos || []).find(r => r.id === id);
+    if(fila) fila.revisado = true;
+    renderRevisionesIrregulares();
+  }catch(e){
+    alert("No se pudo marcar como revisado. Intenta de nuevo.");
     boton.disabled = false;
     boton.textContent = original;
   }
