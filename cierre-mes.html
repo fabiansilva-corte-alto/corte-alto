@@ -1306,8 +1306,13 @@ const db   = firebase.firestore();
 const auth = firebase.auth();
 
 // ── CONTROL DE ACCESO ────────────────────────────────────────
-// Solo este email puede usar el módulo
-const EMAIL_AUTORIZADO = 'supervisor@girozserviciosforestales.cl';
+// Emails autorizados para usar el módulo
+const EMAILS_AUTORIZADOS = [
+  'supervisor@girozserviciosforestales.cl',
+  'fabianalexis.silva@outlook.cl',
+];
+// Compatibilidad: helper para verificar
+const EMAIL_AUTORIZADO = EMAILS_AUTORIZADOS[0]; // (solo para referencia legacy)
 
 // Inyectar logo en pantalla de login (mismo base64 que el header)
 // ── Ajuste dinámico del sticky header del cierre ──
@@ -1364,7 +1369,7 @@ async function hacerLogin() {
 
   errEl.textContent = '';
 
-  if (email !== EMAIL_AUTORIZADO) {
+  if (!EMAILS_AUTORIZADOS.includes(email)) {
     errEl.textContent = 'No tienes acceso a este módulo.';
     return;
   }
@@ -1390,7 +1395,7 @@ async function hacerLogin() {
 
 // Observar estado de auth — muestra login o app según corresponda
 auth.onAuthStateChanged(user => {
-  if (user && user.email.toLowerCase() === EMAIL_AUTORIZADO) {
+  if (user && EMAILS_AUTORIZADOS.includes(user.email.toLowerCase())) {
     // Usuario autorizado → mostrar app
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'block';
