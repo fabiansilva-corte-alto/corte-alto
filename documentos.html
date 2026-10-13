@@ -1680,7 +1680,7 @@ window.toggleBandejaSoloNuevos = function(marcado){
 function renderBandejaCarpetas(){
   const cont = document.getElementById("bandeja-carpetas-cont");
   const contador = document.getElementById("bandeja-carpetas-contador");
-  const pendientes = bandejaCarpetas.filter(c => c.estado !== "listo");
+  const pendientes = bandejaCarpetas.filter(c => c.estado !== "listo" && c.estado !== "sin_novedades");
   const ocultasSinNovedades = bandejaSoloNuevos ? bandejaCarpetas.filter(c => c.estado !== "listo" && bandejaCardSinNovedades(c)).length : 0;
   contador.textContent = `${bandejaCarpetas.length} carpeta${bandejaCarpetas.length === 1 ? "" : "s"}` +
     (bandejaCarpetas.length && pendientes.length !== bandejaCarpetas.length ? ` (${pendientes.length} pendiente${pendientes.length === 1 ? "" : "s"})` : "") +
@@ -1999,10 +1999,18 @@ window.subirCarpetaBandeja = async function(cardId){
   });
 
   if(resultado.sinArchivos){
-    card.estado = "pendiente";
+    // No es un error: esta carpeta simplemente no tenía nada nuevo que subir (todo ya
+    // estaba en el sistema). Antes esto quedaba como "pendiente" con un aviso rojo y se
+    // contaba como "error" en el resumen de "Subir todo" — con el escaneo de la carpeta
+    // completa del servidor esto pasa en la gran mayoría de las carpetas (todo lo que ya
+    // se subió antes), así que se trata como un estado resuelto propio ("sin_novedades"):
+    // no cuenta como error, no se vuelve a reintentar solo, y sigue oculta con el filtro
+    // "Mostrar solo archivos nuevos" igual que antes de intentar subir.
+    card.estado = "sin_novedades";
+    card.resultadoTexto = `Nada nuevo que subir — ${resultado.omitidos} archivo${resultado.omitidos === 1 ? "" : "s"} ya estaba${resultado.omitidos === 1 ? "" : "n"} subido${resultado.omitidos === 1 ? "" : "s"}.`;
     renderBandejaCarpetas();
     const resultadoBox = document.getElementById(`bandeja-resultado-${cardId}`);
-    if(resultadoBox) resultadoBox.innerHTML = `<div class="status-note" style="color:var(--red)">No hay archivos marcados para subir (todos quedaron sin marcar por ser duplicados).</div>`;
+    if(resultadoBox) resultadoBox.innerHTML = `<div class="status-note" style="color:var(--text3)">${escapeHtml(card.resultadoTexto)}</div>`;
     return;
   }
 
@@ -2038,18 +2046,22 @@ window.subirTodoBandeja = async function(){
   botonTodo.disabled = true;
   const globalBox = document.getElementById("bandeja-resultado-global");
 
-  let carpetasConError = 0;
+  let carpetasConError = 0, carpetasSubidas = 0, carpetasSinNovedades = 0;
   for(let i = 0; i < pendientes.length; i++){
     const card = pendientes[i];
     globalBox.innerHTML = `<div class="status-note">Subiendo carpeta ${i + 1}/${pendientes.length} — ${escapeHtml(card.nombreCarpeta)}…</div>`;
     await window.subirCarpetaBandeja(card.id);
-    if(card.estado !== "listo") carpetasConError++;
+    if(card.estado === "listo") carpetasSubidas++;
+    else if(card.estado === "sin_novedades") carpetasSinNovedades++;
+    else carpetasConError++; // sigue en "pendiente": esta sí tuvo un error real al subir
   }
 
   botonTodo.disabled = false;
-  globalBox.innerHTML = carpetasConError
-    ? `<div class="status-note" style="color:var(--red)">Terminado con errores: ${carpetasConError} carpeta${carpetasConError === 1 ? "" : "s"} con problemas — revisa el detalle en cada tarjeta.</div>`
-    : `<div class="status-note" style="color:var(--green2)">✓ ${pendientes.length} carpeta${pendientes.length === 1 ? "" : "s"} subida${pendientes.length === 1 ? "" : "s"} sin errores.</div>`;
+  const partes = [];
+  if(carpetasSubidas) partes.push(`✓ ${carpetasSubidas} carpeta${carpetasSubidas === 1 ? "" : "s"} subida${carpetasSubidas === 1 ? "" : "s"}`);
+  if(carpetasSinNovedades) partes.push(`${carpetasSinNovedades} sin nada nuevo (ya estaba todo al día)`);
+  if(carpetasConError) partes.push(`⚠ ${carpetasConError} con errores reales — revisa el detalle en esa${carpetasConError === 1 ? "" : "s"} tarjeta${carpetasConError === 1 ? "" : "s"}`);
+  globalBox.innerHTML = `<div class="status-note" style="color:${carpetasConError ? "var(--red)" : "var(--green2)"}">${partes.join(" · ")}</div>`;
 };
 
 // ================= BÓVEDA DE DOCUMENTOS =================
