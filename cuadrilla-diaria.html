@@ -333,7 +333,9 @@ async function cargarFundos(){
   try{
     const snap = await getDocs(collection(db, "config_fundos"));
     fundosDatos = [];
-    snap.forEach(d => fundosDatos.push({ id: d.id, nombre: d.data().nombre || d.data().fundo || d.id }));
+    // Solo fundos marcados como activos en documentos.html aparecen aquí (los inactivos
+    // siguen guardados en el catálogo, solo se dejan de ofrecer como opción nueva).
+    snap.forEach(d => { if(d.data().activo === false) return; fundosDatos.push({ id: d.id, nombre: d.data().nombre || d.data().fundo || d.id }); });
     fundosDatos.sort((a,b) => a.nombre.localeCompare(b.nombre, "es"));
     sel.innerHTML = `<option value="">Selecciona el fundo…</option>` + fundosDatos.map(f => `<option value="${escapeHtml(f.nombre)}">${escapeHtml(f.nombre)}</option>`).join("");
   }catch(e){
