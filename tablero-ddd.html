@@ -634,7 +634,7 @@ window.onLineaChange=function(){
     .filter(e=>e.tipo==='PROCESADOR')
     .forEach(e=>{const o=document.createElement('option');o.value=e.nombre;o.textContent=e.nombre;selProc.appendChild(o);});
   // Poblar fundos
-  fundos.forEach(f=>{
+  fundos.filter(f=>f.activo!==false).forEach(f=>{
     const lbl=document.createElement('label');
     const chk=document.createElement('input');
     chk.type='checkbox';chk.value=f.nombre;
