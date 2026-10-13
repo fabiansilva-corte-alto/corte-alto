@@ -187,6 +187,8 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 .bandeja-select-tipo{width:100%;height:38px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:12.5px;font-family:var(--font);background:#fbfbfb}
 .bandeja-input-fundo{width:100%;height:38px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:12.5px;font-family:var(--font);background:#fbfbfb}
 .bandeja-quitar{border:1px solid var(--border);background:#fff;border-radius:8px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;color:var(--red);cursor:pointer;font-size:13px}
+.bandeja-ver{border:1px solid var(--border);background:#fff;border-radius:8px;height:26px;padding:0 9px;display:inline-flex;align-items:center;gap:5px;color:var(--text2);cursor:pointer;font-size:12px;margin-left:8px;vertical-align:middle}
+.bandeja-ver:hover{border-color:var(--green2);color:var(--green2)}
 
 @media (max-width:760px){
   #pantalla-escritorio{flex-direction:column;height:auto}
@@ -1828,7 +1830,7 @@ function renderBandejaArchivosCarpeta(card){
 
   cuerpo.innerHTML = filasAMostrar.map(({ a, i }) => `
     <tr${a.duplicado ? ' style="background:#fff3e0"' : ""}>
-      <td>${escapeHtml(a.nombre)}${a.duplicado ? `<div class="badge-inactivo" style="margin-top:4px;display:inline-block">Ya subido ${escapeHtml(fechaCortaBandeja(a.duplicado.fecha))}</div>` : ""}</td>
+      <td>${escapeHtml(a.nombre)}<button type="button" class="bandeja-ver" onclick="verArchivoLocalBandeja('${card.id}', ${i})" title="Previsualizar este archivo antes de clasificarlo">👁 Ver</button>${a.duplicado ? `<div class="badge-inactivo" style="margin-top:4px;display:inline-block">Ya subido ${escapeHtml(fechaCortaBandeja(a.duplicado.fecha))}</div>` : ""}</td>
       <td>
         <select class="bandeja-select-tipo" onchange="actualizarTipoArchivoBandeja('${card.id}', ${i}, this.value)">
           ${TIPOS_DOCUMENTO.map(td => `<option value="${td.slug}" ${a.tipo === td.slug ? "selected" : ""}>${td.label}</option>`).join("")}
@@ -1881,6 +1883,23 @@ window.quitarArchivoBandeja = function(cardId, i){
   if(!card) return;
   card.archivos.splice(i, 1);
   renderBandejaCarpetas();
+};
+
+// Previsualiza un archivo ANTES de subirlo: todavía es un File local elegido del explorador
+// (no está en Storage), así que se abre directo desde el navegador con un object URL — sin
+// subir nada ni gastar ancho de banda. Pensado para los casos donde el nombre del archivo no
+// dice qué es (ej. "REN SR TRONCOSO.pdf") y hay que abrirlo para saber cómo clasificarlo.
+window.verArchivoLocalBandeja = function(cardId, i){
+  const card = encontrarCarpetaBandeja(cardId);
+  const item = card && card.archivos[i];
+  if(!item || !item.file){
+    alert("No se pudo abrir este archivo.");
+    return;
+  }
+  const url = URL.createObjectURL(item.file);
+  window.open(url, "_blank");
+  // se libera el object URL después de darle tiempo de sobra a la pestaña nueva para cargarlo
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 };
 
 window.quitarCarpetaBandeja = function(cardId){
