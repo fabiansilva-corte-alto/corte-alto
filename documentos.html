@@ -593,7 +593,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
         <div class="tabla-wrap" style="max-width:900px">
           <table class="tabla">
             <thead>
-              <tr><th>Nombre del fundo</th><th>Centros asociados</th><th>Variantes conocidas</th><th></th></tr>
+              <tr><th>Nombre del fundo</th><th>Estado</th><th>Centros asociados</th><th>Variantes conocidas</th><th></th></tr>
             </thead>
             <tbody id="config-fundos-tabla-body"></tbody>
           </table>
@@ -718,6 +718,8 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
       <label class="chk-row"><input type="checkbox" value="ROTATIVO"> Rotativo</label>
     </div>
     <p class="status-note" style="margin-top:4px">Ayuda para "Marcar vigente masivo" — no limita a quién puede subir o ver documentos de este fundo.</p>
+    <label class="chk-row" style="margin-top:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="mf-activo" checked> Fundo activo (aparece en el selector de la cuadrilla diaria y demás archivos de la PWA)</label>
+    <p class="status-note" style="margin-top:2px">Si lo desmarcas, el fundo sigue en el catálogo (los documentos y anexos ya clasificados con él se siguen mostrando bien) pero deja de aparecer como opción para elegir en otros archivos.</p>
     <div class="msg-error" id="modal-fundo-error"></div>
     <button class="btn-primary full" id="mf-guardar" style="margin-top:10px" onclick="guardarFundo()">Guardar</button>
     <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModalFundo()">Cancelar</button>
@@ -3034,17 +3036,21 @@ window.eliminarTipo = async function(slug){
 async function fetchFundosCatalogo(){
   const snap = await getDocs(collection(db, "config_fundos"));
   const datos = [];
-  snap.forEach(d => datos.push({ id: d.id, nombre: d.data().nombre || d.data().fundo || d.id, alias: d.data().alias || [], centros: d.data().centros || [] }));
+  snap.forEach(d => datos.push({ id: d.id, nombre: d.data().nombre || d.data().fundo || d.id, alias: d.data().alias || [], centros: d.data().centros || [], activo: d.data().activo !== false }));
   datos.sort((a,b) => a.nombre.localeCompare(b.nombre, "es"));
   FUNDOS_CATALOGO = datos;
   fundosCatalogoCargados = true;
   renderFundosDatalist();
 }
 
+// El datalist que ve el jefe de faena al escribir/elegir fundo solo debe sugerir fundos activos.
+// Las funciones de coincidencia difusa (buscarFundoEnTexto, fundosCoinciden, etc.) siguen usando
+// el catálogo COMPLETO (activos + inactivos) para que documentos antiguos de un fundo ya
+// desactivado sigan clasificándose y mostrándose correctamente.
 function renderFundosDatalist(){
   const dl = document.getElementById("fundos-catalogo-datalist");
   if(!dl) return;
-  dl.innerHTML = FUNDOS_CATALOGO.map(f => `<option value="${escapeHtml(f.nombre)}">`).join("");
+  dl.innerHTML = FUNDOS_CATALOGO.filter(f => f.activo !== false).map(f => `<option value="${escapeHtml(f.nombre)}">`).join("");
 }
 
 function generarSlugFundo(nombre){
@@ -3063,12 +3069,18 @@ function renderConfiguracionFundos(){
   const cont = document.getElementById("config-fundos-tabla-body");
   if(!cont) return;
   if(!FUNDOS_CATALOGO.length){
-    cont.innerHTML = `<tr><td colspan="4" style="color:var(--text3)">No hay fundos cargados todavía.</td></tr>`;
+    cont.innerHTML = `<tr><td colspan="5" style="color:var(--text3)">No hay fundos cargados todavía.</td></tr>`;
     return;
   }
-  cont.innerHTML = FUNDOS_CATALOGO.map(f => `
+  cont.innerHTML = FUNDOS_CATALOGO.map(f => {
+    const activo = f.activo !== false;
+    return `
     <tr>
       <td class="nombre-cell">${escapeHtml(f.nombre)}</td>
+      <td style="white-space:nowrap">
+        <span class="badge-centro" style="${activo ? "" : "background:#f0f0f0;color:var(--text3)"}">${activo ? "Activo" : "Inactivo"}</span>
+        <button class="accion-editar" style="margin-left:6px;font-size:11.5px;padding:2px 6px" onclick="toggleActivoFundo('${f.id}')">${activo ? "Desactivar" : "Activar"}</button>
+      </td>
       <td>${(f.centros||[]).length ? f.centros.map(c => `<span class="badge-centro">${escapeHtml(NOMBRES_CENTRO[c] || c)}</span>`).join(" ") : `<span style="color:var(--text3)">—</span>`}</td>
       <td style="color:var(--text3);font-size:12.5px">${(f.alias||[]).length ? escapeHtml(f.alias.join(", ")) : "—"}</td>
       <td style="text-align:right;white-space:nowrap">
@@ -3077,7 +3089,8 @@ function renderConfiguracionFundos(){
         <button class="accion-editar" title="Eliminar" style="color:var(--red);margin-left:6px" onclick="eliminarFundo('${f.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
       </td>
     </tr>
-  `).join("");
+  `;
+  }).join("");
 }
 
 window.abrirModalFundo = function(id){
@@ -3087,6 +3100,7 @@ window.abrirModalFundo = function(id){
   const alias = document.getElementById("mf-alias");
   const titulo = document.getElementById("mf-titulo");
   const centrosChks = document.querySelectorAll("#mf-centros input[type=checkbox]");
+  const activoChk = document.getElementById("mf-activo");
   document.getElementById("modal-fundo-error").textContent = "";
   if(id){
     const f = FUNDOS_CATALOGO.find(x => x.id === id);
@@ -3096,12 +3110,14 @@ window.abrirModalFundo = function(id){
     alias.value = f && f.alias ? f.alias.join(", ") : "";
     const centrosActuales = (f && f.centros) || [];
     centrosChks.forEach(c => { c.checked = centrosActuales.includes(c.value); });
+    activoChk.checked = f ? f.activo !== false : true;
   }else{
     titulo.textContent = "Nuevo fundo";
     idField.value = "";
     nombre.value = "";
     alias.value = "";
     centrosChks.forEach(c => { c.checked = false; });
+    activoChk.checked = true;
   }
   modal.classList.remove("hidden");
   nombre.focus();
@@ -3118,6 +3134,7 @@ window.guardarFundo = async function(){
   const aliasTxt = document.getElementById("mf-alias").value;
   const alias = aliasTxt.split(",").map(s => s.trim()).filter(Boolean);
   const centros = Array.from(document.querySelectorAll("#mf-centros input[type=checkbox]:checked")).map(c => c.value);
+  const activo = document.getElementById("mf-activo").checked;
   const errorBox = document.getElementById("modal-fundo-error");
   errorBox.textContent = "";
   if(!nombre){
@@ -3130,7 +3147,9 @@ window.guardarFundo = async function(){
   boton.textContent = "Guardando…";
   try{
     const id = idField.value || generarSlugFundo(nombre);
-    await setDoc(doc(db, "config_fundos", id), { nombre, alias, centros });
+    // merge:true — este documento también es usado y editado por configuracion.html (rodales/VMA),
+    // así que nunca se debe sobrescribir completo o se pierden esos campos.
+    await setDoc(doc(db, "config_fundos", id), { nombre, alias, centros, activo }, { merge: true });
     await fetchFundosCatalogo();
     renderConfiguracionFundos();
     window.cerrarModalFundo();
@@ -3139,6 +3158,19 @@ window.guardarFundo = async function(){
   }finally{
     boton.disabled = false;
     boton.textContent = "Guardar";
+  }
+};
+
+window.toggleActivoFundo = async function(id){
+  const f = FUNDOS_CATALOGO.find(x => x.id === id);
+  if(!f) return;
+  const nuevoActivo = !(f.activo !== false);
+  try{
+    await setDoc(doc(db, "config_fundos", id), { activo: nuevoActivo }, { merge: true });
+    await fetchFundosCatalogo();
+    renderConfiguracionFundos();
+  }catch(e){
+    alert("No se pudo cambiar el estado. Intenta de nuevo.");
   }
 };
 
@@ -3423,13 +3455,15 @@ window.confirmarFundoSimilar = async function(gi){
   try{
     const destino = FUNDOS_CATALOGO.find(f => normalizarFundo(f.nombre) === normalizarFundo(nombre));
     const variantes = g.map(v => v.texto);
+    // merge:true en ambos casos — config_fundos también lo usa/edita configuracion.html (rodales/VMA)
+    // y no hay que borrar centros/activo/rodales al fusionar un grupo de fundos similares.
     if(destino){
       const aliasNuevos = Array.from(new Set([...(destino.alias||[]), ...variantes.filter(v => normalizarFundo(v) !== normalizarFundo(destino.nombre))]));
-      await setDoc(doc(db, "config_fundos", destino.id), { nombre: destino.nombre, alias: aliasNuevos });
+      await setDoc(doc(db, "config_fundos", destino.id), { nombre: destino.nombre, alias: aliasNuevos }, { merge: true });
     }else{
       const slug = generarSlugFundo(nombre);
       const aliasNuevos = variantes.filter(v => normalizarFundo(v) !== normalizarFundo(nombre));
-      await setDoc(doc(db, "config_fundos", slug), { nombre, alias: aliasNuevos });
+      await setDoc(doc(db, "config_fundos", slug), { nombre, alias: aliasNuevos, centros: [], activo: true }, { merge: true });
     }
     // Reescribe los documentos que usaban alguna de las variantes para que queden con el nombre canónico
     const nombreFinal = destino ? destino.nombre : nombre;
