@@ -97,6 +97,12 @@
   .icon-editar{color:var(--verde-medio)}
   .icon-eliminar{color:var(--rojo)}
 
+  .badge-estado{
+    display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;
+  }
+  .badge-activo{background:var(--verde-claro);color:var(--verde-medio)}
+  .badge-inactivo{background:#f0f0f0;color:#888}
+
   .btn-agregar{
     width:100%;
     background:#fff;
@@ -326,6 +332,12 @@
     <label>Código de cancha</label>
     <input type="text" id="fundo-codigo-cancha" placeholder="Ej: 45" inputmode="numeric">
 
+    <label class="check-fila" style="margin-top:14px;display:flex;align-items:center;gap:6px">
+      <input type="checkbox" id="fundo-activo" checked style="width:auto">
+      <span style="font-size:13px;font-weight:600;color:#444">Fundo activo (aparece en el selector de la cuadrilla diaria y demás archivos de la PWA)</span>
+    </label>
+    <p style="font-size:11.5px;color:#999;margin-top:2px">Si lo desmarcas, el fundo sigue guardado con sus rodales/VMA, pero deja de ofrecerse como opción nueva en otros archivos.</p>
+
     <div style="margin-top:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <label style="margin:0;font-size:13px;font-weight:600;color:var(--texto-suave)">Rodales y VMA <span style="font-weight:400;font-size:12px;color:#aaa">(opcional)</span></label>
@@ -452,9 +464,6 @@
 <script type="module">
 /* ============================================================
    FIREBASE — CONFIGURACIÓN
-   ⚠️ FABIÁN: pega aquí el mismo bloque firebaseConfig que usan
-   inicio-faena.html, produccion-diaria.html y productividad-jefe.html
-   (proyecto reporte-inicio-faena-forestal). Solo reemplaza los valores.
    ============================================================ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -534,6 +543,29 @@ function toast(msg){
 }
 
 /* ============================================================
+   NORMALIZACIÓN / SLUG — mismo esquema de ID que documentos.html
+   usa para fundos NUEVOS (generarSlugFundo), así un fundo creado
+   desde cualquiera de los dos archivos queda con un ID previsible
+   y comparable, evitando duplicados con IDs distintos para el
+   mismo nombre.
+   ============================================================ */
+function normalizar(str){
+  return String(str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+
+function generarSlugFundo(nombre){
+  let base = normalizar(nombre).replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  if(!base) base = "fundo";
+  let slug = base;
+  let i = 2;
+  while(fundos.some(f => f.id === slug)){
+    slug = `${base}_${i}`;
+    i++;
+  }
+  return slug;
+}
+
+/* ============================================================
    ESCUCHAS EN TIEMPO REAL
    ============================================================ */
 function iniciarEscuchas(){
@@ -573,10 +605,13 @@ function renderFundos(){
     cont.innerHTML = '<div class="vacio">Sin fundos registrados</div>';
     return;
   }
-  cont.innerHTML = fundos.map(f => `
+  cont.innerHTML = fundos.map(f => {
+    const activo = f.activo !== false;
+    const badge = `<span class="badge-estado ${activo ? 'badge-activo' : 'badge-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span>`;
+    return `
     <div class="item-card">
       <div class="item-info">
-        <div class="item-titulo">${f.nombre}</div>
+        <div class="item-titulo">${f.nombre} ${badge}</div>
         <div class="item-sub">Código ${f.codigo}${f.codigoCancha ? ' · Cancha '+f.codigoCancha : ''}${f.rodales && f.rodales.length ? ' · '+f.rodales.length+' rodal'+(f.rodales.length>1?'es':'') : ''}</div>
       </div>
       <div class="item-acciones">
@@ -584,7 +619,7 @@ function renderFundos(){
         <button class="icon-eliminar" onclick="eliminarFundo('${f.id}','${f.nombre.replace(/'/g,"\\'")}')">🗑</button>
       </div>
     </div>
-  `).join('');
+  `;}).join('');
 }
 
 window.abrirModalFundo = function(){
@@ -593,6 +628,7 @@ window.abrirModalFundo = function(){
   document.getElementById('fundo-nombre').value = '';
   document.getElementById('fundo-codigo').value = '';
   document.getElementById('fundo-codigo-cancha').value = '';
+  document.getElementById('fundo-activo').checked = true;
   renderTablaRodales([]);
   document.getElementById('modal-fundo').classList.add('activo');
 };
@@ -605,6 +641,7 @@ window.editarFundo = function(id){
   document.getElementById('fundo-nombre').value = f.nombre;
   document.getElementById('fundo-codigo').value = f.codigo;
   document.getElementById('fundo-codigo-cancha').value = f.codigoCancha||'';
+  document.getElementById('fundo-activo').checked = f.activo !== false;
   renderTablaRodales(f.rodales||[]);
   document.getElementById('modal-fundo').classList.add('activo');
 };
@@ -614,6 +651,7 @@ window.guardarFundo = async function(){
   const nombre = document.getElementById('fundo-nombre').value.trim().toUpperCase();
   const codigo = document.getElementById('fundo-codigo').value.trim();
   const codigoCancha = document.getElementById('fundo-codigo-cancha').value.trim();
+  const activo = document.getElementById('fundo-activo').checked;
   if(!nombre || !codigo){ toast('Completa nombre y código'); return; }
   // Leer rodales de la tabla
   const filas = document.querySelectorAll('#tabla-rodales .fila-rodal');
@@ -627,10 +665,18 @@ window.guardarFundo = async function(){
   }
   try{
     if(id){
-      await updateDoc(doc(db, COL_FUNDOS, id), { nombre, codigo, codigoCancha, rodales });
+      // updateDoc solo toca los campos listados — nunca borra alias/centros que
+      // administra documentos.html en el mismo documento compartido.
+      await updateDoc(doc(db, COL_FUNDOS, id), { nombre, codigo, codigoCancha, rodales, activo });
       toast('Fundo actualizado');
     } else {
-      await addDoc(collection(db, COL_FUNDOS), { nombre, codigo, codigoCancha, rodales });
+      // Fundo nuevo: mismo esquema de ID (slug) que usa documentos.html, para que
+      // un fundo con el mismo nombre creado desde cualquiera de los dos archivos
+      // termine en el MISMO documento en vez de crear uno duplicado con otro ID.
+      // setDoc con merge:true por si justo se está creando a la vez que
+      // documentos.html crea el mismo slug (no debería pasar normalmente).
+      const nuevoId = generarSlugFundo(nombre);
+      await setDoc(doc(db, COL_FUNDOS, nuevoId), { nombre, codigo, codigoCancha, rodales, activo }, { merge: true });
       toast('Fundo agregado');
     }
     cerrarModal('modal-fundo');
@@ -683,6 +729,9 @@ function actualizarVacioRodales(){
   const vacio = document.getElementById('rodales-vacio');
   vacio.style.display = cont.children.length === 0 ? 'block' : 'none';
 }
+// Se llama desde el onclick del botón "✕" de cada fila de rodal (creado dinámicamente con
+// innerHTML), así que debe quedar expuesta en window igual que el resto de funciones onclick/onchange.
+window.actualizarVacioRodales = actualizarVacioRodales;
 
 window.eliminarFundo = async function(id, nombre){
   if(!confirm(`¿Eliminar el fundo "${nombre}"?`)) return;
@@ -1113,6 +1162,9 @@ function renderCheckOperadoresEnEquipo(seleccionados=[]){
     </div>
   `;
 }
+// Se llama tanto desde código interno (editarEquipo/abrirModalEquipo) como desde el onchange
+// del select "Tipo de equipo" en el HTML — por eso necesita quedar también en window.
+window.renderCheckOperadoresEnEquipo = renderCheckOperadoresEnEquipo;
 
 window.marcarTodosOperadores = function(valor){
   document.querySelectorAll('#op-check-lista input[type=checkbox]').forEach(c => c.checked = valor);
