@@ -397,6 +397,10 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
       <div id="bandeja-revision" class="hidden" style="margin-top:1.5rem">
         <div class="toolbar-desktop" style="margin-bottom:14px">
           <div class="contador-desktop" id="bandeja-carpetas-contador">0 carpetas</div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer">
+            <input type="checkbox" id="bandeja-chk-solo-nuevos" checked onchange="window.toggleBandejaSoloNuevos(this.checked)">
+            Mostrar solo archivos nuevos (ocultar los ya subidos)
+          </label>
           <button class="btn-primary" id="bandeja-btn-subir-todo" onclick="subirTodoBandeja()">Subir todo lo pendiente</button>
           <button class="btn-secondary" onclick="cancelarBandeja()">Cancelar todo</button>
         </div>
@@ -769,6 +773,12 @@ let dotTabActual = "corte-alto";
 let dotDatosTodos = null; // fetch único con todos los trabajadores; las pestañas se separan en el render
 let bandejaCarpetas = []; // [{ id, nombreCarpeta, trabajador, archivos: [{file,nombre,tipo,fundo,vigente,incluir,duplicado}], estado: 'pendiente'|'subiendo'|'listo', resultadoTexto }]
 let bandejaContadorId = 0;
+// Cuando se elige la carpeta contenedora completa (ej. "DOCUMENTACION LABORAL" con las ~140
+// carpetas de trabajadores adentro) la lista queda enorme aunque casi todo ya esté subido.
+// Con este filtro activo (por defecto) se ocultan de la vista las tarjetas donde TODO ya
+// estaba subido, y dentro de las demás tarjetas se ocultan las filas ya subidas — sin afectar
+// en nada qué se sube realmente al confirmar (eso sigue usando card.archivos completo).
+let bandejaSoloNuevos = true;
 
 function mostrarPantalla(id){
   ["pantalla-login","pantalla-sinacceso","pantalla-jefe","pantalla-escritorio"].forEach(v=>{
@@ -1653,19 +1663,40 @@ function fechaCortaBandeja(iso){
   return d.toLocaleDateString("es-CL");
 }
 
+// Una tarjeta se considera "sin nada nuevo" (todo ya subido) solo cuando ya se pudo
+// identificar al trabajador y revisar sus duplicados — si todavía no hay trabajador
+// asignado no sabemos qué es duplicado, así que esa tarjeta nunca se oculta sola.
+function bandejaCardSinNovedades(card){
+  return !!card.trabajador && card.archivos.length > 0 && card.archivos.every(a => a.duplicado);
+}
+
+window.toggleBandejaSoloNuevos = function(marcado){
+  bandejaSoloNuevos = marcado;
+  renderBandejaCarpetas();
+};
+
 function renderBandejaCarpetas(){
   const cont = document.getElementById("bandeja-carpetas-cont");
   const contador = document.getElementById("bandeja-carpetas-contador");
   const pendientes = bandejaCarpetas.filter(c => c.estado !== "listo");
+  const ocultasSinNovedades = bandejaSoloNuevos ? bandejaCarpetas.filter(c => c.estado !== "listo" && bandejaCardSinNovedades(c)).length : 0;
   contador.textContent = `${bandejaCarpetas.length} carpeta${bandejaCarpetas.length === 1 ? "" : "s"}` +
-    (bandejaCarpetas.length && pendientes.length !== bandejaCarpetas.length ? ` (${pendientes.length} pendiente${pendientes.length === 1 ? "" : "s"})` : "");
+    (bandejaCarpetas.length && pendientes.length !== bandejaCarpetas.length ? ` (${pendientes.length} pendiente${pendientes.length === 1 ? "" : "s"})` : "") +
+    (ocultasSinNovedades ? ` · ${ocultasSinNovedades} oculta${ocultasSinNovedades === 1 ? "" : "s"} (todo ya estaba subido)` : "");
 
   if(!bandejaCarpetas.length){
     cont.innerHTML = "";
     return;
   }
 
-  cont.innerHTML = bandejaCarpetas.map(card => `
+  const carpetasAMostrar = bandejaSoloNuevos ? bandejaCarpetas.filter(c => c.estado === "listo" || !bandejaCardSinNovedades(c)) : bandejaCarpetas;
+
+  if(!carpetasAMostrar.length){
+    cont.innerHTML = `<p style="color:var(--text3);font-size:13px">Todos los archivos de las carpetas elegidas ya estaban subidos — no hay nada nuevo que revisar. 🎉</p>`;
+    return;
+  }
+
+  cont.innerHTML = carpetasAMostrar.map(card => `
     <div class="bandeja-carpeta-card" style="border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;${card.estado === "listo" ? "opacity:.65" : ""}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
         <div class="field-label" style="margin:0">Carpeta: <span style="font-weight:800;color:var(--text);text-transform:none;letter-spacing:0">${escapeHtml(card.nombreCarpeta)}</span></div>
@@ -1694,7 +1725,7 @@ function renderBandejaCarpetas(){
     </div>
   `).join("");
 
-  bandejaCarpetas.forEach(card => {
+  carpetasAMostrar.forEach(card => {
     if(card.estado === "listo") return;
     renderBandejaMatch(card);
     renderBandejaArchivosCarpeta(card);
@@ -1769,8 +1800,11 @@ function renderBandejaArchivosCarpeta(card){
   const totalDuplicados = card.archivos.filter(a => a.duplicado).length;
   const avisoBox = document.getElementById(`bandeja-duplicados-aviso-${card.id}`);
   if(avisoBox){
+    const avisoOcultos = bandejaSoloNuevos && totalDuplicados
+      ? ` Con "Mostrar solo archivos nuevos" activo, ${totalDuplicados === 1 ? "esa fila queda oculta" : "esas filas quedan ocultas"} de esta tabla — desmarca el filtro arriba si quieres verla${totalDuplicados === 1 ? "" : "s"}.`
+      : "";
     avisoBox.innerHTML = totalDuplicados
-      ? `<div class="status-note" style="color:var(--red);margin-top:8px">⚠ ${totalDuplicados} archivo${totalDuplicados === 1 ? "" : "s"} ya ${totalDuplicados === 1 ? "estaba subido" : "estaban subidos"} antes para este trabajador — quedaron sin marcar en "Subir" para no duplicarlos. Márcalos tú si de verdad quieres subirlos de nuevo.</div>`
+      ? `<div class="status-note" style="color:var(--red);margin-top:8px">⚠ ${totalDuplicados} archivo${totalDuplicados === 1 ? "" : "s"} ya ${totalDuplicados === 1 ? "estaba subido" : "estaban subidos"} antes para este trabajador — quedaron sin marcar en "Subir" para no duplicarlos.${avisoOcultos}</div>`
       : "";
   }
 
@@ -1779,7 +1813,20 @@ function renderBandejaArchivosCarpeta(card){
     return;
   }
 
-  cuerpo.innerHTML = card.archivos.map((a, i) => `
+  // Filtra las filas ya subidas de la TABLA (no del array real: card.archivos sigue
+  // completo, así que lo que de verdad se sube al confirmar no cambia en nada) —
+  // conserva el índice original de cada archivo para que los selects/checkboxes de
+  // esta fila sigan apuntando al elemento correcto dentro de card.archivos.
+  const filasAMostrar = card.archivos
+    .map((a, i) => ({ a, i }))
+    .filter(({ a }) => !(bandejaSoloNuevos && a.duplicado));
+
+  if(!filasAMostrar.length){
+    cuerpo.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Todos los archivos de esta carpeta ya estaban subidos.</td></tr>`;
+    return;
+  }
+
+  cuerpo.innerHTML = filasAMostrar.map(({ a, i }) => `
     <tr${a.duplicado ? ' style="background:#fff3e0"' : ""}>
       <td>${escapeHtml(a.nombre)}${a.duplicado ? `<div class="badge-inactivo" style="margin-top:4px;display:inline-block">Ya subido ${escapeHtml(fechaCortaBandeja(a.duplicado.fecha))}</div>` : ""}</td>
       <td>
