@@ -548,7 +548,7 @@ async function cargarConfiguracionCentralizada(){
     const snap=await getDocs(query(collection(db,COL_FUNDOS),orderBy('nombre')));
     if(!snap.empty){
       const tabla={};
-      snap.forEach(d=>{const v=d.data();if(v.nombre)tabla[v.nombre]=v.codigo||'';});
+      snap.forEach(d=>{const v=d.data();if(v.nombre&&v.activo!==false)tabla[v.nombre]=v.codigo||'';});
       if(Object.keys(tabla).length){
         FUNDOS_DIN=tabla;
         ['fundo'].forEach(selId=>{
