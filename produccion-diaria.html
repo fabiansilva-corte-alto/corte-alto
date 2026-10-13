@@ -560,12 +560,12 @@ async function cargarConfiguracionCentralizada(){
     const snapFundos=await getDocs(query(collection(db,COL_FUNDOS),orderBy('nombre')));
     if(!snapFundos.empty){
       const tabla={};
-      snapFundos.forEach(d=>{const v=d.data();if(v.nombre)tabla[v.nombre]=v.codigo||'';});
+      snapFundos.forEach(d=>{const v=d.data();if(v.nombre&&v.activo!==false)tabla[v.nombre]=v.codigo||'';});
       if(Object.keys(tabla).length){
         FUNDOS_DIN=tabla;
         // Guardar también codigoCancha por fundo
         if(!window.CANCHA_DIN)window.CANCHA_DIN={};
-        snapFundos.forEach(d=>{const v=d.data();if(v.nombre&&v.codigoCancha)window.CANCHA_DIN[v.nombre]=v.codigoCancha;});
+        snapFundos.forEach(d=>{const v=d.data();if(v.nombre&&v.codigoCancha&&v.activo!==false)window.CANCHA_DIN[v.nombre]=v.codigoCancha;});
         const fundosLista=Object.keys(tabla);
         const optsFundos='<option value="">— Seleccionar —</option>'+fundosLista.map(n=>`<option>${n}</option>`).join('');
         // Poblar fundo principal
