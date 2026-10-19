@@ -943,7 +943,8 @@ window.consultar = async function() {
 
     // ── Producción extra: últimos días antes del período (para bloque Últimos 3 días) ──
     // Necesitamos al menos 3 fechas distintas; si el período tiene menos, buscamos hacia atrás
-    const fechasEnPeriodo = [...new Set(prodTodo.map(d=>d.fecha))].sort();
+    const _hoyStr = toISO(new Date());
+    const fechasEnPeriodo = [...new Set(prodTodo.map(d=>d.fecha))].filter(f=>f<_hoyStr).sort();
     let prodHistorico = [...prodTodo];
     if(fechasEnPeriodo.length < 3) {
       const snapAntes = await getDocs(query(collection(db,'reportes_produccion'),
@@ -1355,8 +1356,11 @@ async function renderUltimos3(prodTodo, metasPorLinea) {
       </div>`;
   };
 
-  // Últimas 3 fechas GLOBALES (de cualquier línea) — todas las líneas usan las mismas fechas
-  const fechasGlobales = [...new Set(prodTodo.map(d=>d.fecha).filter(Boolean))].sort().slice(-3);
+  // Últimas 3 fechas GLOBALES (de cualquier línea) — excluye el día actual (puede estar incompleto)
+  const _hoyISO = toISO(new Date());
+  const fechasGlobales = [...new Set(prodTodo.map(d=>d.fecha).filter(Boolean))]
+    .filter(f => f < _hoyISO)
+    .sort().slice(-3);
 
   const bloques = lineas.map((lin, li) => {
     const prodLin = prodTodo.filter(d=>(d.linea||d.codLinea||'')===lin);
