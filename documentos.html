@@ -159,7 +159,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 .cumplimiento-jefe-resumen{font-size:12px;color:var(--text3)}
 .cumplimiento-grid{display:flex;flex-wrap:wrap;gap:4px}
 .cumplimiento-dia{width:23px;height:23px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
-.cumplimiento-dia.informo{background:var(--green2)}
+.cumplimiento-dia.informo{background:var(--green2);cursor:pointer}
 .cumplimiento-dia.sin_informar{background:var(--red)}
 .cumplimiento-dia.descanso_probable{background:var(--blue)}
 .cumplimiento-dia.futuro{background:#f2f2f2;color:var(--text3);font-weight:600}
@@ -723,6 +723,15 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
     <div class="msg-error" id="modal-fundo-error"></div>
     <button class="btn-primary full" id="mf-guardar" style="margin-top:10px" onclick="guardarFundo()">Guardar</button>
     <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModalFundo()">Cancelar</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: TRABAJADORES INFORMADOS ESE DÍA (desde Cumplimiento de jefes) ===== -->
+<div id="modal-cumplimiento-dia" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-titulo" id="mcd-titulo">Cuadrilla informada</div>
+    <div id="mcd-cont"><p class="status-note">Cargando…</p></div>
+    <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModalCumplimientoDia()">Cerrar</button>
   </div>
 </div>
 
@@ -2886,16 +2895,75 @@ function renderCumplimientoJefes(){
           const estado = j.estados[fecha] || "futuro";
           const diaNum = Number(fecha.split("-")[2]);
           let titulo = fecha;
-          if(estado === "informo") titulo += " — Informó cuadrilla";
+          if(estado === "informo") titulo += " — Informó cuadrilla (clic para ver a quién)";
           else if(estado === "sin_informar") titulo += " — Sin informar";
           else if(estado === "descanso_probable") titulo += " — Probable descanso de turno (otro jefe cubrió el fundo)";
           else titulo += " — Día futuro";
-          return `<div class="cumplimiento-dia ${estado}" title="${escapeHtml(titulo)}">${diaNum}</div>`;
+          const nombreJs = escapeHtml(j.nombre).replace(/'/g,"\\'");
+          const onclick = estado === "informo" ? ` onclick="abrirModalCumplimientoDia('${nombreJs}','${fecha}')"` : "";
+          return `<div class="cumplimiento-dia ${estado}" title="${escapeHtml(titulo)}"${onclick}>${diaNum}</div>`;
         }).join("")}
       </div>
     </div>
   `).join("");
 }
+
+// ----- Modal: a quién informó un jefe en un día puntual (clic en un día "informó" del calendario) -----
+window.abrirModalCumplimientoDia = async function(nombreJefe, fecha){
+  const modal = document.getElementById("modal-cumplimiento-dia");
+  const titulo = document.getElementById("mcd-titulo");
+  const cont = document.getElementById("mcd-cont");
+  const fechaLabel = new Date(fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" });
+  titulo.textContent = `${nombreJefe} — ${fechaLabel}`;
+  cont.innerHTML = `<p class="status-note">Cargando…</p>`;
+  modal.classList.remove("hidden");
+
+  try{
+    if(dotDatosTodos === null) await fetchDotacionTodos();
+    const dotPorId = {};
+    (dotDatosTodos || []).forEach(t => dotPorId[t.id] = t);
+
+    const snap = await getDocs(query(
+      collection(db, "cuadrilla_diaria"),
+      where("jefeFaena", "==", nombreJefe),
+      where("fecha", "==", fecha)
+    ));
+
+    const grupos = []; // [{fundo, trabajadores:[{nombre,rut,centro}]}]
+    snap.forEach(d => {
+      const data = d.data();
+      const ids = data.trabajadorIds || [];
+      const trabajadores = ids.map(id => dotPorId[id]).filter(Boolean)
+        .sort((a,b) => String(a.nombre||"").localeCompare(String(b.nombre||""), "es"));
+      grupos.push({ fundo: data.fundo || "(sin fundo)", trabajadores });
+    });
+
+    if(!grupos.length){
+      cont.innerHTML = `<p class="status-note">No se encontró el registro de ese día (puede haber cambiado desde que se cargó el calendario — prueba "Actualizar").</p>`;
+      return;
+    }
+
+    cont.innerHTML = grupos.map(g => `
+      <div style="margin-bottom:14px">
+        <div class="field-label" style="margin-bottom:6px">${escapeHtml(g.fundo)} — ${g.trabajadores.length} trabajador${g.trabajadores.length===1?"":"es"}</div>
+        ${g.trabajadores.length ? g.trabajadores.map(t => `
+          <div class="doc-item">
+            <div>
+              <div class="doc-item-nombre">${escapeHtml(t.nombre || "—")}</div>
+              <div class="doc-item-meta">${escapeHtml(limpiarRut(t.rut || ""))}${t.centro ? " · " + escapeHtml(t.centro) : ""}</div>
+            </div>
+          </div>
+        `).join("") : `<p class="status-note">No se pudo identificar a los trabajadores de este registro (puede que ya no estén en Dotación).</p>`}
+      </div>
+    `).join("");
+  }catch(e){
+    cont.innerHTML = `<p class="status-note" style="color:var(--red)">No se pudo cargar. Intenta de nuevo.</p>`;
+  }
+};
+
+window.cerrarModalCumplimientoDia = function(){
+  document.getElementById("modal-cumplimiento-dia").classList.add("hidden");
+};
 
 // ================= CONFIGURACIÓN — CATÁLOGO DE TIPOS DE DOCUMENTO (solo RRHH/Admin) =================
 
