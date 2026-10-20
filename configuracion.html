@@ -72,6 +72,7 @@
   .tabs button.activo{color:var(--verde-medio);border-bottom-color:var(--verde-medio)}
 
   main{max-width:640px;margin:0 auto;padding:14px}
+  #panel-oferta-rodales{width:calc(100vw - 32px);max-width:1100px;margin-left:calc(50% - min(50vw - 16px, 550px));}
 
   .panel{display:none}
   .panel.activo{display:block}
@@ -206,6 +207,27 @@
   .clave-error{color:var(--rojo);font-size:12px;margin-top:8px;display:none}
   .clave-error.visible{display:block}
 
+  /* ==== Oferta Rodales ==== */
+  #or-tbody tr:nth-child(even){background:#fafafa}
+  #or-tbody td{padding:8px 8px;vertical-align:middle}
+  .or-input-vol{
+    width:100%;padding:6px 8px;font-size:13px;text-align:right;
+    border:1.5px solid var(--borde);border-radius:6px;background:#fff;
+    font-family:inherit;
+  }
+  .or-input-vol:focus{outline:2px solid var(--verde-medio);border-color:var(--verde-medio)}
+  .or-sel-rodal{
+    width:100%;padding:6px 8px;font-size:13px;
+    border:1.5px solid var(--borde);border-radius:6px;background:#fff;
+    font-family:inherit;
+  }
+  .or-sel-rodal:focus{outline:2px solid var(--verde-medio);border-color:var(--verde-medio)}
+  .or-cell-calc{color:#555;text-align:right}
+  .or-tramo-badge{
+    display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;
+    font-weight:700;background:var(--verde-claro);color:var(--verde-oscuro);
+  }
+
   #toast{
     position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
     background:var(--verde-oscuro);color:#fff;
@@ -246,6 +268,7 @@
   <button class="tab-btn" data-tab="operadores" onclick="cambiarTab('operadores')">Operadores</button>
   <button class="tab-btn" data-tab="equipos" onclick="cambiarTab('equipos')">Equipos</button>
   <button class="tab-btn" data-tab="volumen-meta" onclick="cambiarTab('volumen-meta')">Volumen Meta</button>
+  <button class="tab-btn" data-tab="oferta-rodales" onclick="cambiarTab('oferta-rodales')">Oferta Rodales</button>
 </div>
 
 <main>
@@ -314,6 +337,83 @@
     </div>
 
     <button class="btn-primario" style="width:100%;margin-top:14px" onclick="guardarVolumenMeta()">Guardar</button>
+  </div>
+
+
+  <!-- ===== PANEL OFERTA RODALES ===== -->
+  <div class="panel" id="panel-oferta-rodales">
+
+    <div style="background:#fff;border:1px solid var(--borde);border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label>Línea</label>
+          <select id="or-linea" onchange="cargarOfertaRodales()"></select>
+        </div>
+        <div>
+          <label>Fundo</label>
+          <select id="or-fundo" onchange="orCambioFundoGlobal()">
+            <option value="">— Todos —</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label>Mes</label>
+          <select id="or-mes" onchange="cargarOfertaRodales()">
+            <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+            <option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option>
+            <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+            <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+          </select>
+        </div>
+        <div>
+          <label>Año</label>
+          <select id="or-anio" onchange="cargarOfertaRodales()"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de rodales ofertados -->
+    <div style="background:#fff;border:1px solid var(--borde);border-radius:12px;overflow:hidden;margin-bottom:14px">
+      <div style="overflow-x:auto">
+        <table id="or-tabla" style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="background:var(--verde-oscuro);color:#fff">
+              <th style="padding:10px 8px;text-align:left;min-width:110px">Rodal</th>
+              <th style="padding:10px 8px;text-align:center;min-width:60px">VMA</th>
+              <th style="padding:10px 8px;text-align:center;min-width:90px">Tramo contrato</th>
+              <th style="padding:10px 8px;text-align:right;min-width:110px">Vol. Ofertado (m³)</th>
+              <th style="padding:10px 8px;text-align:right;min-width:80px">% del total</th>
+              <th style="padding:10px 8px;text-align:right;min-width:130px">Vol. normal contrato</th>
+              <th style="padding:10px 8px;text-align:right;min-width:130px">Meta CALTO prop.</th>
+              <th style="padding:10px 6px;text-align:center;min-width:40px"></th>
+            </tr>
+          </thead>
+          <tbody id="or-tbody">
+            <tr><td colspan="8" style="text-align:center;color:#999;padding:20px;font-size:13px">Sin rodales ingresados</td></tr>
+          </tbody>
+          <tfoot>
+            <tr style="background:var(--verde-claro);font-weight:700">
+              <td colspan="3" style="padding:10px 8px;font-size:13px;color:var(--verde-oscuro)">TOTAL</td>
+              <td id="or-total-ofertado" style="padding:10px 8px;text-align:right;font-size:13px;color:var(--verde-oscuro)">—</td>
+              <td style="padding:10px 8px;text-align:right;font-size:13px;color:var(--verde-oscuro)">100%</td>
+              <td style="padding:10px 8px"></td>
+              <td id="or-meta-calto" style="padding:10px 8px;text-align:right;font-size:15px;font-weight:800;color:var(--verde-oscuro)">—</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Botón agregar rodal -->
+    <button class="btn-agregar" onclick="agregarFilaOferta()">+ Agregar rodal ofertado</button>
+
+    <!-- Guardar -->
+    <button class="btn-primario" style="width:100%;margin-top:12px" onclick="guardarOfertaRodales()">Guardar Meta CALTO</button>
+
+    <!-- Info guardado -->
+    <div id="or-guardado-info" style="display:none;margin-top:10px;padding:12px;background:var(--verde-claro);border-radius:10px;font-size:13px;color:var(--verde-oscuro)"></div>
   </div>
 
 </main>
@@ -530,6 +630,10 @@ window.cambiarTab = function(tab){
   document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('activo');
   document.getElementById(`panel-${tab}`).classList.add('activo');
   if(tab === 'volumen-meta' && typeof window.cargarVolumenMeta === 'function') window.cargarVolumenMeta();
+  if(tab === 'oferta-rodales'){
+    poblarSelectFundoOfertaRodales();
+    if(typeof window.cargarOfertaRodales === 'function') window.cargarOfertaRodales();
+  }
 };
 
 /* ============================================================
@@ -573,6 +677,7 @@ function iniciarEscuchas(){
     fundos = snap.docs.map(d=>({id:d.id, ...d.data()}));
     renderFundos();
     renderSelectFundoEnLinea();
+    poblarSelectFundoOfertaRodales();
   });
   onSnapshot(query(collection(db, COL_LINEAS), orderBy('nombre')), snap=>{
     lineas = snap.docs.map(d=>({id:d.id, ...d.data()}));
@@ -1345,13 +1450,344 @@ window.guardarVolumenMeta = async function(){
   }
 };
 
+/* ============================================================
+   OFERTA RODALES — Meta CALTO
+   ============================================================
+
+   Tabla contractual Vol. Normal por VMA tramo (T2 y T3 comparten
+   los mismos valores de rendimiento; T1 usa 14.000 como base pero
+   actualmente no aplica Meta CALTO).
+
+   tramos: [ [vmaMin, vmaMax), volNormal ]
+   ============================================================ */
+const TABLA_CONTRACTUAL = [
+  [0.20, 0.30, 10.357],
+  [0.30, 0.40, 11.600],
+  [0.40, 0.50, 12.609],
+  [0.50, 0.60, 13.426],
+  [0.60, 0.70, 13.942],
+  [0.70, 0.80, 14.500],
+  [0.80, 0.90, 14.948],
+  [0.90, 1.30, 15.426],
+  [1.30, 1.70, 15.934],
+  [1.70, 999, 16.292],
+];
+
+const COL_OFERTA_RODALES = "config_oferta_rodales";
+
+// Estado local de filas en la tabla UI
+let orFilas = []; // [{rodal, vol}]
+
+function volNormalParaVMA(vma){
+  if(vma == null || isNaN(vma)) return null;
+  for(const [lo, hi, vol] of TABLA_CONTRACTUAL){
+    if(vma >= lo && vma < hi) return vol;
+  }
+  return null;
+}
+
+function tramoTexto(vma){
+  if(vma == null || isNaN(vma)) return '—';
+  for(const [lo, hi] of TABLA_CONTRACTUAL){
+    if(vma >= lo && vma < hi){
+      return `${lo.toFixed(2)} – ${hi === 999 ? '>' : ''}${hi === 999 ? lo.toFixed(2) : hi.toFixed(2)}`;
+    }
+  }
+  return '—';
+}
+
+function vmaDeRodal(codigoRodal, nombreFundo){
+  // Si se especifica fundo, busca solo en ese fundo (para evitar ambigüedad)
+  const lista = nombreFundo
+    ? fundos.filter(f => f.nombre === nombreFundo)
+    : fundos;
+  for(const f of lista){
+    for(const r of (f.rodales || [])){
+      if(String(r.rodal).trim() === String(codigoRodal).trim()){
+        return parseFloat(r.vma) || null;
+      }
+    }
+  }
+  return null;
+}
+
+function rodalesDesFundo(nombreFundo){
+  // Devuelve array de {rodal, vma} para un fundo dado
+  const f = fundos.find(x => x.nombre === nombreFundo);
+  return f ? (f.rodales || []) : [];
+}
+
+function todosLosRodales(){
+  const mapa = new Map(); // rodal -> {fundo, vma}
+  for(const f of fundos){
+    for(const r of (f.rodales || [])){
+      if(r.rodal && !mapa.has(String(r.rodal).trim())){
+        mapa.set(String(r.rodal).trim(), { fundo: f.nombre, vma: parseFloat(r.vma) || null });
+      }
+    }
+  }
+  return mapa;
+}
+
+function renderOrTabla(){
+  const tbody = document.getElementById('or-tbody');
+  if(orFilas.length === 0){
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:20px;font-size:13px">Sin rodales ingresados</td></tr>';
+    document.getElementById('or-total-ofertado').textContent = '—';
+    document.getElementById('or-meta-calto').textContent = '—';
+    return;
+  }
+
+  // Fundo global seleccionado en el header
+  const fundoGlobal = document.getElementById('or-fundo')?.value || '';
+  const rodalesFundo = fundoGlobal ? rodalesDesFundo(fundoGlobal) : [];
+
+  const totalOfertado = orFilas.reduce((s,f) => s + (parseFloat(f.vol)||0), 0);
+
+  let metaCaltoTotal = 0;
+  const rows = orFilas.map((fila, idx) => {
+    const optsRodal = [
+      `<option value="">${fundoGlobal ? '— Rodal —' : '← Elige fundo arriba'}</option>`,
+      ...rodalesFundo.map(r =>
+        `<option value="${r.rodal}" ${String(r.rodal)===fila.rodal?'selected':''}>${r.rodal}${r.vma ? ` (VMA ${r.vma})` : ''}</option>`
+      )
+    ].join('');
+
+    const vma = (fundoGlobal && fila.rodal) ? vmaDeRodal(fila.rodal, fundoGlobal) : null;
+    const volN = vma != null ? volNormalParaVMA(vma) : null;
+    const vol = parseFloat(fila.vol) || 0;
+    const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
+    const metaProp = (volN != null) ? pct * volN : null;
+    if(metaProp != null) metaCaltoTotal += metaProp;
+
+    return `<tr>
+      <td><select class="or-sel-rodal" data-idx="${idx}" onchange="orCambioRodal(this)">${optsRodal}</select></td>
+      <td class="or-cell-calc" style="text-align:center">${vma != null ? vma.toFixed(2) : '<span style="color:#aaa">—</span>'}</td>
+      <td style="text-align:center">${vma != null ? `<span class="or-tramo-badge">${tramoTexto(vma)}</span>` : '<span style="color:#aaa">—</span>'}</td>
+      <td><input type="number" step="any" min="0" class="or-input-vol" data-idx="${idx}"
+            value="${fila.vol||''}" placeholder="0" oninput="orCambioVol(this)"></td>
+      <td class="or-cell-calc">${totalOfertado > 0 ? (pct*100).toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1})+'%' : '—'}</td>
+      <td class="or-cell-calc">${volN != null ? volN.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}) : '<span style="color:#aaa">—</span>'}</td>
+      <td class="or-cell-calc" style="font-weight:${metaProp!=null?'700':'400'};color:${metaProp!=null?'var(--verde-oscuro)':'#aaa'}">${metaProp != null ? metaProp.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}) : '—'}</td>
+      <td style="text-align:center"><button onclick="orEliminarFila(${idx})" style="background:#fee2e2;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;color:#b91c1c;font-size:13px">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  tbody.innerHTML = rows;
+  document.getElementById('or-total-ofertado').textContent =
+    totalOfertado.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}) + ' m³';
+  document.getElementById('or-meta-calto').textContent =
+    metaCaltoTotal > 0
+      ? metaCaltoTotal.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}) + ' m³'
+      : '—';
+}
+
+window.orCambioFundoGlobal = function(){
+  // Al cambiar el fundo global, resetear todos los rodales de las filas
+  orFilas = orFilas.map(f => ({ ...f, rodal: '' }));
+  renderOrTabla();
+};
+
+window.orCambioRodal = function(sel){
+  const idx = parseInt(sel.dataset.idx);
+  orFilas[idx].rodal = sel.value;
+  renderOrTabla();
+};
+
+window.orCambioVol = function(inp){
+  const idx = parseInt(inp.dataset.idx);
+  orFilas[idx].vol = inp.value;
+  // Actualizar solo los % y Meta CALTO sin re-renderizar toda la tabla
+  const totalOfertado = orFilas.reduce((s,f) => s + (parseFloat(f.vol)||0), 0);
+  // Actualizar fila total en tfoot
+  const tfTotal = document.getElementById('or-total-ofertado');
+  const tfMeta  = document.getElementById('or-meta-calto');
+  if(tfTotal) tfTotal.textContent = totalOfertado > 0
+    ? totalOfertado.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3})+' m³' : '—';
+  if(tfTotal) tfTotal.style.textAlign = 'right';
+  // Recalcular % y meta de cada fila
+  document.querySelectorAll('#or-tbody tr').forEach((tr, i) => {
+    const fila = orFilas[i];
+    if(!fila) return;
+    const fundoGlobal = document.getElementById('or-fundo')?.value || '';
+    const vma = vmaDeRodal(fila.rodal, fundoGlobal);
+    const volN = vma != null ? volNormalParaVMA(vma) : null;
+    const vol = parseFloat(fila.vol) || 0;
+    const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
+    const metaProp = (volN != null) ? pct * volN : null;
+    const celdas = tr.querySelectorAll('td');
+    // td[4] = % del total, td[6] = Meta CALTO prop
+    if(celdas[4]) celdas[4].textContent = totalOfertado > 0
+      ? (pct*100).toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1})+'%' : '—';
+    if(celdas[6]) {
+      celdas[6].textContent = metaProp != null
+        ? metaProp.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}) : '—';
+      celdas[6].style.fontWeight = metaProp != null ? '700' : '400';
+      celdas[6].style.color = metaProp != null ? 'var(--verde-oscuro)' : '#aaa';
+    }
+  });
+  // Meta CALTO total en tfoot
+  let metaCaltoTotal = 0;
+  orFilas.forEach(fila => {
+    const fundoGlobal = document.getElementById('or-fundo')?.value || '';
+    const vma = vmaDeRodal(fila.rodal, fundoGlobal);
+    const volN = vma != null ? volNormalParaVMA(vma) : null;
+    const vol = parseFloat(fila.vol) || 0;
+    const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
+    if(volN != null) metaCaltoTotal += pct * volN;
+  });
+  if(tfMeta) {
+    tfMeta.textContent = orFilas.length > 0 && totalOfertado > 0
+      ? metaCaltoTotal.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3})+' m³' : '—';
+  }
+};
+
+window.orEliminarFila = function(idx){
+  orFilas.splice(idx, 1);
+  renderOrTabla();
+};
+
+window.agregarFilaOferta = function(){
+  orFilas.push({ rodal: '', vol: '' });
+  renderOrTabla();
+  setTimeout(()=>{
+    const trs = document.querySelectorAll('#or-tbody tr');
+    const ultima = trs[trs.length-1];
+    if(ultima) ultima.querySelector('.or-sel-rodal')?.focus();
+  }, 50);
+};
+
+function idOfertaRodales(linea, mes, anio){
+  const mesStr = String(mes + 1).padStart(2,'0');
+  return `${linea}_${anio}-${mesStr}`;
+}
+
+function poblarSelectAnioOfertaRodales(){
+  const sel = document.getElementById('or-anio');
+  if(!sel) return;
+  const actual = sel.value;
+  const anioHoy = new Date().getFullYear();
+  const anios = [anioHoy - 1, anioHoy, anioHoy + 1];
+  sel.innerHTML = anios.map(a => `<option value="${a}">${a}</option>`).join('');
+  if(actual && anios.includes(Number(actual))) sel.value = actual;
+  else sel.value = String(anioHoy);
+}
+
+function poblarSelectLineaOfertaRodales(){
+  const sel = document.getElementById('or-linea');
+  if(!sel) return;
+  const actual = sel.value;
+  // Solo T2 y T3 aplican Meta CALTO; mostrar todas y dejar que el usuario elija
+  const nombres = [...new Set(lineas.map(l => l.nombre))];
+  sel.innerHTML = nombres.length
+    ? nombres.map(n => `<option>${n}</option>`).join('')
+    : '<option value="">Agrega líneas primero</option>';
+  if(actual && nombres.includes(actual)) sel.value = actual;
+}
+
+function poblarSelectFundoOfertaRodales(){
+  const sel = document.getElementById('or-fundo');
+  if(!sel) return;
+  const actual = sel.value;
+  const lista = fundos.filter(f => f.activo !== false && (f.rodales||[]).length > 0);
+  sel.innerHTML = [
+    '<option value="">— Todos los fundos —</option>',
+    ...lista.map(f => `<option value="${f.nombre}">${f.nombre}</option>`)
+  ].join('');
+  if(actual && lista.some(f => f.nombre === actual)) sel.value = actual;
+}
+
+window.cargarOfertaRodales = async function(){
+  const linea = document.getElementById('or-linea').value;
+  const mes   = Number(document.getElementById('or-mes').value);
+  const anio  = Number(document.getElementById('or-anio').value);
+  if(!linea) return;
+  orFilas = [];
+  const info = document.getElementById('or-guardado-info');
+  info.style.display = 'none';
+  try{
+    const snap = await getDoc(doc(db, COL_OFERTA_RODALES, idOfertaRodales(linea, mes, anio)));
+    if(snap.exists()){
+      const data = snap.data();
+      // Restaurar fundo global si está guardado
+      if(data.fundo){
+        const selFundo = document.getElementById('or-fundo');
+        if(selFundo) selFundo.value = data.fundo;
+      }
+      orFilas = (data.rodales || []).map(r => ({ rodal: String(r.rodal||''), vol: String(r.vol_ofertado||'') }));
+      if(data.meta_calto != null){
+        info.style.display = 'block';
+        info.innerHTML = `✅ Meta CALTO guardada: <strong>${data.meta_calto.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3})} m³</strong>`;
+      }
+    }
+  } catch(e){ /* sin conexión */ }
+  renderOrTabla();
+};
+
+window.guardarOfertaRodales = async function(){
+  const linea = document.getElementById('or-linea').value;
+  const mes   = Number(document.getElementById('or-mes').value);
+  const anio  = Number(document.getElementById('or-anio').value);
+  const fundoGlobal = document.getElementById('or-fundo')?.value || '';
+  if(!linea){ toast('Selecciona una línea'); return; }
+  if(!fundoGlobal){ toast('Selecciona un fundo'); return; }
+  if(orFilas.length === 0){ toast('Agrega al menos un rodal'); return; }
+
+  const totalOfertado = orFilas.reduce((s,f) => s + (parseFloat(f.vol)||0), 0);
+  let metaCaltoTotal = 0;
+
+  const rodalesPayload = orFilas.map(fila => {
+    const vma = (fundoGlobal && fila.rodal) ? vmaDeRodal(fila.rodal, fundoGlobal) : null;
+    const volN = vma != null ? volNormalParaVMA(vma) : null;
+    const vol = parseFloat(fila.vol) || 0;
+    const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
+    const metaProp = (volN != null) ? pct * volN : null;
+    if(metaProp != null) metaCaltoTotal += metaProp;
+    return {
+      fundo: fundoGlobal,
+      rodal: fila.rodal,
+      vma: vma,
+      tramo: tramoTexto(vma),
+      vol_ofertado: vol,
+      pct_total: pct,
+      vol_normal_contrato: volN,
+      meta_calto_proporcional: metaProp
+    };
+  });
+
+  try{
+    await setDoc(doc(db, COL_OFERTA_RODALES, idOfertaRodales(linea, mes, anio)), {
+      linea, mes, anio, fundo: fundoGlobal,
+      rodales: rodalesPayload,
+      total_ofertado: totalOfertado,
+      meta_calto: metaCaltoTotal
+    });
+    const info = document.getElementById('or-guardado-info');
+    info.style.display = 'block';
+    info.innerHTML = `✅ Meta CALTO guardada: <strong>${metaCaltoTotal.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3})} m³</strong>`;
+    toast('Meta CALTO guardada correctamente');
+  } catch(e){
+    toast('Error al guardar: ' + e.message);
+  }
+};
+
+// Inicializa selects de año y línea al cargar (línea depende de que 'lineas' ya tenga datos)
+poblarSelectAnioOfertaRodales();
+// Poner mes actual por defecto en Oferta Rodales
+(function(){
+  const selMes = document.getElementById('or-mes');
+  if(selMes) selMes.value = String(new Date().getMonth());
+})();
+
 // Inicializa selects de año y línea al cargar (línea depende de que 'lineas' ya tenga datos)
 poblarSelectAnioVolumenMeta();
 const _origRenderLineas = renderLineas;
 renderLineas = function(){
   _origRenderLineas();
   poblarSelectLineaVolumenMeta();
+  poblarSelectLineaOfertaRodales();
   if(document.getElementById('panel-volumen-meta').classList.contains('activo')) window.cargarVolumenMeta();
+  if(document.getElementById('panel-oferta-rodales').classList.contains('activo')) window.cargarOfertaRodales();
 };
 
 /* ============================================================
