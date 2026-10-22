@@ -3091,10 +3091,12 @@ window.fetchAnexosPendientes = async function(forzar){
         anexoSugerido = todos.find(a => !a.vigente && fundosCoinciden(a.fundo, cuadrilla.fundo)) || null;
         subEstado = anexoSugerido ? "tiene_no_vigente" : "sin_anexo";
         diasEnFundo = calcularRachaFundo(historialPorTrabajador[id] || {}, cuadrilla.fecha, cuadrilla.fundo);
-        // Si de verdad no hay ningún anexo_fundo (ni vigente ni por marcar) y el trabajador
-        // tiene un contrato sin resolver (nunca se confirmó si indica fundo o no), se ofrece
-        // la pregunta "¿el contrato ya dice este fundo?" en vez de pedir un anexo de una vez.
-        if(subEstado === "sin_anexo"){
+        // La pregunta "¿el contrato ya dice este fundo?" es solo para trabajadores realmente
+        // NUEVOS: cero anexo_fundo en todo el sistema (ni para este fundo ni para ningún
+        // otro). Si ya tiene anexos de OTROS fundos (caso normal: alguien con historial que
+        // simplemente cambió de fundo y aún no le generan el anexo nuevo), no corresponde
+        // ofrecer esta pregunta — ya sabemos que usa anexos, lo que falta es uno nuevo.
+        if(subEstado === "sin_anexo" && todos.length === 0){
           contratoPorConfirmar = contratos.find(c => !c.fundo && !c.fundoNoEspecificado) || null;
         }
       }
