@@ -1440,12 +1440,29 @@ window.cambiarTabDotacion = async function(tab){
   if(dotDatosTodos === null || !empresasCatalogoCargado){
     document.getElementById("dot-tabla-body").innerHTML = "";
     document.getElementById("dot-contador").textContent = "Cargando…";
+    // Tope de 12 segundos (22 oct 2026, diagnóstico temporal): si la carga se queda pegada
+    // (nunca resuelve ni falla), antes se veía "Cargando…" para siempre sin ninguna pista.
+    // Ahora, pasado el tope, se corta y se avisa en vez de quedar colgado.
+    const tope = new Promise((_, rej) => setTimeout(() => rej(new Error("TIMEOUT_12S")), 12000));
     try{
-      if(!empresasCatalogoCargado) await fetchEmpresasCatalogo();
-      if(dotDatosTodos === null) await fetchDotacionTodos();
+      await Promise.race([
+        (async () => {
+          if(!empresasCatalogoCargado) await fetchEmpresasCatalogo();
+          if(dotDatosTodos === null) await fetchDotacionTodos();
+        })(),
+        tope
+      ]);
     }catch(e){
-      console.error("[Dotación] Error al cargar catálogo de empresas o dotación:", e);
-      document.getElementById("dot-contador").textContent = "No se pudo cargar.";
+      console.error("[Dotación] Error o tope de tiempo al cargar catálogo de empresas o dotación:", e);
+      window.diagnosticoDotacion = {
+        error: String((e && e.message) || e),
+        empresasCatalogoCargado,
+        dotDatosTodosEsNull: dotDatosTodos === null,
+        EMPRESAS_CATALOGO
+      };
+      document.getElementById("dot-contador").textContent = e && e.message === "TIMEOUT_12S"
+        ? "Se demoró demasiado en cargar — escribe window.diagnosticoDotacion en la consola y Enter, mándame la captura."
+        : "No se pudo cargar.";
       return;
     }
   }
@@ -1456,14 +1473,16 @@ window.cambiarTabDotacion = async function(tab){
     dotTabActual = principal ? principal.id : TAB_SIN_EMPRESA;
   }
   // DIAGNÓSTICO TEMPORAL (22 oct 2026) — quitar una vez resuelto el reporte de Dotación
-  // vacía: imprime el estado real del catálogo y de la dotación para ver en la consola del
-  // navegador qué está pasando, sin tener que adivinar.
-  console.log("[Dotación] diagnóstico:", {
+  // vacía: deja el estado real en window.diagnosticoDotacion (se puede escribir en la
+  // consola del navegador en cualquier momento después de esto, sin depender de pillar el
+  // instante justo en que se imprime un console.log).
+  window.diagnosticoDotacion = {
     EMPRESAS_CATALOGO,
     dotTabActual,
     totalDotacion: (dotDatosTodos || []).length,
-    primerosTrabajadores: (dotDatosTodos || []).slice(0, 3).map(t => ({ nombre: t.nombre, empresa: t.empresa, centro: t.centro }))
-  });
+    primerosTrabajadores: (dotDatosTodos || []).slice(0, 5).map(t => ({ nombre: t.nombre, empresa: t.empresa, centro: t.centro }))
+  };
+  console.log("[Dotación] diagnóstico listo — escribe window.diagnosticoDotacion en la consola:", window.diagnosticoDotacion);
   renderTabsDotacion();
   renderTablaDotacion();
 };
