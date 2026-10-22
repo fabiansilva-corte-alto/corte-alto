@@ -1444,6 +1444,7 @@ window.cambiarTabDotacion = async function(tab){
       if(!empresasCatalogoCargado) await fetchEmpresasCatalogo();
       if(dotDatosTodos === null) await fetchDotacionTodos();
     }catch(e){
+      console.error("[Dotación] Error al cargar catálogo de empresas o dotación:", e);
       document.getElementById("dot-contador").textContent = "No se pudo cargar.";
       return;
     }
@@ -1454,6 +1455,15 @@ window.cambiarTabDotacion = async function(tab){
     const principal = EMPRESAS_CATALOGO.find(e => e.principal) || EMPRESAS_CATALOGO[0];
     dotTabActual = principal ? principal.id : TAB_SIN_EMPRESA;
   }
+  // DIAGNÓSTICO TEMPORAL (22 oct 2026) — quitar una vez resuelto el reporte de Dotación
+  // vacía: imprime el estado real del catálogo y de la dotación para ver en la consola del
+  // navegador qué está pasando, sin tener que adivinar.
+  console.log("[Dotación] diagnóstico:", {
+    EMPRESAS_CATALOGO,
+    dotTabActual,
+    totalDotacion: (dotDatosTodos || []).length,
+    primerosTrabajadores: (dotDatosTodos || []).slice(0, 3).map(t => ({ nombre: t.nombre, empresa: t.empresa, centro: t.centro }))
+  });
   renderTabsDotacion();
   renderTablaDotacion();
 };
