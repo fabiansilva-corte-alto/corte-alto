@@ -318,7 +318,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
       <button class="btn-secondary" onclick="cerrarVisorJefe()">Cerrar</button>
     </div>
     <div style="position:relative;flex:1;overflow:auto;background:#2b2b2b;display:flex;align-items:center;justify-content:center;min-height:320px">
-      <div id="visor-jefe-contenido" style="width:100%;height:100%;min-height:320px;display:flex;align-items:center;justify-content:center"></div>
+      <div id="visor-jefe-contenido" style="width:100%;height:100%;min-height:320px;display:flex;align-items:center;justify-content:center" oncontextmenu="return false"></div>
       <div id="visor-jefe-marca" style="position:absolute;inset:0;pointer-events:none"></div>
     </div>
   </div>
@@ -1227,9 +1227,17 @@ window.jefeVerDocumento = async function(storagePath, nombreArchivo){
     const url = await getDownloadURL(storageRef(storage, storagePath));
     const ext = (nombreArchivo || "").split(".").pop().toLowerCase();
     if(["jpg","jpeg","png","gif","webp"].includes(ext)){
-      contenido.innerHTML = `<img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain">`;
+      // Se muestra como imagen de fondo de un div (no un <img>) para que el
+      // navegador no ofrezca "Guardar imagen como…" al hacer clic derecho o
+      // mantener apretado — no evita una captura de pantalla real, pero sí
+      // quita el botón/atajo más obvio para descargar el archivo.
+      contenido.innerHTML = `<div style="width:100%;height:100%;min-height:320px;background-image:url('${url.replace(/'/g,"%27")}');background-size:contain;background-repeat:no-repeat;background-position:center"></div>`;
     }else if(ext === "pdf"){
-      contenido.innerHTML = `<iframe src="${url}" style="width:100%;height:70vh;border:none;background:#fff"></iframe>`;
+      // #toolbar=0&navpanes=0 le pide al visor de PDF del navegador (Chrome/
+      // Edge) que no muestre su barra con el ícono de descarga/imprimir. Solo
+      // funciona en navegadores basados en Chromium y no es infalible, pero
+      // saca el botón de descarga que viene por defecto.
+      contenido.innerHTML = `<iframe src="${url}#toolbar=0&navpanes=0" style="width:100%;height:70vh;border:none;background:#fff"></iframe>`;
     }else{
       contenido.innerHTML = `<div style="color:#fff;text-align:center;padding:30px"><p style="margin-bottom:14px">Este tipo de archivo no se puede previsualizar acá.</p><a href="${url}" target="_blank" style="color:#9fd39f;font-weight:700">Abrir en una pestaña nueva</a></div>`;
     }
