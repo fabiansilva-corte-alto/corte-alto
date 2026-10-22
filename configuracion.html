@@ -1580,14 +1580,14 @@ function renderOrTabla(){
             value="${fila.vol ? Number(fila.vol).toLocaleString('es-CL') : ''}" placeholder="0" oninput="orCambioVol(this)" style="text-align:right"></td>
       <td class="or-cell-calc">${totalOfertado > 0 ? (pct*100).toFixed(1).replace('.',',')+'%' : '—'}</td>
       <td class="or-cell-calc">${volN != null ? orFmt(volN, 3) : '<span style="color:#aaa">—</span>'}</td>
-      <td class="or-cell-calc" style="font-weight:${metaProp!=null?'700':'400'};color:${metaProp!=null?'var(--verde-oscuro)':'#aaa'}">${metaProp != null ? orFmt(metaProp, 3) : '—'}</td>
+      <td class="or-cell-calc" style="font-weight:${metaProp!=null?'700':'400'};color:${metaProp!=null?'var(--verde-oscuro)':'#aaa'}">${metaProp != null ? orFmt(metaProp * 1000, 0) : '—'}</td>
       <td style="text-align:center"><button onclick="orEliminarFila(${idx})" style="background:#fee2e2;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;color:#b91c1c;font-size:13px">✕</button></td>
     </tr>`;
   }).join('');
 
   tbody.innerHTML = rows;
   document.getElementById('or-total-ofertado').textContent =
-    totalOfertado > 0 ? orFmt(totalOfertado, 3) + ' m³' : '—';
+    totalOfertado > 0 ? orFmt(totalOfertado, 0) + ' m³' : '—';
   document.getElementById('or-meta-calto').textContent =
     metaCaltoTotal > 0 ? orFmt(metaCaltoTotal, 3) + ' m³' : '—';
 }
@@ -1623,7 +1623,7 @@ window.orCambioVol = function(inp){
   const tfTotal = document.getElementById('or-total-ofertado');
   const tfMeta  = document.getElementById('or-meta-calto');
   if(tfTotal) tfTotal.textContent = totalOfertado > 0
-    ? orFmt(totalOfertado, 3)+' m³' : '—';
+    ? orFmt(totalOfertado, 0)+' m³' : '—';
   if(tfTotal) tfTotal.style.textAlign = 'right';
   // Recalcular % y meta de cada fila
   document.querySelectorAll('#or-tbody tr').forEach((tr, i) => {
@@ -1640,7 +1640,7 @@ window.orCambioVol = function(inp){
     if(celdas[4]) celdas[4].textContent = totalOfertado > 0
       ? (pct*100).toFixed(1).replace('.',',')+'%' : '—';
     if(celdas[6]) {
-      celdas[6].textContent = metaProp != null ? orFmt(metaProp, 3) : '—';
+      celdas[6].textContent = metaProp != null ? orFmt(metaProp * 1000, 0) : '—';
       celdas[6].style.fontWeight = metaProp != null ? '700' : '400';
       celdas[6].style.color = metaProp != null ? 'var(--verde-oscuro)' : '#aaa';
     }
