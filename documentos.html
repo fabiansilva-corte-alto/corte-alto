@@ -439,6 +439,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
           <input class="field-input" id="boveda-filtro-documentos" type="text" placeholder="Filtrar por fundo o nombre de archivo…" oninput="renderDocumentosBoveda()" style="max-width:360px;margin:0">
           <span class="status-note" id="boveda-filtro-contador" style="margin:0"></span>
         </div>
+        <div id="boveda-mover-cont" style="margin-bottom:10px"></div>
         <div id="boveda-documentos-cont"></div>
       </div>
     </div>
@@ -792,6 +793,11 @@ let bandejaContadorId = 0;
 // estaba subido, y dentro de las demás tarjetas se ocultan las filas ya subidas — sin afectar
 // en nada qué se sube realmente al confirmar (eso sigue usando card.archivos completo).
 let bandejaSoloNuevos = true;
+// Cuando se abre el modal de "Agregar trabajador" desde OTRA pantalla (Bandeja, o la
+// herramienta de mover documentos de la Bóveda) y no desde Dotación de personal, esta
+// función se llama con el trabajador recién creado para que quien abrió el modal pueda
+// asignarlo automáticamente, sin que la persona tenga que ir a buscarlo después.
+let trabajadorRecienCreadoCallback = null;
 
 function mostrarPantalla(id){
   ["pantalla-login","pantalla-sinacceso","pantalla-jefe","pantalla-escritorio"].forEach(v=>{
@@ -1362,6 +1368,7 @@ window.renderTablaDotacion = function(){
 window.cerrarModales = function(){
   document.getElementById("modal-trabajador").classList.add("hidden");
   document.getElementById("modal-importar").classList.add("hidden");
+  trabajadorRecienCreadoCallback = null; // cancelado: no se asigna nada
 };
 
 window.sugerirEmpresa = function(){
@@ -1376,8 +1383,13 @@ window.sugerirEmpresa = function(){
   }
 };
 
-window.abrirModalTrabajador = function(id){
+// nombreSugerido / alGuardar: usados cuando el modal se abre desde OTRA pantalla (Bandeja,
+// o la herramienta de mover documentos de la Bóveda) para crear un trabajador nuevo —
+// precarga el nombre (ej. el nombre de la carpeta que se estaba clasificando) y, si se
+// guarda con éxito, entrega el trabajador recién creado a quien abrió el modal.
+window.abrirModalTrabajador = function(id, nombreSugerido, alGuardar){
   document.getElementById("modal-trabajador-error").classList.remove("show");
+  trabajadorRecienCreadoCallback = alGuardar || null;
   if(id){
     const t = (dotDatosTodos || []).find(x => x.id === id);
     if(!t) return;
@@ -1393,7 +1405,7 @@ window.abrirModalTrabajador = function(id){
   }else{
     document.getElementById("modal-trabajador-titulo").textContent = "Agregar trabajador(a)";
     document.getElementById("mt-id").value = "";
-    document.getElementById("mt-nombre").value = "";
+    document.getElementById("mt-nombre").value = nombreSugerido || "";
     document.getElementById("mt-rut").value = "";
     if(dotTabActual === "emco"){
       document.getElementById("mt-centro").value = "ROTATIVO";
@@ -1431,6 +1443,7 @@ window.guardarTrabajador = async function(){
 
   const rutLimpio = limpiarRut(rutInput);
   const idDoc = idExistente || rutLimpio;
+  const callbackPendiente = trabajadorRecienCreadoCallback; // cerrarModales() lo limpia, por eso se guarda antes
 
   try{
     await setDoc(doc(db, "dotacion", idDoc), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo }, { merge: true });
@@ -1438,6 +1451,10 @@ window.guardarTrabajador = async function(){
     dotDatosTodos = null;
     await fetchDotacionTodos();
     renderTablaDotacion();
+    if(callbackPendiente){
+      const nuevo = (dotDatosTodos || []).find(x => x.id === idDoc);
+      if(nuevo) callbackPendiente(nuevo);
+    }
   }catch(e){
     errorBox.textContent = "No se pudo guardar. Intenta de nuevo.";
     errorBox.classList.add("show");
@@ -1589,11 +1606,18 @@ function extraerFundo(nombreArchivo, nombreTrabajador){
   return buscarFundoEnTexto(nombreArchivo) || "";
 }
 
+// Devuelve { trabajador, confianza: "exacta"|"alta"|"media" } o null si no hay ningún
+// candidato razonable. "confianza" decide si Bandeja asigna el trabajador automáticamente
+// (exacta/alta) o solo lo SUGIERE pidiendo confirmación explícita (media) — ver comentario
+// más abajo sobre el caso real que motivó esto: dos personas distintas (padre e hijo) con
+// nombres parecidos ("Aguilera SALAZAR Rish RODRIGO" vs "Aguilera AGUILERA Rish FERNANDO")
+// terminaron mezclados porque antes bastaba con 2 palabras en común para dar el match
+// por bueno, sin aviso ni confirmación.
 function matchTrabajador(nombreCarpeta){
   const candidatos = dotDatosTodos || [];
   const normCarpeta = normalizar(nombreCarpeta);
   const exacto = candidatos.find(t => normalizar(t.nombre) === normCarpeta);
-  if(exacto) return exacto;
+  if(exacto) return { trabajador: exacto, confianza: "exacta" };
 
   const tokensCarpeta = new Set(normCarpeta.split(/\s+/).filter(Boolean));
   let mejorPuntaje = 0;
@@ -1609,8 +1633,18 @@ function matchTrabajador(nombreCarpeta){
       empatados.push(t);
     }
   }
-  if(mejorPuntaje >= 2 && empatados.length === 1) return empatados[0];
-  return null;
+  if(mejorPuntaje < 2 || empatados.length !== 1) return null;
+
+  const t = empatados[0];
+  const tokensNombre = new Set(normalizar(t.nombre).split(/\s+/).filter(Boolean));
+  // Confianza "alta" solo cuando un conjunto de palabras está COMPLETAMENTE contenido en
+  // el otro (ej. el nombre de la carpeta le falta un segundo nombre que sí tiene Dotación,
+  // o viceversa) — nunca cuando sobra una palabra distinta de cada lado a la vez, que es
+  // justo la señal de que puede tratarse de dos personas distintas con nombre parecido.
+  const todoCarpetaEnNombre = [...tokensCarpeta].every(tok => tokensNombre.has(tok));
+  const todoNombreEnCarpeta = [...tokensNombre].every(tok => tokensCarpeta.has(tok));
+  const confianza = (todoCarpetaEnNombre || todoNombreEnCarpeta) ? "alta" : "media";
+  return { trabajador: t, confianza };
 }
 
 // Nombres típicos de las subcarpetas fijas dentro de la carpeta de UN trabajador
@@ -1659,7 +1693,12 @@ window.manejarCarpetasTrabajador = async function(event){
       tipo: sugerirTipoDocumento(f.name, f.webkitRelativePath || f.name),
       fundo: "", vigente: false, incluir: true, duplicado: null
     }));
-    const trabajador = matchTrabajador(nombreCarpeta);
+    const resultadoMatch = matchTrabajador(nombreCarpeta);
+    // Solo se asigna automáticamente con confianza exacta/alta. Con confianza "media" se
+    // deja como SUGERENCIA (card.sugerido) — requiere que la persona confirme a mano
+    // viendo el RUT, en vez de darla por buena en silencio (ver comentario en matchTrabajador).
+    const trabajador = (resultadoMatch && resultadoMatch.confianza !== "media") ? resultadoMatch.trabajador : null;
+    const sugerido = (resultadoMatch && resultadoMatch.confianza === "media") ? resultadoMatch.trabajador : null;
     if(trabajador){
       archivosCarpeta.forEach(a => { if(a.tipo === "anexo_fundo") a.fundo = extraerFundo(a.nombre, trabajador.nombre); });
     }
@@ -1668,7 +1707,7 @@ window.manejarCarpetasTrabajador = async function(event){
     const existenteIdx = bandejaCarpetas.findIndex(c => c.nombreCarpeta === nombreCarpeta && c.estado !== "listo");
     const card = {
       id: existenteIdx > -1 ? bandejaCarpetas[existenteIdx].id : "carpeta_" + (++bandejaContadorId),
-      nombreCarpeta, trabajador, archivos: archivosCarpeta, estado: "pendiente", resultadoTexto: ""
+      nombreCarpeta, trabajador, sugerido, archivos: archivosCarpeta, estado: "pendiente", resultadoTexto: ""
     };
     if(existenteIdx > -1) bandejaCarpetas[existenteIdx] = card;
     else bandejaCarpetas.push(card);
@@ -1772,6 +1811,7 @@ function renderBandejaCarpetas(){
         <label class="field-label">Buscar trabajador por nombre o RUT</label>
         <input class="field-input" id="bandeja-busqueda-input-${card.id}" type="text" placeholder="Escribe para buscar..." oninput="buscarTrabajadorBandeja('${card.id}')">
         <div id="bandeja-busqueda-resultados-${card.id}"></div>
+        <button class="btn-secondary" style="margin-top:8px" onclick="crearTrabajadorDesdeBandeja('${card.id}')">+ Es alguien nuevo — crear trabajador</button>
       </div>
       ${card.estado === "listo" ? `<div class="status-note" style="color:var(--green2);margin-top:10px">✓ ${escapeHtml(card.resultadoTexto)}</div>` : `
       <div class="contador-desktop" style="margin-top:1rem">${card.archivos.length} archivo${card.archivos.length === 1 ? "" : "s"}</div>
@@ -1814,8 +1854,27 @@ function renderBandejaMatch(card){
     `;
     const wrap = document.getElementById(`bandeja-busqueda-wrap-${card.id}`);
     if(wrap) wrap.classList.add("hidden");
+  }else if(card.sugerido){
+    // Coincidencia parcial (ej. mismo apellido paterno y un nombre, pero no todo el nombre) —
+    // se muestra como sugerencia que hay que confirmar a mano, nunca se asigna sola, para no
+    // repetir el caso real de padre e hijo con nombre parecido mezclados por error.
+    const t = card.sugerido;
+    const etiquetaCentro = t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente de asignar";
+    cont.innerHTML = `
+      <div class="bandeja-match-falta" style="margin-bottom:8px">⚠️ El nombre de la carpeta no coincide exactamente con nadie de Dotación — esto es solo una sugerencia. Revisa bien el RUT antes de confirmar: podría ser una persona distinta con nombre parecido (ej. padre e hijo).</div>
+      <div class="bandeja-match-ok">
+        <div>
+          <div class="bandeja-match-nombre">¿Es esta persona? ${escapeHtml(t.nombre)}</div>
+          <div class="bandeja-match-detalle">${escapeHtml(t.rut || "—")} · ${escapeHtml(etiquetaCentro)} · ${escapeHtml(t.empresa || "—")}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-primary" onclick="confirmarSugerenciaBandeja('${card.id}')">Sí, es esta persona</button>
+          <button class="btn-secondary" onclick="abrirBusquedaBandeja('${card.id}')">No, buscar o crear otro</button>
+        </div>
+      </div>
+    `;
   }else{
-    cont.innerHTML = `<div class="bandeja-match-falta">No se pudo identificar automáticamente al trabajador a partir del nombre de la carpeta. Búscalo manualmente abajo.</div>`;
+    cont.innerHTML = `<div class="bandeja-match-falta">No se pudo identificar automáticamente al trabajador a partir del nombre de la carpeta. Búscalo manualmente abajo, o créalo si es nuevo.</div>`;
     window.abrirBusquedaBandeja(card.id);
   }
 }
@@ -1844,11 +1903,11 @@ window.buscarTrabajadorBandeja = function(cardId){
   `).join("") : '<div class="bandeja-sugerencia-vacio">Sin resultados.</div>';
 };
 
-window.elegirTrabajadorBandeja = async function(cardId, id){
-  const card = encontrarCarpetaBandeja(cardId);
-  const t = (dotDatosTodos || []).find(x => x.id === id);
-  if(!card || !t) return;
+// Compartida por: elegir de la búsqueda manual, confirmar una sugerencia de confianza
+// media, y terminar de crear un trabajador nuevo desde Bandeja.
+async function asignarTrabajadorACarpetaBandeja(card, t){
   card.trabajador = t;
+  card.sugerido = null;
   card.archivos.forEach(a => {
     if(a.tipo === "anexo_fundo" && !a.fundo) a.fundo = extraerFundo(a.nombre, t.nombre);
   });
@@ -1856,6 +1915,30 @@ window.elegirTrabajadorBandeja = async function(cardId, id){
   renderBandejaArchivosCarpeta(card);
   await marcarDuplicadosBandeja(card);
   renderBandejaArchivosCarpeta(card);
+}
+
+window.elegirTrabajadorBandeja = async function(cardId, id){
+  const card = encontrarCarpetaBandeja(cardId);
+  const t = (dotDatosTodos || []).find(x => x.id === id);
+  if(!card || !t) return;
+  await asignarTrabajadorACarpetaBandeja(card, t);
+};
+
+window.confirmarSugerenciaBandeja = async function(cardId){
+  const card = encontrarCarpetaBandeja(cardId);
+  if(!card || !card.sugerido) return;
+  await asignarTrabajadorACarpetaBandeja(card, card.sugerido);
+};
+
+// Abre el modal de "Agregar trabajador" precargado con el nombre de la carpeta — para
+// cuando de verdad es alguien nuevo que todavía no está en Dotación de personal. Al
+// guardar, el trabajador recién creado queda asignado directo a esta tarjeta.
+window.crearTrabajadorDesdeBandeja = function(cardId){
+  const card = encontrarCarpetaBandeja(cardId);
+  if(!card) return;
+  window.abrirModalTrabajador(null, card.nombreCarpeta, (nuevo) => {
+    asignarTrabajadorACarpetaBandeja(card, nuevo);
+  });
 };
 
 function renderBandejaArchivosCarpeta(card){
@@ -2135,6 +2218,14 @@ let bovedaConteos = null; // { trabajadorId: cantidadDeDocumentos }
 let bovedaFiniquitos = null; // { trabajadorId: true } si tiene al menos un documento tipo "finiquito"
 let bovedaFallbackInfo = null; // { trabajadorId: {nombre, centro} } por si el documento quedó sin match en Dotación
 
+// "Mover documentos a otro trabajador" — para corregir casos donde Bandeja asignó mal un
+// documento (ej. dos personas con nombre parecido, como un padre y un hijo). Documentos
+// legales reales no se pueden simplemente borrar y resubir sin dejar rastro, así que esto
+// copia el archivo al trabajador correcto y recién después borra la copia vieja.
+let bovedaSeleccionados = new Set(); // ids de documentos marcados para mover
+let bovedaMoverPanelAbierto = false;
+let bovedaMoverEjecutando = false;
+
 async function fetchBovedaConteos(){
   const snap = await getDocs(collection(db, "documentos"));
   const conteos = {};
@@ -2236,6 +2327,8 @@ window.bovedaElegirTrabajador = function(id){
   if(filtroInput) filtroInput.value = "";
   const filtroContador = document.getElementById("boveda-filtro-contador");
   if(filtroContador) filtroContador.textContent = "";
+  bovedaSeleccionados = new Set();
+  bovedaMoverPanelAbierto = false;
   renderBovedaMatch();
   cargarDocumentosBoveda();
 };
@@ -2243,6 +2336,8 @@ window.bovedaElegirTrabajador = function(id){
 window.bovedaCambiarTrabajador = function(){
   bovedaTrabajadorSeleccionado = null;
   bovedaDocumentos = [];
+  bovedaSeleccionados = new Set();
+  bovedaMoverPanelAbierto = false;
   document.getElementById("boveda-revision").classList.add("hidden");
   document.getElementById("boveda-lista-wrap").classList.remove("hidden");
   if(bovedaConteos === null){
@@ -2296,6 +2391,7 @@ window.renderDocumentosBoveda = function renderDocumentosBoveda(){
         Sube documentos de este trabajador desde la Bandeja de clasificación.
       </div>
     `;
+    renderBovedaMoverToolbar();
     return;
   }
 
@@ -2335,6 +2431,7 @@ window.renderDocumentosBoveda = function renderDocumentosBoveda(){
       ${g.docs.map(d => renderDocItem(d)).join("")}
     </div>
   `).join("");
+  renderBovedaMoverToolbar();
 }
 
 function renderDocItem(d){
@@ -2348,10 +2445,13 @@ function renderDocItem(d){
     : "";
   return `
     <div class="doc-item">
-      <div>
-        <div class="doc-item-nombre">${escapeHtml(d.nombreArchivo || "—")}${vigenteBadge}</div>
-        <div class="doc-item-meta">Subido ${fecha}${d.subidoPor ? " · " + escapeHtml(d.subidoPor) : ""}${detalleFundo}</div>
-      </div>
+      <label style="display:flex;align-items:center;cursor:${bovedaMoverEjecutando ? "default" : "pointer"}" title="Seleccionar para mover a otro trabajador">
+        <input type="checkbox" style="margin-right:10px" ${bovedaSeleccionados.has(d.id) ? "checked" : ""} ${bovedaMoverEjecutando ? "disabled" : ""} onchange="toggleSeleccionBoveda('${d.id}', this.checked)">
+        <div>
+          <div class="doc-item-nombre">${escapeHtml(d.nombreArchivo || "—")}${vigenteBadge}</div>
+          <div class="doc-item-meta">Subido ${fecha}${d.subidoPor ? " · " + escapeHtml(d.subidoPor) : ""}${detalleFundo}</div>
+        </div>
+      </label>
       <div class="doc-item-acciones">
         ${vigenteBtn}
         <button class="btn-secondary" onclick="bovedaVerDocumento('${escapeHtml(d.storagePath).replace(/'/g,"\\'")}', this)">Ver</button>
@@ -2359,6 +2459,154 @@ function renderDocItem(d){
       </div>
     </div>
   `;
+}
+
+window.toggleSeleccionBoveda = function(docId, marcado){
+  if(marcado) bovedaSeleccionados.add(docId);
+  else bovedaSeleccionados.delete(docId);
+  renderBovedaMoverToolbar();
+};
+
+function renderBovedaMoverToolbar(){
+  const cont = document.getElementById("boveda-mover-cont");
+  if(!cont) return;
+  const n = bovedaSeleccionados.size;
+
+  if(bovedaMoverEjecutando){
+    cont.innerHTML = `<div class="status-note">Moviendo documentos, no cierres esta pantalla…</div>`;
+    return;
+  }
+
+  if(!n){
+    cont.innerHTML = "";
+    return;
+  }
+
+  if(!bovedaMoverPanelAbierto){
+    cont.innerHTML = `
+      <div class="bandeja-match-ok">
+        <div class="status-note" style="margin:0">${n} documento${n === 1 ? "" : "s"} seleccionado${n === 1 ? "" : "s"}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-primary" onclick="abrirMoverBoveda()">Mover a otro trabajador</button>
+          <button class="btn-secondary" onclick="cancelarSeleccionBoveda()">Cancelar selección</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  cont.innerHTML = `
+    <div class="bandeja-busqueda-wrap">
+      <div class="status-note" style="margin-bottom:6px">Elige a quién le pertenecen de verdad estos ${n} documento${n === 1 ? "" : "s"} (revisa bien el RUT):</div>
+      <label class="field-label">Buscar trabajador por nombre o RUT</label>
+      <input class="field-input" id="boveda-mover-busqueda-input" type="text" placeholder="Escribe para buscar..." oninput="buscarDestinoMoverBoveda()">
+      <div id="boveda-mover-busqueda-resultados"></div>
+      <button class="btn-secondary" style="margin-top:8px" onclick="crearTrabajadorDesdeMoverBoveda()">+ Es alguien nuevo — crear trabajador</button>
+      <button class="btn-secondary" style="margin-top:8px;margin-left:8px" onclick="cerrarMoverBoveda()">Cancelar</button>
+    </div>
+  `;
+  document.getElementById("boveda-mover-busqueda-input").focus();
+}
+
+window.cancelarSeleccionBoveda = function(){
+  bovedaSeleccionados = new Set();
+  bovedaMoverPanelAbierto = false;
+  renderDocumentosBoveda(); // vuelve a dibujar también las casillas, ya destildadas
+};
+
+window.abrirMoverBoveda = function(){
+  bovedaMoverPanelAbierto = true;
+  renderBovedaMoverToolbar();
+};
+
+window.cerrarMoverBoveda = function(){
+  bovedaMoverPanelAbierto = false;
+  renderBovedaMoverToolbar();
+};
+
+window.buscarDestinoMoverBoveda = function(){
+  const term = normalizar(document.getElementById("boveda-mover-busqueda-input").value);
+  const cont = document.getElementById("boveda-mover-busqueda-resultados");
+  if(term.length < 2){ cont.innerHTML = ""; return; }
+  const origenId = bovedaTrabajadorSeleccionado ? bovedaTrabajadorSeleccionado.id : null;
+  const candidatos = (dotDatosTodos || [])
+    .filter(t => t.id !== origenId && (normalizar(t.nombre).includes(term) || normalizar(t.rut).includes(term)))
+    .slice(0, 8);
+  cont.innerHTML = candidatos.length ? candidatos.map(t => `
+    <div class="bandeja-sugerencia" onclick="bovedaConfirmarMoverA('${t.id}')">
+      <strong>${escapeHtml(t.nombre)}</strong>
+      <span>${escapeHtml(t.rut || "—")} · ${escapeHtml(t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente")}</span>
+    </div>
+  `).join("") : '<div class="bandeja-sugerencia-vacio">Sin resultados.</div>';
+};
+
+window.crearTrabajadorDesdeMoverBoveda = function(){
+  window.abrirModalTrabajador(null, "", (nuevo) => {
+    ejecutarMoverBoveda(nuevo);
+  });
+};
+
+window.bovedaConfirmarMoverA = function(destinoId){
+  const destino = (dotDatosTodos || []).find(x => x.id === destinoId);
+  if(!destino) return;
+  ejecutarMoverBoveda(destino);
+};
+
+async function moverUnDocumentoBoveda(d, destino){
+  const centroDestino = destino.centro || "SIN_CENTRO";
+  const url = await getDownloadURL(storageRef(storage, d.storagePath));
+  const resp = await fetch(url);
+  if(!resp.ok) throw new Error("No se pudo descargar el archivo original.");
+  const blob = await resp.blob();
+  const nombreSeguro = (d.nombreArchivo || "archivo").replace(/[^a-zA-Z0-9._-]/g, "_");
+  const nuevaRuta = `documentos_rrhh/${centroDestino}/${destino.id}/${d.tipo}/${Date.now()}_${nombreSeguro}`;
+  await uploadBytes(storageRef(storage, nuevaRuta), blob);
+  await setDoc(doc(db, "documentos", d.id), {
+    trabajadorId: destino.id,
+    trabajadorNombre: destino.nombre,
+    centro: destino.centro || "",
+    storagePath: nuevaRuta
+  }, { merge: true });
+  try{ await deleteObject(storageRef(storage, d.storagePath)); }catch(e){ /* copia nueva ya quedó bien; si falla borrar la vieja, no es grave */ }
+}
+
+async function ejecutarMoverBoveda(destino){
+  const origen = bovedaTrabajadorSeleccionado;
+  if(!origen || !destino) return;
+  if(destino.id === origen.id){ alert("Ese es el mismo trabajador — elige uno distinto."); return; }
+
+  const docsAMover = bovedaDocumentos.filter(d => bovedaSeleccionados.has(d.id));
+  if(!docsAMover.length) return;
+
+  const confirmado = confirm(
+    `Vas a mover ${docsAMover.length} documento${docsAMover.length === 1 ? "" : "s"} de "${origen.nombre}" a "${destino.nombre}".\n\n` +
+    `Revisa bien que sea la persona correcta antes de confirmar — después de mover, deshacerlo requiere repetir el mismo paso al revés.`
+  );
+  if(!confirmado) return;
+
+  bovedaMoverEjecutando = true;
+  renderBovedaMoverToolbar();
+
+  let ok = 0, conError = 0;
+  for(const d of docsAMover){
+    try{
+      await moverUnDocumentoBoveda(d, destino);
+      ok++;
+    }catch(e){
+      conError++;
+    }
+  }
+
+  bovedaMoverEjecutando = false;
+  bovedaSeleccionados = new Set();
+  bovedaMoverPanelAbierto = false;
+  bovedaConteos = null;
+  bovedaFiniquitos = null;
+  bovedaFallbackInfo = null;
+  anexosDatos = null; // los anexos del trabajador destino pueden cambiar el cruce de Anexos pendientes
+
+  await cargarDocumentosBoveda(); // recarga la lista del trabajador de origen, ya sin los documentos movidos
+  alert(`Listo. Movidos: ${ok}.` + (conError ? ` Con error: ${conError} — revísalos e inténtalo de nuevo.` : ""));
 }
 
 // Un trabajador puede tener varios anexos de cambio de fundo vigentes a la vez
