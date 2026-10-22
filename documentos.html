@@ -872,7 +872,14 @@ window.mostrarSeccion = function(id){
   document.querySelectorAll(".nav-item").forEach(btn=>{
     btn.classList.toggle("active", btn.dataset.seccion === id);
   });
-  if(id === "dotacion" && (dotDatosTodos === null || !empresasCatalogoCargado)){
+  if(id === "dotacion"){
+    // SIEMPRE se llama al entrar a Dotación, sin condición — cambiarTabDotacion() ya decide
+    // internamente si hace falta pedir datos de nuevo o no. Bug real encontrado (22 oct
+    // 2026): antes esto solo se llamaba si dotDatosTodos/empresasCatalogoCargado todavía
+    // estaban vacíos; pero Bandeja ya los deja cargados en segundo plano (para el selector
+    // de empresa del modal), así que al entrar a Dotación después de pasar por Bandeja esta
+    // llamada nunca se disparaba — ni las pestañas ni la tabla se llegaban a dibujar nunca,
+    // aunque los datos sí estaban disponibles en memoria.
     cambiarTabDotacion(dotTabActual);
   }
   if(id === "bandeja" && dotDatosTodos === null){
@@ -1440,9 +1447,9 @@ window.cambiarTabDotacion = async function(tab){
   if(dotDatosTodos === null || !empresasCatalogoCargado){
     document.getElementById("dot-tabla-body").innerHTML = "";
     document.getElementById("dot-contador").textContent = "Cargando…";
-    // Tope de 12 segundos (22 oct 2026, diagnóstico temporal): si la carga se queda pegada
-    // (nunca resuelve ni falla), antes se veía "Cargando…" para siempre sin ninguna pista.
-    // Ahora, pasado el tope, se corta y se avisa en vez de quedar colgado.
+    // Tope de 12 segundos: si la carga nunca resuelve ni falla (ej. problema de red), antes
+    // se veía "Cargando…" para siempre sin ninguna pista. Ahora, pasado el tope, se corta y
+    // se avisa en vez de quedar colgado.
     const tope = new Promise((_, rej) => setTimeout(() => rej(new Error("TIMEOUT_12S")), 12000));
     try{
       await Promise.race([
@@ -1453,15 +1460,9 @@ window.cambiarTabDotacion = async function(tab){
         tope
       ]);
     }catch(e){
-      console.error("[Dotación] Error o tope de tiempo al cargar catálogo de empresas o dotación:", e);
-      window.diagnosticoDotacion = {
-        error: String((e && e.message) || e),
-        empresasCatalogoCargado,
-        dotDatosTodosEsNull: dotDatosTodos === null,
-        EMPRESAS_CATALOGO
-      };
+      console.error("[Dotación] Error al cargar catálogo de empresas o dotación:", e);
       document.getElementById("dot-contador").textContent = e && e.message === "TIMEOUT_12S"
-        ? "Se demoró demasiado en cargar — escribe window.diagnosticoDotacion en la consola y Enter, mándame la captura."
+        ? "Se demoró demasiado en cargar. Revisa tu conexión e intenta de nuevo."
         : "No se pudo cargar.";
       return;
     }
@@ -1472,17 +1473,6 @@ window.cambiarTabDotacion = async function(tab){
     const principal = EMPRESAS_CATALOGO.find(e => e.principal) || EMPRESAS_CATALOGO[0];
     dotTabActual = principal ? principal.id : TAB_SIN_EMPRESA;
   }
-  // DIAGNÓSTICO TEMPORAL (22 oct 2026) — quitar una vez resuelto el reporte de Dotación
-  // vacía: deja el estado real en window.diagnosticoDotacion (se puede escribir en la
-  // consola del navegador en cualquier momento después de esto, sin depender de pillar el
-  // instante justo en que se imprime un console.log).
-  window.diagnosticoDotacion = {
-    EMPRESAS_CATALOGO,
-    dotTabActual,
-    totalDotacion: (dotDatosTodos || []).length,
-    primerosTrabajadores: (dotDatosTodos || []).slice(0, 5).map(t => ({ nombre: t.nombre, empresa: t.empresa, centro: t.centro }))
-  };
-  console.log("[Dotación] diagnóstico listo — escribe window.diagnosticoDotacion en la consola:", window.diagnosticoDotacion);
   renderTabsDotacion();
   renderTablaDotacion();
 };
