@@ -999,17 +999,35 @@ async function iniciarVistaJefe(){
 
     const dotPorId = {};
     (dotDatosTodos || []).forEach(t => dotPorId[t.id] = t);
+
+    // Criterio: SOLO el día más reciente que este jefe informó (no una unión de
+    // los últimos 45 días). Si ese día informó más de un fundo, se juntan los
+    // trabajadores de todos esos registros de ese mismo día.
+    let fechaMasReciente = null;
+    snapCuadrilla.forEach(d => {
+      const f = d.data().fecha;
+      if(f && (fechaMasReciente === null || f > fechaMasReciente)) fechaMasReciente = f;
+    });
+
     const idsVistos = new Set();
     const lista = [];
-    snapCuadrilla.forEach(d => {
-      (d.data().trabajadorIds || []).forEach(id => {
-        if(idsVistos.has(id)) return;
-        idsVistos.add(id);
-        if(dotPorId[id]) lista.push(dotPorId[id]);
+    if(fechaMasReciente !== null){
+      snapCuadrilla.forEach(d => {
+        if(d.data().fecha !== fechaMasReciente) return;
+        (d.data().trabajadorIds || []).forEach(id => {
+          if(idsVistos.has(id)) return;
+          idsVistos.add(id);
+          if(dotPorId[id]) lista.push(dotPorId[id]);
+        });
       });
-    });
+    }
     lista.sort((a,b) => String(a.nombre||"").localeCompare(String(b.nombre||""), "es"));
     jefeCuadrillaTrabajadores = lista;
+
+    const tituloEl = document.getElementById("jefe-cuadrilla-titulo");
+    tituloEl.textContent = fechaMasReciente
+      ? `Tu cuadrilla informada — ${fechaLegibleAnexos(fechaMasReciente)}`
+      : "Tu cuadrilla informada";
   }catch(e){
     document.getElementById("jefe-lista-cuadrilla").innerHTML = `<p class="status-note" style="color:var(--red)">No se pudo cargar tu cuadrilla. Intenta de nuevo.</p>`;
     return;
@@ -1021,7 +1039,7 @@ async function iniciarVistaJefe(){
 function renderListaCuadrillaJefe(){
   const cont = document.getElementById("jefe-lista-cuadrilla");
   if(!jefeCuadrillaTrabajadores.length){
-    cont.innerHTML = `<p class="status-note">Aún no has informado trabajadores en Cuadrilla diaria en los últimos 45 días.</p>`;
+    cont.innerHTML = `<p class="status-note">Aún no has informado trabajadores en Cuadrilla diaria (o no hay registros en los últimos 45 días).</p>`;
     return;
   }
   cont.innerHTML = jefeCuadrillaTrabajadores.map(t => `
