@@ -1092,15 +1092,41 @@ window.jefeAbrirTrabajador = async function(trabajadorId){
 
   const avisoCont = document.getElementById("jefe-doc-aviso");
   const listaCont = document.getElementById("jefe-doc-lista");
-  listaCont.innerHTML = `<p class="status-note">Cargando…</p>`;
 
   if(!enCuadrilla){
-    avisoCont.innerHTML = `<div class="card-angosto" style="margin-bottom:12px;background:var(--amber-bg);border:none"><p class="status-note" style="color:var(--amber);margin-top:0">Este trabajador no está en tu cuadrilla informada. Esta consulta queda registrada para RRHH.</p></div>`;
-    registrarRevisionIrregular(t);
-  }else{
+    // No se cargan documentos ni se registra nada todavía — primero se pide
+    // confirmación explícita ("Ver igual" / "Volver"). Solo si confirma se
+    // registra la revisión irregular (dispara el correo de alerta) y se
+    // muestran los documentos.
     avisoCont.innerHTML = "";
+    listaCont.innerHTML = `
+      <p class="status-note" style="color:var(--amber)">Este trabajador no está en tu cuadrilla informada. Esta consulta queda registrada para RRHH.</p>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn-primary" style="flex:1" onclick="jefeConfirmarVerIgual()">Ver igual</button>
+        <button class="btn-secondary" style="flex:1" onclick="jefeVolverALista()">Volver</button>
+      </div>
+    `;
+    return;
   }
 
+  avisoCont.innerHTML = "";
+  listaCont.innerHTML = `<p class="status-note">Cargando…</p>`;
+  await jefeCargarDocumentos(trabajadorId);
+};
+
+window.jefeConfirmarVerIgual = async function(){
+  const t = jefeTrabajadorActual;
+  if(!t) return;
+  const avisoCont = document.getElementById("jefe-doc-aviso");
+  const listaCont = document.getElementById("jefe-doc-lista");
+  avisoCont.innerHTML = `<div class="card-angosto" style="margin-bottom:12px;background:var(--amber-bg);border:none"><p class="status-note" style="color:var(--amber);margin-top:0">Este trabajador no está en tu cuadrilla informada. Esta consulta queda registrada para RRHH.</p></div>`;
+  listaCont.innerHTML = `<p class="status-note">Cargando…</p>`;
+  await registrarRevisionIrregular(t);
+  await jefeCargarDocumentos(t.id);
+};
+
+async function jefeCargarDocumentos(trabajadorId){
+  const listaCont = document.getElementById("jefe-doc-lista");
   try{
     const snap = await getDocs(query(collection(db, "documentos"), where("trabajadorId", "==", trabajadorId)));
     const docs = [];
@@ -1110,7 +1136,7 @@ window.jefeAbrirTrabajador = async function(trabajadorId){
   }catch(e){
     listaCont.innerHTML = `<p class="status-note" style="color:var(--red)">No se pudieron cargar los documentos. Intenta de nuevo.</p>`;
   }
-};
+}
 
 function renderDocumentosJefe(docs){
   const cont = document.getElementById("jefe-doc-lista");
