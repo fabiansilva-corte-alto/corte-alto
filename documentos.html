@@ -1403,14 +1403,26 @@ function generarSlugEmpresa(nombre){
 }
 
 // Devuelve la empresa del catálogo que corresponde a este trabajador (comparando el texto
-// guardado en dotacion.empresa contra el nombre canónico de cada empresa), o null si no
-// coincide con ninguna — esos caen en la pestaña "Sin empresa / otras" de Dotación. Reemplaza
-// el antiguo esEmpresaEmco(), que comparaba contra un único string fijo ("emco ltda.") y por
-// eso cualquier variante de escritura (ej. sin el punto final) quedaba mal clasificada.
+// guardado en dotacion.empresa contra el nombre canónico de cada empresa). Reemplaza el
+// antiguo esEmpresaEmco(), que comparaba contra un único string fijo ("emco ltda.") y por eso
+// cualquier variante de escritura (ej. sin el punto final) quedaba mal clasificada.
+// Devuelve 3 cosas distintas a propósito (importante para no repetir el bug del 22 oct: la
+// mayoría de los trabajadores históricos nunca tuvieron el campo "empresa" completado —
+// antes la pestaña por defecto era simplemente "todo lo que no sea EMCO" — así que un texto
+// VACÍO no puede tratarse igual que un texto que no calza con ninguna empresa del catálogo):
+//   - undefined: el trabajador no tiene empresa escrita (campo vacío) → va por defecto a la
+//     empresa marcada "principal" del catálogo, igual que el comportamiento de siempre.
+//   - null: el trabajador SÍ tiene un texto en empresa, pero no calza con ninguna del
+//     catálogo (typo o empresa no registrada) → cae en "Sin empresa / otras", visible para
+//     poder corregirlo, en vez de perderse clasificado como si fuera otra empresa.
+//   - la empresa encontrada: coincide exactamente (normalizado) con una del catálogo.
 function empresaDeTrabajador(t){
   const norm = normalizar(t.empresa || "");
-  if(!norm) return null;
+  if(!norm) return undefined;
   return EMPRESAS_CATALOGO.find(e => normalizar(e.nombre) === norm) || null;
+}
+function empresaPrincipal(){
+  return EMPRESAS_CATALOGO.find(e => e.principal) || null;
 }
 
 const TAB_SIN_EMPRESA = "__SIN_EMPRESA__";
@@ -1461,7 +1473,14 @@ window.renderTablaDotacion = function(){
 
   let datosTab = todos.filter(t => {
     const empresa = empresaDeTrabajador(t);
-    return dotTabActual === TAB_SIN_EMPRESA ? !empresa : !!empresa && empresa.id === dotTabActual;
+    if(empresa === undefined){
+      // Sin texto de empresa: va por defecto a la empresa "principal" del catálogo (igual
+      // que el comportamiento de siempre), NO a "Sin empresa / otras" — esa pestaña es solo
+      // para texto que no calza con ninguna empresa conocida, no para el campo vacío.
+      const principal = empresaPrincipal();
+      return !!principal && principal.id === dotTabActual;
+    }
+    return dotTabActual === TAB_SIN_EMPRESA ? empresa === null : !!empresa && empresa.id === dotTabActual;
   });
 
   let filtrados = datosTab.filter(t => {
