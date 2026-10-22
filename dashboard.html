@@ -104,6 +104,29 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
 .mpct-warn{background:var(--amber-bg);color:var(--amber);font-weight:800;padding:2px 6px;border-radius:4px;display:inline-block}
 .mpct-bad{background:var(--red-bg);color:var(--red);font-weight:800;padding:2px 6px;border-radius:4px;display:inline-block}
 
+/* ── PANEL META CALTO (oculto) ── */
+.calto-btn{background:rgba(255,255,255,.18);border:none;border-radius:5px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;flex-shrink:0;transition:background .15s;padding:0}
+.calto-btn:hover{background:rgba(255,255,255,.35)}
+.calto-panel{display:none;border-top:2px solid var(--border);padding:.625rem .875rem .75rem;background:linear-gradient(180deg,#f9fdf5 0%,#fff 100%)}
+.calto-panel.abierto{display:block}
+.calto-panel-title{font-size:9px;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem;display:flex;align-items:center;gap:5px}
+.calto-kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:.5rem}
+.calto-kpi{background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 8px;text-align:center}
+.calto-kpi-label{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;line-height:1.2}
+.calto-kpi-val{font-size:17px;font-weight:800;color:var(--green);line-height:1}
+.calto-kpi-sub{font-size:9px;color:var(--text3);margin-top:2px}
+.calto-kpi-val.ok{color:var(--green)}.calto-kpi-val.warn{color:var(--amber)}.calto-kpi-val.bad{color:var(--red)}
+.calto-rodales{margin-top:.375rem}
+.calto-rodales-title{font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.calto-table{width:100%;border-collapse:collapse;font-size:11px}
+.calto-table th{font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;padding:2px 5px;border-bottom:1px solid var(--border);text-align:right}
+.calto-table th:first-child{text-align:left}
+.calto-table td{padding:3px 5px;border-bottom:1px solid #f0f0f0;color:var(--text);font-weight:600;text-align:right}
+.calto-table td:first-child{text-align:left;color:var(--text2)}
+.calto-table tr:last-child td{border-bottom:none}
+.calto-loading{font-size:11px;color:var(--text3);text-align:center;padding:.5rem 0}
+.calto-fundo{font-size:10px;color:var(--text2);margin-bottom:.375rem;display:flex;align-items:center;gap:4px}
+
 /* ── ÚLTIMOS 3 DÍAS ── */
 .u3-lineas{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
 .u3-bloque{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)}
@@ -135,6 +158,7 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
 .u3-delta.bad{background:var(--red);color:#fff}
 .u3-delta.sin{background:var(--border);color:var(--text3)}
 
+@keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:700px){
   .lineas-grid{grid-template-columns:1fr}
   .exec-kpis{grid-template-columns:1fr 1fr}
@@ -1253,12 +1277,22 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
         </table>
       </div>` : '';
 
+    // Botón secreto Meta CALTO — solo T2 y T3
+    const esT2oT3 = lin.toUpperCase().includes('T2') || lin.toUpperCase().includes('T3');
+    const caltoBtn = esT2oT3
+      ? `<button class="calto-btn" title="Meta CALTO" onclick="toggleCalto(this,'${lin}','${mesStr||''}')" aria-label="Meta CALTO"><i class="ti ti-trees"></i></button>`
+      : '';
+
     const card = document.createElement('div');
     card.className = 'linea-card';
+    card.dataset.vollin = volLin;
     card.innerHTML = `
       <div class="linea-head ${linClass}">
         <span>${lin}</span>
-        <span style="font-size:9px;opacity:.8">${prodLin.length} rep.</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;opacity:.8">${prodLin.length} rep.</span>
+          ${caltoBtn}
+        </div>
       </div>
       <div class="linea-body">
         <div class="linea-kpis">
@@ -1297,7 +1331,8 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
           </div>
         </div>
         ${desgloseHTML}
-      </div>`;
+      </div>
+      ${esT2oT3 ? `<div class="calto-panel" data-lin="${lin}" data-mes="${mesStr||''}"><div class="calto-loading"><i class="ti ti-loader-2" style="animation:spin .8s linear infinite"></i> Cargando…</div></div>` : ''}`;
     lineasWrap.appendChild(card);
   }
 
@@ -2943,6 +2978,194 @@ window.renderComparadorOperadores = function() {
 };
 
 window.addEventListener('DOMContentLoaded', () => consultar());
+
+// ── META CALTO — panel oculto en líneas T2/T3 ────────────────────────────────
+
+// TABLA_CONTRACTUAL: VMA (m³) → Vol. normal contrato (m³) — tramos [lo, hi)
+const TABLA_CONTRACTUAL = [
+  [0.20, 0.30, 10.357],
+  [0.30, 0.40, 11.600],
+  [0.40, 0.50, 12.609],
+  [0.50, 0.60, 13.426],
+  [0.60, 0.70, 13.942],
+  [0.70, 0.80, 14.500],
+  [0.80, 0.90, 14.948],
+  [0.90, 1.30, 15.426],
+  [1.30, 1.70, 15.934],
+  [1.70, 999,  16.292],
+];
+
+function volNormalParaVMA_dash(vma) {
+  const v = parseFloat(vma);
+  if(isNaN(v)) return null;
+  for(const [lo, hi, vol] of TABLA_CONTRACTUAL) {
+    if(v >= lo && v < hi) return vol;
+  }
+  return null;
+}
+
+function fmt3(n) {
+  return isNaN(n) ? '—' : n.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3});
+}
+function fmtVol(n) {
+  // Volumen ofertado: entero con separador de miles (punto), sin decimales
+  const v = parseFloat(n);
+  return isNaN(v) ? '—' : Math.round(v).toLocaleString('es-CL');
+}
+
+async function cargarOfertaRodalesLinea(lin, mesStr) {
+  // El ID en Firestore se guardó como "{linea}_{año}-{mes}"
+  // donde linea puede ser "LÍNEA T3" o "T3" según lo que vienen en los reportes.
+  // Intentamos variantes: con prefijo "LÍNEA ", sin prefijo, y con/sin mes.
+  const candidatos = [];
+  const variantes = [lin];
+  // Si lin no empieza con "LÍNEA ", agregar versión con prefijo
+  if(!lin.toUpperCase().startsWith('LÍNEA ') && !lin.toUpperCase().startsWith('LINEA ')) {
+    variantes.push(`LÍNEA ${lin}`);
+  }
+  // Si lin ya tiene "LÍNEA ", agregar versión sin prefijo
+  const sinPrefijo = lin.replace(/^LÍNEA\s+/i, '').replace(/^LINEA\s+/i, '');
+  if(sinPrefijo !== lin) variantes.push(sinPrefijo);
+
+  for(const v of variantes) {
+    if(mesStr) candidatos.push(`${v}_${mesStr}`);
+    candidatos.push(v); // genérico sin mes
+  }
+
+  for(const id of candidatos) {
+    try {
+      const snap = await getDoc(doc(db, 'config_oferta_rodales', id));
+      if(snap.exists()) return snap.data();
+    } catch(e) {}
+  }
+  return null;
+}
+
+window.toggleCalto = async function(btn, lin, mesStr) {
+  const card = btn.closest('.linea-card');
+  const panel = card.querySelector('.calto-panel');
+  if(!panel) return;
+
+  const estaAbierto = panel.classList.contains('abierto');
+  if(estaAbierto) {
+    panel.classList.remove('abierto');
+    return;
+  }
+
+  panel.classList.add('abierto');
+  // Si ya tiene contenido cargado, solo abrir
+  if(panel.dataset.cargado === '1') return;
+
+  // Cargar datos
+  panel.innerHTML = `<div class="calto-loading"><i class="ti ti-loader-2" style="animation:spin .8s linear infinite;display:inline-block"></i> Cargando…</div>`;
+
+  const datos = await cargarOfertaRodalesLinea(lin, mesStr);
+
+  if(!datos) {
+    panel.innerHTML = `<div class="calto-loading" style="color:var(--text3)"><i class="ti ti-info-circle"></i> Sin datos de oferta registrados para esta línea.</div>`;
+    panel.dataset.cargado = '1';
+    return;
+  }
+
+  // El doc guarda 'rodales' (array) y 'meta_calto' ya calculado
+  const filas = Array.isArray(datos.rodales) ? datos.rodales : [];
+  const fundo = datos.fundo || '—';
+
+  // Usar meta_calto precalculado si existe, o recalcular
+  let metaCalto = datos.meta_calto != null ? parseFloat(datos.meta_calto) : 0;
+  const totalOfertado = datos.total_ofertado != null ? parseFloat(datos.total_ofertado)
+    : filas.reduce((s,f) => s + (parseFloat(f.vol_ofertado)||0), 0);
+
+  if(!datos.meta_calto) {
+    // Recalcular desde filas si no viene precalculado
+    filas.forEach(f => {
+      const vma = parseFloat(f.vma);
+      const volN = volNormalParaVMA_dash(vma);
+      const vol = parseFloat(f.vol_ofertado) || 0;
+      const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
+      if(volN != null) metaCalto += pct * volN;
+    });
+  }
+
+  // Meta CALTO acumulada: (meta / días del mes) × días transcurridos hasta ayer
+  let metaCaltoAcum = 0;
+  let pctCumpl = NaN;
+  let diasMesC = 0;
+  let diasHastaAyer = 0;
+
+  if(mesStr) {
+    const [a, m] = mesStr.split('-').map(Number);
+    diasMesC = new Date(a, m, 0).getDate();
+    const hoy = new Date();
+    const ayer = new Date(hoy); ayer.setDate(ayer.getDate() - 1);
+    // Días transcurridos del mes seleccionado hasta ayer
+    const inicioMes = new Date(a, m-1, 1);
+    const finMes    = new Date(a, m-1, diasMesC);
+    const ayerEfectivo = ayer < inicioMes ? inicioMes : (ayer > finMes ? finMes : ayer);
+    diasHastaAyer = Math.max(0, Math.round((ayerEfectivo - inicioMes) / 86400000) + 1);
+    metaCaltoAcum = diasMesC > 0 ? (metaCalto / diasMesC) * diasHastaAyer : 0;
+  }
+
+  // Buscar producción de esta línea en el período actual (volLin ya calculado arriba, pero aquí usamos los datos del doc)
+  // Usamos volLin del dashboard (lo pasamos via dataset)
+  const volLinActual = parseFloat(card.dataset.vollin) || 0;
+  if(metaCaltoAcum > 0 && volLinActual > 0) {
+    pctCumpl = volLinActual / (metaCaltoAcum * 1000) * 100;
+  }
+
+  const pctCls = isNaN(pctCumpl) ? '' : (pctCumpl >= 100 ? 'ok' : pctCumpl >= 85 ? 'warn' : 'bad');
+
+  // Tabla de rodales
+  let tablasHTML = '';
+  if(filas.length > 0) {
+    const rows = filas.map(f => {
+      const vma = parseFloat(f.vma);
+      const vol = parseFloat(f.vol_ofertado) || 0;
+      const pct = totalOfertado > 0 ? (vol / totalOfertado * 100) : 0;
+      const metaProp = f.meta_calto_proporcional != null
+        ? parseFloat(f.meta_calto_proporcional)
+        : (volNormalParaVMA_dash(vma) != null ? (vol / totalOfertado) * volNormalParaVMA_dash(vma) : null);
+      return `<tr>
+        <td>${f.rodal || '—'}</td>
+        <td>${isNaN(vma)?'—':vma.toFixed(2)}</td>
+        <td>${fmtVol(vol)}</td>
+        <td>${pct.toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1})}%</td>
+        <td style="font-weight:700;color:var(--green)">${metaProp != null ? fmt0(metaProp * 1000) : '—'}</td>
+      </tr>`;
+    }).join('');
+    tablasHTML = `
+      <div class="calto-rodales">
+        <div class="calto-rodales-title"><i class="ti ti-list-details"></i> Desglose por rodal</div>
+        <table class="calto-table">
+          <thead><tr><th>Rodal</th><th>VMA</th><th>Vol. of.</th><th>%</th><th>Meta prop.</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  panel.innerHTML = `
+    <div class="calto-panel-title"><i class="ti ti-trees"></i> Meta CALTO — ${lin}</div>
+    <div class="calto-fundo"><i class="ti ti-map-pin" style="color:var(--green)"></i> <strong>Fundo:</strong> ${fundo}</div>
+    <div class="calto-kpis">
+      <div class="calto-kpi">
+        <div class="calto-kpi-label">Meta CALTO<br>mensual</div>
+        <div class="calto-kpi-val">${fmt0(metaCalto * 1000)}</div>
+        <div class="calto-kpi-sub">m³</div>
+      </div>
+      <div class="calto-kpi">
+        <div class="calto-kpi-label">Meta CALTO<br>acum. (${diasHastaAyer} d.)</div>
+        <div class="calto-kpi-val">${fmt0(metaCaltoAcum * 1000)}</div>
+        <div class="calto-kpi-sub">m³</div>
+      </div>
+      <div class="calto-kpi">
+        <div class="calto-kpi-label">Cumplim.<br>vs Meta CALTO</div>
+        <div class="calto-kpi-val ${pctCls}">${isNaN(pctCumpl) ? '—' : Math.round(pctCumpl)+'%'}</div>
+        <div class="calto-kpi-sub">${fmt0(volLinActual)} / ${fmt0(metaCaltoAcum * 1000)}</div>
+      </div>
+    </div>
+    ${tablasHTML}`;
+  panel.dataset.cargado = '1';
+};
 </script>
 
 <script>
