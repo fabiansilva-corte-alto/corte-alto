@@ -453,10 +453,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
         </div>
       </div>
 
-      <div class="tabs" id="dot-tabs">
-        <button class="tab active" data-tab="corte-alto" onclick="cambiarTabDotacion('corte-alto')">Corte Alto</button>
-        <button class="tab" data-tab="emco" onclick="cambiarTabDotacion('emco')">EMCO LTDA</button>
-      </div>
+      <div class="tabs" id="dot-tabs"><!-- se arma con JS, una pestaña por empresa del catálogo (ver renderTabsDotacion) --></div>
 
       <div class="toolbar-desktop">
         <input class="field-input buscar-desktop" id="dot-buscar" type="text" placeholder="Buscar por nombre o RUT..." oninput="renderTablaDotacion()">
@@ -564,6 +561,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
       <div class="tabs" id="config-tabs">
         <button class="tab active" data-tab="tipos" onclick="cambiarTabConfiguracion('tipos')">Tipos de documento</button>
         <button class="tab" data-tab="fundos" onclick="cambiarTabConfiguracion('fundos')">Fundos</button>
+        <button class="tab" data-tab="empresas" onclick="cambiarTabConfiguracion('empresas')">Empresas</button>
       </div>
 
       <div id="config-tab-tipos">
@@ -622,6 +620,22 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
           <div id="anexos-sin-clasificar-cont"></div>
         </div>
       </div>
+
+      <div id="config-tab-empresas" class="hidden">
+        <div class="contenido-header">
+          <div></div>
+          <button class="btn-primary" onclick="abrirModalEmpresa()">+ Nueva empresa</button>
+        </div>
+        <div class="tabla-wrap" style="max-width:820px">
+          <table class="tabla">
+            <thead>
+              <tr><th>Empresa</th><th>RUT</th><th>Centro sugerido</th><th>Estado</th><th></th></tr>
+            </thead>
+            <tbody id="config-empresas-tabla-body"></tbody>
+          </table>
+        </div>
+        <p style="font-size:12px;color:var(--text3);margin-top:10px;max-width:620px">Cada empresa del catálogo es una pestaña en Dotación de personal, y aparece como opción al agregar o editar un trabajador (el RUT se completa solo al elegirla). Escribe el nombre exacto como debe quedar guardado — si un trabajador ya tiene un nombre de empresa que no está acá (ej. texto antiguo con otra forma de escritura), se ve en la pestaña "Sin empresa / otras" de Dotación hasta que lo corrijas.</p>
+      </div>
     </div>
 
   </div>
@@ -650,10 +664,17 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
     </select>
 
     <label class="field-label" for="mt-empresa">Empresa</label>
-    <input class="field-input" id="mt-empresa" type="text" placeholder="Ej: F. Corte Alto Ltda.">
+    <select class="field-input" id="mt-empresa" onchange="onCambiarEmpresaModal()">
+      <option value="">— Elige una empresa —</option>
+    </select>
+    <!-- guardan el texto ORIGINAL del trabajador cuando se edita, para no borrarlo si no se
+         toca el selector de arriba (ej. su empresa quedó con un texto que ya no está en el
+         catálogo) — ver guardarTrabajador() -->
+    <input type="hidden" id="mt-empresa-original">
+    <input type="hidden" id="mt-rutempresa-original">
 
     <label class="field-label" for="mt-rutempresa">Rut empresa</label>
-    <input class="field-input" id="mt-rutempresa" type="text" placeholder="Ej: 78.264.940-K">
+    <input class="field-input" id="mt-rutempresa" type="text" placeholder="Se completa solo al elegir la empresa" readonly style="background:#f7f7f7;color:var(--text3)">
 
     <label class="field-label" for="mt-subarea">Subárea (opcional, uso interno de RRHH)</label>
     <input class="field-input" id="mt-subarea" type="text" placeholder="Ej: FORMIN 1, Taller 2...">
@@ -727,6 +748,34 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
   </div>
 </div>
 
+<!-- ===== MODAL: NUEVA / EDITAR EMPRESA (catálogo de Dotación de personal) ===== -->
+<div id="modal-empresa" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-titulo" id="me-titulo">Nueva empresa</div>
+    <input type="hidden" id="me-id">
+    <label class="field-label" for="me-nombre">Nombre de la empresa (exacto — así queda guardado en cada trabajador)</label>
+    <input class="field-input" id="me-nombre" type="text" placeholder="Ej: Transermec Ltda.">
+    <label class="field-label" for="me-rut">RUT de la empresa</label>
+    <input class="field-input" id="me-rut" type="text" placeholder="Ej: 76.123.456-7">
+    <label class="field-label" for="me-centro-sugerido">Centro sugerido al elegir esta empresa (opcional)</label>
+    <select class="field-input" id="me-centro-sugerido">
+      <option value="">— Ninguno —</option>
+      <option value="FORMIN 1">FORMIN 1</option>
+      <option value="FORMIN 2">FORMIN 2</option>
+      <option value="FORMIN 3">FORMIN 3</option>
+      <option value="TALLER_COIHUE">Taller Coihue</option>
+      <option value="ROTATIVO">Rotativo</option>
+    </select>
+    <p class="status-note" style="margin-top:4px">Se precarga solo si el campo Centro todavía está vacío — nunca pisa una elección ya hecha. Para subcontratistas normalmente es "Rotativo".</p>
+    <label class="chk-row" style="margin-top:12px"><input type="checkbox" id="me-principal"> Empresa principal (aparece primera en Dotación de personal)</label>
+    <label class="chk-row" style="margin-top:6px"><input type="checkbox" id="me-activo" checked> Activa (aparece como opción al agregar un trabajador)</label>
+    <p class="status-note" style="margin-top:2px">Si la desmarcas, sigue en el catálogo (los trabajadores ya asignados a ella se siguen viendo bien en su pestaña) pero deja de ofrecerse al agregar un trabajador nuevo.</p>
+    <div class="msg-error" id="modal-empresa-error"></div>
+    <button class="btn-primary full" id="me-guardar" style="margin-top:10px" onclick="guardarEmpresa()">Guardar</button>
+    <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModalEmpresa()">Cancelar</button>
+  </div>
+</div>
+
 <!-- ===== MODAL: TRABAJADORES INFORMADOS ESE DÍA (desde Cumplimiento de jefes) ===== -->
 <div id="modal-cumplimiento-dia" class="modal-overlay hidden">
   <div class="modal-box">
@@ -775,15 +824,23 @@ let fundoMasivoCandidatos = null; // [{trabajadorId, nombre, docId, estado: 'mar
 
 const NOMBRES_ROL = { admin: "Administrador maestro", rrhh: "RRHH", jefe_centro: "Jefe de centro" };
 const NOMBRES_CENTRO = { "FORMIN 1": "FORMIN 1", "FORMIN 2": "FORMIN 2", "FORMIN 3": "FORMIN 3", TALLER_COIHUE: "Taller Coihue", ROTATIVO: "Rotativo" };
-const EMPRESAS_SUGERIDAS = {
-  "FORMIN 1": { empresa: "F. Corte Alto Ltda.", rut: "78.264.940-K" },
-  "FORMIN 2": { empresa: "F. Corte Alto Ltda.", rut: "78.264.940-K" },
-  "FORMIN 3": { empresa: "F. Corte Alto Ltda.", rut: "78.264.940-K" },
-  "TALLER_COIHUE": { empresa: "F. Corte Alto Ltda.", rut: "78.264.940-K" }
-};
+
+// Catálogo de empresas (colección config_empresas) — reemplaza el antiguo EMPRESAS_SUGERIDAS
+// (que solo cubría "F. Corte Alto Ltda." y tenía a "Emco Ltda." escrito a mano en el modal de
+// trabajador). Cada empresa es ahora una pestaña de Dotación de personal, editable en
+// Configuración → Empresas, para poder agregar subcontratistas nuevos (ej. Transermec) sin
+// tocar código — ver fetchEmpresasCatalogo().
+let EMPRESAS_CATALOGO = []; // [{id, nombre, rut, centroSugerido, principal, activo}]
+let empresasCatalogoCargado = false;
+// Semilla: mismos nombre/RUT que ya estaban escritos a mano en el código, para que al
+// desplegar esta versión Dotación siga mostrando a todos exactamente donde están hoy.
+const EMPRESAS_SEMILLA = [
+  { id: "f_corte_alto_ltda", nombre: "F. Corte Alto Ltda.", rut: "78.264.940-K", centroSugerido: "", principal: true },
+  { id: "emco_ltda", nombre: "Emco Ltda.", rut: "78.616.600-4", centroSugerido: "ROTATIVO", principal: false }
+];
 
 let usuarioActual = null; // { rol, centro, nombre }
-let dotTabActual = "corte-alto";
+let dotTabActual = null; // id de una empresa del catálogo, o "__SIN_EMPRESA__" — se fija la primera vez que se entra a Dotación
 let dotDatosTodos = null; // fetch único con todos los trabajadores; las pestañas se separan en el render
 let bandejaCarpetas = []; // [{ id, nombreCarpeta, trabajador, archivos: [{file,nombre,tipo,fundo,vigente,incluir,duplicado}], estado: 'pendiente'|'subiendo'|'listo', resultadoTexto }]
 let bandejaContadorId = 0;
@@ -798,6 +855,9 @@ let bandejaSoloNuevos = true;
 // función se llama con el trabajador recién creado para que quien abrió el modal pueda
 // asignarlo automáticamente, sin que la persona tenga que ir a buscarlo después.
 let trabajadorRecienCreadoCallback = null;
+// Mismo patrón que trabajadorRecienCreadoCallback, para cuando se crea una empresa nueva
+// desde el selector del modal de trabajador ("+ Agregar empresa nueva…").
+let empresaRecienCreadaCallback = null;
 
 function mostrarPantalla(id){
   ["pantalla-login","pantalla-sinacceso","pantalla-jefe","pantalla-escritorio"].forEach(v=>{
@@ -812,7 +872,7 @@ window.mostrarSeccion = function(id){
   document.querySelectorAll(".nav-item").forEach(btn=>{
     btn.classList.toggle("active", btn.dataset.seccion === id);
   });
-  if(id === "dotacion" && dotDatosTodos === null){
+  if(id === "dotacion" && (dotDatosTodos === null || !empresasCatalogoCargado)){
     cambiarTabDotacion(dotTabActual);
   }
   if(id === "bandeja" && dotDatosTodos === null){
@@ -820,6 +880,11 @@ window.mostrarSeccion = function(id){
   }
   if(id === "bandeja" && !fundosCatalogoCargados){
     fetchFundosCatalogo().then(renderFundosDatalist).catch(()=>{});
+  }
+  if((id === "bandeja" || id === "boveda") && !empresasCatalogoCargado){
+    // Se necesita para que el selector de empresa del modal "Agregar trabajador" (abierto
+    // desde Bandeja o desde "Mover a otro trabajador" en la Bóveda) tenga opciones.
+    fetchEmpresasCatalogo().then(renderOpcionesEmpresaModal).catch(()=>{});
   }
   if(id === "boveda"){
     // entrar a la Bóveda (incluso re-hacer clic estando ya adentro) siempre vuelve a la lista completa
@@ -860,11 +925,19 @@ window.cambiarTabConfiguracion = function(tab){
   });
   document.getElementById("config-tab-tipos").classList.toggle("hidden", tab !== "tipos");
   document.getElementById("config-tab-fundos").classList.toggle("hidden", tab !== "fundos");
+  document.getElementById("config-tab-empresas").classList.toggle("hidden", tab !== "empresas");
   if(tab === "fundos"){
     if(!fundosCatalogoCargados){
       fetchFundosCatalogo().then(renderConfiguracionFundos).catch(()=>renderConfiguracionFundos());
     }else{
       renderConfiguracionFundos();
+    }
+  }
+  if(tab === "empresas"){
+    if(!empresasCatalogoCargado){
+      fetchEmpresasCatalogo().then(renderConfiguracionEmpresas).catch(()=>renderConfiguracionEmpresas());
+    }else{
+      renderConfiguracionEmpresas();
     }
   }
 };
@@ -1286,25 +1359,90 @@ async function fetchDotacionTodos(){
   dotDatosTodos = datos;
 }
 
-function esEmpresaEmco(t){
-  return normalizar(t.empresa) === "emco ltda.";
+async function fetchEmpresasCatalogo(){
+  const snap = await getDocs(collection(db, "config_empresas"));
+  if(snap.empty){
+    // Primera vez: sembramos las 2 empresas que el sistema ya usaba a mano (mismo nombre y
+    // RUT de siempre) para que Dotación siga mostrando a todos exactamente donde están hoy,
+    // sin que haya que crear nada manualmente para que el sistema no se vea "vacío".
+    try{
+      await Promise.all(EMPRESAS_SEMILLA.map(e =>
+        setDoc(doc(db, "config_empresas", e.id), { nombre: e.nombre, rut: e.rut, centroSugerido: e.centroSugerido, principal: e.principal, activo: true })
+      ));
+    }catch(e){ /* si falla la siembra, seguimos con los valores por defecto en memoria */ }
+    EMPRESAS_CATALOGO = EMPRESAS_SEMILLA.map(e => ({ ...e, activo: true }));
+  }else{
+    const datos = [];
+    snap.forEach(d => datos.push({
+      id: d.id,
+      nombre: d.data().nombre || d.id,
+      rut: d.data().rut || "",
+      centroSugerido: d.data().centroSugerido || "",
+      principal: !!d.data().principal,
+      activo: d.data().activo !== false
+    }));
+    EMPRESAS_CATALOGO = datos;
+  }
+  EMPRESAS_CATALOGO.sort((a,b) => {
+    if(a.principal !== b.principal) return a.principal ? -1 : 1;
+    return a.nombre.localeCompare(b.nombre, "es");
+  });
+  empresasCatalogoCargado = true;
+}
+
+function generarSlugEmpresa(nombre){
+  let base = normalizar(nombre).replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  if(!base) base = "empresa";
+  let slug = base;
+  let i = 2;
+  while(EMPRESAS_CATALOGO.some(e => e.id === slug)){
+    slug = `${base}_${i}`;
+    i++;
+  }
+  return slug;
+}
+
+// Devuelve la empresa del catálogo que corresponde a este trabajador (comparando el texto
+// guardado en dotacion.empresa contra el nombre canónico de cada empresa), o null si no
+// coincide con ninguna — esos caen en la pestaña "Sin empresa / otras" de Dotación. Reemplaza
+// el antiguo esEmpresaEmco(), que comparaba contra un único string fijo ("emco ltda.") y por
+// eso cualquier variante de escritura (ej. sin el punto final) quedaba mal clasificada.
+function empresaDeTrabajador(t){
+  const norm = normalizar(t.empresa || "");
+  if(!norm) return null;
+  return EMPRESAS_CATALOGO.find(e => normalizar(e.nombre) === norm) || null;
+}
+
+const TAB_SIN_EMPRESA = "__SIN_EMPRESA__";
+
+function renderTabsDotacion(){
+  const cont = document.getElementById("dot-tabs");
+  if(!cont) return;
+  const tabs = EMPRESAS_CATALOGO.map(e => ({ id: e.id, label: e.nombre }));
+  tabs.push({ id: TAB_SIN_EMPRESA, label: "Sin empresa / otras" });
+  cont.innerHTML = tabs.map(t => `<button class="tab${dotTabActual === t.id ? " active" : ""}" data-tab="${t.id}" onclick="cambiarTabDotacion('${t.id}')">${escapeHtml(t.label)}</button>`).join("");
 }
 
 window.cambiarTabDotacion = async function(tab){
-  dotTabActual = tab;
-  document.querySelectorAll("#dot-tabs .tab").forEach(btn=>{
-    btn.classList.toggle("active", btn.dataset.tab === tab);
-  });
-  if(dotDatosTodos === null){
+  if(tab) dotTabActual = tab;
+  if(dotDatosTodos === null || !empresasCatalogoCargado){
     document.getElementById("dot-tabla-body").innerHTML = "";
     document.getElementById("dot-contador").textContent = "Cargando…";
     try{
-      await fetchDotacionTodos();
+      if(!empresasCatalogoCargado) await fetchEmpresasCatalogo();
+      if(dotDatosTodos === null) await fetchDotacionTodos();
     }catch(e){
       document.getElementById("dot-contador").textContent = "No se pudo cargar.";
       return;
     }
   }
+  // Primera vez que se entra (dotTabActual todavía no se ha fijado): parte en la empresa
+  // principal del catálogo, o en la primera que haya si ninguna está marcada como principal.
+  if(!dotTabActual){
+    const principal = EMPRESAS_CATALOGO.find(e => e.principal) || EMPRESAS_CATALOGO[0];
+    dotTabActual = principal ? principal.id : TAB_SIN_EMPRESA;
+  }
+  renderTabsDotacion();
   renderTablaDotacion();
 };
 
@@ -1321,7 +1459,10 @@ window.renderTablaDotacion = function(){
   const term = normalizar(document.getElementById("dot-buscar").value);
   const filtroCentro = document.getElementById("dot-filtro-centro").value;
 
-  let datosTab = todos.filter(t => dotTabActual === "emco" ? esEmpresaEmco(t) : !esEmpresaEmco(t));
+  let datosTab = todos.filter(t => {
+    const empresa = empresaDeTrabajador(t);
+    return dotTabActual === TAB_SIN_EMPRESA ? !empresa : !!empresa && empresa.id === dotTabActual;
+  });
 
   let filtrados = datosTab.filter(t => {
     if(filtroCentro === "__PENDIENTE__"){
@@ -1371,16 +1512,49 @@ window.cerrarModales = function(){
   trabajadorRecienCreadoCallback = null; // cancelado: no se asigna nada
 };
 
+// Llena el <select> de empresa del modal de trabajador con el catálogo actual, conservando
+// la selección si sigue existiendo. Se llama cada vez que se abre el modal y cada vez que el
+// catálogo cambia (ej. se agregó una empresa nueva desde acá mismo).
+function renderOpcionesEmpresaModal(){
+  const sel = document.getElementById("mt-empresa");
+  if(!sel) return;
+  const actual = sel.value;
+  sel.innerHTML = '<option value="">— Elige una empresa —</option>' +
+    EMPRESAS_CATALOGO.map(e => `<option value="${e.id}">${escapeHtml(e.nombre)}${e.activo === false ? " (inactiva)" : ""}</option>`).join("") +
+    '<option value="__NUEVA__">+ Agregar empresa nueva…</option>';
+  sel.value = actual;
+};
+
+// Al elegir una empresa del catálogo, el RUT se completa solo (campo de solo lectura — la
+// única forma de cambiar un RUT de empresa es editando el catálogo en Configuración, así
+// se evita que quede escrito distinto en cada trabajador). "+ Agregar empresa nueva…" abre
+// el modal de empresa y, al guardarlo, la deja elegida acá mismo.
+window.onCambiarEmpresaModal = function(){
+  const sel = document.getElementById("mt-empresa");
+  const rutField = document.getElementById("mt-rutempresa");
+  if(sel.value === "__NUEVA__"){
+    sel.value = "";
+    window.abrirModalEmpresa(null, (nueva) => {
+      renderOpcionesEmpresaModal();
+      sel.value = nueva.id;
+      rutField.value = nueva.rut || "";
+    });
+    return;
+  }
+  const e = EMPRESAS_CATALOGO.find(x => x.id === sel.value);
+  rutField.value = e ? (e.rut || "") : "";
+};
+
 window.sugerirEmpresa = function(){
   const centro = document.getElementById("mt-centro").value;
-  const campoEmpresa = document.getElementById("mt-empresa");
-  const campoRut = document.getElementById("mt-rutempresa");
-  if(campoEmpresa.value.trim() || campoRut.value.trim()) return; // no pisar una edición manual
-  const sugerencia = EMPRESAS_SUGERIDAS[centro];
-  if(sugerencia){
-    campoEmpresa.value = sugerencia.empresa;
-    campoRut.value = sugerencia.rut;
-  }
+  const selEmpresa = document.getElementById("mt-empresa");
+  if(selEmpresa.value) return; // no pisar una elección manual ya hecha
+  const esCentroCorteAlto = ["FORMIN 1","FORMIN 2","FORMIN 3","TALLER_COIHUE"].includes(centro);
+  if(!esCentroCorteAlto) return;
+  const principal = EMPRESAS_CATALOGO.find(e => e.principal);
+  if(!principal) return;
+  selEmpresa.value = principal.id;
+  document.getElementById("mt-rutempresa").value = principal.rut || "";
 };
 
 // nombreSugerido / alGuardar: usados cuando el modal se abre desde OTRA pantalla (Bandeja,
@@ -1390,6 +1564,9 @@ window.sugerirEmpresa = function(){
 window.abrirModalTrabajador = function(id, nombreSugerido, alGuardar){
   document.getElementById("modal-trabajador-error").classList.remove("show");
   trabajadorRecienCreadoCallback = alGuardar || null;
+  renderOpcionesEmpresaModal();
+  const empresaOriginalField = document.getElementById("mt-empresa-original");
+  const rutEmpresaOriginalField = document.getElementById("mt-rutempresa-original");
   if(id){
     const t = (dotDatosTodos || []).find(x => x.id === id);
     if(!t) return;
@@ -1398,8 +1575,14 @@ window.abrirModalTrabajador = function(id, nombreSugerido, alGuardar){
     document.getElementById("mt-nombre").value = t.nombre || "";
     document.getElementById("mt-rut").value = t.rut || "";
     document.getElementById("mt-centro").value = t.centro || "";
-    document.getElementById("mt-empresa").value = t.empresa || "";
+    const empresaMatch = empresaDeTrabajador(t);
+    document.getElementById("mt-empresa").value = empresaMatch ? empresaMatch.id : "";
     document.getElementById("mt-rutempresa").value = t.rutEmpresa || "";
+    // Se conserva el texto tal cual lo tenía, por si no calza con ninguna empresa del
+    // catálogo (ej. texto antiguo escrito distinto) — así guardarTrabajador() no lo borra
+    // solo por no haber tocado el selector de arriba.
+    empresaOriginalField.value = t.empresa || "";
+    rutEmpresaOriginalField.value = t.rutEmpresa || "";
     document.getElementById("mt-subarea").value = t.subarea || "";
     document.getElementById("mt-activo").checked = t.activo !== false;
   }else{
@@ -1407,14 +1590,22 @@ window.abrirModalTrabajador = function(id, nombreSugerido, alGuardar){
     document.getElementById("mt-id").value = "";
     document.getElementById("mt-nombre").value = nombreSugerido || "";
     document.getElementById("mt-rut").value = "";
-    if(dotTabActual === "emco"){
-      document.getElementById("mt-centro").value = "ROTATIVO";
-      document.getElementById("mt-empresa").value = "Emco Ltda.";
-      document.getElementById("mt-rutempresa").value = "78.616.600-4";
+    empresaOriginalField.value = "";
+    rutEmpresaOriginalField.value = "";
+    // Si se abrió el modal desde el botón propio de Dotación de personal (no desde Bandeja
+    // ni desde "Mover a otro trabajador" de la Bóveda, que siempre pasan un "alGuardar"),
+    // se precarga la empresa de la pestaña en la que se está parado — mismo criterio que
+    // antes tenía el caso especial de la pestaña "EMCO", ahora generalizado a cualquier
+    // empresa del catálogo.
+    const empresaTab = !alGuardar ? EMPRESAS_CATALOGO.find(e => e.id === dotTabActual) : null;
+    if(empresaTab){
+      document.getElementById("mt-empresa").value = empresaTab.id;
+      document.getElementById("mt-rutempresa").value = empresaTab.rut || "";
+      document.getElementById("mt-centro").value = empresaTab.centroSugerido || "";
     }else{
-      document.getElementById("mt-centro").value = "";
       document.getElementById("mt-empresa").value = "";
       document.getElementById("mt-rutempresa").value = "";
+      document.getElementById("mt-centro").value = "";
     }
     document.getElementById("mt-subarea").value = "";
     document.getElementById("mt-activo").checked = true;
@@ -1429,8 +1620,7 @@ window.guardarTrabajador = async function(){
   const nombre = document.getElementById("mt-nombre").value.trim();
   const rutInput = document.getElementById("mt-rut").value.trim();
   const centro = document.getElementById("mt-centro").value;
-  const empresa = document.getElementById("mt-empresa").value.trim();
-  const rutEmpresa = document.getElementById("mt-rutempresa").value.trim();
+  const empresaSelId = document.getElementById("mt-empresa").value;
   const subarea = document.getElementById("mt-subarea").value.trim();
   const activo = document.getElementById("mt-activo").checked;
   const idExistente = document.getElementById("mt-id").value;
@@ -1439,6 +1629,19 @@ window.guardarTrabajador = async function(){
     errorBox.textContent = "Completa nombre y RUT.";
     errorBox.classList.add("show");
     return;
+  }
+
+  let empresa, rutEmpresa;
+  if(empresaSelId){
+    const e = EMPRESAS_CATALOGO.find(x => x.id === empresaSelId);
+    empresa = e ? e.nombre : "";
+    rutEmpresa = e ? (e.rut || "") : "";
+  }else{
+    // No se tocó el selector: se conserva lo que ya tenía (si es edición) o queda vacío
+    // (si es un trabajador nuevo) — nunca se borra un valor existente solo por no elegir
+    // nada en el selector.
+    empresa = document.getElementById("mt-empresa-original").value;
+    rutEmpresa = document.getElementById("mt-rutempresa-original").value;
   }
 
   const rutLimpio = limpiarRut(rutInput);
@@ -1450,6 +1653,7 @@ window.guardarTrabajador = async function(){
     cerrarModales();
     dotDatosTodos = null;
     await fetchDotacionTodos();
+    renderTabsDotacion();
     renderTablaDotacion();
     if(callbackPendiente){
       const nuevo = (dotDatosTodos || []).find(x => x.id === idDoc);
@@ -3551,6 +3755,150 @@ window.eliminarFundo = async function(id){
     await fetchFundosCatalogo();
     renderConfiguracionFundos();
   }catch(e){
+    alert("No se pudo eliminar. Intenta de nuevo.");
+  }
+};
+
+// ---- Configuración → Empresas (catálogo usado por el selector de empresa de Dotación) ----
+
+function renderConfiguracionEmpresas(){
+  const cont = document.getElementById("config-empresas-tabla-body");
+  if(!cont) return;
+  if(!EMPRESAS_CATALOGO.length){
+    cont.innerHTML = `<tr><td colspan="5" style="color:var(--text3)">No hay empresas cargadas todavía.</td></tr>`;
+    return;
+  }
+  cont.innerHTML = EMPRESAS_CATALOGO.map(e => {
+    const activa = e.activo !== false;
+    return `
+    <tr>
+      <td class="nombre-cell">${escapeHtml(e.nombre)}${e.principal ? ' <span class="badge-centro">Principal</span>' : ""}</td>
+      <td>${escapeHtml(e.rut || "—")}</td>
+      <td>${e.centroSugerido ? escapeHtml(NOMBRES_CENTRO[e.centroSugerido] || e.centroSugerido) : `<span style="color:var(--text3)">—</span>`}</td>
+      <td style="white-space:nowrap">
+        <span class="badge-centro" style="${activa ? "" : "background:#f0f0f0;color:var(--text3)"}">${activa ? "Activa" : "Inactiva"}</span>
+        <button class="accion-editar" style="margin-left:6px;font-size:11.5px;padding:2px 6px" onclick="toggleActivoEmpresa('${e.id}')">${activa ? "Desactivar" : "Activar"}</button>
+      </td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="accion-editar" title="Editar" onclick="abrirModalEmpresa('${e.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+        <button class="accion-editar" title="Eliminar" style="color:var(--red);margin-left:6px" onclick="eliminarEmpresa('${e.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </td>
+    </tr>
+  `;
+  }).join("");
+}
+
+// id / alGuardar: igual que abrirModalTrabajador — cuando se abre desde el selector de
+// empresa del modal de trabajador ("+ Agregar empresa nueva…"), alGuardar recibe la
+// empresa recién creada para dejarla elegida ahí mismo sin otro paso.
+window.abrirModalEmpresa = function(id, alGuardar){
+  empresaRecienCreadaCallback = alGuardar || null;
+  const idField = document.getElementById("me-id");
+  const nombre = document.getElementById("me-nombre");
+  const rut = document.getElementById("me-rut");
+  const centroSug = document.getElementById("me-centro-sugerido");
+  const principal = document.getElementById("me-principal");
+  const activo = document.getElementById("me-activo");
+  document.getElementById("modal-empresa-error").textContent = "";
+  if(id){
+    const e = EMPRESAS_CATALOGO.find(x => x.id === id);
+    document.getElementById("me-titulo").textContent = "Editar empresa";
+    idField.value = id;
+    nombre.value = e ? e.nombre : "";
+    rut.value = e ? e.rut : "";
+    centroSug.value = e ? (e.centroSugerido || "") : "";
+    principal.checked = !!(e && e.principal);
+    activo.checked = e ? e.activo !== false : true;
+  }else{
+    document.getElementById("me-titulo").textContent = "Nueva empresa";
+    idField.value = "";
+    nombre.value = "";
+    rut.value = "";
+    centroSug.value = "";
+    principal.checked = false;
+    activo.checked = true;
+  }
+  document.getElementById("modal-empresa").classList.remove("hidden");
+  nombre.focus();
+};
+
+window.cerrarModalEmpresa = function(){
+  document.getElementById("modal-empresa").classList.add("hidden");
+  empresaRecienCreadaCallback = null;
+};
+
+window.guardarEmpresa = async function(){
+  const idField = document.getElementById("me-id");
+  const nombreInput = document.getElementById("me-nombre");
+  const nombre = nombreInput.value.trim();
+  const rut = document.getElementById("me-rut").value.trim();
+  const centroSugerido = document.getElementById("me-centro-sugerido").value;
+  const principal = document.getElementById("me-principal").checked;
+  const activo = document.getElementById("me-activo").checked;
+  const errorBox = document.getElementById("modal-empresa-error");
+  errorBox.textContent = "";
+  if(!nombre){
+    errorBox.textContent = "Ingresa el nombre de la empresa.";
+    nombreInput.focus();
+    return;
+  }
+  const boton = document.getElementById("me-guardar");
+  boton.disabled = true;
+  boton.textContent = "Guardando…";
+  const callbackPendiente = empresaRecienCreadaCallback; // cerrarModalEmpresa() lo limpia, por eso se guarda antes
+  try{
+    const id = idField.value || generarSlugEmpresa(nombre);
+    // Solo puede haber una empresa "principal" a la vez — si se marca esta, se le quita la
+    // marca a cualquier otra que la tuviera.
+    if(principal){
+      await Promise.all(
+        EMPRESAS_CATALOGO.filter(e => e.principal && e.id !== id)
+          .map(e => setDoc(doc(db, "config_empresas", e.id), { principal: false }, { merge: true }))
+      );
+    }
+    await setDoc(doc(db, "config_empresas", id), { nombre, rut, centroSugerido, principal, activo }, { merge: true });
+    await fetchEmpresasCatalogo();
+    renderConfiguracionEmpresas();
+    renderTabsDotacion();
+    renderOpcionesEmpresaModal();
+    window.cerrarModalEmpresa();
+    if(callbackPendiente){
+      const nueva = EMPRESAS_CATALOGO.find(x => x.id === id);
+      if(nueva) callbackPendiente(nueva);
+    }
+  }catch(err){
+    errorBox.textContent = "No se pudo guardar. Intenta de nuevo.";
+  }finally{
+    boton.disabled = false;
+    boton.textContent = "Guardar";
+  }
+};
+
+window.toggleActivoEmpresa = async function(id){
+  const empresa = EMPRESAS_CATALOGO.find(x => x.id === id);
+  if(!empresa) return;
+  const nuevoActivo = !(empresa.activo !== false);
+  try{
+    await setDoc(doc(db, "config_empresas", id), { activo: nuevoActivo }, { merge: true });
+    await fetchEmpresasCatalogo();
+    renderConfiguracionEmpresas();
+    renderOpcionesEmpresaModal();
+  }catch(err){
+    alert("No se pudo cambiar el estado. Intenta de nuevo.");
+  }
+};
+
+window.eliminarEmpresa = async function(id){
+  const empresa = EMPRESAS_CATALOGO.find(x => x.id === id);
+  if(!empresa) return;
+  if(!confirm(`¿Eliminar "${empresa.nombre}" del catálogo de empresas? Los trabajadores que ya la tienen asignada no cambian — solo pasan a verse en la pestaña "Sin empresa / otras" de Dotación de personal hasta que la vuelvas a crear o les asignes otra.`)) return;
+  try{
+    await deleteDoc(doc(db, "config_empresas", id));
+    await fetchEmpresasCatalogo();
+    renderConfiguracionEmpresas();
+    renderTabsDotacion();
+    renderOpcionesEmpresaModal();
+  }catch(err){
     alert("No se pudo eliminar. Intenta de nuevo.");
   }
 };
