@@ -1475,6 +1475,18 @@ const TABLA_CONTRACTUAL = [
 
 const COL_OFERTA_RODALES = "config_oferta_rodales";
 
+// Formato numérico Oferta Rodales: punto de miles, punto decimal
+// Ej: 12609.000 → "12.609.000" ; 1.145 → "1.145" ; 11134.5 → "11.134"
+function orFmt(n, decimales = 0) {
+  if(n == null || isNaN(n)) return '—';
+  // Usar 'de-DE' que usa punto de miles y coma decimal, luego swap
+  // O más simple: formatear con toFixed y agregar puntos de miles manualmente
+  const fixed = parseFloat(n).toFixed(decimales);
+  const [ent, dec] = fixed.split('.');
+  const entConPuntos = ent.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return decimales > 0 ? `${entConPuntos}.${dec}` : entConPuntos;
+}
+
 // Estado local de filas en la tabla UI
 let orFilas = []; // [{rodal, vol}]
 
@@ -1542,7 +1554,7 @@ function renderOrTabla(){
   const fundoGlobal = document.getElementById('or-fundo')?.value || '';
   const rodalesFundo = fundoGlobal ? rodalesDesFundo(fundoGlobal) : [];
 
-  const totalOfertado = orFilas.reduce((s,f) => s + (parseFloat(f.vol)||0), 0);
+  const totalOfertado = orFilas.reduce((s,f) => s + (parseFloat(String(f.vol||'').replace(/\./g,''))||0), 0);
 
   let metaCaltoTotal = 0;
   const rows = orFilas.map((fila, idx) => {
@@ -1555,7 +1567,7 @@ function renderOrTabla(){
 
     const vma = (fundoGlobal && fila.rodal) ? vmaDeRodal(fila.rodal, fundoGlobal) : null;
     const volN = vma != null ? volNormalParaVMA(vma) : null;
-    const vol = parseFloat(fila.vol) || 0;
+    const vol = parseFloat(String(fila.vol||'').replace(/\./g,'')) || 0;
     const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
     const metaProp = (volN != null) ? pct * volN : null;
     if(metaProp != null) metaCaltoTotal += metaProp;
@@ -1564,22 +1576,20 @@ function renderOrTabla(){
       <td><select class="or-sel-rodal" data-idx="${idx}" onchange="orCambioRodal(this)">${optsRodal}</select></td>
       <td class="or-cell-calc" style="text-align:center">${vma != null ? vma.toFixed(2) : '<span style="color:#aaa">—</span>'}</td>
       <td style="text-align:center">${vma != null ? `<span class="or-tramo-badge">${tramoTexto(vma)}</span>` : '<span style="color:#aaa">—</span>'}</td>
-      <td><input type="number" step="any" min="0" class="or-input-vol" data-idx="${idx}"
-            value="${fila.vol||''}" placeholder="0" oninput="orCambioVol(this)"></td>
-      <td class="or-cell-calc">${totalOfertado > 0 ? (pct*100).toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1})+'%' : '—'}</td>
-      <td class="or-cell-calc">${volN != null ? volN.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}) : '<span style="color:#aaa">—</span>'}</td>
-      <td class="or-cell-calc" style="font-weight:${metaProp!=null?'700':'400'};color:${metaProp!=null?'var(--verde-oscuro)':'#aaa'}">${metaProp != null ? metaProp.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}) : '—'}</td>
+      <td><input type="text" inputmode="numeric" class="or-input-vol" data-idx="${idx}"
+            value="${fila.vol ? Number(fila.vol).toLocaleString('es-CL') : ''}" placeholder="0" oninput="orCambioVol(this)" style="text-align:right"></td>
+      <td class="or-cell-calc">${totalOfertado > 0 ? (pct*100).toFixed(1).replace('.',',')+'%' : '—'}</td>
+      <td class="or-cell-calc">${volN != null ? orFmt(volN, 3) : '<span style="color:#aaa">—</span>'}</td>
+      <td class="or-cell-calc" style="font-weight:${metaProp!=null?'700':'400'};color:${metaProp!=null?'var(--verde-oscuro)':'#aaa'}">${metaProp != null ? orFmt(metaProp, 3) : '—'}</td>
       <td style="text-align:center"><button onclick="orEliminarFila(${idx})" style="background:#fee2e2;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;color:#b91c1c;font-size:13px">✕</button></td>
     </tr>`;
   }).join('');
 
   tbody.innerHTML = rows;
   document.getElementById('or-total-ofertado').textContent =
-    totalOfertado.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}) + ' m³';
+    totalOfertado > 0 ? orFmt(totalOfertado, 3) + ' m³' : '—';
   document.getElementById('or-meta-calto').textContent =
-    metaCaltoTotal > 0
-      ? metaCaltoTotal.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}) + ' m³'
-      : '—';
+    metaCaltoTotal > 0 ? orFmt(metaCaltoTotal, 3) + ' m³' : '—';
 }
 
 window.orCambioFundoGlobal = function(){
@@ -1596,14 +1606,24 @@ window.orCambioRodal = function(sel){
 
 window.orCambioVol = function(inp){
   const idx = parseInt(inp.dataset.idx);
-  orFilas[idx].vol = inp.value;
+  // Strip puntos de miles, parsear valor real
+  const rawNum = parseFloat(inp.value.replace(/\./g,'').replace(',','.')) || 0;
+  orFilas[idx].vol = rawNum || '';
+  // Auto-formato con punto de miles mientras escribe
+  const cursorEnd = inp.selectionEnd;
+  const digits = inp.value.replace(/\./g,'').replace(/[^0-9]/g,'');
+  if(digits.length > 0){
+    const numVal = parseInt(digits, 10);
+    const formatted = numVal.toLocaleString('es-CL'); // e.g. 9.910
+    inp.value = formatted;
+  }
   // Actualizar solo los % y Meta CALTO sin re-renderizar toda la tabla
-  const totalOfertado = orFilas.reduce((s,f) => s + (parseFloat(f.vol)||0), 0);
+  const totalOfertado = orFilas.reduce((s,f) => s + (parseFloat(String(f.vol).replace(/\./g,''))||0), 0);
   // Actualizar fila total en tfoot
   const tfTotal = document.getElementById('or-total-ofertado');
   const tfMeta  = document.getElementById('or-meta-calto');
   if(tfTotal) tfTotal.textContent = totalOfertado > 0
-    ? totalOfertado.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3})+' m³' : '—';
+    ? orFmt(totalOfertado, 3)+' m³' : '—';
   if(tfTotal) tfTotal.style.textAlign = 'right';
   // Recalcular % y meta de cada fila
   document.querySelectorAll('#or-tbody tr').forEach((tr, i) => {
@@ -1612,16 +1632,15 @@ window.orCambioVol = function(inp){
     const fundoGlobal = document.getElementById('or-fundo')?.value || '';
     const vma = vmaDeRodal(fila.rodal, fundoGlobal);
     const volN = vma != null ? volNormalParaVMA(vma) : null;
-    const vol = parseFloat(fila.vol) || 0;
+    const vol = parseFloat(String(fila.vol||'').replace(/\./g,'')) || 0;
     const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
     const metaProp = (volN != null) ? pct * volN : null;
     const celdas = tr.querySelectorAll('td');
     // td[4] = % del total, td[6] = Meta CALTO prop
     if(celdas[4]) celdas[4].textContent = totalOfertado > 0
-      ? (pct*100).toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1})+'%' : '—';
+      ? (pct*100).toFixed(1).replace('.',',')+'%' : '—';
     if(celdas[6]) {
-      celdas[6].textContent = metaProp != null
-        ? metaProp.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3}) : '—';
+      celdas[6].textContent = metaProp != null ? orFmt(metaProp, 3) : '—';
       celdas[6].style.fontWeight = metaProp != null ? '700' : '400';
       celdas[6].style.color = metaProp != null ? 'var(--verde-oscuro)' : '#aaa';
     }
@@ -1632,13 +1651,13 @@ window.orCambioVol = function(inp){
     const fundoGlobal = document.getElementById('or-fundo')?.value || '';
     const vma = vmaDeRodal(fila.rodal, fundoGlobal);
     const volN = vma != null ? volNormalParaVMA(vma) : null;
-    const vol = parseFloat(fila.vol) || 0;
+    const vol = parseFloat(String(fila.vol||'').replace(/\./g,'')) || 0;
     const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
     if(volN != null) metaCaltoTotal += pct * volN;
   });
   if(tfMeta) {
     tfMeta.textContent = orFilas.length > 0 && totalOfertado > 0
-      ? metaCaltoTotal.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3})+' m³' : '—';
+      ? orFmt(metaCaltoTotal, 3)+' m³' : '—';
   }
 };
 
@@ -1717,7 +1736,7 @@ window.cargarOfertaRodales = async function(){
       orFilas = (data.rodales || []).map(r => ({ rodal: String(r.rodal||''), vol: String(r.vol_ofertado||'') }));
       if(data.meta_calto != null){
         info.style.display = 'block';
-        info.innerHTML = `✅ Meta CALTO guardada: <strong>${data.meta_calto.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3})} m³</strong>`;
+        info.innerHTML = `✅ Meta CALTO guardada: <strong>${orFmt(data.meta_calto, 3)} m³</strong>`;
       }
     }
   } catch(e){ /* sin conexión */ }
@@ -1733,13 +1752,13 @@ window.guardarOfertaRodales = async function(){
   if(!fundoGlobal){ toast('Selecciona un fundo'); return; }
   if(orFilas.length === 0){ toast('Agrega al menos un rodal'); return; }
 
-  const totalOfertado = orFilas.reduce((s,f) => s + (parseFloat(f.vol)||0), 0);
+  const totalOfertado = orFilas.reduce((s,f) => s + (parseFloat(String(f.vol||'').replace(/\./g,''))||0), 0);
   let metaCaltoTotal = 0;
 
   const rodalesPayload = orFilas.map(fila => {
     const vma = (fundoGlobal && fila.rodal) ? vmaDeRodal(fila.rodal, fundoGlobal) : null;
     const volN = vma != null ? volNormalParaVMA(vma) : null;
-    const vol = parseFloat(fila.vol) || 0;
+    const vol = parseFloat(String(fila.vol||'').replace(/\./g,'')) || 0;
     const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
     const metaProp = (volN != null) ? pct * volN : null;
     if(metaProp != null) metaCaltoTotal += metaProp;
@@ -1764,7 +1783,7 @@ window.guardarOfertaRodales = async function(){
     });
     const info = document.getElementById('or-guardado-info');
     info.style.display = 'block';
-    info.innerHTML = `✅ Meta CALTO guardada: <strong>${metaCaltoTotal.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3})} m³</strong>`;
+    info.innerHTML = `✅ Meta CALTO guardada: <strong>${orFmt(metaCaltoTotal, 3)} m³</strong>`;
     toast('Meta CALTO guardada correctamente');
   } catch(e){
     toast('Error al guardar: ' + e.message);
