@@ -80,6 +80,30 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
 .lkpi-val{font-size:24px;font-weight:800;line-height:1}
 .lkpi-val.blue{color:var(--blue)}.lkpi-val.ok{color:var(--green)}.lkpi-val.warn{color:var(--amber)}.lkpi-val.bad{color:var(--red)}
 .lkpi-sub{font-size:10px;color:var(--text3);margin-top:3px}
+/* ── KPIs DUAL CALTO / FORMIN (solo T2/T3) ── */
+.dual-table{width:100%;border-collapse:collapse;margin-bottom:.625rem;font-size:11px}
+.dual-table td,.dual-table th{padding:5px 8px;vertical-align:middle;border:1px solid var(--border);text-align:center}
+/* encabezados */
+.dual-table .th-prod{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);background:transparent;text-align:center}
+.dual-table .th-calto{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#1a6e1a;background:rgba(60,180,60,.13)}
+.dual-table .th-formin{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);background:var(--bg2)}
+/* col izquierda — etiqueta + valor */
+.dual-table .td-left{background:transparent;text-align:center;padding:5px 8px;vertical-align:middle}
+.dual-table .dk-row-label{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}
+.dual-table .dk-row-val{font-size:17px;font-weight:800;color:var(--text);line-height:1.1}
+.dual-table .dk-row-val.blue{color:var(--blue)}
+.dual-table .dk-row-sub{font-size:9px;color:var(--text3)}
+/* celdas CALTO */
+.dual-table .td-calto{background:rgba(60,180,60,.06)}
+.dual-table .td-calto .dk-val{font-size:18px;font-weight:800;color:var(--text);line-height:1.1}
+.dual-table .td-calto .dk-val.blue{color:var(--blue)}
+.dual-table .td-calto .dk-val.bad{color:var(--red)}
+/* celdas FORMIN */
+.dual-table .td-formin{background:var(--bg2)}
+.dual-table .td-formin .dk-val{font-size:14px;font-weight:600;color:var(--text2);line-height:1.1}
+/* descripción y sub */
+.dual-table .dk-desc{font-size:9px;color:var(--text3);margin-bottom:2px}
+.dual-table .dk-sub{font-size:9px;color:var(--text3);margin-top:1px}
 .linea-extras{display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .lextra{background:var(--bg);border-radius:6px;padding:6px 9px}
 .lextra-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px;line-height:1.2}
@@ -1149,25 +1173,29 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
         <div class="exec-kpi-val">${fmt0(volTotal)} <span style="font-size:12px;opacity:.7">m³</span></div>
         <div class="exec-kpi-sub">${prodTodo.length} reportes en el período</div>
       </div>
-      <div class="exec-kpi">
-        <div class="exec-kpi-label"><i class="ti ti-target"></i> Meta acumulada</div>
-        <div class="exec-kpi-val">${fmt0(metaAcum)} <span style="font-size:12px;opacity:.7">m³</span></div>
-        <div class="exec-kpi-sub">Meta total mes: ${fmt0(metaTotal)} m³</div>
+      <div class="exec-kpi" id="cons-meta-kpi">
+        <div class="exec-kpi-label"><i class="ti ti-target"></i> Meta acumulada <span style="font-size:8px;opacity:.5;font-weight:400;margin-left:4px">CALTO</span></div>
+        <div class="exec-kpi-val" id="cons-meta-val">— <span style="font-size:12px;opacity:.7">m³</span></div>
+        <div class="exec-kpi-sub" id="cons-meta-sub">cargando…</div>
+        <div style="margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;color:rgba(255,255,255,.55)"><span style="font-size:8px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">Formin</span> ${fmt0(metaAcum)} m³ acum. / ${fmt0(metaTotal)} m³ total</div>
       </div>
-      <div class="exec-kpi">
-        <div class="exec-kpi-label"><i class="ti ti-rosette"></i> Cumplimiento</div>
-        <div class="exec-kpi-val ${pctCls}">${isNaN(cumpl)?'—':Math.round(cumpl)+'%'}</div>
-        <div class="exec-kpi-sub">${fmt0(volTotal)} / ${fmt0(metaAcum)} m³</div>
+      <div class="exec-kpi" id="cons-cumpl-kpi">
+        <div class="exec-kpi-label"><i class="ti ti-rosette"></i> Cumplimiento <span style="font-size:8px;opacity:.5;font-weight:400;margin-left:4px">CALTO</span></div>
+        <div class="exec-kpi-val" id="cons-cumpl-val">—</div>
+        <div class="exec-kpi-sub" id="cons-cumpl-sub">cargando…</div>
+        <div style="margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;color:rgba(255,255,255,.55)"><span style="font-size:8px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">Formin</span> ${isNaN(cumpl)?'—':Math.round(cumpl)+'%'}</div>
       </div>
     </div>
     <div class="exec-extras">
       <div class="exec-extra">
-        <div class="exec-extra-label">m³ total meta</div>
-        <div class="exec-extra-val">${fmt0(metaTotal)} m³</div>
+        <div class="exec-extra-label">Meta total <span style="opacity:.5;font-size:8px">CALTO</span></div>
+        <div class="exec-extra-val" id="cons-metatotal-val">— m³</div>
+        <div style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.1);font-size:9px;color:rgba(255,255,255,.5)"><span style="font-size:7px;text-transform:uppercase;letter-spacing:.05em">Formin</span> ${fmt0(metaTotal)} m³</div>
       </div>
       <div class="exec-extra">
-        <div class="exec-extra-label">Falta por hacer</div>
-        <div class="exec-extra-val">${fmt0(falta)} m³</div>
+        <div class="exec-extra-label">Falta por hacer <span style="opacity:.5;font-size:8px">CALTO</span></div>
+        <div class="exec-extra-val" id="cons-falta-val">— m³</div>
+        <div style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.1);font-size:9px;color:rgba(255,255,255,.5)"><span style="font-size:7px;text-transform:uppercase;letter-spacing:.05em">Formin</span> ${fmt0(falta)} m³</div>
       </div>
       <div class="exec-extra">
         <div class="exec-extra-label">Prom m³/día (${diasConProd} días)</div>
@@ -1178,6 +1206,54 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
         <div class="exec-extra-val">${fmt0(proyecc)} m³</div>
       </div>
     </div>`;
+
+  // ── Carga CALTO consolidado async ─────────────────────────────────────
+  if(mesStr) {
+    (async () => {
+      const lineasT2T3 = lineasReales.filter(l => /T2|T3/i.test(l));
+      if(!lineasT2T3.length) return;
+      let metaCaltoTotal = 0;
+      for(const lin of lineasT2T3) {
+        const datos = await cargarOfertaRodalesLinea(lin, mesStr);
+        if(!datos) continue;
+        let mc = datos.meta_calto != null ? parseFloat(datos.meta_calto) : 0;
+        if(!datos.meta_calto && Array.isArray(datos.rodales)) {
+          const totalOf = datos.rodales.reduce((s,f)=>s+(parseFloat(f.vol_ofertado)||0),0);
+          datos.rodales.forEach(f => {
+            const vn = volNormalParaVMA_dash(parseFloat(f.vma));
+            const vol = parseFloat(f.vol_ofertado)||0;
+            if(vn != null) mc += (totalOf>0 ? vol/totalOf : 0) * vn;
+          });
+        }
+        metaCaltoTotal += mc;
+      }
+      // metaCaltoTotal está en miles (×1000 para m³)
+      const metaCaltoTotal1000 = metaCaltoTotal * 1000;
+      // Meta acumulada CALTO hasta ayer
+      const [aC,mC] = mesStr.split('-').map(Number);
+      const diasMesC = new Date(aC,mC,0).getDate();
+      const hoyC = new Date(); const ayerC = new Date(hoyC); ayerC.setDate(ayerC.getDate()-1);
+      const inicioMesC = new Date(aC,mC-1,1); const finMesC = new Date(aC,mC-1,diasMesC);
+      const ayerEfC = ayerC<inicioMesC?inicioMesC:(ayerC>finMesC?finMesC:ayerC);
+      const diasHastaAyerC = Math.max(0, Math.round((ayerEfC-inicioMesC)/86400000)+1);
+      const metaCaltoAcum1000 = diasMesC>0 ? (metaCaltoTotal1000/diasMesC)*diasHastaAyerC : 0;
+      const pctCalto = metaCaltoAcum1000>0 ? volTotal/metaCaltoAcum1000*100 : NaN;
+      const pctCls2 = isNaN(pctCalto)?'':(pctCalto>=100?'ok':pctCalto>=85?'warn':'bad');
+      const faltaCalto = Math.max(0, metaCaltoTotal1000 - volTotal);
+      const elMeta = document.getElementById('cons-meta-val');
+      const elMetaSub = document.getElementById('cons-meta-sub');
+      const elCumpl = document.getElementById('cons-cumpl-val');
+      const elCumplSub = document.getElementById('cons-cumpl-sub');
+      const elMetaTotal = document.getElementById('cons-metatotal-val');
+      const elFalta = document.getElementById('cons-falta-val');
+      if(elMeta) elMeta.innerHTML = `${fmt0(metaCaltoAcum1000)} <span style="font-size:12px;opacity:.7">m³</span>`;
+      if(elMetaSub) elMetaSub.textContent = `Meta total mes: ${fmt0(metaCaltoTotal1000)} m³`;
+      if(elCumpl) { elCumpl.className = `exec-kpi-val ${pctCls2}`; elCumpl.textContent = isNaN(pctCalto)?'—':Math.round(pctCalto)+'%'; }
+      if(elCumplSub) elCumplSub.textContent = `${fmt0(volTotal)} / ${fmt0(metaCaltoAcum1000)} m³`;
+      if(elMetaTotal) elMetaTotal.textContent = `${fmt0(metaCaltoTotal1000)} m³`;
+      if(elFalta) elFalta.textContent = `${fmt0(faltaCalto)} m³`;
+    })();
+  }
 
   // ── Render columnas por línea ─────────────────────────────────────────
   const lineasWrap = document.getElementById('exec-lineas');
@@ -1203,7 +1279,7 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
     const diasRestL = mesTerminado ? 0 : Math.max(0, diasMes-diasLin);
     const proyecLin = mesTerminado ? volLin : volLin + promLin*diasRestL;
 
-    const pctL = isNaN(cumplLin)?'':(cumplLin>=100?'ok':cumplLin>=85?'warn':'bad');
+    const pctL = isNaN(cumplLin)?'':(cumplLin>=100?'blue':'bad');
     const linClass = LIN_CLASSES[li % LIN_CLASSES.length];
 
     // ── Desglose madereo Torre vs Skidder para esta línea ────────────────
@@ -1295,6 +1371,72 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
         </div>
       </div>
       <div class="linea-body">
+        ${esT2oT3 ? `
+        <table class="dual-table" id="dual-kpis-${lin.replace(/\s+/g,'-')}">
+          <thead>
+            <tr>
+              <th class="th-prod">Producción</th>
+              <th class="th-calto">CALTO</th>
+              <th class="th-formin">FORMIN</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Fila 1: Producido real -->
+            <tr>
+              <td class="td-left">
+                <div class="dk-row-label">Producido real</div>
+                <div class="dk-row-val blue">${fmt0(volLin)}</div>
+                <div class="dk-row-sub">m³</div>
+              </td>
+              <td class="td-calto" id="calto-meta-acum-${lin.replace(/\s+/g,'-')}">
+                <div class="dk-desc">Meta acum.</div>
+                <div class="dk-val" style="color:var(--text3)">—</div>
+                <div class="dk-sub">m³</div>
+              </td>
+              <td class="td-formin">
+                <div class="dk-desc">Meta acum.</div>
+                <div class="dk-val">${fmt0(metaAcumLin)}</div>
+                <div class="dk-sub">m³</div>
+              </td>
+            </tr>
+            <!-- Fila 2: Prom/día -->
+            <tr>
+              <td class="td-left">
+                <div class="dk-row-label">Prom/día</div>
+                <div class="dk-row-val">${fmt0(promLin)}</div>
+                <div class="dk-row-sub">m³</div>
+              </td>
+              <td class="td-calto" id="calto-cumpl-${lin.replace(/\s+/g,'-')}">
+                <div class="dk-desc">% cumplim.</div>
+                <div class="dk-val" style="color:var(--text3)">—</div>
+                <div class="dk-sub">cargando…</div>
+              </td>
+              <td class="td-formin">
+                <div class="dk-desc">% cumplim.</div>
+                <div class="dk-val">${isNaN(cumplLin)?'—':Math.round(cumplLin)+'%'}</div>
+              </td>
+            </tr>
+            <!-- Fila 3: Proyección -->
+            <tr>
+              <td class="td-left">
+                <div class="dk-row-label">Proyección${mesTerminado ? '' : ` (${diasRestL} d.)`}</div>
+                <div class="dk-row-val">${fmt0(proyecLin)}</div>
+                <div class="dk-row-sub">m³</div>
+              </td>
+              <td class="td-calto" id="calto-falta-${lin.replace(/\s+/g,'-')}">
+                <div class="dk-desc">¿Cuánto falta?</div>
+                <div class="dk-val" style="color:var(--text3)">—</div>
+                <div class="dk-sub">m³</div>
+              </td>
+              <td class="td-formin">
+                <div class="dk-desc">¿Cuánto falta?</div>
+                <div class="dk-val">${fmt0(faltaLin)}</div>
+                <div class="dk-sub">m³</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        ` : `
         <div class="linea-kpis">
           <div class="lkpi">
             <div class="lkpi-label">Producido</div>
@@ -1312,7 +1454,9 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
             <div class="lkpi-sub">${fmt0(volLin)}/${fmt0(metaAcumLin)}</div>
           </div>
         </div>
+        `}
         <div class="linea-extras">
+          ${!esT2oT3 ? `
           <div class="lextra">
             <div class="lextra-label">Meta total</div>
             <div class="lextra-val">${fmt0(metaLin)} m³</div>
@@ -1321,6 +1465,8 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
             <div class="lextra-label">Falta</div>
             <div class="lextra-val">${fmt0(faltaLin)} m³</div>
           </div>
+          ` : ''}
+          ${!esT2oT3 ? `
           <div class="lextra">
             <div class="lextra-label">Prom/día</div>
             <div class="lextra-val">${fmt0(promLin)} m³</div>
@@ -1329,11 +1475,57 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
             <div class="lextra-label">Proyección${mesTerminado ? '' : ` (${diasRestL} d.)`}</div>
             <div class="lextra-val">${fmt0(proyecLin)} m³</div>
           </div>
+          ` : ''}
         </div>
         ${desgloseHTML}
       </div>
       ${esT2oT3 ? `<div class="calto-panel" data-lin="${lin}" data-mes="${mesStr||''}"><div class="calto-loading"><i class="ti ti-loader-2" style="animation:spin .8s linear infinite"></i> Cargando…</div></div>` : ''}`;
     lineasWrap.appendChild(card);
+
+    // Para T2/T3: cargar datos CALTO automáticamente (sin abrir panel)
+    if(esT2oT3 && mesStr) {
+      (async () => {
+        const datos = await cargarOfertaRodalesLinea(lin, mesStr);
+        if(!datos) return;
+        let metaCalto = datos.meta_calto != null ? parseFloat(datos.meta_calto) : 0;
+        const totalOf = datos.total_ofertado != null ? parseFloat(datos.total_ofertado)
+          : (Array.isArray(datos.rodales) ? datos.rodales.reduce((s,f)=>s+(parseFloat(f.vol_ofertado)||0),0) : 0);
+        if(!datos.meta_calto && Array.isArray(datos.rodales)) {
+          datos.rodales.forEach(f => {
+            const vn = volNormalParaVMA_dash(parseFloat(f.vma));
+            const vol = parseFloat(f.vol_ofertado)||0;
+            if(vn != null) metaCalto += (totalOf>0 ? vol/totalOf : 0) * vn;
+          });
+        }
+        const [a,m] = mesStr.split('-').map(Number);
+        const diasMesC = new Date(a,m,0).getDate();
+        const hoy = new Date(); const ayer = new Date(hoy); ayer.setDate(ayer.getDate()-1);
+        const inicioMes = new Date(a,m-1,1); const finMes = new Date(a,m-1,diasMesC);
+        const mesTerminadoC = hoy.toISOString().slice(0,10) > `${mesStr}-${String(diasMesC).padStart(2,'0')}`;
+        const ayerEf = ayer<inicioMes?inicioMes:(ayer>finMes?finMes:ayer);
+        const diasHastaAyer = Math.max(0, Math.round((ayerEf-inicioMes)/86400000)+1);
+        const metaCaltoAcum = diasMesC>0 ? (metaCalto/diasMesC)*diasHastaAyer : 0;
+        const volLinActual = volLin;
+        const pctCumpl = metaCaltoAcum>0 ? volLinActual/(metaCaltoAcum*1000)*100 : NaN;
+        const pctCls = isNaN(pctCumpl)?'':(pctCumpl>=100?'ok':pctCumpl>=85?'warn':'bad');
+        const linKey = lin.replace(/\s+/g,'-');
+        const metaCaltoTotal1000 = metaCalto * 1000;
+        const metaCaltoAcum1000 = metaCaltoAcum * 1000;
+        const faltaCalto = Math.max(0, metaCaltoTotal1000 - volLinActual);
+        // Prom/día y Proyección se calculan con el producido real (igual para CALTO y FORMIN)
+        const promCalto = diasHastaAyer>0 ? volLinActual/diasHastaAyer : 0;
+        const proyecCalto = mesTerminadoC ? volLinActual : (promCalto * diasMesC);
+        const celdaMetaAcum  = document.getElementById(`calto-meta-acum-${linKey}`);
+        const celdaCumpl     = document.getElementById(`calto-cumpl-${linKey}`);
+        const celdaFalta     = document.getElementById(`calto-falta-${linKey}`);
+        const celdaProyec    = document.getElementById(`calto-proyec-${linKey}`);
+        if(celdaMetaAcum) celdaMetaAcum.innerHTML = `<div style="font-size:9px;color:var(--text3)">Meta ¿cuánto debería llevar?</div><div class="dk-val" style="color:var(--text2)">${fmt0(metaCaltoAcum1000)}</div><div class="dk-sub">m³</div>`;
+        const pctClsDual = isNaN(pctCumpl)?'':(pctCumpl>=100?'blue':'bad');
+        if(celdaCumpl)    celdaCumpl.innerHTML    = `<div class="dk-desc">% cumplim.</div><div class="dk-val ${pctClsDual}">${isNaN(pctCumpl)?'—':Math.round(pctCumpl)+'%'}</div>`;
+        if(celdaFalta)    celdaFalta.innerHTML    = `<div style="font-size:9px;color:var(--text3)">¿Cuánto falta?</div><div class="dk-val">${fmt0(faltaCalto)}</div><div class="dk-sub">m³</div>`;
+        if(celdaProyec)   celdaProyec.innerHTML   = `<div class="dk-val">${fmt0(proyecCalto)}</div><div class="dk-sub">m³</div>`;
+      })();
+    }
   }
 
   // ── Últimos 3 días ────────────────────────────────────────────────────────
@@ -3165,6 +3357,24 @@ window.toggleCalto = async function(btn, lin, mesStr) {
     </div>
     ${tablasHTML}`;
   panel.dataset.cargado = '1';
+
+  // Actualizar celdas CALTO en el layout dual
+  const linKey = lin.replace(/\s+/g,'-');
+  const metaCaltoTotal1000_t = metaCalto * 1000;
+  const metaCaltoAcum1000_t  = metaCaltoAcum * 1000;
+  const faltaCalto_t = Math.max(0, metaCaltoTotal1000_t - volLinActual);
+  const mesTerminadoT = mesStr ? (() => { const [a,m]=mesStr.split('-').map(Number); return new Date().toISOString().slice(0,10) > `${mesStr}-${String(new Date(a,m,0).getDate()).padStart(2,'0')}`; })() : false;
+  const promCalto_t = diasHastaAyer>0 ? volLinActual/diasHastaAyer : 0;
+  const proyecCalto_t = mesTerminadoT ? volLinActual : (promCalto_t * diasMesC);
+  const celdaMetaAcum2  = document.getElementById(`calto-meta-acum-${linKey}`);
+  const celdaCumpl2     = document.getElementById(`calto-cumpl-${linKey}`);
+  const celdaFalta2     = document.getElementById(`calto-falta-${linKey}`);
+  const celdaProyec2    = document.getElementById(`calto-proyec-${linKey}`);
+  if(celdaMetaAcum2) celdaMetaAcum2.innerHTML = `<div style="font-size:9px;color:var(--text3)">Meta ¿cuánto debería llevar?</div><div class="dk-val" style="color:var(--text2)">${fmt0(metaCaltoAcum1000_t)}</div><div class="dk-sub">m³</div>`;
+  const pctClsDual2 = isNaN(pctCumpl)?'':(pctCumpl>=100?'blue':'bad');
+  if(celdaCumpl2)    celdaCumpl2.innerHTML    = `<div class="dk-desc">% cumplim.</div><div class="dk-val ${pctClsDual2}">${isNaN(pctCumpl)?'—':Math.round(pctCumpl)+'%'}</div>`;
+  if(celdaFalta2)    celdaFalta2.innerHTML    = `<div style="font-size:9px;color:var(--text3)">¿Cuánto falta?</div><div class="dk-val">${fmt0(faltaCalto_t)}</div><div class="dk-sub">m³</div>`;
+  if(celdaProyec2)   celdaProyec2.innerHTML   = `<div class="dk-val">${fmt0(proyecCalto_t)}</div><div class="dk-sub">m³</div>`;
 };
 </script>
 
