@@ -2105,12 +2105,26 @@ function renderBandejaMatch(card){
     // repetir el caso real de padre e hijo con nombre parecido mezclados por error.
     const t = card.sugerido;
     const etiquetaCentro = t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente de asignar";
+    // NUEVO (26 oct 2026): cuando el nombre de la carpeta no calza con el de Dotación, puede
+    // ser una persona distinta (padre e hijo) O la misma persona con el nombre corregido en
+    // algún momento (ej. por RRHH) sin que Dotación se haya actualizado. Mientras no se agregue
+    // el RUT al nombre de la carpeta (para comparar RUT automáticamente — pendiente, ver
+    // conversación con Fabián 26 oct 2026), se ofrece esta casilla para que, bajo el propio
+    // criterio de quien confirma (revisando el RUT/papeles), se guarde de una vez el nombre de
+    // la carpeta como el nombre correcto del trabajador en Dotación.
+    const nombreDistinto = normalizar(t.nombre) !== normalizar(card.nombreCarpeta);
     cont.innerHTML = `
       <div class="bandeja-match-falta" style="margin-bottom:8px">⚠️ El nombre de la carpeta no coincide exactamente con nadie de Dotación — esto es solo una sugerencia. Revisa bien el RUT antes de confirmar: podría ser una persona distinta con nombre parecido (ej. padre e hijo).</div>
       <div class="bandeja-match-ok">
         <div>
           <div class="bandeja-match-nombre">¿Es esta persona? ${escapeHtml(t.nombre)}</div>
           <div class="bandeja-match-detalle">${escapeHtml(t.rut || "—")} · ${escapeHtml(etiquetaCentro)} · ${escapeHtml(t.empresa || "—")}</div>
+          ${nombreDistinto ? `
+            <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12.5px;color:var(--text2);cursor:pointer;max-width:420px">
+              <input type="checkbox" id="bandeja-corregir-nombre-${card.id}" style="flex-shrink:0">
+              Es la misma persona, pero el nombre correcto es el de la carpeta — actualizar el nombre en Dotación a "${escapeHtml(card.nombreCarpeta)}"
+            </label>
+          ` : ""}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-primary" onclick="confirmarSugerenciaBandeja('${card.id}')">Sí, es esta persona</button>
@@ -2172,6 +2186,18 @@ window.elegirTrabajadorBandeja = async function(cardId, id){
 window.confirmarSugerenciaBandeja = async function(cardId){
   const card = encontrarCarpetaBandeja(cardId);
   if(!card || !card.sugerido) return;
+  const checkbox = document.getElementById(`bandeja-corregir-nombre-${cardId}`);
+  if(checkbox && checkbox.checked){
+    const nuevoNombre = card.nombreCarpeta.trim();
+    try{
+      await setDoc(doc(db, "dotacion", card.sugerido.id), { nombre: nuevoNombre }, { merge: true });
+      card.sugerido.nombre = nuevoNombre;
+      const enDotacion = (dotDatosTodos || []).find(x => x.id === card.sugerido.id);
+      if(enDotacion) enDotacion.nombre = nuevoNombre;
+    }catch(e){
+      alert("No se pudo actualizar el nombre del trabajador en Dotación. Se asignó igual la carpeta, pero corrige el nombre manualmente en Dotación de personal.");
+    }
+  }
   await asignarTrabajadorACarpetaBandeja(card, card.sugerido);
 };
 
