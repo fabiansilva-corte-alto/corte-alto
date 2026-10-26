@@ -906,6 +906,9 @@ window.mostrarSeccion = function(id){
     }
     if(!tiposDocumentoCargados) fetchTiposDocumento().catch(()=>{});
     if(bovedaConteos === null) fetchBovedaConteos().catch(()=>{});
+    // Necesario para el selector de fundo de "Reclasificar a cambio de fundo" en cada
+    // documento — se precarga aquí para que ya esté listo cuando el usuario lo abra.
+    if(!fundosCatalogoCargados) fetchFundosCatalogo().catch(()=>{});
   }
   if(id === "anexos"){
     fetchAnexosPendientes(false);
@@ -2689,6 +2692,16 @@ function renderDocItem(d){
         ? `<button class="btn-secondary" style="color:var(--red)" onclick="bovedaQuitarVigencia('${d.id}', this)">Quitar vigencia</button>`
         : `<button class="btn-secondary" onclick="bovedaMarcarVigente('${d.id}', this)">Marcar vigente</button>`)
     : "";
+  // NUEVO (26 oct 2026): reclasificación manual a "Anexo — cambio de fundo" desde la Bóveda,
+  // eligiendo el fundo a mano. Complementa (no reemplaza) "Revisar anexos sin clasificar"
+  // (Configuración): esa herramienta solo encuentra documentos donde el nombre del archivo
+  // menciona el fundo tal cual aparece en el catálogo — si dice "Los Alpes 1" pero el fundo
+  // real es "Los Alpes Hijuela 1", buscarFundoEnTexto() no lo detecta y el documento se queda
+  // en "Anexo — otro cambio" para siempre sin esto. No se ofrece para "contrato" (ese tipo
+  // tiene su propio flujo de confirmación de fundo en Anexos pendientes).
+  const reclasificarBtn = (d.tipo !== "anexo_fundo" && d.tipo !== "contrato")
+    ? `<button class="btn-secondary" onclick="toggleReclasificarFundo('${d.id}')">Reclasificar a cambio de fundo</button>`
+    : "";
   return `
     <div class="doc-item">
       <label style="display:flex;align-items:center;cursor:${bovedaMoverEjecutando ? "default" : "pointer"}" title="Seleccionar para mover a otro trabajador">
@@ -2700,12 +2713,65 @@ function renderDocItem(d){
       </label>
       <div class="doc-item-acciones">
         ${vigenteBtn}
+        ${reclasificarBtn}
         <button class="btn-secondary" onclick="bovedaVerDocumento('${escapeHtml(d.storagePath).replace(/'/g,"\\'")}', this)">Ver</button>
         <button class="btn-secondary" style="color:var(--red)" onclick="bovedaEliminarDocumento('${d.id}', '${escapeHtml(d.storagePath).replace(/'/g,"\\'")}', '${escapeHtml(d.nombreArchivo||"").replace(/'/g,"\\'")}')">Eliminar</button>
       </div>
+      ${reclasificarBtn ? `<div id="reclasificar-fundo-${d.id}" class="hidden" style="width:100%;margin-top:8px"></div>` : ""}
     </div>
   `;
 }
+
+window.toggleReclasificarFundo = async function(docId){
+  const panel = document.getElementById(`reclasificar-fundo-${docId}`);
+  if(!panel) return;
+  if(!panel.classList.contains("hidden")){
+    panel.classList.add("hidden");
+    panel.innerHTML = "";
+    return;
+  }
+  panel.classList.remove("hidden");
+  panel.innerHTML = `<div style="font-size:12px;color:var(--text3)">Cargando fundos…</div>`;
+  if(!fundosCatalogoCargados){
+    try{ await fetchFundosCatalogo(); }catch(e){}
+  }
+  const opciones = (FUNDOS_CATALOGO || []).filter(f => f.activo !== false);
+  if(!opciones.length){
+    panel.innerHTML = `<div style="font-size:12px;color:var(--text3)">No se pudo cargar el catálogo de fundos. Intenta de nuevo.</div>`;
+    return;
+  }
+  panel.innerHTML = `
+    <div style="padding:8px 10px;background:var(--amber-bg);border-radius:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:12px;color:var(--text)">Reclasificar como Anexo — cambio de fundo, fundo:</span>
+      <select id="reclasificar-fundo-sel-${docId}" class="field-input" style="height:32px;font-size:12.5px;width:auto;min-width:160px;margin-bottom:0">
+        ${opciones.map(f => `<option value="${escapeHtml(f.nombre)}">${escapeHtml(f.nombre)}</option>`).join("")}
+      </select>
+      <button class="btn-primary" style="padding:4px 10px;font-size:12.5px" onclick="confirmarReclasificarFundoBoveda('${docId}', this)">Confirmar</button>
+      <button class="btn-secondary" style="padding:4px 10px;font-size:12.5px" onclick="toggleReclasificarFundo('${docId}')">Cancelar</button>
+    </div>
+  `;
+};
+
+window.confirmarReclasificarFundoBoveda = async function(docId, boton){
+  const select = document.getElementById(`reclasificar-fundo-sel-${docId}`);
+  const fundo = select ? select.value : "";
+  if(!fundo) return;
+  const original = boton.textContent;
+  boton.disabled = true;
+  boton.textContent = "Guardando…";
+  try{
+    await setDoc(doc(db, "documentos", docId), { tipo: "anexo_fundo", fundo }, { merge: true });
+    const item = (bovedaDocumentos || []).find(d => d.id === docId);
+    if(item){ item.tipo = "anexo_fundo"; item.fundo = fundo; item.vigente = item.vigente || false; }
+    anexosDatos = null; // se recalcula el cruce de Anexos pendientes la próxima vez que se abra esa sección
+    bovedaConteos = null;
+    renderDocumentosBoveda();
+  }catch(e){
+    alert("No se pudo reclasificar. Intenta de nuevo.");
+    boton.disabled = false;
+    boton.textContent = original;
+  }
+};
 
 window.toggleSeleccionBoveda = function(docId, marcado){
   if(marcado) bovedaSeleccionados.add(docId);
