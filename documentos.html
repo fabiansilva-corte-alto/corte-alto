@@ -3286,7 +3286,10 @@ window.renderAnexosPendientes = function(){
     }
     return `
       <tr>
-        <td class="nombre-cell">${escapeHtml(t.nombre)}</td>
+        <td class="nombre-cell">
+          ${escapeHtml(t.nombre)}
+          <div style="margin-top:4px"><button class="btn-secondary" style="padding:3px 8px;font-size:11.5px" onclick="irABovedaDesdeAnexos('${f.id}')" title="Ver los documentos de este trabajador en la Bóveda">Ver en Bóveda</button></div>
+        </td>
         <td><span class="badge-centro${t.centro ? "" : " pendiente"}">${escapeHtml(etiquetaCentro)}</span></td>
         <td>${escapeHtml(f.fundoActual || "—")} <span style="color:var(--text3)">· ${fechaLegibleAnexos(f.fechaCuadrilla)} (${escapeHtml(f.jefeFaena||"—")})</span></td>
         <td>${anexoTxt}</td>
@@ -3294,6 +3297,15 @@ window.renderAnexosPendientes = function(){
       </tr>
     `;
   }).join("");
+};
+
+// Atajo pedido por Fabián (26 oct 2026): desde cualquier fila de Anexos pendientes, ir directo
+// a la carpeta de ese trabajador en la Bóveda — para revisar a mano si el anexo existe pero
+// quedó mal clasificado (ej. como "Anexo — otro cambio" en vez de "cambio de fundo"), sin tener
+// que salir de esta pantalla a buscarlo manualmente en Bóveda de documentos.
+window.irABovedaDesdeAnexos = function(trabajadorId){
+  mostrarSeccion("boveda");
+  bovedaElegirTrabajador(trabajadorId);
 };
 
 // Un clic desde la fila "Pendiente": el trabajador ya tiene un anexo_fundo del fundo donde está
