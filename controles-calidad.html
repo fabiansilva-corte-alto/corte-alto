@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1b5e20">
+<title>Controles de Calidad · Corte Alto</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{--v:#1b5e20;--vc:#e8f5e9;--r:#c62828;--rc:#ffebee;--ac:#fff8e1;--g:#607d8b;--bd:#dfe3e6;--bg:#f4f6f5;--tx:#1f2a24}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);font-size:15px}
+header{background:linear-gradient(135deg,#1b5e20,#2e7d32);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20;height:56px}
+header a{color:#fff;text-decoration:none;font-size:24px;line-height:1}
+header h1{font-size:17px;margin:0;font-weight:600}
+header small{display:block;font-size:11px;opacity:.85;font-weight:400}
+.banner{background:var(--r);color:#fff;padding:10px 14px;font-size:13px;display:none}
+.tabs{display:flex;background:#fff;border-bottom:1px solid var(--bd);position:sticky;top:56px;z-index:19}
+.tabs button{flex:1;border:0;background:none;padding:12px 4px;font-size:14px;color:var(--g);border-bottom:3px solid transparent;cursor:pointer}
+.tabs button.on{color:var(--v);border-bottom-color:var(--v);font-weight:600}
+main{max-width:780px;margin:0 auto;padding:12px}
+.sec{display:none}.sec.on{display:block}
+.card{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+.card h2{font-size:15px;margin:0 0 10px;color:var(--v)}
+label.l{display:block;font-size:12px;color:var(--g);margin:10px 0 4px}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:15px;background:#fff;color:var(--tx);font-family:inherit}
+.otro{display:none;margin-top:6px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{border:0;border-radius:8px;padding:11px 14px;font-size:15px;cursor:pointer;background:#eceff1;color:var(--tx)}
+.btn.p{background:var(--v);color:#fff;font-weight:600}
+.btn.d{background:var(--rc);color:var(--r)}
+.btn.w{width:100%}
+.btn:disabled{opacity:.6}
+.tipos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tipos button{padding:12px 6px;border:2px solid var(--bd);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;color:var(--tx)}
+.tipos button.on{border-color:var(--v);background:var(--vc);color:var(--v);font-weight:600}
+.item{border-top:1px solid var(--bd);padding:12px 0}
+.item:first-child{border-top:0;padding-top:0}
+.item .q{font-size:14px;font-weight:600;line-height:1.35}
+.pts{float:right;font-size:11px;background:#eceff1;border-radius:6px;padding:2px 7px;margin-left:8px;color:var(--g);font-weight:600}
+.ay{font-size:12px;color:var(--g);margin:4px 0 8px;line-height:1.4}
+.resp{display:flex;gap:6px}
+.resp button{flex:1;padding:10px 4px;border:2px solid var(--bd);background:#fff;border-radius:8px;font-size:14px;cursor:pointer;color:var(--tx)}
+.resp button.si.on{border-color:var(--v);background:var(--vc);color:var(--v);font-weight:600}
+.resp button.no.on{border-color:var(--r);background:var(--rc);color:var(--r);font-weight:600}
+.resp button.na.on{border-color:var(--g);background:#eceff1;font-weight:600}
+.extra{margin-top:8px;display:none}.extra.on{display:block}
+.fotos{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.fotos img{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--bd);cursor:pointer}
+.fotobtn{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:8px 10px;border-radius:8px;background:var(--ac);color:#8d5a00;cursor:pointer;border:1px dashed #e0a800}
+.simbox{background:#f7f9f8;border:1px solid var(--bd);border-radius:8px;padding:10px;margin-bottom:8px}
+.simbox .g2 input{padding:8px}
+.tc{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.tc div{text-align:center;font-size:11px;color:var(--g)}
+.tc input{text-align:center;padding:9px 2px}
+.tc input.ok{border:2px solid #66bb6a}
+.tc input.bad{border:2px solid var(--r);background:var(--rc)}
+.nota{position:sticky;bottom:0;background:#fff;border-top:2px solid var(--v);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 -12px;z-index:10}
+.nota .n{font-size:28px;font-weight:700;line-height:1}
+.chip{display:inline-block;font-size:12px;border-radius:6px;padding:3px 8px;font-weight:600}
+.chip.ok{background:var(--vc);color:var(--v)}.chip.bad{background:var(--rc);color:var(--r)}.chip.w{background:var(--ac);color:#8d5a00}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:12px}
+.kpi{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:10px}
+.kpi span{display:block;font-size:12px;color:var(--g)}
+.kpi b{font-size:22px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 6px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--g);font-weight:600}
+.tw{overflow-x:auto}
+.ic{border:0;background:none;font-size:18px;cursor:pointer;padding:2px 4px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.modal.on{display:flex}
+.modal .box{background:#fff;width:100%;max-width:780px;max-height:90vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#263238;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;display:none;z-index:60;max-width:90%;text-align:center}
+.cfg-row{display:grid;grid-template-columns:1fr 72px 54px;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--bd);font-size:13px}
+.cfg-row input[type=number]{padding:7px;text-align:center}
+.cfg-row label{font-size:12px;display:flex;align-items:center;gap:4px}
+.cfg-row input[type=checkbox]{width:auto}
+.tag{font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:600;white-space:nowrap}
+.tag.c{background:var(--vc);color:var(--v)}.tag.s{background:var(--ac);color:#8d5a00}
+.suma{font-weight:700;margin-top:8px}
+.err{outline:3px solid #f48fb1;outline-offset:2px}
+.muted{color:var(--g);font-size:12px}
+.bar{height:8px;background:#eceff1;border-radius:4px;overflow:hidden;margin-top:3px}
+.bar i{display:block;height:100%;background:var(--r)}
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" aria-label="Volver">←</a>
+  <div><h1>Controles de Calidad</h1><small>Controles internos · Tocones, Trozos en cancha, Arrumado pino</small></div>
+</header>
+<div class="banner" id="banner">⚠️ Falta pegar el <b>apiKey</b> real en el firebaseConfig de este archivo. Mientras tanto no se puede guardar ni consultar.</div>
+<nav class="tabs">
+  <button id="tb-nuevo" class="on" onclick="tab('nuevo')">Nuevo control</button>
+  <button id="tb-res" onclick="tab('res')">Resultados</button>
+  <button id="tb-cfg" onclick="tab('cfg')">Configuración</button>
+</nav>
+
+<main>
+<!-- ============ NUEVO CONTROL ============ -->
+<section class="sec on" id="sec-nuevo">
+  <div class="card">
+    <h2>Tipo de control</h2>
+    <div class="tipos">
+      <button type="button" id="tp-tocones" onclick="elegirTipo('tocones')">Tocones</button>
+      <button type="button" id="tp-trozos" onclick="elegirTipo('trozos')">Trozos en cancha</button>
+      <button type="button" id="tp-arrumado" onclick="elegirTipo('arrumado')">Arrumado pino</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Datos del control</h2>
+    <div class="g2">
+      <div><label class="l">Fecha</label><input type="date" id="fecha"></div>
+      <div><label class="l">Línea</label><select id="sLinea" onchange="onOtro('sLinea')"></select><input class="otro" id="sLinea_o" placeholder="Escribe la línea"></div>
+    </div>
+    <label class="l">Fundo</label><select id="sFundo" onchange="onOtro('sFundo')"></select><input class="otro" id="sFundo_o" placeholder="Escribe el fundo">
+    <label class="l">Controlador (quien hace el control)</label><select id="sCtrl" onchange="onOtro('sCtrl')"></select><input class="otro" id="sCtrl_o" placeholder="Nombre del controlador">
+    <div class="muted" style="margin-top:10px"><span id="gps">📍 Ubicación pendiente</span> · <a href="#" onclick="pedirGPS();return false">reintentar</a></div>
+  </div>
+
+  <div class="card">
+    <h2>Personas evaluadas <span class="muted">(si aplica)</span></h2>
+    <label class="l">Jefe de faena</label><select id="sJefe" onchange="onOtro('sJefe')"></select><input class="otro" id="sJefe_o" placeholder="Nombre">
+    <div data-tipos="tocones"><label class="l">Op. Volteo</label><select id="sVolteo" onchange="onOtro('sVolteo')"></select><input class="otro" id="sVolteo_o" placeholder="Nombre"></div>
+    <div data-tipos="trozos arrumado"><label class="l">Op. Trozado</label><select id="sTrozado" onchange="onOtro('sTrozado')"></select><input class="otro" id="sTrozado_o" placeholder="Nombre"></div>
+    <div data-tipos="arrumado"><label class="l">Op. Clasificado</label><select id="sClasif" onchange="onOtro('sClasif')"></select><input class="otro" id="sClasif_o" placeholder="Nombre"></div>
+    <div data-tipos="trozos arrumado"><label class="l">Calibrador</label><select id="sCalib" onchange="onOtro('sCalib')"></select><input class="otro" id="sCalib_o" placeholder="Nombre"></div>
+  </div>
+
+  <div class="card" id="cardEval">
+    <h2 id="evalTitulo">Evaluación</h2>
+    <div id="items"><p class="muted">Elige el tipo de control para empezar.</p></div>
+  </div>
+
+  <div class="card">
+    <h2>Observación general</h2>
+    <textarea id="obsGeneral" rows="2" placeholder="Comentario del control (opcional)"></textarea>
+  </div>
+
+  <div class="nota">
+    <div><div class="muted">Nota</div><div class="n" id="notaN">—</div></div>
+    <div style="flex:1"><span class="chip" id="notaChip"></span><div class="muted" id="notaPend"></div></div>
+    <button class="btn p" id="btnGuardar" onclick="guardar()">Guardar</button>
+  </div>
+</section>
+
+<!-- ============ RESULTADOS ============ -->
+<section class="sec" id="sec-res">
+  <div class="card">
+    <h2>Consultar</h2>
+    <div class="g2">
+      <div><label class="l">Desde</label><input type="date" id="rDesde"></div>
+      <div><label class="l">Hasta</label><input type="date" id="rHasta"></div>
+    </div>
+    <button class="btn p w" style="margin-top:10px" onclick="consultar()">Consultar</button>
+    <div class="g2" style="margin-top:6px">
+      <div><label class="l">Tipo</label><select id="rTipo" onchange="renderR()"><option value="">Todos</option><option value="tocones">Tocones</option><option value="trozos">Trozos en cancha</option><option value="arrumado">Arrumado pino</option></select></div>
+      <div><label class="l">Línea</label><select id="rLinea" onchange="renderR()"><option value="">Todas</option></select></div>
+      <div><label class="l">Fundo</label><select id="rFundo" onchange="renderR()"><option value="">Todos</option></select></div>
+      <div><label class="l">Controlador</label><select id="rCtrl" onchange="renderR()"><option value="">Todos</option></select></div>
+    </div>
+    <label class="l">Persona evaluada (jefe, operador o calibrador)</label>
+    <select id="rPersona" onchange="renderR()"><option value="">Todas</option></select>
+  </div>
+  <div id="rKpis"></div>
+  <div id="rTop"></div>
+  <div class="card"><h2>Controles</h2><div id="rLista"><p class="muted">Presiona Consultar.</p></div></div>
+</section>
+
+<!-- ============ CONFIGURACIÓN ============ -->
+<section class="sec" id="sec-cfg">
+  <div id="cfgBox"></div>
+</section>
+</main>
+
+<div class="modal" id="modal" onclick="if(event.target===this)cerrarModal()"><div class="box" id="modalBox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+<script>
+// ================= FIREBASE =================
+const firebaseConfig = {
+  apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+  authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
+  projectId: "reporte-inicio-faena-forestal",
+  storageBucket: "reporte-inicio-faena-forestal.firebasestorage.app",
+  messagingSenderId: "962534414054",
+  appId: "1:962534414054:web:fa43371d31413fc0524d27"
+};
+const CFG_OK = !/PEGAR/.test(firebaseConfig.apiKey);
+let db = null, st = null;
+if (CFG_OK && window.firebase) {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+  try { st = firebase.storage(); st.setMaxUploadRetryTime(15000); st.setMaxOperationRetryTime(8000); } catch (e) { st = null; }
+} else {
+  document.getElementById('banner').style.display = 'block';
+}
+const COL = 'controles_calidad', COL_CFG = 'config_controles_calidad', CLAVE_CFG = '1771', BONO = 90;
+
+// ================= UTILIDADES =================
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hoy = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const fmtF = f => f ? f.split('-').reverse().join('-') : '';
+const fmtPts = n => Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10).replace('.', ',');
+const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(n) ? null : n; };
+const byName = (a, b) => String(a).localeCompare(String(b), 'es');
+const unicos = arr => [...new Set(arr.filter(Boolean))].sort(byName);
+const conTimeout = (p, ms) => Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms))]);
+function toast(m, ms = 3500) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast._t); toast._t = setTimeout(() => t.style.display = 'none', ms); }
+
+// ================= PAUTA POR DEFECTO =================
+// conf:true = puntaje confirmado (pauta o informes Mininco) · conf:false = asumido, editable en Configuración
+const DEF = {
+  tocones: { nombre: 'Tocones', equipos: { SHOVEL: 10, MOTOSIERRISTA: 5 }, n: 10 },
+  trozos: { nombre: 'Trozos en cancha', items: [
+    { id: 't1', pts: 15, conf: true, t: '¿Los productos debobinables o aserrables mantienen su calidad sin degradación por diámetro menor o mayor?', ay: 'Muestra 5 fustes. Cumple: ≤ 1 trozo bajo o sobre diámetro. Diámetro mínimo: Clear 28 cm, Industrial aserrable 18 cm, debobinable 28 cm (o según esquema). Diámetro JAS = par inferior del diámetro menor sin corteza, medido en la punta (ej.: 23,5 → 22).' },
+    { id: 't2', pts: 15, conf: true, t: '¿Los productos debobinables o aserrables mantienen su calidad sin degradación por largo?', ay: 'Muestra 5 fustes. Tolerancia de largo ±3 cm respecto al largo real del esquema de trozado (largo nominal + sobredimensión). Cumple: máximo 1 trozo fuera de tolerancia. No cumple: 2 sobrelargos o 1 trozo corto.' },
+    { id: 't3', pts: 15, conf: true, t: '¿Se respeta la prioridad del esquema de trozado?', ay: 'Observar 5 fustes en el tendido. Cumple: ≤ 1 degradación pulpable.' },
+    { id: 't4', pts: 9, conf: true, t: '¿El trozado de debobinables o aserrables está sin daños operacionales ni defectos fuera de la norma de productos?', ay: 'Daño operacional o defecto cuantitativo (curva, ancho de nudo; debobinable máx. 10 cm de nudo). El debobinable NO acepta astillamiento, agrietamiento, partidura ni corte oblicuo. Cumple: ≤ 1 trozo fuera de norma.' },
+    { id: 't5', pts: 8, conf: true, t: '¿Los trozos o varas debobinables/aserrables se encuentran libres de esporas o manchas antes de su procesamiento?', ay: 'Cumple: no existen trozos o varas con esporas o manchas.' },
+    { id: 't6', pts: 11, conf: true, t: '¿La sección aserrable se encuentra libre de fracturas?', ay: 'Misma muestra de fustes del control de trozado. Fracturas por razones operacionales. Una partidura de más de 3,5 cm obliga a rebajar el diámetro.' },
+    { id: 't7', pts: 9, conf: true, t: '¿La sección pulpable se encuentra libre de fracturas?', ay: 'Misma muestra de fustes, diámetros ≥ 8 cm. Cumple: ≤ 2 fustes con fractura.' },
+    { id: 't8', pts: 9, conf: true, t: '¿Los trozos pulpables mantienen su calidad sin degradación por largo?', ay: 'Cumple: ≤ 2 trozos fuera de norma (±4 cm).' },
+    { id: 't9', pts: 9, conf: true, t: '¿El nivel de sobredespunte cumple con la tolerancia máxima de 3 cm?', ay: 'Medir solo despuntes frescos del área de trozado (motosierrista o procesador). Cumple: ≤ 1 rodela sobre 3 cm de espesor.' }
+  ]},
+  arrumado: { nombre: 'Arrumado pino', simMin: 97.5, simMax: 102.5, items: [
+    { id: 'a1', pts: 6, conf: false, t: '¿La faena dispone, conoce y cumple la norma de producto (cartilla verde y criterios de siniestrado)?' },
+    { id: 'a2', pts: 12, conf: false, t: '¿Se cuenta con un esquema de trozado definido, ya sea digital o físico?' },
+    { id: 'a3', pts: 5, conf: false, t: '¿Los productos se encuentran correctamente separados y existen bases que eviten la contaminación con barro y/o piedras?', ay: 'Verificar mínimo 3 rumas: presencia de bases y separadores, separadores orientados hacia el producto de menor valor.' },
+    { id: 'a4', pts: 5, conf: false, t: '¿Se mantiene distanciamiento adecuado entre productos de largo similar para evitar mezclas?', ay: 'Productos del mismo largo pero distinta calidad no deben quedar arrumados de forma contigua.' },
+    { id: 'a5', pts: 16, conf: true, na: true, t: '¿Los trozos aserrables y/o debobinables cumplen con la longitud especificada?', ay: 'Medir 20 trozos. Tolerancia de largo ±3 cm respecto al largo real (nominal + sobredimensión, según esquema de trozado). Cumple: máximo 1 trozo corto o sobrelargo fuera de tolerancia.' },
+    { id: 'a6', pts: 15, conf: true, t: '¿El proceso en aserrables y/o debobinables se ejecuta sin errores operacionales? (mal despicado, corte oblicuo, astillamiento, grietas, partiduras, visera o daño de cabezal)', ay: 'Muestra de 20 trozos aserrables y/o debobinables. El debobinable no acepta defectos operacionales ni corte oblicuo. En el aserrable: astillamiento y agrietamiento reducen diámetro; partidura reduce largo y, si supera 3,5 cm de profundidad, también diámetro.' },
+    { id: 'a7', pts: 12, conf: false, t: '¿Los trozos pulpables cumplen con la longitud especificada?', ay: 'Medir 20 trozos. Pulpable: largo real fijo (+4 cm) o variable según esquema de trozado. Cumple: máximo 1 trozo corto o sobrelargo fuera de norma.' },
+    { id: 'a8', pts: 4, conf: true, t: '¿El proceso en pulpables se ejecuta sin errores operacionales? (mal despicado, bifurcados o sobre diámetro mezclado)', ay: 'Muestra de 20 trozos pulpables. Pino pulpable: diámetro real entre 8 y 45 cm (mayores según esquema de trozado). Cumple: ≤ 1 trozo con error operacional.' },
+    { id: 'a9', pts: 5, conf: false, sim: true, t: '¿La ruma presenta simetría de acuerdo al estándar?', ay: 'Muestra 3 rumas. Simetría = máx. altura frente (hacia el camino) ÷ mín. altura posterior (hacia el área de cosecha) × 100. Altura máxima de ruma: 4 m.' },
+    { id: 'a10', pts: 4, conf: true, monu: true, t: '¿La ruma cuenta con monumentación correcta según tipo de producto (aserrable, debobinable y pulpable)?', ay: 'Marca abajo los elementos que SÍ están en la ruma revisada. Si falta alguno, la pregunta queda No cumple.' },
+    { id: 'a11', pts: 8, conf: false, t: '¿La ruma aserrable y/o debobinable se encuentra correctamente calibrada?', ay: 'Cada trozo se mide en la punta (extremo de menor diámetro), sin corteza y descontando nudos muertos, hendiduras y deformaciones. Diámetro JAS = par inferior sin decimales (ej.: 21,2 → 20).' },
+    { id: 'a12', pts: 8, conf: false, t: '¿Los trozos se encuentran libres de manchas, esporas y/o daño por siniestro?', ay: 'Siniestrado: industrial código 172, pulpable código 162 (tizne menor al 50%). Todo trozo carbonizado con daño a la madera se clasifica como combustible. En rollizos no debe ingresar madera quemada.' }
+  ]}
+};
+let PAUTA = JSON.parse(JSON.stringify(DEF));
+
+async function cargarPauta() {
+  if (!db) return;
+  try {
+    const s = await conTimeout(db.collection(COL_CFG).doc('pauta').get(), 8000);
+    if (!s.exists) return;
+    aplicarPauta(s.data());
+  } catch (e) { console.warn('Pauta: usando valores por defecto', e); }
+}
+function aplicarPauta(d) {
+  PAUTA = JSON.parse(JSON.stringify(DEF));
+  if (d.equipos) Object.keys(PAUTA.tocones.equipos).forEach(k => { if (typeof d.equipos[k] === 'number') PAUTA.tocones.equipos[k] = d.equipos[k]; });
+  ['trozos', 'arrumado'].forEach(k => PAUTA[k].items.forEach(it => {
+    const o = d.items && d.items[it.id];
+    if (!o) return;
+    if (typeof o.pts === 'number') it.pts = o.pts;
+    if (typeof o.na === 'boolean') it.na = o.na;
+    if (typeof o.conf === 'boolean') it.conf = o.conf;
+  }));
+  if (typeof d.simMin === 'number') PAUTA.arrumado.simMin = d.simMin;
+  if (typeof d.simMax === 'number') PAUTA.arrumado.simMax = d.simMax;
+}
+
+// ================= LISTAS DESDE CONFIGURACIÓN =================
+const L = { fundos: [], lineas: [], jefes: [], calib: [], volteo: [], trozado: [], clasif: [] };
+async function getCol(n) {
+  if (!db) return [];
+  try { const s = await conTimeout(db.collection(n).get(), 10000); return s.docs.map(d => ({ id: d.id, ...d.data() })); }
+  catch (e) { console.warn('No se pudo leer ' + n, e); return []; }
+}
+async function cargarListas() {
+  const [f, l, j, c, o] = await Promise.all(['config_fundos', 'config_lineas', 'config_jefes_faena', 'config_calibradores', 'config_operadores'].map(getCol));
+  L.fundos = f.filter(x => x.nombre).sort((a, b) => byName(a.nombre, b.nombre));
+  if (!L.fundos.length) L.fundos = [{ nombre: 'EL OLIVILLO', codigo: '628' }, { nombre: 'LOS ALPES HIJ1', codigo: '729' }, { nombre: 'SANTA ROSA', codigo: '1724' }];
+  L.lineas = unicos(l.map(x => x.nombre));
+  if (!L.lineas.length) L.lineas = ['T1', 'T2', 'T3'];
+  L.jefes = unicos(j.map(x => x.nombre));
+  L.calib = unicos(c.map(x => x.nombre));
+  const opF = fn => unicos(o.filter(x => (x.funciones || []).some(z => String(z).toUpperCase().includes(fn))).map(x => x.nombre));
+  L.volteo = opF('VOLTEO'); L.trozado = opF('TROZADO'); L.clasif = opF('CLASIFICADO');
+  llenarSelects();
+}
+function fillSel(id, names, ph, valores) {
+  const s = $(id), cur = s.value;
+  s.innerHTML = '<option value="">' + ph + '</option>' + names.map((n, i) => `<option value="${esc(valores ? valores[i] : n)}">${esc(n)}</option>`).join('') + '<option value="__otro">Otro (escribir)</option>';
+  if (cur && [...s.options].some(op => op.value === cur)) s.value = cur;
+}
+function llenarSelects() {
+  fillSel('sFundo', L.fundos.map(f => f.nombre + (f.codigo ? ' (' + f.codigo + ')' : '')), 'Selecciona fundo…', L.fundos.map(f => f.nombre));
+  fillSel('sLinea', L.lineas, 'Selecciona…');
+  fillSel('sCtrl', unicos([...L.jefes, ...L.calib]), 'Selecciona…');
+  fillSel('sJefe', L.jefes, '—');
+  fillSel('sVolteo', L.volteo, '—');
+  fillSel('sTrozado', L.trozado, '—');
+  fillSel('sClasif', L.clasif, '—');
+  fillSel('sCalib', L.calib, '—');
+}
+function onOtro(id) { $(id + '_o').style.display = $(id).value === '__otro' ? 'block' : 'none'; $(id).classList.remove('err'); }
+function val(id) { const s = $(id); if (!s) return ''; return s.value === '__otro' ? $(id + '_o').value.trim() : s.value; }
+
+// ================= ESTADO DEL FORMULARIO =================
+let estado = { tipo: null, resp: {}, gps: null, sim: null };
+function ensureResp(id) { if (!estado.resp[id]) estado.resp[id] = { r: null, fotos: [] }; return estado.resp[id]; }
+function hayAvance() { return Object.values(estado.resp).some(x => x.r || x.fotos.length) || [...document.querySelectorAll('.tc input')].some(i => i.value !== ''); }
+
+function elegirTipo(t) {
+  if (estado.tipo === t) return;
+  if (estado.tipo && hayAvance() && !confirm('Cambiar el tipo de control borra las respuestas ingresadas. ¿Continuar?')) return;
+  estado = { tipo: t, resp: {}, gps: estado.gps, sim: null };
+  ['tocones', 'trozos', 'arrumado'].forEach(k => $('tp-' + k).classList.toggle('on', k === t));
+  document.querySelectorAll('[data-tipos]').forEach(el => el.style.display = el.dataset.tipos.split(' ').includes(t) ? '' : 'none');
+  $('evalTitulo').textContent = 'Evaluación · ' + PAUTA[t].nombre;
+  renderItems();
+  if (!estado.gps) pedirGPS();
+}
+
+function pedirGPS() {
+  const g = $('gps');
+  if (!navigator.geolocation) { g.textContent = '📍 GPS no disponible'; return; }
+  g.textContent = '📍 Obteniendo ubicación…';
+  navigator.geolocation.getCurrentPosition(
+    p => { estado.gps = { lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6) }; g.textContent = '📍 ' + estado.gps.lat + ', ' + estado.gps.lng; },
+    e => { estado.gps = null; g.textContent = '📍 Sin ubicación (' + e.message + ')'; },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+}
+
+function bloqueFotos(id, txt) {
+  return `<label class="fotobtn">📷 ${txt}<input type="file" accept="image/*" multiple hidden onchange="addFotos('${id}',this)"></label><div class="fotos" id="f_${id}"></div>`;
+}
+function simHTML() {
+  const a = PAUTA.arrumado;
+  return `<div class="simbox"><div class="muted" style="margin-bottom:4px">Calculadora · cumple entre ${fmtPts(a.simMin)}% y ${fmtPts(a.simMax)}%</div>
+  <div class="g2">
+   <div><label class="l">Frente lado 1 (m)</label><input inputmode="decimal" id="s_f1" oninput="calcSim()"></div>
+   <div><label class="l">Frente lado 2 (m)</label><input inputmode="decimal" id="s_f2" oninput="calcSim()"></div>
+   <div><label class="l">Posterior lado 1 (m)</label><input inputmode="decimal" id="s_p1" oninput="calcSim()"></div>
+   <div><label class="l">Posterior lado 2 (m)</label><input inputmode="decimal" id="s_p2" oninput="calcSim()"></div>
+  </div><div style="margin-top:8px"><b id="s_res">—</b> <span id="s_chip" class="chip"></span></div></div>`;
+}
+function renderItems() {
+  const box = $('items'), t = estado.tipo;
+  if (!t) { box.innerHTML = '<p class="muted">Elige el tipo de control para empezar.</p>'; actualizar(); return; }
+  if (t === 'tocones') {
+    const eq = PAUTA.tocones.equipos;
+    box.innerHTML = `<label class="l">Equipo de volteo</label>
+      <select id="equipo" onchange="this.classList.remove('err');actualizar()"><option value="">Selecciona…</option>${Object.keys(eq).map(e => `<option value="${esc(e)}">${esc(e)} (máx. ${fmtPts(eq[e])} cm)</option>`).join('')}</select>
+      <label class="l">Altura de 10 tocones (cm)</label>
+      <div class="tc">${Array.from({ length: 10 }, (_, i) => `<div><input type="number" inputmode="decimal" step="0.5" min="0" id="toc${i}" oninput="this.classList.remove('err');actualizar()">T${i + 1}</div>`).join('')}</div>
+      <div class="ay" style="margin-top:8px">Cada tocón vale 10 pts. Se descuenta si su altura supera el máximo del equipo de volteo.</div>
+      <div class="extra" id="x_toc">${bloqueFotos('toc', 'Fotos de tocones fuera de norma')}</div>`;
+    ensureResp('toc');
+  } else {
+    box.innerHTML = PAUTA[t].items.map((it, k) => `
+      <div class="item" id="it_${it.id}">
+        <div class="q"><span class="pts">${fmtPts(it.pts)} pts</span>${k + 1}. ${esc(it.t)}</div>
+        ${it.ay ? `<div class="ay">${esc(it.ay)}</div>` : ''}
+        ${it.sim ? simHTML() : ''}${it.monu ? monuHTML() : ''}
+        <div class="resp">
+          <button type="button" class="si" onclick="responder('${it.id}','si')">Cumple</button>
+          <button type="button" class="no" onclick="responder('${it.id}','no')">No cumple</button>
+          ${it.na ? `<button type="button" class="na" onclick="responder('${it.id}','na')">N/A</button>` : ''}
+        </div>
+        <div class="extra" id="x_${it.id}">${bloqueFotos(it.id, 'Agregar foto')}<input placeholder="Observación (opcional)" id="o_${it.id}" style="margin-top:6px"></div>
+      </div>`).join('') +
+      (t === 'trozos' ? `<div class="item"><div class="q">% de corteza en trozos según estándar <span class="tag s">informativo</span></div><div class="ay">No suma puntos, igual que en el control de Mininco.</div><input type="number" inputmode="numeric" min="0" max="100" id="corteza" placeholder="Ej: 70"></div>` : '');
+    PAUTA[t].items.forEach(it => ensureResp(it.id));
+  }
+  actualizar();
+}
+
+function responder(id, r) {
+  const x = ensureResp(id); x.r = r;
+  const box = $('it_' + id);
+  if (box) {
+    box.classList.remove('err');
+    box.querySelectorAll('.resp button').forEach(b => b.classList.toggle('on', b.classList.contains(r)));
+  }
+  const ex = $('x_' + id); if (ex) ex.classList.toggle('on', r === 'no');
+  actualizar();
+}
+
+const MONU = {
+  aserrable: ['Diámetro JAS', 'Largo del producto', 'Contratista', 'Rodal', 'Código destino', 'Código cancha', 'Código especie', 'Código producto', 'Fecha de volteo cada 4 m (parte basal)'],
+  pulpable: ['Largo del producto', 'Contratista', 'Rodal', 'Código destino', 'Código cancha', 'Código especie', 'Código producto', 'Fecha de volteo cada 4 m (parte basal)', 'Cierre perimetral', 'Volumen en metro ruma', 'ID ruma']
+};
+function monuHTML() {
+  return `<div class="simbox"><div class="muted" style="margin-bottom:6px">¿Qué ruma revisaste?</div>
+  <div class="resp" style="margin-bottom:6px">${['aserrable', 'pulpable', 'ambas'].map(k => `<button type="button" class="si" data-mt="${k}" onclick="monuTipo('${k}')">${k === 'ambas' ? 'Ambas' : k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div>
+  <div id="monuList"></div><div id="monuRes" class="muted" style="margin-top:6px"></div></div>`;
+}
+function monuTipo(k) {
+  estado.monu = { tipo: k, faltan: [] };
+  document.querySelectorAll('[data-mt]').forEach(b => b.classList.toggle('on', b.dataset.mt === k));
+  const grupos = k === 'ambas' ? ['aserrable', 'pulpable'] : [k];
+  $('monuList').innerHTML = grupos.map(g => `<div style="font-weight:600;font-size:13px;margin:8px 0 2px">Ruma ${g}</div>` +
+    MONU[g].map((m, i) => `<label style="display:flex;gap:8px;align-items:center;font-size:14px;padding:5px 0"><input type="checkbox" style="width:auto" data-mg="${g}" data-mi="${i}" onchange="monuEval()">${esc(m)}</label>`).join('')).join('');
+  monuEval();
+}
+function monuEval() {
+  const m = estado.monu; if (!m) return;
+  const faltan = [];
+  document.querySelectorAll('#monuList input[data-mg]').forEach(c => { if (!c.checked) faltan.push((m.tipo === 'ambas' ? (c.dataset.mg === 'aserrable' ? 'Aserrable: ' : 'Pulpable: ') : '') + MONU[c.dataset.mg][+c.dataset.mi]); });
+  m.faltan = faltan;
+  $('monuRes').textContent = faltan.length ? 'Faltan ' + faltan.length + ': ' + faltan.join(', ') : 'Monumentación completa ✔';
+  const it = PAUTA.arrumado.items.find(i => i.monu); if (it) responder(it.id, faltan.length ? 'no' : 'si');
+}
+
+function calcSim() {
+  const a = PAUTA.arrumado, g = id => num($(id).value);
+  const f1 = g('s_f1'), f2 = g('s_f2'), p1 = g('s_p1'), p2 = g('s_p2');
+  const chip = $('s_chip'), res = $('s_res');
+  if ([f1, f2, p1, p2].some(v => v === null || v <= 0)) { estado.sim = null; res.textContent = '—'; chip.textContent = ''; chip.className = 'chip'; return; }
+  const pct = Math.max(f1, f2) / Math.min(p1, p2) * 100;
+  const ok = pct >= a.simMin && pct <= a.simMax;
+  estado.sim = { f1, f2, p1, p2, pct: Math.round(pct * 10) / 10 };
+  res.textContent = String(estado.sim.pct).replace('.', ',') + '%';
+  chip.textContent = ok ? 'Cumple' : 'No cumple'; chip.className = 'chip ' + (ok ? 'ok' : 'bad');
+  const it = a.items.find(i => i.sim); if (it) responder(it.id, ok ? 'si' : 'no');
+}
+
+// ---------- fotos ----------
+function addFotos(id, input) {
+  const x = ensureResp(id);
+  [...input.files].forEach(f => x.fotos.push(f));
+  input.value = '';
+  pintarFotos(id);
+}
+function pintarFotos(id) {
+  const c = $('f_' + id); if (!c) return;
+  const x = ensureResp(id);
+  c.innerHTML = '';
+  x.fotos.forEach((f, i) => {
+    const im = document.createElement('img');
+    try { im.src = URL.createObjectURL(f); } catch (e) {}
+    im.title = 'Tocar para quitar';
+    im.onclick = () => { if (confirm('¿Quitar esta foto?')) { x.fotos.splice(i, 1); pintarFotos(id); } };
+    c.appendChild(im);
+  });
+}
+function comprimir(file, max = 1280, q = 0.7) {
+  return new Promise(res => {
+    if (!file.type || !file.type.startsWith('image/')) return res(file);
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => { URL.revokeObjectURL(u); res(b || file); }, 'image/jpeg', q);
+    };
+    img.onerror = () => { URL.revokeObjectURL(u); res(file); };
+    img.src = u;
+  });
+}
+async function subirFoto(file, path) {
+  if (!st) throw new Error('Storage no disponible');
+  const blob = await comprimir(file);
+  const ref = st.ref(path);
+  await conTimeout(ref.put(blob, { contentType: 'image/jpeg' }), 25000);
+  const url = await conTimeout(ref.getDownloadURL(), 8000);
+  return { url, path };
+}
+
+// ================= CÁLCULO DE NOTA =================
+function calcular() {
+  const t = estado.tipo;
+  if (!t) return null;
+  if (t === 'tocones') {
+    const eq = $('equipo') ? $('equipo').value : '';
+    const max = eq ? PAUTA.tocones.equipos[eq] : null;
+    let ok = 0, bad = 0, pend = 0; const med = [];
+    for (let i = 0; i < 10; i++) {
+      const inp = $('toc' + i), v = inp ? num(inp.value) : null;
+      med.push(v);
+      if (inp) inp.classList.remove('ok', 'bad');
+      if (v === null || max === null) { pend++; continue; }
+      if (v <= max) { ok++; inp.classList.add('ok'); } else { bad++; inp.classList.add('bad'); }
+    }
+    return { nota: Math.round(ok * 10), obt: ok * 10, aplic: 100, pend: eq ? pend : 10, incumpl: bad, extra: { equipo: eq, max, med }, eqFalta: !eq };
+  }
+  let obt = 0, aplic = 0, pend = 0, inc = 0;
+  PAUTA[t].items.forEach(it => {
+    const r = (estado.resp[it.id] || {}).r;
+    if (r === 'na') return;
+    aplic += it.pts;
+    if (r === 'si') obt += it.pts; else if (r === 'no') inc++; else pend++;
+  });
+  return { nota: aplic ? Math.round(obt / aplic * 100) : 0, obt, aplic, pend, incumpl: inc };
+}
+function actualizar() {
+  const c = calcular(), n = $('notaN'), ch = $('notaChip'), p = $('notaPend');
+  if (!c) { n.textContent = '—'; ch.textContent = ''; ch.className = 'chip'; p.textContent = ''; return; }
+  n.textContent = c.nota;
+  const ok = c.nota >= BONO;
+  ch.textContent = ok ? 'Sobre ' + BONO + '%' : 'Bajo ' + BONO + '%';
+  ch.className = 'chip ' + (ok ? 'ok' : 'bad');
+  p.textContent = c.eqFalta ? 'Falta elegir el equipo de volteo' : (c.pend ? 'Faltan ' + c.pend + (estado.tipo === 'tocones' ? ' tocones' : ' preguntas') : (c.incumpl ? c.incumpl + ' incumplimiento(s)' : 'Sin incumplimientos'));
+  if (estado.tipo === 'tocones') { const x = $('x_toc'); if (x) x.classList.toggle('on', c.incumpl > 0); }
+}
+
+// ================= GUARDAR =================
+function marcarError(el) { if (el) el.classList.add('err'); return el; }
+async function guardar() {
+  if (!db) { toast('Falta configurar Firebase (apiKey).'); return; }
+  document.querySelectorAll('.err').forEach(e => e.classList.remove('err'));
+  const t = estado.tipo;
+  if (!t) { toast('Elige el tipo de control.'); $('tp-tocones').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  const errores = [];
+  if (!$('fecha').value) errores.push(marcarError($('fecha')));
+  if (!val('sFundo')) errores.push(marcarError($('sFundo')));
+  if (!val('sLinea')) errores.push(marcarError($('sLinea')));
+  if (!val('sCtrl')) errores.push(marcarError($('sCtrl')));
+  const c = calcular();
+  if (t === 'tocones') {
+    if (!$('equipo').value) errores.push(marcarError($('equipo')));
+    for (let i = 0; i < 10; i++) if (num($('toc' + i).value) === null) errores.push(marcarError($('toc' + i)));
+  } else {
+    PAUTA[t].items.forEach(it => { if (!(estado.resp[it.id] || {}).r) errores.push(marcarError($('it_' + it.id))); });
+  }
+  if (errores.length) { errores[0].scrollIntoView({ behavior: 'smooth', block: 'center' }); toast('Faltan ' + errores.length + ' dato(s) por completar (marcados en rosado).'); return; }
+
+  // fotos faltantes en incumplimientos
+  let sinFoto = 0;
+  if (t === 'tocones') { if (c.incumpl && !estado.resp.toc.fotos.length) sinFoto = 1; }
+  else PAUTA[t].items.forEach(it => { const x = estado.resp[it.id]; if (x.r === 'no' && !x.fotos.length) sinFoto++; });
+  if (sinFoto && !confirm('Hay ' + sinFoto + ' incumplimiento(s) sin foto. ¿Guardar igual?')) return;
+
+  const btn = $('btnGuardar'); btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    const ref = db.collection(COL).doc();
+    let fallos = 0, nFotos = 0;
+    const subir = async (id, lista) => {
+      const out = [];
+      for (let i = 0; i < lista.length; i++) {
+        nFotos++;
+        try { out.push(await subirFoto(lista[i], `${COL}/${t}/${ref.id}/${id}_${i + 1}.jpg`)); }
+        catch (e) { fallos++; console.warn('No se pudo subir foto', e); }
+      }
+      return out;
+    };
+    const fundoObj = L.fundos.find(f => f.nombre === val('sFundo'));
+    const data = {
+      tipo: t, tipoNombre: PAUTA[t].nombre, fecha: $('fecha').value,
+      fundo: val('sFundo'), fundoCodigo: fundoObj && fundoObj.codigo ? String(fundoObj.codigo) : '',
+      linea: val('sLinea'), controlador: val('sCtrl'),
+      jefeFaena: val('sJefe'),
+      opVolteo: t === 'tocones' ? val('sVolteo') : '',
+      opTrozado: t !== 'tocones' ? val('sTrozado') : '',
+      opClasificado: t === 'arrumado' ? val('sClasif') : '',
+      calibrador: t !== 'tocones' ? val('sCalib') : '',
+      gps: estado.gps || null,
+      nota: c.nota, puntosObtenidos: c.obt, puntosAplicables: c.aplic, incumplimientos: c.incumpl,
+      observacion: $('obsGeneral').value.trim(),
+      creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if (t === 'tocones') {
+      data.equipoVolteo = c.extra.equipo; data.maxCm = c.extra.max; data.mediciones = c.extra.med;
+      data.fotos = await subir('toc', estado.resp.toc.fotos);
+    } else {
+      data.items = [];
+      for (const it of PAUTA[t].items) {
+        const x = estado.resp[it.id];
+        const fila = { id: it.id, t: it.t, pts: it.pts, r: x.r, obs: ($('o_' + it.id) || {}).value || '', fotos: x.r === 'no' ? await subir(it.id, x.fotos) : [] };
+        if (it.monu && estado.monu) fila.monu = { tipo: estado.monu.tipo, faltan: estado.monu.faltan || [] };
+        data.items.push(fila);
+      }
+      if (t === 'trozos') data.corteza = num(($('corteza') || {}).value);
+      if (t === 'arrumado') { data.simetria = estado.sim; data.simRango = [PAUTA.arrumado.simMin, PAUTA.arrumado.simMax]; }
+    }
+    const w = ref.set(data);
+    let msg = 'Control guardado ✔ (nota ' + c.nota + ')';
+    try { await conTimeout(w, 6000); }
+    catch (e) { if (e.message === 'timeout') msg = 'Sin señal: el control quedó guardado en el celular y se subirá solo al volver la conexión.'; else throw e; }
+    if (fallos) msg += ' · ' + fallos + ' de ' + nFotos + ' foto(s) no se pudieron subir.';
+    toast(msg, 6000);
+    limpiarEvaluacion();
+  } catch (e) {
+    console.error(e); toast('No se pudo guardar: ' + (e.code || e.message), 6000);
+  } finally { btn.disabled = false; btn.textContent = 'Guardar'; }
+}
+function limpiarEvaluacion() {
+  const t = estado.tipo;
+  estado = { tipo: t, resp: {}, gps: estado.gps, sim: null };
+  $('obsGeneral').value = '';
+  renderItems();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ================= RESULTADOS =================
+let TODOS = [];
+const NOMBRE_T = { tocones: 'Tocones', trozos: 'Trozos', arrumado: 'Arrumado' };
+const personas = r => [r.jefeFaena, r.opVolteo, r.opTrozado, r.opClasificado, r.calibrador].filter(Boolean);
+async function consultar() {
+  if (!db) { toast('Falta configurar Firebase (apiKey).'); return; }
+  const d = $('rDesde').value, h = $('rHasta').value;
+  if (!d || !h || d > h) { toast('Revisa el rango de fechas.'); return; }
+  $('rLista').innerHTML = '<p class="muted">Cargando…</p>';
+  try {
+    const s = await db.collection(COL).where('fecha', '>=', d).where('fecha', '<=', h).get();
+    TODOS = s.docs.map(x => ({ id: x.id, ...x.data() }));
+  } catch (e) { console.error(e); $('rLista').innerHTML = '<p class="muted">No se pudo consultar (' + esc(e.code || e.message) + ').</p>'; return; }
+  const opts = (id, arr, ph) => { const s = $(id), cur = s.value; s.innerHTML = '<option value="">' + ph + '</option>' + unicos(arr).map(v => `<option>${esc(v)}</option>`).join(''); if ([...s.options].some(o => o.value === cur)) s.value = cur; };
+  opts('rFundo', TODOS.map(r => r.fundo), 'Todos');
+  opts('rLinea', TODOS.map(r => r.linea), 'Todas');
+  opts('rCtrl', TODOS.map(r => r.controlador), 'Todos');
+  opts('rPersona', TODOS.flatMap(personas), 'Todas');
+  renderR();
+}
+function filtrados() {
+  const tp = $('rTipo').value, fu = $('rFundo').value, li = $('rLinea').value, ct = $('rCtrl').value, pe = $('rPersona').value;
+  return TODOS.filter(r => (!tp || r.tipo === tp) && (!fu || r.fundo === fu) && (!li || r.linea === li) && (!ct || r.controlador === ct) && (!pe || personas(r).includes(pe)))
+    .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || ((b.creadoEn && b.creadoEn.seconds) || 0) - ((a.creadoEn && a.creadoEn.seconds) || 0));
+}
+function renderR() {
+  const F = filtrados();
+  const prom = a => a.length ? Math.round(a.reduce((s, r) => s + (r.nota || 0), 0) / a.length) : null;
+  const sobre = F.filter(r => r.nota >= BONO).length;
+  const porTipo = ['tocones', 'trozos', 'arrumado'].map(k => { const a = F.filter(r => r.tipo === k); return a.length ? `<div class="kpi"><span>${NOMBRE_T[k]} (${a.length})</span><b>${prom(a)}</b></div>` : ''; }).join('');
+  $('rKpis').innerHTML = `<div class="kpis">
+    <div class="kpi"><span>Controles</span><b>${F.length}</b></div>
+    <div class="kpi"><span>Nota promedio</span><b>${F.length ? prom(F) : '—'}</b></div>
+    <div class="kpi"><span>Sobre ${BONO}%</span><b>${F.length ? Math.round(sobre / F.length * 100) + '%' : '—'}</b></div>
+    <div class="kpi"><span>Incumplimientos</span><b>${F.reduce((s, r) => s + (r.incumplimientos || 0), 0)}</b></div>
+    ${porTipo}</div>`;
+  // incumplimientos más frecuentes
+  const cnt = {};
+  F.forEach(r => {
+    if (r.tipo === 'tocones') { if (r.incumplimientos) cnt['Tocones sobre altura máxima'] = (cnt['Tocones sobre altura máxima'] || 0) + r.incumplimientos; }
+    else (r.items || []).forEach(it => { if (it.r === 'no') { const k = NOMBRE_T[r.tipo] + ' · ' + it.t; cnt[k] = (cnt[k] || 0) + 1; } });
+  });
+  const top = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const mx = top.length ? top[0][1] : 1;
+  $('rTop').innerHTML = top.length ? `<div class="card"><h2>Incumplimientos más frecuentes</h2>${top.map(([k, v]) => `<div style="margin:8px 0;font-size:13px">${esc(k)} <b style="float:right">${v}</b><div class="bar"><i style="width:${Math.round(v / mx * 100)}%"></i></div></div>`).join('')}</div>` : '';
+  if (!F.length) { $('rLista').innerHTML = '<p class="muted">No hay controles con esos filtros.</p>'; return; }
+  $('rLista').innerHTML = `<div class="tw"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Fundo / Línea</th><th>Controlador</th><th>Nota</th><th>Inc.</th><th></th></tr></thead><tbody>
+    ${F.map(r => `<tr><td>${fmtF(r.fecha)}</td><td>${NOMBRE_T[r.tipo] || esc(r.tipo)}</td><td>${esc(r.fundo)}<br><span class="muted">${esc(r.linea)}</span></td><td>${esc(r.controlador)}</td>
+      <td><span class="chip ${r.nota >= BONO ? 'ok' : 'bad'}">${r.nota}</span></td><td>${r.incumplimientos || 0}</td>
+      <td style="white-space:nowrap"><button class="ic" title="Ver detalle" onclick="verDetalle('${r.id}')">👁️</button><button class="ic" title="Eliminar" onclick="eliminar('${r.id}')">🗑️</button></td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+function fotosHTML(arr) { return (arr && arr.length) ? `<div class="fotos">${arr.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${esc(f.url)}" alt="foto"></a>`).join('')}</div>` : ''; }
+function verDetalle(id) {
+  const r = TODOS.find(x => x.id === id); if (!r) return;
+  const fila = (k, v) => v ? `<tr><td class="muted">${k}</td><td>${esc(v)}</td></tr>` : '';
+  let cuerpo = '';
+  if (r.tipo === 'tocones') {
+    cuerpo = `<p><b>Equipo:</b> ${esc(r.equipoVolteo)} · máx. ${fmtPts(r.maxCm)} cm</p><div class="tc">${(r.mediciones || []).map((v, i) => `<div><input readonly value="${v ?? ''}" class="${v !== null && v <= r.maxCm ? 'ok' : 'bad'}">T${i + 1}</div>`).join('')}</div>${fotosHTML(r.fotos)}`;
+  } else {
+    cuerpo = (r.items || []).map((it, k) => `<div class="item"><div class="q"><span class="pts">${fmtPts(it.pts)} pts</span>${k + 1}. ${esc(it.t)}</div>
+      <span class="chip ${it.r === 'si' ? 'ok' : it.r === 'no' ? 'bad' : 'w'}">${it.r === 'si' ? 'Cumple' : it.r === 'no' ? 'No cumple' : 'N/A'}</span>
+      ${it.monu ? `<div class="ay">Ruma ${esc(it.monu.tipo)} · ${it.monu.faltan.length ? 'Faltaba: ' + esc(it.monu.faltan.join(', ')) : 'Monumentación completa'}</div>` : ''}${it.obs ? `<div class="ay">${esc(it.obs)}</div>` : ''}${fotosHTML(it.fotos)}</div>`).join('');
+    if (r.tipo === 'trozos' && r.corteza !== null && r.corteza !== undefined) cuerpo += `<p class="muted">% corteza: ${r.corteza}%</p>`;
+    if (r.simetria) cuerpo += `<p class="muted">Simetría: ${String(r.simetria.pct).replace('.', ',')}% (frente ${r.simetria.f1} / ${r.simetria.f2} m · posterior ${r.simetria.p1} / ${r.simetria.p2} m)</p>`;
+  }
+  $('modalBox').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:17px">${esc(r.tipoNombre || r.tipo)} · ${fmtF(r.fecha)}</h2><button class="ic" onclick="cerrarModal()">✖</button></div>
+    <p style="font-size:30px;font-weight:700;margin:8px 0">${r.nota} <span class="chip ${r.nota >= BONO ? 'ok' : 'bad'}">${r.nota >= BONO ? 'Sobre' : 'Bajo'} ${BONO}%</span></p>
+    <table>${fila('Fundo', r.fundo + (r.fundoCodigo ? ' (' + r.fundoCodigo + ')' : ''))}${fila('Línea', r.linea)}${fila('Controlador', r.controlador)}${fila('Jefe de faena', r.jefeFaena)}${fila('Op. Volteo', r.opVolteo)}${fila('Op. Trozado', r.opTrozado)}${fila('Op. Clasificado', r.opClasificado)}${fila('Calibrador', r.calibrador)}${fila('GPS', r.gps ? r.gps.lat + ', ' + r.gps.lng : '')}${fila('Observación', r.observacion)}</table>
+    <div style="margin-top:12px">${cuerpo}</div>`;
+  $('modal').classList.add('on');
+}
+function cerrarModal() { $('modal').classList.remove('on'); }
+async function eliminar(id) {
+  const r = TODOS.find(x => x.id === id); if (!r) return;
+  if (!confirm('¿Eliminar el control de ' + (r.tipoNombre || r.tipo) + ' del ' + fmtF(r.fecha) + '? También se borran sus fotos.')) return;
+  const paths = [...(r.fotos || []), ...(r.items || []).flatMap(i => i.fotos || [])].map(f => f.path).filter(Boolean);
+  if (st) for (const p of paths) { try { await conTimeout(st.ref(p).delete(), 8000); } catch (e) { console.warn('No se pudo borrar foto', p, e); } }
+  try { await conTimeout(db.collection(COL).doc(id).delete(), 6000); } catch (e) { if (e.message !== 'timeout') { toast('No se pudo eliminar: ' + (e.code || e.message)); return; } }
+  TODOS = TODOS.filter(x => x.id !== id);
+  renderR(); toast('Control eliminado');
+}
+
+// ================= CONFIGURACIÓN DE PAUTA =================
+let cfgAbierta = false;
+function renderCfg() {
+  const eq = PAUTA.tocones.equipos;
+  const filas = k => PAUTA[k].items.map((it, i) => `<div class="cfg-row"><div>${i + 1}. ${esc(it.t)} <span class="tag ${it.conf ? 'c' : 's'}">${it.conf ? 'confirmado' : 'asumido'}</span></div>
+    <input type="number" step="0.5" min="0" data-k="${k}" data-id="${it.id}" value="${it.pts}" oninput="sumarCfg()">
+    <label><input type="checkbox" data-na="${it.id}" ${it.na ? 'checked' : ''}>N/A</label></div>`).join('');
+  $('cfgBox').innerHTML = `
+  <div class="card"><h2>Tocones · altura máxima por equipo de volteo</h2>
+    ${Object.keys(eq).map(e => `<div class="cfg-row" style="grid-template-columns:1fr 90px"><div>${esc(e)}</div><input type="number" step="0.5" min="0" data-eq="${esc(e)}" value="${eq[e]}"></div>`).join('')}
+    <div class="muted" style="margin-top:6px">10 tocones · 10 pts cada uno.</div></div>
+  <div class="card"><h2>Trozos en cancha · puntaje por pregunta</h2>
+    <div class="cfg-row muted" style="border:0"><div>Pregunta</div><div>Pts</div><div>Permite</div></div>${filas('trozos')}
+    <div class="suma" id="suma_trozos"></div></div>
+  <div class="card"><h2>Arrumado pino · puntaje por pregunta</h2>
+    <div class="cfg-row muted" style="border:0"><div>Pregunta</div><div>Pts</div><div>Permite</div></div>${filas('arrumado')}
+    <div class="suma" id="suma_arrumado"></div>
+    <div class="g2" style="margin-top:10px"><div><label class="l">Simetría mínima (%)</label><input type="number" step="0.5" id="cfgSimMin" value="${PAUTA.arrumado.simMin}"></div><div><label class="l">Simetría máxima (%)</label><input type="number" step="0.5" id="cfgSimMax" value="${PAUTA.arrumado.simMax}"></div></div></div>
+  <div class="card">
+    <p class="muted" style="margin-top:0">Cada tipo debe sumar 100 pts. Si marcas N/A en una pregunta, al responderla como "No aplica" sus puntos no cuentan y la nota se calcula sobre el resto. Los cambios aplican a los controles nuevos; los ya guardados conservan su nota.</p>
+    <button class="btn p w" onclick="guardarCfg()">Guardar pauta</button>
+    <button class="btn w" style="margin-top:8px" onclick="restaurarCfg()">Restaurar valores por defecto</button>
+  </div>`;
+  sumarCfg();
+}
+function sumaDe(k) { return [...document.querySelectorAll(`#cfgBox input[data-k="${k}"]`)].reduce((s, i) => s + (num(i.value) || 0), 0); }
+function sumarCfg() {
+  ['trozos', 'arrumado'].forEach(k => {
+    const s = Math.round(sumaDe(k) * 100) / 100, el = $('suma_' + k); if (!el) return;
+    el.textContent = 'Suma: ' + fmtPts(s) + ' / 100' + (Math.abs(s - 100) < 0.01 ? ' ✔' : ' ✖');
+    el.style.color = Math.abs(s - 100) < 0.01 ? 'var(--v)' : 'var(--r)';
+  });
+}
+async function guardarCfg() {
+  if (!db) { toast('Falta configurar Firebase (apiKey).'); return; }
+  for (const k of ['trozos', 'arrumado']) if (Math.abs(sumaDe(k) - 100) >= 0.01) { toast(PAUTA[k].nombre + ' no suma 100 pts.'); return; }
+  const smin = num($('cfgSimMin').value), smax = num($('cfgSimMax').value);
+  if (smin === null || smax === null || smin >= smax) { toast('Revisa el rango de simetría.'); return; }
+  const equipos = {};
+  for (const i of document.querySelectorAll('#cfgBox input[data-eq]')) { const v = num(i.value); if (v === null || v <= 0) { toast('Revisa la altura máxima de ' + i.dataset.eq); return; } equipos[i.dataset.eq] = v; }
+  const items = {};
+  document.querySelectorAll('#cfgBox input[data-k]').forEach(i => {
+    const id = i.dataset.id, k = i.dataset.k, pts = num(i.value) || 0;
+    const def = DEF[k].items.find(x => x.id === id);
+    items[id] = { pts, na: $('cfgBox').querySelector(`input[data-na="${id}"]`).checked, conf: pts !== def.pts ? true : !!def.conf };
+  });
+  const data = { equipos, items, simMin: smin, simMax: smax, actualizado: firebase.firestore.FieldValue.serverTimestamp() };
+  try { await conTimeout(db.collection(COL_CFG).doc('pauta').set(data), 6000); toast('Pauta guardada ✔'); }
+  catch (e) { if (e.message === 'timeout') toast('Sin señal: la pauta se guardará al volver la conexión.'); else { toast('No se pudo guardar: ' + (e.code || e.message)); return; } }
+  aplicarPauta(data);
+  renderCfg();
+  if (estado.tipo && !hayAvance()) { $('evalTitulo').textContent = 'Evaluación · ' + PAUTA[estado.tipo].nombre; renderItems(); }
+}
+function restaurarCfg() {
+  if (!confirm('¿Volver a los puntajes por defecto? Debes presionar "Guardar pauta" para que queden aplicados.')) return;
+  const prev = PAUTA; PAUTA = JSON.parse(JSON.stringify(DEF)); renderCfg(); PAUTA = prev;
+}
+
+// ================= PESTAÑAS E INICIO =================
+function tab(t) {
+  if (t === 'cfg' && !cfgAbierta) {
+    const k = prompt('Clave de configuración');
+    if (k !== CLAVE_CFG) { if (k !== null) toast('Clave incorrecta'); return; }
+    cfgAbierta = true; renderCfg();
+  }
+  ['nuevo', 'res', 'cfg'].forEach(k => { $('sec-' + k).classList.toggle('on', k === t); $('tb-' + k).classList.toggle('on', k === t); });
+  if (t === 'res' && !TODOS.length && db) consultar();
+}
+(async function init() {
+  $('fecha').value = hoy();
+  const d = new Date(); $('rDesde').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01'; $('rHasta').value = hoy();
+  llenarSelects();
+  document.querySelectorAll('[data-tipos]').forEach(el => el.style.display = 'none');
+  await cargarPauta();
+  await cargarListas();
+})();
+</script>
+
+<script>
+// Service Worker: actualización automática (igual que los demás módulos)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const nw = reg.installing;
+      if (nw) nw.addEventListener('statechange', () => { if (nw.state === 'installed' && navigator.serviceWorker.controller) nw.postMessage && nw.postMessage({ type: 'SKIP_WAITING' }); });
+    });
+  }).catch(() => {});
+  let recargado = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (recargado) return; recargado = true; location.reload(); });
+}
+</script>
+</body>
+</html>
