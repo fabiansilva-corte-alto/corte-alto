@@ -409,8 +409,31 @@
     <!-- Botón agregar rodal -->
     <button class="btn-agregar" onclick="agregarFilaOferta()">+ Agregar rodal ofertado</button>
 
+    <!-- Bloque override manual -->
+    <div style="margin-top:14px;padding:14px 16px;border:1.5px solid var(--borde);border-radius:12px;background:var(--fondo-panel)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#999;margin-bottom:12px">Meta CALTO manual (override)</div>
+
+      <label style="font-size:13px;color:var(--texto-suave)">Valor manual (m³)</label>
+      <input type="number" id="or-meta-manual" placeholder="Ej: 11500" step="1" min="0"
+        style="width:100%;padding:10px 12px;border:1.5px solid var(--borde);border-radius:8px;font-size:15px;font-weight:700;margin-top:4px;box-sizing:border-box"
+        oninput="orActualizarPreview()">
+
+      <div style="margin-top:14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#999;margin-bottom:8px">¿Cuál valor usar en el dashboard?</div>
+
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border-radius:8px;border:1.5px solid var(--borde);background:var(--fondo-tarjeta);margin-bottom:8px">
+        <input type="radio" name="or-usar" id="or-usar-prop" value="prop" style="width:16px;height:16px;accent-color:var(--verde-oscuro)" onchange="orActualizarPreview()">
+        <span style="font-size:14px">Usar meta <strong>calculada</strong></span>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border-radius:8px;border:1.5px solid var(--borde);background:var(--fondo-tarjeta)">
+        <input type="radio" name="or-usar" id="or-usar-manual" value="manual" style="width:16px;height:16px;accent-color:var(--verde-oscuro)" onchange="orActualizarPreview()">
+        <span style="font-size:14px">Usar meta <strong>manual</strong></span>
+      </label>
+
+      <div id="or-usar-preview" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--verde-claro);font-size:12px;color:var(--verde-oscuro)"></div>
+    </div>
+
     <!-- Guardar -->
-    <button class="btn-primario" style="width:100%;margin-top:12px" onclick="guardarOfertaRodales()">Guardar Meta CALTO</button>
+    <button class="btn-primario" style="width:100%;margin-top:14px" onclick="guardarOfertaRodales()">Guardar Meta CALTO</button>
 
     <!-- Info guardado -->
     <div id="or-guardado-info" style="display:none;margin-top:10px;padding:12px;background:var(--verde-claro);border-radius:10px;font-size:13px;color:var(--verde-oscuro)"></div>
@@ -1724,6 +1747,13 @@ window.cargarOfertaRodales = async function(){
   orFilas = [];
   const info = document.getElementById('or-guardado-info');
   info.style.display = 'none';
+  // Reset override manual
+  const manualInp2 = document.getElementById('or-meta-manual');
+  if(manualInp2) manualInp2.value = '';
+  const radP = document.getElementById('or-usar-prop');
+  if(radP) radP.checked = true;
+  const prev = document.getElementById('or-usar-preview');
+  if(prev) prev.style.display = 'none';
   try{
     const snap = await getDoc(doc(db, COL_OFERTA_RODALES, idOfertaRodales(linea, mes, anio)));
     if(snap.exists()){
@@ -1738,9 +1768,42 @@ window.cargarOfertaRodales = async function(){
         info.style.display = 'block';
         info.innerHTML = `✅ Meta CALTO guardada: <strong>${orFmt(data.meta_calto, 3)} m³</strong>`;
       }
+      // Restaurar override manual
+      const manualInp = document.getElementById('or-meta-manual');
+      if(manualInp) manualInp.value = data.meta_calto_manual != null ? Math.round(data.meta_calto_manual * 1000) : '';
+      const usar = data.meta_calto_usar || 'prop';
+      const radProp   = document.getElementById('or-usar-prop');
+      const radManual = document.getElementById('or-usar-manual');
+      if(radProp)   radProp.checked   = usar === 'prop';
+      if(radManual) radManual.checked = usar === 'manual';
+      orActualizarPreview();
     }
   } catch(e){ /* sin conexión */ }
   renderOrTabla();
+};
+
+window.orActualizarPreview = function(){
+  const usar    = document.querySelector('input[name="or-usar"]:checked')?.value || 'prop';
+  const manual  = parseFloat(document.getElementById('or-meta-manual')?.value);
+  const preview = document.getElementById('or-usar-preview');
+  // Leer meta calculada actual desde la celda del TOTAL
+  const metaCalcEl = document.getElementById('or-meta-calto');
+  const metaCalcTxt = metaCalcEl ? metaCalcEl.textContent.replace(/[^\d.,]/g,'').replace('.','').replace(',','.') : '';
+  const metaCalc = parseFloat(metaCalcTxt) * 1000; // está en miles en la celda
+
+  if(!preview) return;
+  let txt = '';
+  if(usar === 'prop'){
+    txt = isNaN(metaCalc) || metaCalc <= 0
+      ? '✅ Se usará la meta calculada (ingresa rodales para ver el valor)'
+      : `✅ El dashboard usará la meta calculada: ${Math.round(metaCalc).toLocaleString('es-CL')} m³`;
+  } else {
+    txt = isNaN(manual)
+      ? '⚠️ Ingresa un valor manual primero'
+      : `✅ El dashboard usará la meta manual: ${Math.round(manual).toLocaleString('es-CL')} m³`;
+  }
+  preview.textContent = txt;
+  preview.style.display = 'block';
 };
 
 window.guardarOfertaRodales = async function(){
@@ -1774,17 +1837,30 @@ window.guardarOfertaRodales = async function(){
     };
   });
 
+  // Leer override manual y elección
+  const manualRaw  = parseFloat(document.getElementById('or-meta-manual')?.value);
+  const usar       = document.querySelector('input[name="or-usar"]:checked')?.value || 'prop';
+  const metaManual = isNaN(manualRaw) ? null : manualRaw / 1000; // guardar en miles igual que meta_calto
+  if(usar === 'manual' && metaManual === null){ toast('Ingresa un valor manual antes de guardar'); return; }
+  // meta_calto = el que usa el dashboard
+  const metaCaltoFinal = usar === 'manual' ? metaManual : metaCaltoTotal;
+
   try{
     await setDoc(doc(db, COL_OFERTA_RODALES, idOfertaRodales(linea, mes, anio)), {
       linea, mes, anio, fundo: fundoGlobal,
       rodales: rodalesPayload,
       total_ofertado: totalOfertado,
-      meta_calto: metaCaltoTotal
+      meta_calto_prop:   metaCaltoTotal,   // calculada (referencia)
+      meta_calto_manual: metaManual,        // override manual (en miles, puede ser null)
+      meta_calto_usar:   usar,              // "prop" | "manual"
+      meta_calto:        metaCaltoFinal     // el que lee el dashboard
     });
     const info = document.getElementById('or-guardado-info');
     info.style.display = 'block';
-    info.innerHTML = `✅ Meta CALTO guardada: <strong>${orFmt(metaCaltoTotal, 3)} m³</strong>`;
+    const etiq = usar === 'manual' ? 'manual' : 'calculada';
+    info.innerHTML = `✅ Meta CALTO guardada (<strong>${etiq}</strong>): <strong>${orFmt(metaCaltoFinal, 3)} m³</strong>`;
     toast('Meta CALTO guardada correctamente');
+    orActualizarPreview();
   } catch(e){
     toast('Error al guardar: ' + e.message);
   }

@@ -1450,6 +1450,23 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
                 <div class="dk-sub">m³</div>
               </td>
             </tr>
+            <!-- Fila 5: Ritmo diario necesario -->
+            <tr>
+              <td class="td-left">
+                <div class="dk-row-label">Ritmo diario</div>
+                <div class="dk-row-label" style="font-size:8px;opacity:.6">${diasRestL > 0 ? `${diasRestL} días rest.` : '—'}</div>
+              </td>
+              <td class="td-calto" id="calto-ritmo-${lin.replace(/\s+/g,'-')}">
+                <div class="dk-desc">Ritmo necesario</div>
+                <div class="dk-val" style="color:var(--text3)">—</div>
+                <div class="dk-sub">m³/día</div>
+              </td>
+              <td class="td-formin">
+                <div class="dk-desc">Ritmo necesario</div>
+                <div class="dk-val">${diasRestL > 0 ? fmt0(faltaLin / diasRestL) : (faltaLin <= 0 ? '✓' : '—')}</div>
+                <div class="dk-sub">${diasRestL > 0 ? 'm³/día' : (faltaLin <= 0 ? 'Meta lograda' : '')}</div>
+              </td>
+            </tr>
           </tbody>
         </table>
         ` : `
@@ -1536,12 +1553,25 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
         const celdaCumpl     = document.getElementById(`calto-cumpl-${linKey}`);
         const celdaFalta     = document.getElementById(`calto-falta-${linKey}`);
         const celdaProyec    = document.getElementById(`calto-proyec-${linKey}`);
+        const celdaRitmo     = document.getElementById(`calto-ritmo-${linKey}`);
         if(celdaMetaTotal) celdaMetaTotal.innerHTML = `<div class="dk-desc">Meta total mes</div><div class="dk-val" style="color:var(--text2)">${fmt0(metaCaltoTotal1000)}</div><div class="dk-sub">m³</div>`;
         if(celdaMetaAcum)  celdaMetaAcum.innerHTML  = `<div class="dk-desc">Meta acum.</div><div class="dk-val" style="color:var(--text2)">${fmt0(metaCaltoAcum1000)}</div><div class="dk-sub">m³</div>`;
         const pctClsDual = isNaN(pctCumpl)?'':(pctCumpl>=100?'blue':'bad');
         if(celdaCumpl)    celdaCumpl.innerHTML    = `<div class="dk-desc">% cumplim.</div><div class="dk-val ${pctClsDual}">${isNaN(pctCumpl)?'—':Math.round(pctCumpl)+'%'}</div>`;
         if(celdaFalta)    celdaFalta.innerHTML    = `<div class="dk-desc">¿Cuánto falta?</div><div class="dk-val">${fmt0(faltaCalto)}</div><div class="dk-sub">m³</div>`;
         if(celdaProyec)   celdaProyec.innerHTML   = `<div class="dk-val">${fmt0(proyecCalto)}</div><div class="dk-sub">m³</div>`;
+        // Fila 5: ritmo diario necesario CALTO
+        if(celdaRitmo) {
+          const diasRestC = mesTerminadoC ? 0 : Math.max(0, diasMesC - diasHastaAyer);
+          if(faltaCalto <= 0){
+            celdaRitmo.innerHTML = `<div class="dk-desc">Ritmo necesario</div><div class="dk-val blue">✓</div><div class="dk-sub">Meta lograda</div>`;
+          } else if(diasRestC > 0){
+            const ritmoC = faltaCalto / diasRestC;
+            celdaRitmo.innerHTML = `<div class="dk-desc">Ritmo necesario</div><div class="dk-val">${fmt0(ritmoC)}</div><div class="dk-sub">m³/día</div>`;
+          } else {
+            celdaRitmo.innerHTML = `<div class="dk-desc">Ritmo necesario</div><div class="dk-val bad">⚠</div><div class="dk-sub">Mes terminado</div>`;
+          }
+        }
       })();
     }
   }
