@@ -1381,12 +1381,26 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
             </tr>
           </thead>
           <tbody>
-            <!-- Fila 1: Producido real / Meta total mes -->
+            <!-- Fila 1: Producido real (rowspan 3) / Meta total mes -->
             <tr>
-              <td class="td-left">
-                <div class="dk-row-label">Producido real</div>
-                <div class="dk-row-val blue">${fmt0(volLin)}</div>
-                <div class="dk-row-sub">m³</div>
+              <td class="td-left" rowspan="5" style="position:relative;padding:0">
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px;border-bottom:1px solid var(--border)">
+                    <div class="dk-row-label">Producido real</div>
+                    <div class="dk-row-val blue">${fmt0(volLin)}</div>
+                    <div class="dk-row-sub">m³</div>
+                  </div>
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px;border-bottom:1px solid var(--border)">
+                    <div class="dk-row-label">Prom/día</div>
+                    <div class="dk-row-val">${fmt0(promLin)}</div>
+                    <div class="dk-row-sub">m³</div>
+                  </div>
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px">
+                    <div class="dk-row-label">Proyección${mesTerminado ? '' : ` (${diasRestL} d.)`}</div>
+                    <div class="dk-row-val">${fmt0(proyecLin)}</div>
+                    <div class="dk-row-sub">m³</div>
+                  </div>
+                </div>
               </td>
               <td class="td-calto" id="calto-meta-total-${lin.replace(/\s+/g,'-')}">
                 <div class="dk-desc">Meta total mes</div>
@@ -1399,13 +1413,8 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
                 <div class="dk-sub">m³</div>
               </td>
             </tr>
-            <!-- Fila 2: Prom/día / Meta acum. -->
+            <!-- Fila 2: Meta acum. -->
             <tr>
-              <td class="td-left">
-                <div class="dk-row-label">Prom/día</div>
-                <div class="dk-row-val">${fmt0(promLin)}</div>
-                <div class="dk-row-sub">m³</div>
-              </td>
               <td class="td-calto" id="calto-meta-acum-${lin.replace(/\s+/g,'-')}">
                 <div class="dk-desc">Meta acum.</div>
                 <div class="dk-val" style="color:var(--text3)">—</div>
@@ -1417,13 +1426,8 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
                 <div class="dk-sub">m³</div>
               </td>
             </tr>
-            <!-- Fila 3: Proyección / % cumplim. -->
+            <!-- Fila 3: % cumplim. -->
             <tr>
-              <td class="td-left">
-                <div class="dk-row-label">Proyección${mesTerminado ? '' : ` (${diasRestL} d.)`}</div>
-                <div class="dk-row-val">${fmt0(proyecLin)}</div>
-                <div class="dk-row-sub">m³</div>
-              </td>
               <td class="td-calto" id="calto-cumpl-${lin.replace(/\s+/g,'-')}">
                 <div class="dk-desc">% cumplim.</div>
                 <div class="dk-val" style="color:var(--text3)">—</div>
@@ -1434,11 +1438,8 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
                 <div class="dk-val">${isNaN(cumplLin)?'—':Math.round(cumplLin)+'%'}</div>
               </td>
             </tr>
-            <!-- Fila 4: (vacío) / ¿Cuánto falta? -->
+            <!-- Fila 4: ¿Cuánto falta? -->
             <tr>
-              <td class="td-left">
-                <div class="dk-row-label" style="opacity:0">—</div>
-              </td>
               <td class="td-calto" id="calto-falta-${lin.replace(/\s+/g,'-')}">
                 <div class="dk-desc">¿Cuánto falta?</div>
                 <div class="dk-val" style="color:var(--text3)">—</div>
@@ -1452,10 +1453,6 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
             </tr>
             <!-- Fila 5: Ritmo diario necesario -->
             <tr>
-              <td class="td-left">
-                <div class="dk-row-label">Ritmo diario</div>
-                <div class="dk-row-label" style="font-size:8px;opacity:.6">${diasRestL > 0 ? `${diasRestL} días rest.` : '—'}</div>
-              </td>
               <td class="td-calto" id="calto-ritmo-${lin.replace(/\s+/g,'-')}">
                 <div class="dk-desc">Ritmo necesario</div>
                 <div class="dk-val" style="color:var(--text3)">—</div>
