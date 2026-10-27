@@ -533,20 +533,25 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
       <div class="contenido-header">
         <div>
           <div class="contenido-titulo">Cumplimiento de jefes</div>
-          <div class="contenido-sub">Qué días de este mes informó cada jefe de faena su cuadrilla en Cuadrilla diaria, y cuáles quedaron sin informar. Si un jefe lleva 3 días o más sin informar y otro jefe aparece informando el mismo fundo esos días, se marca como probable descanso de turno en vez de falta.</div>
+          <div class="contenido-sub">Qué días de este mes quedó cada fundo cubierto por algún jefe de faena en Cuadrilla diaria, y cuáles quedaron sin cobertura. El botón "Detalle" de cada fundo muestra el cumplimiento de los jefes que lo han reportado este mes — si un jefe no informa un día (aunque sea solo uno) y otro jefe aparece informando ese mismo fundo ese día, se marca como probable descanso de turno en vez de falta.</div>
         </div>
         <button class="btn-secondary" onclick="fetchCumplimientoJefes(true)">Actualizar</button>
       </div>
 
-      <div class="cumplimiento-leyenda">
-        <span><span class="cumplimiento-dot informo"></span>Informó cuadrilla</span>
-        <span><span class="cumplimiento-dot sin_informar"></span>Sin informar</span>
-        <span><span class="cumplimiento-dot descanso_probable"></span>Probable descanso de turno</span>
-        <span><span class="cumplimiento-dot futuro"></span>Día futuro / sin datos aún</span>
-      </div>
+      <div id="cumplimiento-tab-fundos">
+        <!-- A nivel de fundo: verde = algún jefe lo reportó ese día, rojo = nadie lo reportó
+             ese día. No existe "probable descanso" a este nivel (ese concepto es por persona,
+             no por fundo) — para ver el detalle de quién cubre cada fundo y su cumplimiento
+             general, se usa el botón "Detalle" de cada fundo (reusa esos mismos 4 estados). -->
+        <div class="cumplimiento-leyenda">
+          <span><span class="cumplimiento-dot informo"></span>Cubierto (algún jefe lo reportó)</span>
+          <span><span class="cumplimiento-dot sin_informar"></span>Sin cobertura</span>
+          <span><span class="cumplimiento-dot futuro"></span>Día futuro / sin datos aún</span>
+        </div>
 
-      <div class="contador-desktop" id="cumplimiento-contador">Cargando…</div>
-      <div id="cumplimiento-cont"></div>
+        <div class="contador-desktop" id="cumplimiento-fundos-contador">Cargando…</div>
+        <div id="cumplimiento-fundos-cont"></div>
+      </div>
     </div>
 
     <!-- Configuración -->
@@ -3487,7 +3492,7 @@ window.marcarRevisionRevisada = async function(id, boton){
 // es un relevo de turno (probable descanso) en vez de una falta real.
 
 let jefesCatalogo = null; // [{id, nombre}], catálogo de config_jefes_faena
-let cumplimientoDatos = null; // { diasMes:[...], hoyISO, jefes:[{nombre, estados:{fecha:estado}, totalSinInformar, totalDescanso, totalInformo}] }
+let cumplimientoDatos = null; // { diasMes:[...], hoyISO, jefes:[{nombre, estados:{fecha:estado}, totalSinInformar, totalDescanso, totalInformo}], fundos:[{nombre, estados:{fecha:'informo'|'sin_informar'|'futuro'}, totalCubierto, totalSinCobertura, jefesDelFundo:[nombre,...]}] }
 
 async function asegurarJefesCatalogo(){
   if(jefesCatalogo !== null) return jefesCatalogo;
@@ -3526,10 +3531,10 @@ function ultimoDiaMesISO(fechaISO){
 }
 
 window.fetchCumplimientoJefes = async function(forzar){
-  if(cumplimientoDatos !== null && !forzar){ renderCumplimientoJefes(); return; }
+  if(cumplimientoDatos !== null && !forzar){ renderCumplimientoFundos(); return; }
 
-  const cont = document.getElementById("cumplimiento-cont");
-  const contador = document.getElementById("cumplimiento-contador");
+  const cont = document.getElementById("cumplimiento-fundos-cont");
+  const contador = document.getElementById("cumplimiento-fundos-contador");
   if(!cont) return;
   contador.textContent = "Cargando…";
   cont.innerHTML = `<p style="text-align:center;color:var(--text3);padding:20px">Cargando…</p>`;
@@ -3575,19 +3580,21 @@ window.fetchCumplimientoJefes = async function(forzar){
         estados[fecha] = fecha > hoy ? "futuro" : (registros[fecha] !== undefined ? "informo" : "vacio");
       });
 
-      // Rachas de 3+ días seguidos sin informar: revisamos si otro jefe cubrió el mismo fundo.
+      // Cualquier día sin informar (sin mínimo de racha — ajustado 26 oct 2026 a pedido de
+      // Fabián: antes solo se revisaba relevo desde 3 días seguidos sin informar, y un caso
+      // real de un solo día — ej. Suárez informa el 25, no informa el 26, pero Erick informa
+      // Santa Rosa el 26 — quedaba marcado "Sin informar" en rojo aunque hubiera evidencia
+      // clara de relevo de turno ese mismo día) revisamos si otro jefe cubrió el mismo fundo
+      // que este jefe venía informando antes de dejar de informar.
       let i = 0;
       while(i < diasPasados.length){
         if(estados[diasPasados[i]] !== "vacio"){ i++; continue; }
         let j = i;
         while(j < diasPasados.length && estados[diasPasados[j]] === "vacio") j++;
-        const largoRacha = j - i;
         let fundoRef = null;
-        if(largoRacha >= 3){
-          for(let k = i - 1; k >= 0; k--){
-            const f = registros[diasPasados[k]];
-            if(f){ fundoRef = f; break; }
-          }
+        for(let k = i - 1; k >= 0; k--){
+          const f = registros[diasPasados[k]];
+          if(f){ fundoRef = f; break; }
         }
         for(let k = i; k < j; k++){
           const fecha = diasPasados[k];
@@ -3612,7 +3619,39 @@ window.fetchCumplimientoJefes = async function(forzar){
       };
     });
 
-    cumplimientoDatos = { diasMes, hoy, jefes: jefesResultado };
+    // Vista "Por fundo" (26 oct 2026, a pedido de Fabián): mismo mes, agrupado por fundo del
+    // catálogo en vez de por jefe. Un día queda "cubierto" si ALGÚN jefe reportó cuadrilla en
+    // ese fundo ese día (mismo fundosCoinciden que usa toda la app); si nadie lo reportó, queda
+    // "sin cobertura". No hay "probable descanso" a este nivel — eso es un concepto por persona.
+    // Solo se listan fundos activos con al menos un día cubierto este mes (evita llenar la
+    // pantalla con fundos del catálogo sin ninguna actividad real).
+    if(!fundosCatalogoCargados) await fetchFundosCatalogo();
+    const fundosActivos = (FUNDOS_CATALOGO || []).filter(fc => fc.activo !== false);
+    const fundosResultado = fundosActivos.map(fc => {
+      const estados = {};
+      const jefesSet = new Set();
+      let totalCubierto = 0, totalSinCobertura = 0;
+      diasMes.forEach(fecha => {
+        if(fecha > hoy){ estados[fecha] = "futuro"; return; }
+        const registrosDia = registrosPorFecha[fecha] || [];
+        const cubridores = registrosDia.filter(r => fundosCoinciden(r.fundo, fc.nombre) || (fc.alias||[]).some(a => fundosCoinciden(r.fundo, a)));
+        if(cubridores.length){
+          estados[fecha] = "informo"; // reutiliza la clase CSS verde ya existente (cubierto)
+          totalCubierto++;
+          cubridores.forEach(r => jefesSet.add(r.jefe));
+        }else{
+          estados[fecha] = "sin_informar"; // reutiliza la clase CSS roja ya existente (sin cobertura)
+          totalSinCobertura++;
+        }
+      });
+      return {
+        nombre: fc.nombre, estados, totalCubierto, totalSinCobertura,
+        jefesDelFundo: Array.from(jefesSet).sort((a,b) => a.localeCompare(b, "es"))
+      };
+    }).filter(f => f.totalCubierto > 0);
+    fundosResultado.sort((a,b) => a.nombre.localeCompare(b.nombre, "es"));
+
+    cumplimientoDatos = { diasMes, hoy, jefes: jefesResultado, fundos: fundosResultado };
   }catch(e){
     cont.innerHTML = `<p style="text-align:center;color:var(--red);padding:20px">No se pudo cargar. Intenta de nuevo.</p>`;
     contador.textContent = "Error al cargar.";
@@ -3620,46 +3659,91 @@ window.fetchCumplimientoJefes = async function(forzar){
     return;
   }
 
-  renderCumplimientoJefes();
+  renderCumplimientoFundos();
 };
 
-function renderCumplimientoJefes(){
-  const cont = document.getElementById("cumplimiento-cont");
-  const contador = document.getElementById("cumplimiento-contador");
+// Celdas de días compartidas entre la vista "Por fundo" y el detalle por jefe dentro de un
+// fundo — así quedan visualmente idénticas y cualquier ajuste futuro se hace en un solo lugar.
+// tipo "jefe" usa los 4 estados (informo/sin_informar/descanso_probable/futuro), con el texto y
+// el clic de siempre (se usa dentro del Detalle de cada fundo); tipo "fundo" usa solo
+// informo/sin_informar/futuro con textos de cobertura en vez de "informó" (vista principal).
+function celdasCumplimientoDias(estados, { tipo = "jefe", nombreParaClic = null } = {}){
+  return cumplimientoDatos.diasMes.map(fecha => {
+    const estado = estados[fecha] || "futuro";
+    const diaNum = Number(fecha.split("-")[2]);
+    let titulo = fecha;
+    if(tipo === "fundo"){
+      if(estado === "informo") titulo += " — Cubierto (algún jefe lo reportó)";
+      else if(estado === "sin_informar") titulo += " — Sin cobertura";
+      else titulo += " — Día futuro";
+    }else{
+      if(estado === "informo") titulo += " — Informó cuadrilla" + (nombreParaClic ? " (clic para ver a quién)" : "");
+      else if(estado === "sin_informar") titulo += " — Sin informar";
+      else if(estado === "descanso_probable") titulo += " — Probable descanso de turno (otro jefe cubrió el fundo)";
+      else titulo += " — Día futuro";
+    }
+    const onclick = (nombreParaClic && estado === "informo")
+      ? ` onclick="abrirModalCumplimientoDia('${escapeHtml(nombreParaClic).replace(/'/g,"\\'")}','${fecha}')"`
+      : "";
+    return `<div class="cumplimiento-dia ${estado}" title="${escapeHtml(titulo)}"${onclick}>${diaNum}</div>`;
+  }).join("");
+}
+
+function renderCumplimientoFundos(){
+  const cont = document.getElementById("cumplimiento-fundos-cont");
+  const contador = document.getElementById("cumplimiento-fundos-contador");
   if(!cont || cumplimientoDatos === null) return;
 
-  const { jefes } = cumplimientoDatos;
+  const { fundos } = cumplimientoDatos;
   const mesLabel = new Date(cumplimientoDatos.hoy + "T12:00:00").toLocaleDateString("es-CL", { month: "long", year: "numeric" });
-  contador.textContent = `${jefes.length} jefe${jefes.length === 1 ? "" : "s"} · ${mesLabel}`;
+  contador.textContent = `${fundos.length} fundo${fundos.length === 1 ? "" : "s"} con actividad · ${mesLabel}`;
 
-  if(!jefes.length){
-    cont.innerHTML = `<p style="text-align:center;color:var(--text3);padding:20px">No hay jefes en el catálogo ni registros de cuadrilla este mes.</p>`;
+  if(!fundos.length){
+    cont.innerHTML = `<p style="text-align:center;color:var(--text3);padding:20px">Sin registros de cuadrilla este mes para ningún fundo del catálogo.</p>`;
     return;
   }
 
-  cont.innerHTML = jefes.map(j => `
+  cont.innerHTML = fundos.map((f, i) => `
     <div class="cumplimiento-jefe">
       <div class="cumplimiento-jefe-header">
-        <div class="cumplimiento-jefe-nombre">${escapeHtml(j.nombre)}</div>
-        <div class="cumplimiento-jefe-resumen">${j.totalInformo} informado${j.totalInformo===1?"":"s"} · ${j.totalSinInformar} sin informar${j.totalDescanso ? ` · ${j.totalDescanso} probable descanso` : ""}</div>
+        <div class="cumplimiento-jefe-nombre">${escapeHtml(f.nombre)}</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="cumplimiento-jefe-resumen">${f.totalCubierto} cubierto${f.totalCubierto===1?"":"s"} · ${f.totalSinCobertura} sin cobertura</div>
+          <button class="btn-secondary" style="padding:4px 10px;font-size:12.5px" onclick="toggleDetalleFundoCumplimiento(${i})">Detalle</button>
+        </div>
       </div>
-      <div class="cumplimiento-grid">
-        ${cumplimientoDatos.diasMes.map(fecha => {
-          const estado = j.estados[fecha] || "futuro";
-          const diaNum = Number(fecha.split("-")[2]);
-          let titulo = fecha;
-          if(estado === "informo") titulo += " — Informó cuadrilla (clic para ver a quién)";
-          else if(estado === "sin_informar") titulo += " — Sin informar";
-          else if(estado === "descanso_probable") titulo += " — Probable descanso de turno (otro jefe cubrió el fundo)";
-          else titulo += " — Día futuro";
-          const nombreJs = escapeHtml(j.nombre).replace(/'/g,"\\'");
-          const onclick = estado === "informo" ? ` onclick="abrirModalCumplimientoDia('${nombreJs}','${fecha}')"` : "";
-          return `<div class="cumplimiento-dia ${estado}" title="${escapeHtml(titulo)}"${onclick}>${diaNum}</div>`;
-        }).join("")}
-      </div>
+      <div class="cumplimiento-grid">${celdasCumplimientoDias(f.estados, { tipo: "fundo" })}</div>
+      <div id="cumplimiento-fundo-detalle-${i}" class="hidden" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"></div>
     </div>
   `).join("");
 }
+
+// Detalle de un fundo: lista los jefes que reportaron ESE fundo al menos una vez este mes, cada
+// uno con su calendario de cumplimiento GENERAL (el mismo de la pestaña "Por jefe" — no limitado
+// a los días que trabajó justo en este fundo), para no tener que ir y volver entre pestañas.
+window.toggleDetalleFundoCumplimiento = function(i){
+  const panel = document.getElementById(`cumplimiento-fundo-detalle-${i}`);
+  if(!panel) return;
+  if(!panel.classList.contains("hidden")){
+    panel.classList.add("hidden");
+    panel.innerHTML = "";
+    return;
+  }
+  const fundo = cumplimientoDatos.fundos[i];
+  const jefesDelFundo = cumplimientoDatos.jefes.filter(j => fundo.jefesDelFundo.includes(j.nombre));
+  panel.innerHTML = !jefesDelFundo.length
+    ? `<p style="font-size:12.5px;color:var(--text3)">Sin jefes registrados para este fundo este mes.</p>`
+    : jefesDelFundo.map(j => `
+        <div style="margin-bottom:12px">
+          <div class="cumplimiento-jefe-header" style="margin-bottom:6px">
+            <div class="cumplimiento-jefe-nombre" style="font-size:13px">${escapeHtml(j.nombre)}</div>
+            <div class="cumplimiento-jefe-resumen">${j.totalInformo} informado${j.totalInformo===1?"":"s"} · ${j.totalSinInformar} sin informar${j.totalDescanso ? ` · ${j.totalDescanso} probable descanso` : ""}</div>
+          </div>
+          <div class="cumplimiento-grid">${celdasCumplimientoDias(j.estados, { tipo: "jefe", nombreParaClic: j.nombre })}</div>
+        </div>
+      `).join("");
+  panel.classList.remove("hidden");
+};
 
 // ----- Modal: a quién informó un jefe en un día puntual (clic en un día "informó" del calendario) -----
 window.abrirModalCumplimientoDia = async function(nombreJefe, fecha){
