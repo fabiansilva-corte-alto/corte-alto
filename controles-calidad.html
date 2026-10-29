@@ -35,7 +35,18 @@ input,select,textarea{width:100%;padding:10px;border:1px solid var(--bd);border-
 .btn.d{background:var(--rc);color:var(--r)}
 .btn.w{width:100%}
 .btn:disabled{opacity:.6}
-.tipos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tipos{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.tandas{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
+.tanda{border:1px solid var(--bd);border-radius:8px;padding:6px 4px;text-align:center;font-size:12px;line-height:1.3;color:var(--g)}
+.tanda.hecha{background:var(--vc);border-color:#a5d6a7;color:var(--v)}
+.tanda.hecha.mala{background:var(--rc);border-color:#ef9a9a;color:var(--r)}
+.tanda.actual{border:2px dashed var(--v);color:var(--v);font-weight:600}
+.trz{display:grid;grid-template-columns:20px 1fr 1fr 50px 54px 26px;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid #eef1ef}
+.trz input,.trz select{padding:7px 4px;font-size:14px}
+.trz .n{font-size:12px;color:var(--g);text-align:center}
+.trz .obs{grid-column:2 / -1;display:none}
+.trz .obs.on{display:block}
+.trz-h{font-size:11px;color:var(--g);border-bottom:1px solid var(--bd)}
 .tipos button{padding:12px 6px;border:2px solid var(--bd);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;color:var(--tx)}
 .tipos button.on{border-color:var(--v);background:var(--vc);color:var(--v);font-weight:600}
 .item{border-top:1px solid var(--bd);padding:12px 0}
@@ -91,6 +102,14 @@ th{font-size:12px;color:var(--g);font-weight:600}
 .muted{color:var(--g);font-size:12px}
 .bar{height:8px;background:#eceff1;border-radius:4px;overflow:hidden;margin-top:3px}
 .bar i{display:block;height:100%;background:var(--r)}
+.filtro{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.filtro .mes{flex:1 1 170px}
+.filtro .btn{white-space:nowrap;padding:10px 12px}
+.btn.av{background:#fff;border:1px solid var(--bd);color:var(--tx);font-size:14px}
+.btn.av.on{background:var(--ac);border-color:#e0a800;color:#8d5a00}
+.btn.dark{background:#1f2a24;color:#fff;font-weight:600}
+.lbl-ic{display:block;font-size:11px;color:var(--g);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin:0 0 4px}
+#avanzado{display:none;margin-top:6px}#avanzado.on{display:block}
 </style>
 </head>
 <body>
@@ -109,31 +128,33 @@ th{font-size:12px;color:var(--g);font-weight:600}
 <main>
 <!-- ============ NUEVO CONTROL ============ -->
 <section class="sec on" id="sec-nuevo">
+  <div class="info" id="editBanner" style="display:none;margin-bottom:12px"></div>
   <div class="card">
     <h2>Tipo de control</h2>
     <div class="tipos">
       <button type="button" id="tp-tocones" onclick="elegirTipo('tocones')">Tocones</button>
       <button type="button" id="tp-trozos" onclick="elegirTipo('trozos')">Trozos en cancha</button>
       <button type="button" id="tp-arrumado" onclick="elegirTipo('arrumado')">Arrumado pino</button>
+      <button type="button" id="tp-largos" onclick="elegirTipo('largos')">Control de largos</button>
     </div>
   </div>
 
   <div class="card">
     <h2>Datos del control</h2>
     <div class="g2">
-      <div><label class="l">Fecha</label><input type="date" id="fecha"></div>
+      <div><label class="l">Fecha</label><input type="date" id="fecha" onchange="onCambioCabecera()"></div>
       <div><label class="l">Línea</label><select id="sLinea" onchange="onOtro('sLinea')"></select><input class="otro" id="sLinea_o" placeholder="Escribe la línea"></div>
     </div>
-    <label class="l">Fundo</label><select id="sFundo" onchange="onOtro('sFundo')"></select><input class="otro" id="sFundo_o" placeholder="Escribe el fundo">
-    <label class="l">Controlador (quien hace el control)</label><select id="sCtrl" onchange="onOtro('sCtrl')"></select><input class="otro" id="sCtrl_o" placeholder="Nombre del controlador">
-    <label class="l">N° de cancha</label><input id="cancha" inputmode="numeric" placeholder="Ej: 4101" oninput="this.classList.remove('err')">
+    <label class="l">Fundo</label><select id="sFundo" onchange="onOtro('sFundo');onCambioCabecera()"></select><input class="otro" id="sFundo_o" placeholder="Escribe el fundo">
+    <label class="l" id="lblCtrl">Controlador (quien hace el control)</label><select id="sCtrl" onchange="onOtro('sCtrl');onCambioCabecera()"></select><input class="otro" id="sCtrl_o" placeholder="Nombre del controlador">
+    <div data-tipos="tocones trozos arrumado"><label class="l">N° de cancha</label><input id="cancha" inputmode="numeric" placeholder="Ej: 4101" oninput="this.classList.remove('err')"></div>
   </div>
 
   <div class="card">
     <h2>Personas evaluadas <span class="muted">(si aplica)</span></h2>
     <label class="l">Jefe de faena</label><select id="sJefe" onchange="onOtro('sJefe')"></select><input class="otro" id="sJefe_o" placeholder="Nombre">
     <div data-tipos="tocones"><label class="l">Op. Volteo</label><select id="sVolteo" onchange="onOtro('sVolteo')"></select><input class="otro" id="sVolteo_o" placeholder="Nombre"></div>
-    <div data-tipos="trozos arrumado"><label class="l">Op. Trozado</label><select id="sTrozado" onchange="onOtro('sTrozado')"></select><input class="otro" id="sTrozado_o" placeholder="Nombre"></div>
+    <div data-tipos="trozos arrumado largos"><label class="l">Op. Trozado</label><select id="sTrozado" onchange="onOtro('sTrozado')"></select><input class="otro" id="sTrozado_o" placeholder="Nombre"></div>
     <div data-tipos="arrumado"><label class="l">Op. Clasificado</label><select id="sClasif" onchange="onOtro('sClasif')"></select><input class="otro" id="sClasif_o" placeholder="Nombre"></div>
     <div data-tipos="trozos arrumado"><label class="l">Calibrador</label><select id="sCalib" onchange="onOtro('sCalib')"></select><input class="otro" id="sCalib_o" placeholder="Nombre"></div>
   </div>
@@ -148,7 +169,7 @@ th{font-size:12px;color:var(--g);font-weight:600}
     <textarea id="obsGeneral" rows="2" placeholder="Comentario del control (opcional)"></textarea>
   </div>
 
-  <div class="nota">
+  <div class="nota" id="barraNota">
     <div><div class="muted">Nota</div><div class="n" id="notaN">—</div></div>
     <div style="flex:1"><span class="chip" id="notaChip"></span><div class="muted" id="notaPend"></div></div>
     <button class="btn p" id="btnGuardar" onclick="guardar()">Guardar</button>
@@ -158,20 +179,25 @@ th{font-size:12px;color:var(--g);font-weight:600}
 <!-- ============ RESULTADOS ============ -->
 <section class="sec" id="sec-res">
   <div class="card">
-    <h2>Consultar</h2>
-    <div class="g2">
-      <div><label class="l">Desde</label><input type="date" id="rDesde"></div>
-      <div><label class="l">Hasta</label><input type="date" id="rHasta"></div>
+    <div class="filtro">
+      <div class="mes"><span class="lbl-ic">📅 Mes y año</span><input type="month" id="rMes" onchange="onMes()"></div>
+      <button type="button" class="btn av" id="btnAv" onclick="toggleAvanzado()">⚙️ Filtro avanzado</button>
+      <button type="button" class="btn dark" onclick="consultar()">🔍 Consultar</button>
     </div>
-    <button class="btn p w" style="margin-top:10px" onclick="consultar()">Consultar</button>
+    <div id="avanzado">
     <div class="g2" style="margin-top:6px">
-      <div><label class="l">Tipo</label><select id="rTipo" onchange="renderR()"><option value="">Todos</option><option value="tocones">Tocones</option><option value="trozos">Trozos en cancha</option><option value="arrumado">Arrumado pino</option></select></div>
+      <div><span class="lbl-ic" style="margin-top:8px">📅 Desde</span><input type="date" id="rDesde"></div>
+      <div><span class="lbl-ic" style="margin-top:8px">📅 Hasta</span><input type="date" id="rHasta"></div>
+    </div>
+    <div class="g2" style="margin-top:6px">
+      <div><label class="l">Tipo</label><select id="rTipo" onchange="renderR()"><option value="">Todos</option><option value="tocones">Tocones</option><option value="trozos">Trozos en cancha</option><option value="arrumado">Arrumado pino</option><option value="largos">Control de largos</option></select></div>
       <div><label class="l">Línea</label><select id="rLinea" onchange="renderR()"><option value="">Todas</option></select></div>
       <div><label class="l">Fundo</label><select id="rFundo" onchange="renderR()"><option value="">Todos</option></select></div>
       <div><label class="l">Controlador</label><select id="rCtrl" onchange="renderR()"><option value="">Todos</option></select></div>
     </div>
     <label class="l">Persona evaluada (jefe, operador o calibrador)</label>
     <select id="rPersona" onchange="renderR()"><option value="">Todas</option></select>
+    </div>
   </div>
   <div id="rKpis"></div>
   <div id="rTop"></div>
@@ -187,9 +213,9 @@ th{font-size:12px;color:var(--g);font-weight:600}
 <div class="modal" id="modal" onclick="if(event.target===this)cerrarModal()"><div class="box" id="modalBox"></div></div>
 <div class="toast" id="toast"></div>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
@@ -207,7 +233,8 @@ let db = null, st = null;
 if (CFG_OK && window.firebase) {
   firebase.initializeApp(firebaseConfig);
   db = firebase.firestore();
-  db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+  // Misma versión (10.12.2) que index.html y los demás módulos con caché: así comparten la base guardada en el celular.
+  db.enablePersistence().catch(e => { window.__sinCacheLocal = true; console.warn('Sin caché local de Firestore', e); });
   try { st = firebase.storage(); st.setMaxUploadRetryTime(15000); st.setMaxOperationRetryTime(8000); } catch (e) { st = null; }
 } else {
   const b = document.getElementById('banner');
@@ -232,6 +259,7 @@ function toast(m, ms = 3500) { const t = $('toast'); t.textContent = m; t.style.
 // conf:true = puntaje confirmado (pauta o informes Mininco) · conf:false = asumido, editable en Configuración
 const DEF = {
   tocones: { nombre: 'Tocones', equipos: { SHOVEL: 10, MOTOSIERRISTA: 5 }, n: 10 },
+  largos: { nombre: 'Control de largos', tol: 3, n: 10, tandasDia: 4 },
   trozos: { nombre: 'Trozos en cancha', items: [
     { id: 't1', pts: 15, conf: true, t: '¿Los productos debobinables o aserrables mantienen su calidad sin degradación por diámetro menor o mayor?', ay: 'Muestra 5 fustes. Cumple: ≤ 1 trozo bajo o sobre diámetro. Diámetro mínimo: Clear 28 cm, Industrial aserrable 18 cm, debobinable 28 cm (o según esquema). Diámetro JAS = par inferior del diámetro menor sin corteza, medido en la punta (ej.: 23,5 → 22).' },
     { id: 't2', pts: 15, conf: true, t: '¿Los productos debobinables o aserrables mantienen su calidad sin degradación por largo?', ay: 'Muestra 5 fustes. Tolerancia de largo ±3 cm respecto al largo real del esquema de trozado (largo nominal + sobredimensión). Cumple: máximo 1 trozo fuera de tolerancia. No cumple: 2 sobrelargos o 1 trozo corto.' },
@@ -288,6 +316,7 @@ function aplicarPauta(d) {
   }));
   if (typeof d.simMin === 'number') PAUTA.arrumado.simMin = d.simMin;
   if (typeof d.simMax === 'number') PAUTA.arrumado.simMax = d.simMax;
+  if (typeof d.tolLargos === 'number') PAUTA.largos.tol = d.tolLargos;
 }
 
 // ================= LISTAS DESDE CONFIGURACIÓN =================
@@ -306,7 +335,7 @@ async function cargarListas() {
   const res = await Promise.all(['config_fundos', 'config_lineas', 'config_jefes_faena', 'config_calibradores', 'config_operadores'].map(getCol));
   if (res.every(x => x === null) && local && local.fundos) return; // sin señal: se quedan las listas guardadas en el celular
   const [f, l, j, c, o] = res.map(x => x || []);
-  L.fundos = f.filter(x => x.nombre).sort((a, b) => byName(a.nombre, b.nombre));
+  L.fundos = f.filter(x => x.nombre && x.activo !== false).sort((a, b) => byName(a.nombre, b.nombre));
   if (!L.fundos.length) L.fundos = [{ nombre: 'EL OLIVILLO', codigo: '628' }, { nombre: 'LOS ALPES HIJ1', codigo: '729' }, { nombre: 'SANTA ROSA', codigo: '1724' }];
   L.lineas = unicos(l.map(x => x.nombre));
   if (!L.lineas.length) L.lineas = ['T1', 'T2', 'T3'];
@@ -338,13 +367,15 @@ function val(id) { const s = $(id); if (!s) return ''; return s.value === '__otr
 // ================= ESTADO DEL FORMULARIO =================
 let estado = { tipo: null, resp: {}, sim: null };
 function ensureResp(id) { if (!estado.resp[id]) estado.resp[id] = { r: null, fotos: [] }; return estado.resp[id]; }
-function hayAvance() { return Object.values(estado.resp).some(x => x.r || x.fotos.length) || [...document.querySelectorAll('.tc input')].some(i => i.value !== ''); }
+function hayAvance() { return Object.values(estado.resp).some(x => x.r || x.fotos.length) || [...document.querySelectorAll('.tc input, .trz input')].some(i => i.value !== ''); }
 
 function elegirTipo(t) {
   if (estado.tipo === t) return;
   if (estado.tipo && hayAvance() && !confirm('Cambiar el tipo de control borra las respuestas ingresadas. ¿Continuar?')) return;
   estado = { tipo: t, resp: {}, sim: null, rumas: [{}] };
-  ['tocones', 'trozos', 'arrumado'].forEach(k => $('tp-' + k).classList.toggle('on', k === t));
+  ['tocones', 'trozos', 'arrumado', 'largos'].forEach(k => $('tp-' + k).classList.toggle('on', k === t));
+  $('barraNota').style.display = '';
+  $('lblCtrl').textContent = t === 'largos' ? 'Calibrador (quien hace el control)' : 'Controlador (quien hace el control)';
   document.querySelectorAll('[data-tipos]').forEach(el => el.style.display = el.dataset.tipos.split(' ').includes(t) ? '' : 'none');
   $('evalTitulo').textContent = 'Evaluación · ' + PAUTA[t].nombre;
   renderItems();
@@ -423,6 +454,7 @@ function calcSim() {
 function renderItems() {
   const box = $('items'), t = estado.tipo;
   if (!t) { box.innerHTML = '<p class="muted">Elige el tipo de control para empezar.</p>'; actualizar(); return; }
+  if (t === 'largos') { renderLargos(); actualizar(); return; }
   if (t === 'tocones') {
     const eq = PAUTA.tocones.equipos;
     box.innerHTML = `<label class="l">Equipo de volteo</label>
@@ -489,6 +521,205 @@ function monuEval() {
   const it = PAUTA.arrumado.items.find(i => i.monu); if (it) responder(it.id, faltan.length ? 'no' : 'si');
 }
 
+// ================= CONTROL DE LARGOS =================
+// El calibrador escribe por trozo el "largo a cortar" (el 2° número del largo del esquema de trozado,
+// ej. ET 5,23-5,3 → 5,30) y el largo que midió. Formato: 1 dígito, coma y 2 decimales (el punto se cambia por coma).
+// Pulpa de largo variable: se puede escribir el rango "2,44-3,50" y cumple todo trozo dentro de esos largos.
+const cmTxt = v => (v / 100).toFixed(2).replace('.', ',');
+function largoACm(txt) { // "5,3" / "5.30" / "530" → 530 cm
+  const n = num(txt); if (n === null || n <= 0) return null;
+  return Math.round((n < 20 ? n * 100 : n) * 10) / 10;
+}
+function formatoLargo(txt) { // deja escrito "5,30" (o "2,44-3,50")
+  const t = String(txt || '').trim().replace(/\./g, ',');
+  if (!t) return '';
+  const partes = t.split(/\s*[-–]\s*/).filter(Boolean);
+  const f = partes.map(x => { const c = largoACm(x); return c === null ? x : cmTxt(c); });
+  return f.slice(0, 2).join('-');
+}
+function corteInfo(txt) {
+  const partes = String(txt || '').split(/\s*[-–]\s*/).filter(Boolean).map(largoACm);
+  if (!partes.length || partes.some(x => x === null)) return null;
+  if (partes.length > 1) return { variable: true, min: Math.min(partes[0], partes[1]), max: Math.max(partes[0], partes[1]) };
+  return { variable: false, corte: partes[0] };
+}
+function evaluarTrozo(corteTxt, medido) {
+  const i = corteInfo(corteTxt); if (!i || medido === null) return null;
+  if (i.variable) { const ok = medido >= i.min && medido <= i.max; return { ok, dif: null, txt: ok ? 'en rango' : (medido < i.min ? 'corto' : 'largo'), info: i }; }
+  const dif = Math.round((medido - i.corte) * 10) / 10;
+  return { ok: Math.abs(dif) <= PAUTA.largos.tol, dif, txt: (dif > 0 ? '+' : '') + fmtPts(dif), info: i };
+}
+let TANDAS_HOY = [];
+async function cargarTandasHoy() {
+  TANDAS_HOY = [];
+  if (db && $('fecha').value) {
+    const q = db.collection(COL).where('fecha', '==', $('fecha').value);
+    let s = null;
+    try { s = await conTimeout(q.get(), 6000); } catch (e) { try { s = await q.get({ source: 'cache' }); } catch (e2) {} }
+    if (s) TANDAS_HOY = s.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+  pintarTandas();
+}
+function cierreHoy() {
+  const ctrl = val('sCtrl'), fu = val('sFundo');
+  return TANDAS_HOY.find(r => r.tipo === 'largos_cierre' && r.controlador === ctrl && r.fundo === fu) || null;
+}
+const MOTIVOS_CIERRE = ['Procesador en panne', 'Faena detenida / sin producción', 'Condiciones climáticas', 'Cambio de faena o de cancha', 'Otro'];
+function abrirTerminarDia() {
+  if (!val('sCtrl') || !val('sFundo')) { toast('Primero elige fundo y calibrador.'); return; }
+  const hechas = tandasMias().length, meta = PAUTA.largos.tandasDia;
+  $('modalBox').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:17px">Terminar el día</h2><button class="ic" onclick="cerrarModal()">✖</button></div>
+    <p class="muted">Se hicieron <b>${hechas} de ${meta}</b> controles hoy en ${esc(val('sFundo'))}. Indica por qué no se completaron; quedará en el informe del día.</p>
+    <label class="l">Motivo</label><select id="cMotivo">${MOTIVOS_CIERRE.map(m => `<option>${esc(m)}</option>`).join('')}</select>
+    <label class="l">Detalle (opcional)</label><input id="cDetalle" placeholder="Ej: procesador PTS-15 en panne desde las 12:30">
+    <button class="btn p w" style="margin-top:14px" onclick="terminarDia()">Terminar el día</button>`;
+  $('modal').classList.add('on');
+}
+async function terminarDia() {
+  if (!db) { toast('Falta configurar Firebase (apiKey).'); return; }
+  const fundoObj = L.fundos.find(f => f.nombre === val('sFundo'));
+  const data = { tipo: 'largos_cierre', fecha: $('fecha').value, fundo: val('sFundo'), fundoCodigo: fundoObj && fundoObj.codigo ? String(fundoObj.codigo) : '',
+    linea: val('sLinea'), controlador: val('sCtrl'), controlesHechos: tandasMias().length, controlesMeta: PAUTA.largos.tandasDia,
+    motivo: $('cMotivo').value, detalle: $('cDetalle').value.trim(), creadoEn: firebase.firestore.FieldValue.serverTimestamp() };
+  const ref = db.collection(COL).doc();
+  const w = ref.set(data); pendientes.agregar(ref.id); w.then(() => pendientes.quitar(ref.id)).catch(() => {});
+  TANDAS_HOY.push({ id: ref.id, ...data });
+  cerrarModal(); resetNuevoControl(); actualizarEstadoRed();
+  toast((navigator.onLine ? 'Día terminado ✔' : '📴 Día terminado; se enviará cuando vuelva la señal.') + ' El formulario quedó en blanco.', 6000);
+}
+async function reabrirDia() {
+  const c = cierreHoy(); if (!c || !confirm('¿Reabrir el día para seguir haciendo controles?')) return;
+  TANDAS_HOY = TANDAS_HOY.filter(r => r.id !== c.id); pintarTandas();
+  try { await conTimeout(db.collection(COL).doc(c.id).delete(), 6000); } catch (e) {}
+  pendientes.quitar(c.id);
+  toast('Día reabierto');
+}
+function tandasMias() {
+  const ctrl = val('sCtrl'), fu = val('sFundo');
+  if (!ctrl || !fu) return [];
+  return TANDAS_HOY.filter(r => r.tipo === 'largos' && r.controlador === ctrl && r.fundo === fu)
+    .sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
+}
+function pintarTandas() {
+  const box = $('tandasBox'); if (!box) return;
+  if ($('tandaForm')) $('tandaForm').style.display = ''; if ($('barraNota')) $('barraNota').style.display = '';
+  if (!val('sCtrl') || !val('sFundo')) {
+    box.innerHTML = '<div class="info" style="margin-top:6px">Elige el <b>fundo</b> y el <b>calibrador</b> arriba para ver los controles que llevas hoy.</div>';
+    const t = $('lTitulo'); if (t) t.textContent = 'Control'; return;
+  }
+  const hechas = tandasMias(), n = Math.max(PAUTA.largos.tandasDia, hechas.length + 1);
+  const cierre = cierreHoy(), meta = PAUTA.largos.tandasDia;
+  let html = '';
+  const completo = hechas.length >= meta && !cierre;
+  for (let i = 0; i < (completo || cierre ? hechas.length : n); i++) {
+    const r = hechas[i];
+    if (r) html += `<div class="tanda hecha${notaNum(r.nota) < NOTA_OK ? ' mala' : ''}" role="button" style="cursor:pointer" title="Ver lo ingresado" onclick="verTandaHoy('${r.id}', ${i + 1})"><b>${i + 1}</b><br>${esc(r.hora || '')}<br>nota ${notaEscala(r.nota)}<br><u style="font-size:11px">ver 👁️</u></div>`;
+    else if (i === hechas.length) html += `<div class="tanda actual"><b>${i + 1}</b><br>en curso</div>`;
+    else html += `<div class="tanda"><b>${i + 1}</b><br>pendiente</div>`;
+  }
+  let pie = '';
+  if (cierre) pie = `<div class="info" style="margin-top:8px">🔒 <b>Día terminado con ${cierre.controlesHechos} de ${meta} controles.</b> Motivo: ${esc(cierre.motivo)}${cierre.detalle ? ' · ' + esc(cierre.detalle) : ''}<br><button type="button" class="btn" style="margin-top:6px;padding:6px 10px;font-size:13px" onclick="reabrirDia()">Reabrir el día</button></div>`;
+  else if (hechas.length > 0 && hechas.length < meta) pie = `<button type="button" class="btn w" style="margin-top:8px" onclick="abrirTerminarDia()">Terminar el día con ${hechas.length} de ${meta} controles</button>`;
+  else if (hechas.length >= meta) pie = `<div class="info" style="margin-top:8px;background:var(--vc);color:var(--v)">✔ <b>Día completo (${hechas.length} de ${meta} controles).</b> Toca un control para verlo o editarlo.</div>`;
+  box.innerHTML = `<div class="tandas">${html}</div><div class="muted" style="text-align:center;margin-top:6px">${hechas.length} de ${meta} controles del día${val('sCtrl') ? ' · ' + esc(val('sCtrl')) : ''}</div>${pie}`;
+  const t = $('lTitulo'); if (t) t.textContent = estado.editId ? 'Editando control N° ' + (estado.editOrig.tandaN || '') : 'Control N° ' + (hechas.length + 1);
+  // día terminado: no se muestra un control nuevo vacío (salvo que se esté editando uno guardado)
+  const cerrado = (!!cierre || hechas.length >= meta) && !estado.editId;
+  if ($('tandaForm')) $('tandaForm').style.display = cerrado ? 'none' : '';
+  if ($('barraNota')) $('barraNota').style.display = cerrado ? 'none' : '';
+}
+function verTandaHoy(id, n) {
+  const t = TANDAS_HOY.find(x => x.id === id); if (!t) return;
+  const ok = notaNum(t.nota) >= NOTA_OK;
+  $('modalBox').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:17px">Control N° ${n} · ${esc(t.hora || '')} hrs</h2><button class="ic" onclick="cerrarModal()">✖</button></div>
+    <p style="font-size:28px;font-weight:700;margin:8px 0">${notaEscala(t.nota)} <span class="chip ${ok ? 'ok' : 'bad'}">${t.puntosObtenidos ?? 0} de ${t.puntosAplicables ?? 10} trozos en tolerancia</span></p>
+    <table><tr><td class="muted">Calibrador</td><td>${esc(t.controlador || '-')}</td></tr><tr><td class="muted">Trozador</td><td>${esc(t.opTrozado || '-')}</td></tr>
+    <tr><td class="muted">N° cancha</td><td>${esc(t.cancha || '-')}</td></tr><tr><td class="muted">Camino</td><td>${esc(t.camino || '-')}</td></tr>
+    ${t.observacion ? `<tr><td class="muted">Observación</td><td>${esc(t.observacion)}</td></tr>` : ''}</table>
+    <div style="margin-top:10px">${detalleLargosHTML(t, true)}</div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn" style="flex:1" onclick="editarControl('${t.id}','nuevo')">✏️ Editar este control</button><button class="btn" style="flex:1" onclick="cerrarModal()">Cerrar</button></div>`;
+  $('modal').classList.add('on');
+}
+function onCambioCabecera() { if (estado.tipo === 'largos') cargarTandasHoy(); }
+function renderLargos() {
+  if (!estado.trozos) estado.trozos = Array.from({ length: PAUTA.largos.n }, () => ({ c: '', m: null, d: null, obs: '' }));
+  $('items').innerHTML = `
+    <div style="font-weight:600;font-size:14px">Controles de hoy</div>
+    <div id="tandasBox"></div>
+    <div class="simbox" id="tandaForm" style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b id="lTitulo" style="font-size:14px">Control N° 1</b><span class="muted">tolerancia ±${fmtPts(PAUTA.largos.tol)} cm</span></div>
+      <div class="g2" style="grid-template-columns:1fr 1fr 1fr">
+        <div><label class="l">Hora</label><input type="time" id="lHora" oninput="this.classList.remove('err')"></div>
+        <div><label class="l">N° cancha</label><input id="lCancha" inputmode="numeric" placeholder="Ej: 87" oninput="this.classList.remove('err')"></div>
+        <div><label class="l">Camino</label><input id="lCamino" inputmode="numeric" placeholder="Ej: 8"></div>
+      </div>
+      <div class="info" style="margin-top:10px">📏 En <b>Largo a cortar</b> escribe el <b>2° número</b> del largo del esquema de trozado, el que acompaña al nominal. Ej: si el esquema dice <b>5,23-5,3</b>, escribe <b>5,30</b>. En <b>Medido</b> escribe lo que mide el trozo (ej: 5,31). Puedes usar punto o coma.</div>
+      <div class="trz trz-h" style="margin-top:8px"><span>#</span><span>Largo a cortar</span><span>Medido</span><span>Diám.</span><span>Dif.</span><span></span></div>
+      <div id="trzList"></div>
+    </div>`;
+  if (!$('lHora').value) { const d = new Date(); $('lHora').value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  pintarTrozos(); cargarTandasHoy();
+}
+function pintarTrozos() {
+  const box = $('trzList'); if (!box) return;
+  box.innerHTML = estado.trozos.map((z, i) => `<div class="trz">
+    <span class="n">${i + 1}</span>
+    <input id="zc${i}" type="text" inputmode="decimal" placeholder="${i === 0 ? 'Ej: 5,30' : ''}" value="${esc(z.c)}" oninput="editTrozo(${i},'c',this.value)" onblur="cerrarCorte(${i})">
+    <input id="zm${i}" type="text" inputmode="decimal" placeholder="${i === 0 ? 'Ej: 5,31' : ''}" value="${z.m === null ? '' : cmTxt(z.m)}" oninput="editTrozo(${i},'m',this.value)" onblur="cerrarMedido(${i})">
+    <input id="zd${i}" type="number" inputmode="numeric" placeholder="cm" value="${z.d ?? ''}" oninput="editTrozo(${i},'d',this.value)">
+    <span id="zr${i}" style="text-align:center"></span>
+    <button type="button" class="ic" style="font-size:15px" title="Observación" onclick="$('zo${i}').classList.toggle('on')">📝</button>
+    <input class="obs ${z.obs ? 'on' : ''}" id="zo${i}" placeholder="Observación del trozo ${i + 1}" value="${esc(z.obs)}" oninput="estado.trozos[${i}].obs=this.value">
+  </div>`).join('');
+  calcLargosUI();
+}
+function editTrozo(i, k, v) {
+  const z = estado.trozos[i], el = $('z' + k + i);
+  if ((k === 'c' || k === 'm') && v.includes('.')) { const pos = el.selectionStart; el.value = v.replace(/\./g, ','); try { el.setSelectionRange(pos, pos); } catch (e) {} v = el.value; }
+  if (k === 'c') z.c = v.trim();
+  else if (k === 'm') z.m = largoACm(v);
+  else z.d = num(v);
+  el && el.classList.remove('err');
+  calcLargosUI();
+}
+function cerrarCorte(i) {
+  const z = estado.trozos[i], el = $('zc' + i);
+  z.c = formatoLargo(z.c); el.value = z.c;
+  const sig = estado.trozos[i + 1]; // el siguiente trozo vacío toma el mismo largo a cortar
+  if (z.c && sig && !sig.c && sig.m === null) { sig.c = z.c; $('zc' + (i + 1)).value = z.c; }
+  calcLargosUI();
+}
+function cerrarMedido(i) {
+  const z = estado.trozos[i]; if (z.m !== null) $('zm' + i).value = cmTxt(z.m);
+  const sig = estado.trozos[i + 1];
+  if (z.c && corteInfo(z.c) && sig && !sig.c && sig.m === null) { sig.c = z.c; $('zc' + (i + 1)).value = z.c; calcLargosUI(); }
+}
+function calcLargos() {
+  if (!estado.trozos) return { nota: 0, obt: 0, aplic: PAUTA.largos.n, pend: PAUTA.largos.n, incumpl: 0 };
+  let ok = 0, bad = 0, pend = 0;
+  estado.trozos.forEach(z => { const e = evaluarTrozo(z.c, z.m); if (!e) pend++; else if (e.ok) ok++; else bad++; });
+  const n = estado.trozos.length;
+  return { nota: Math.round(ok / n * 100), obt: ok, aplic: n, pend, incumpl: bad };
+}
+function calcLargosUI() {
+  (estado.trozos || []).forEach((z, i) => {
+    const e = evaluarTrozo(z.c, z.m), c = $('zr' + i); if (!c) return;
+    c.innerHTML = e ? `<span class="chip ${e.ok ? 'ok' : 'bad'}" style="padding:2px 5px">${esc(e.txt)}</span>` : '';
+    const ec = $('zc' + i); if (ec) ec.classList.toggle('err', !!z.c && !corteInfo(z.c) && document.activeElement !== ec);
+  });
+  actualizar();
+}
+function datosLargos(c) {
+  return {
+    hora: $('lHora').value, camino: $('lCamino').value.trim(), tandaN: tandasMias().length + 1, tolCm: PAUTA.largos.tol,
+    trozos: estado.trozos.map((z, i) => {
+      const e = evaluarTrozo(z.c, z.m), inf = e.info;
+      return { n: i + 1, largoCorte: formatoLargo(z.c), variable: inf.variable, corte: inf.corte ?? null, min: inf.min ?? null, max: inf.max ?? null,
+        medido: z.m, diametro: z.d, dif: e.dif, ok: e.ok, obs: (z.obs || '').trim() };
+    })
+  };
+}
+
 // ---------- fotos ----------
 function addFotos(id, input) {
   const x = ensureResp(id);
@@ -535,6 +766,7 @@ async function subirFoto(file, path) {
 function calcular() {
   const t = estado.tipo;
   if (!t) return null;
+  if (t === 'largos') return calcLargos();
   if (t === 'tocones') {
     const eq = $('equipo') ? $('equipo').value : '';
     const max = eq ? PAUTA.tocones.equipos[eq] : null;
@@ -560,12 +792,13 @@ function calcular() {
 }
 function actualizar() {
   const c = calcular(), n = $('notaN'), ch = $('notaChip'), p = $('notaPend');
-  if (!c) { n.textContent = '—'; ch.textContent = ''; ch.className = 'chip'; p.textContent = ''; return; }
-  n.textContent = c.nota;
-  const ok = c.nota >= BONO;
-  ch.textContent = ok ? 'Sobre ' + BONO + '%' : 'Bajo ' + BONO + '%';
+  if (!c) { n.textContent = '—'; n.dataset.pct = ''; n.style.color = ''; ch.textContent = ''; ch.className = 'chip'; p.textContent = ''; return; }
+  n.textContent = notaEscala(c.nota); n.dataset.pct = c.nota;
+  const ok = notaNum(c.nota) >= NOTA_OK;
+  n.style.color = ok ? 'var(--v)' : 'var(--r)';
+  ch.textContent = c.nota + '% · ' + (ok ? 'nota ≥ 4,5' : 'bajo 4,5');
   ch.className = 'chip ' + (ok ? 'ok' : 'bad');
-  p.textContent = c.eqFalta ? 'Falta elegir el equipo de volteo' : (c.pend ? 'Faltan ' + c.pend + (estado.tipo === 'tocones' ? ' tocones' : ' preguntas') : (c.incumpl ? c.incumpl + ' incumplimiento(s)' : 'Sin incumplimientos'));
+  p.textContent = c.eqFalta ? 'Falta elegir el equipo de volteo' : (c.pend ? 'Faltan ' + c.pend + (estado.tipo === 'tocones' ? ' tocones' : estado.tipo === 'largos' ? ' trozos' : ' preguntas') : (c.incumpl ? c.incumpl + (estado.tipo === 'largos' ? ' fuera de tolerancia' : ' incumplimiento(s)') : 'Sin incumplimientos'));
   if (estado.tipo === 'tocones') { const x = $('x_toc'); if (x) x.classList.toggle('on', c.incumpl > 0); }
 }
 
@@ -576,14 +809,23 @@ async function guardar() {
   document.querySelectorAll('.err').forEach(e => e.classList.remove('err'));
   const t = estado.tipo;
   if (!t) { toast('Elige el tipo de control.'); $('tp-tocones').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  if (t === 'largos' && !estado.editId && cierreHoy()) { toast('El día está terminado. Usa "Reabrir el día" para agregar otro control.'); return; }
   const errores = [];
   if (!$('fecha').value) errores.push(marcarError($('fecha')));
   if (!val('sFundo')) errores.push(marcarError($('sFundo')));
   if (!val('sLinea')) errores.push(marcarError($('sLinea')));
   if (!val('sCtrl')) errores.push(marcarError($('sCtrl')));
-  if (!$('cancha').value.trim()) errores.push(marcarError($('cancha')));
+  if (t !== 'largos' && !$('cancha').value.trim()) errores.push(marcarError($('cancha')));
   const c = calcular();
-  if (t === 'tocones') {
+  if (t === 'largos') {
+    if (!$('lHora').value) errores.push(marcarError($('lHora')));
+    if (!$('lCancha').value.trim()) errores.push(marcarError($('lCancha')));
+    for (let i = 0; i < PAUTA.largos.n; i++) {
+      const z = estado.trozos[i];
+      if (!corteInfo(z.c)) errores.push(marcarError($('zc' + i)));
+      if (z.m === null) errores.push(marcarError($('zm' + i)));
+    }
+  } else if (t === 'tocones') {
     if (!$('equipo').value) errores.push(marcarError($('equipo')));
     for (let i = 0; i < 10; i++) if (num($('toc' + i).value) === null) errores.push(marcarError($('toc' + i)));
   } else {
@@ -593,19 +835,21 @@ async function guardar() {
 
   // fotos faltantes en incumplimientos
   let sinFoto = 0;
-  if (t === 'tocones') { if (c.incumpl && !estado.resp.toc.fotos.length) sinFoto = 1; }
+  if (t === 'largos') sinFoto = 0;
+  else if (t === 'tocones') { if (c.incumpl && !estado.resp.toc.fotos.length) sinFoto = 1; }
   else PAUTA[t].items.forEach(it => { const x = estado.resp[it.id]; if (x.r === 'no' && !x.fotos.length) sinFoto++; });
   if (sinFoto && !confirm('Hay ' + sinFoto + ' incumplimiento(s) sin foto. ¿Guardar igual?')) return;
 
   const btn = $('btnGuardar'); btn.disabled = true; btn.textContent = 'Guardando…';
   try {
-    const ref = db.collection(COL).doc();
+    const edit = estado.editId ? estado.editOrig : null;
+    const ref = edit ? db.collection(COL).doc(edit.id) : db.collection(COL).doc();
     let enCola = 0, nFotos = 0, sinRed = !navigator.onLine || !st;
     const subir = async (id, lista) => {
       const out = [];
       for (let i = 0; i < lista.length; i++) {
         nFotos++;
-        const path = `${COL}/${t}/${ref.id}/${id}_${i + 1}.jpg`;
+        const path = `${COL}/${t}/${ref.id}/${id}_${Date.now()}_${i + 1}.jpg`;
         if (!sinRed) {
           try { out.push(await subirFoto(lista[i], path)); continue; }
           catch (e) { sinRed = true; console.warn('Foto a la cola (sin señal)', e); }
@@ -624,47 +868,232 @@ async function guardar() {
       opVolteo: t === 'tocones' ? val('sVolteo') : '',
       opTrozado: t !== 'tocones' ? val('sTrozado') : '',
       opClasificado: t === 'arrumado' ? val('sClasif') : '',
-      calibrador: t !== 'tocones' ? val('sCalib') : '',
-      cancha: $('cancha').value.trim(),
+      calibrador: t === 'largos' ? val('sCtrl') : (t !== 'tocones' ? val('sCalib') : ''),
+      cancha: t === 'largos' ? $('lCancha').value.trim() : $('cancha').value.trim(),
       nota: c.nota, puntosObtenidos: Math.round(c.obt * 100) / 100, puntosAplicables: c.aplic, incumplimientos: c.incumpl,
       observacion: $('obsGeneral').value.trim(),
       creadoEn: firebase.firestore.FieldValue.serverTimestamp()
     };
-    if (t === 'tocones') {
+    if (t === 'largos') {
+      Object.assign(data, datosLargos(c));
+    } else if (t === 'tocones') {
       data.equipoVolteo = c.extra.equipo; data.maxCm = c.extra.max; data.mediciones = c.extra.med;
-      data.fotos = await subir('toc', estado.resp.toc.fotos);
+      data.fotos = (edit && edit.tipo === 'tocones' ? (edit.fotos || []) : []).concat(await subir('toc', estado.resp.toc.fotos));
     } else {
       data.items = [];
       for (const it of PAUTA[t].items) {
         const x = estado.resp[it.id];
-        const fila = { id: it.id, t: it.t, pts: it.pts, r: x.r, ptsObt: x.r === 'si' ? it.pts : (typeof x.frac === 'number' ? Math.round(it.pts * x.frac * 100) / 100 : 0), obs: ($('o_' + it.id) || {}).value || '', fotos: x.r === 'no' ? await subir(it.id, x.fotos) : [] };
+        const fila = { id: it.id, t: it.t, pts: it.pts, r: x.r, ptsObt: x.r === 'si' ? it.pts : (typeof x.frac === 'number' ? Math.round(it.pts * x.frac * 100) / 100 : 0), obs: ($('o_' + it.id) || {}).value || '', fotos: x.r === 'no' ? (((edit && (edit.items || []).find(e => e.id === it.id)) || {}).fotos || []).concat(await subir(it.id, x.fotos)) : [] };
         if (it.monu && estado.monu) fila.monu = { tipo: estado.monu.tipo, faltan: estado.monu.faltan || [] };
         data.items.push(fila);
       }
       if (t === 'trozos') data.corteza = num(($('corteza') || {}).value);
       if (t === 'arrumado') { data.simetria = estado.sim; data.simRango = [PAUTA.arrumado.simMin, PAUTA.arrumado.simMax]; }
     }
-    if (enCola) data.fotosPendientes = enCola;
+    if (edit) {
+      if (edit.creadoEn) data.creadoEn = edit.creadoEn;
+      data.editadoEn = firebase.firestore.FieldValue.serverTimestamp();
+      if (edit.fotosExtra) data.fotosExtra = edit.fotosExtra;
+      if (t === 'largos') data.tandaN = edit.tandaN || data.tandaN;
+      if (edit.fotosPendientes > 0) data.fotosPendientes = edit.fotosPendientes;
+    }
+    if (enCola) data.fotosPendientes = (data.fotosPendientes || 0) + enCola;
     const w = ref.set(data);
     pendientes.agregar(ref.id);
     w.then(() => { pendientes.quitar(ref.id); }).catch(e => console.warn('Escritura rechazada', e));
-    let msg = 'Control guardado ✔ (nota ' + notaEscala(c.nota) + ')';
+    let msg = (edit ? 'Cambios guardados ✔' : 'Control guardado ✔') + ' (nota ' + notaEscala(c.nota) + ')';
     try { if (!navigator.onLine) throw new Error('timeout'); await conTimeout(w, 6000); }
     catch (e) { if (e.message === 'timeout') msg = '📴 Sin señal: el control quedó guardado en el celular y se enviará solo cuando vuelva la señal.'; else throw e; }
     if (enCola) msg += ' ' + enCola + ' foto(s) quedaron en el celular y se enviarán solas con señal.';
     actualizarEstadoRed();
+    if (t === 'largos') { TANDAS_HOY = TANDAS_HOY.filter(x => x.id !== ref.id); TANDAS_HOY.push({ id: ref.id, ...data }); }
     toast(msg, 6000);
-    limpiarEvaluacion();
+    if (edit) {
+      TODOS = TODOS.filter(x => x.id !== ref.id); TODOS.push({ id: ref.id, ...data });
+      const d = window.__editDesde || 'res'; salirEdicion(); volverABorradorPrevio(); tab(d); if (d === 'res') renderR();
+    } else if (t === 'largos' && tandasMias().length >= PAUTA.largos.tandasDia) {
+      resetNuevoControl();
+      toast(msg + ' · Día completo: ' + PAUTA.largos.tandasDia + ' de ' + PAUTA.largos.tandasDia + ' controles ✔', 7000);
+    } else limpiarEvaluacion();
   } catch (e) {
     console.error(e); toast('No se pudo guardar: ' + (e.code || e.message), 6000);
-  } finally { btn.disabled = false; btn.textContent = 'Guardar'; }
+  } finally { btn.disabled = false; btn.textContent = estado.editId ? 'Guardar cambios' : 'Guardar'; }
 }
 function limpiarEvaluacion() {
   const t = estado.tipo;
   estado = { tipo: t, resp: {}, sim: null, rumas: [{}] };
   $('obsGeneral').value = '';
   renderItems();
+  guardarBorrador();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ================= DEJAR "NUEVO CONTROL" EN BLANCO =================
+// Se usa cuando el día de largos se termina (con motivo) o se completan los 4 controles.
+function resetNuevoControl() {
+  clearTimeout(guardarBorrador._t);
+  estado = { tipo: null, resp: {}, sim: null, rumas: [{}] };
+  ['tocones', 'trozos', 'arrumado', 'largos'].forEach(k => $('tp-' + k).classList.remove('on'));
+  document.querySelectorAll('[data-tipos]').forEach(el => el.style.display = 'none');
+  CAMPOS_ENC.forEach(id => { $(id).value = ''; $(id + '_o').value = ''; $(id + '_o').style.display = 'none'; });
+  $('fecha').value = hoy(); $('cancha').value = ''; $('obsGeneral').value = '';
+  $('lblCtrl').textContent = 'Controlador (quien hace el control)';
+  $('evalTitulo').textContent = 'Evaluación'; $('items').innerHTML = '<p class="muted">Elige el tipo de control para empezar.</p>';
+  $('barraNota').style.display = ''; actualizar();
+  LS.set('cc_borrador', null);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ================= EDITAR UN CONTROL YA GUARDADO =================
+function salirEdicion() {
+  estado.editId = null; estado.editOrig = null;
+  $('editBanner').style.display = 'none'; $('btnGuardar').textContent = 'Guardar';
+}
+// Al terminar o cancelar una edición, "Nuevo control" vuelve a quedar como estaba antes (con su borrador).
+function volverABorradorPrevio() {
+  const p = window.__borradorPrevio; window.__borradorPrevio = undefined;
+  clearTimeout(guardarBorrador._t);
+  estado = { tipo: null, resp: {}, sim: null, rumas: [{}] };
+  ['tocones', 'trozos', 'arrumado', 'largos'].forEach(k => $('tp-' + k).classList.remove('on'));
+  document.querySelectorAll('[data-tipos]').forEach(el => el.style.display = 'none');
+  $('evalTitulo').textContent = 'Evaluación'; $('items').innerHTML = '<p class="muted">Elige el tipo de control para empezar.</p>';
+  $('obsGeneral').value = ''; $('barraNota').style.display = ''; actualizar();
+  if (p) { LS.set('cc_borrador', p); restaurarBorrador(); } else LS.set('cc_borrador', null);
+}
+function cancelarEdicion() { const d = window.__editDesde || 'res'; salirEdicion(); volverABorradorPrevio(); tab(d); }
+function cargarEncabezado(r) {
+  ponerSelect('sFundo', r.fundo); ponerSelect('sLinea', r.linea); ponerSelect('sCtrl', r.controlador);
+  ['sJefe', 'sVolteo', 'sTrozado', 'sClasif', 'sCalib'].forEach(id => { $(id).value = ''; $(id + '_o').style.display = 'none'; });
+  ponerSelect('sJefe', r.jefeFaena); ponerSelect('sVolteo', r.opVolteo); ponerSelect('sTrozado', r.opTrozado); ponerSelect('sClasif', r.opClasificado);
+  if (r.tipo !== 'largos') ponerSelect('sCalib', r.calibrador);
+  $('fecha').value = r.fecha || hoy();
+}
+function editarControl(id, desde) {
+  const r = TODOS.find(x => x.id === id) || TANDAS_HOY.find(x => x.id === id); if (!r) return;
+  window.__editDesde = desde || 'res';
+  if (!estado.editId) { clearTimeout(guardarBorrador._t); guardarBorradorYa(); window.__borradorPrevio = LS.get('cc_borrador'); }
+  cerrarModal(); tab('nuevo');
+  restaurando = true;
+  try {
+    cargarEncabezado(r);
+    $('cancha').value = r.tipo === 'largos' ? '' : (r.cancha || '');
+    $('obsGeneral').value = r.observacion || '';
+    estado.tipo = null; elegirTipo(r.tipo);
+    estado.editId = r.id; estado.editOrig = r;
+    if (r.tipo === 'largos') {
+      estado.trozos = (r.trozos || []).map(z => ({ c: z.largoCorte || '', m: z.medido ?? null, d: z.diametro ?? null, obs: z.obs || '' }));
+      renderItems();
+      $('lHora').value = r.hora || ''; $('lCancha').value = r.cancha || ''; $('lCamino').value = r.camino || '';
+    } else if (r.tipo === 'tocones') {
+      $('equipo').value = r.equipoVolteo || '';
+      (r.mediciones || []).forEach((v, i) => { if ($('toc' + i)) $('toc' + i).value = v ?? ''; });
+      actualizar();
+    } else {
+      if (r.simetria && r.simetria.rumas) { estado.rumas = r.simetria.rumas.map(m => ({ f1: m.f1, f2: m.f2, p1: m.p1, p2: m.p2 })); renderItems(); }
+      (r.items || []).forEach(it => {
+        const def = PAUTA[r.tipo].items.find(x => x.id === it.id); if (!def || !$('it_' + it.id)) return;
+        if (def.sim && r.simetria && r.simetria.rumas) return; // lo decide la calculadora
+        if (def.monu && it.monu) {
+          monuTipo(it.monu.tipo);
+          document.querySelectorAll('#monuList input[data-mg]').forEach(c => {
+            const nom = (it.monu.tipo === 'ambas' ? (c.dataset.mg === 'aserrable' ? 'Aserrable: ' : 'Pulpable: ') : '') + MONU[c.dataset.mg][+c.dataset.mi];
+            c.checked = !it.monu.faltan.includes(nom);
+          });
+          monuEval(); return;
+        }
+        responder(it.id, it.r);
+        if (it.obs && $('o_' + it.id)) $('o_' + it.id).value = it.obs;
+      });
+      if (r.corteza !== null && r.corteza !== undefined && $('corteza')) $('corteza').value = r.corteza;
+    }
+    const n = (r.tipoNombre || NOMBRE_T[r.tipo]) + (r.tipo === 'largos' ? ' N° ' + (r.tandaN || '') + ' de las ' + (r.hora || '') : '') + ' del ' + fmtF(r.fecha);
+    $('editBanner').innerHTML = `✏️ <b>Editando:</b> ${esc(n)}. Las fotos ya guardadas se mantienen; puedes agregar nuevas.<br><button type="button" class="btn" style="margin-top:6px;padding:6px 10px;font-size:13px" onclick="cancelarEdicion()">Cancelar edición</button>`;
+    $('editBanner').style.display = 'block'; $('btnGuardar').textContent = 'Guardar cambios';
+    if (r.tipo === 'largos') pintarTandas();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } finally { restaurando = false; }
+}
+// Lápiz en un día de largos: abre ese día en "Nuevo control" con su encabezado. Ahí se ven los controles hechos
+// (tocar uno para verlo o editarlo) y, si el día estaba terminado, el botón "Reabrir el día" para hacer los que faltan.
+async function editarDia(id) {
+  const d = DIAS[id]; if (!d) return;
+  if (!estado.editId && hayAvance() && !confirm('Tienes un control a medio llenar en "Nuevo control". ¿Reemplazarlo?')) return;
+  if (estado.editId) { salirEdicion(); window.__borradorPrevio = undefined; }
+  cerrarModal(); tab('nuevo');
+  const ult = d.tandas[d.tandas.length - 1];
+  restaurando = true;
+  try { cargarEncabezado(ult); estado.tipo = null; elegirTipo('largos'); } finally { restaurando = false; }
+  guardarBorrador();
+  setTimeout(() => { const f = $('tandasBox'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
+}
+
+// ================= BORRADOR (encabezado + control en curso) =================
+// Se guarda en el celular mientras se llena. Si la app se cierra o se recarga, se recupera.
+// El encabezado se recuerda siempre; las respuestas solo si son del mismo día. Las fotos no se guardan en el borrador.
+const CAMPOS_ENC = ['sFundo', 'sLinea', 'sCtrl', 'sJefe', 'sVolteo', 'sTrozado', 'sClasif', 'sCalib'];
+let restaurando = false;
+function guardarBorrador() {
+  if (restaurando || estado.editId) return;
+  clearTimeout(guardarBorrador._t);
+  guardarBorrador._t = setTimeout(guardarBorradorYa, 300);
+}
+function guardarBorradorYa() {
+  if (restaurando || estado.editId) return;
+  {
+    const b = { dia: hoy(), fecha: $('fecha').value, cancha: $('cancha').value, obs: $('obsGeneral').value, enc: {}, tipo: estado.tipo || null, datos: null };
+    CAMPOS_ENC.forEach(id => { b.enc[id] = { v: $(id).value, o: ($(id + '_o') || {}).value || '' }; });
+    const t = estado.tipo;
+    if (t === 'largos') b.datos = { trozos: estado.trozos, hora: ($('lHora') || {}).value || '', cancha: ($('lCancha') || {}).value || '', camino: ($('lCamino') || {}).value || '' };
+    else if (t === 'tocones') b.datos = { equipo: ($('equipo') || {}).value || '', toc: Array.from({ length: 10 }, (_, i) => ($('toc' + i) || {}).value || '') };
+    else if (t) {
+      const resp = {}, obs = {};
+      PAUTA[t].items.forEach(it => { const x = estado.resp[it.id]; if (x && x.r && !it.sim && !it.monu) resp[it.id] = x.r; const o = $('o_' + it.id); if (o && o.value) obs[it.id] = o.value; });
+      b.datos = { resp, obs, rumas: estado.rumas, corteza: ($('corteza') || {}).value || '' };
+    }
+    LS.set('cc_borrador', b);
+  }
+}
+function hayDatosBorrador(b) {
+  const d = b && b.datos; if (!d) return false;
+  if (b.tipo === 'largos') return (d.trozos || []).some(z => z.c || z.m !== null);
+  if (b.tipo === 'tocones') return d.equipo || (d.toc || []).some(Boolean);
+  return Object.keys(d.resp || {}).length > 0 || (d.rumas || []).some(r => Object.values(r).some(v => v !== null && v !== undefined));
+}
+function ponerSelect(id, v, o) {
+  const s = $(id); if (!s || !v) return;
+  if ([...s.options].some(op => op.value === v)) s.value = v;
+  else { s.value = '__otro'; o = o || v; }
+  if (s.value === '__otro') { $(id + '_o').value = o || ''; $(id + '_o').style.display = 'block'; }
+}
+function restaurarBorrador() {
+  const b = LS.get('cc_borrador'); if (!b) return;
+  restaurando = true;
+  try {
+    CAMPOS_ENC.forEach(id => { const e = (b.enc || {})[id]; if (e) ponerSelect(id, e.v, e.o); });
+    if (b.dia !== hoy()) return; // de otro día: solo el encabezado
+    if (b.fecha) $('fecha').value = b.fecha;
+    $('cancha').value = b.cancha || ''; $('obsGeneral').value = b.obs || '';
+    if (!b.tipo) return;
+    elegirTipo(b.tipo);
+    const d = b.datos || {};
+    if (b.tipo === 'largos') {
+      estado.trozos = (d.trozos || []).map(z => ({ c: z.c || '', m: z.m ?? null, d: z.d ?? null, obs: z.obs || '' }));
+      if (estado.trozos.length !== PAUTA.largos.n) estado.trozos = null;
+      renderItems();
+      if (d.hora) $('lHora').value = d.hora; $('lCancha').value = d.cancha || ''; $('lCamino').value = d.camino || '';
+    } else if (b.tipo === 'tocones') {
+      if (d.equipo) $('equipo').value = d.equipo;
+      (d.toc || []).forEach((v, i) => { if ($('toc' + i)) $('toc' + i).value = v; });
+      actualizar();
+    } else {
+      if (d.rumas && d.rumas.length) { estado.rumas = d.rumas; renderItems(); }
+      Object.entries(d.resp || {}).forEach(([id, r]) => { if ($('it_' + id)) responder(id, r); });
+      Object.entries(d.obs || {}).forEach(([id, v]) => { const o = $('o_' + id); if (o) o.value = v; });
+      if (d.corteza && $('corteza')) $('corteza').value = d.corteza;
+    }
+    if (hayDatosBorrador(b)) toast('Se recuperó el control que estabas haciendo' + (b.tipo !== 'largos' ? ' (las fotos hay que agregarlas de nuevo)' : '') + '.', 6000);
+  } catch (e) { console.warn('No se pudo recuperar el borrador', e); }
+  finally { restaurando = false; }
 }
 
 // ================= MODO SIN SEÑAL =================
@@ -736,7 +1165,7 @@ async function actualizarEstadoRed() {
   if (nFotos) partes.push(nFotos + (nFotos === 1 ? ' foto' : ' fotos'));
   if (!navigator.onLine) {
     el.className = 'red off';
-    el.textContent = '📴 Sin señal: puedes seguir haciendo controles, quedan guardados en el celular.' + (partes.length ? ' Pendientes: ' + partes.join(' y ') + '.' : '');
+    el.textContent = '📴 Sin señal: puedes seguir haciendo controles, quedan guardados en el celular.' + (partes.length ? ' Pendientes: ' + partes.join(' y ') + '.' : '') + (window.__sinCacheLocal ? ' ⚠️ No cierres la app hasta que vuelva la señal.' : '');
   } else if (partes.length) {
     el.className = 'red pend'; el.textContent = '⏳ Enviando pendientes: ' + partes.join(' y ') + '…';
   } else if (el.classList.contains('pend') || el.classList.contains('off')) {
@@ -749,11 +1178,30 @@ window.addEventListener('offline', actualizarEstadoRed);
 setInterval(sincronizar, 60000);
 
 // ================= RESULTADOS =================
-let TODOS = [];
-const NOMBRE_T = { tocones: 'Tocones', trozos: 'Trozos', arrumado: 'Arrumado' };
+let TODOS = [], CIERRES = [];
+const NOMBRE_T = { tocones: 'Tocones', trozos: 'Trozos', arrumado: 'Arrumado', largos: 'Largos' };
 const personas = r => [r.jefeFaena, r.opVolteo, r.opTrozado, r.opClasificado, r.calibrador].filter(Boolean);
+// Mes y año: por defecto se consulta el mes completo. "Filtro avanzado" abre Desde/Hasta y los demás filtros.
+function rangoMes(m) {
+  const [a, mm] = (m || hoy().slice(0, 7)).split('-').map(Number);
+  const fin = new Date(a, mm, 0).getDate();
+  return [`${a}-${String(mm).padStart(2, '0')}-01`, `${a}-${String(mm).padStart(2, '0')}-${String(fin).padStart(2, '0')}`];
+}
+function rangoDelMes(forzar) {
+  if ($('avanzado').classList.contains('on') && !forzar) return; // en avanzado manda Desde/Hasta
+  const [d, h] = rangoMes($('rMes').value);
+  $('rDesde').value = d; $('rHasta').value = h;
+}
+function onMes() { rangoDelMes(true); consultar(); }
+function toggleAvanzado() {
+  const av = $('avanzado'), b = $('btnAv'), abrir = !av.classList.contains('on');
+  av.classList.toggle('on', abrir); b.classList.toggle('on', abrir);
+  b.textContent = abrir ? '✕ Cerrar avanzado' : '⚙️ Filtro avanzado';
+  if (!abrir) { ['rTipo', 'rLinea', 'rFundo', 'rCtrl', 'rPersona'].forEach(id => $(id).value = ''); rangoDelMes(true); consultar(); }
+}
 async function consultar() {
   if (!db) { toast('Falta configurar Firebase (apiKey).'); return; }
+  rangoDelMes(false);
   const d = $('rDesde').value, h = $('rHasta').value;
   if (!d || !h || d > h) { toast('Revisa el rango de fechas.'); return; }
   $('rLista').innerHTML = '<p class="muted">Cargando…</p>';
@@ -762,7 +1210,9 @@ async function consultar() {
     let s;
     try { s = await conTimeout(q.get(), 8000); }
     catch (e) { s = await q.get({ source: 'cache' }); toast('📴 Sin señal: se muestran los controles guardados en este celular.', 5000); }
-    TODOS = s.docs.map(x => ({ id: x.id, ...x.data() }));
+    const todos = s.docs.map(x => ({ id: x.id, ...x.data() }));
+    CIERRES = todos.filter(r => r.tipo === 'largos_cierre');
+    TODOS = todos.filter(r => r.tipo !== 'largos_cierre');
   } catch (e) { console.error(e); $('rLista').innerHTML = '<p class="muted">No se pudo consultar (' + esc(e.code || e.message) + ').</p>'; return; }
   const opts = (id, arr, ph) => { const s = $(id), cur = s.value; s.innerHTML = '<option value="">' + ph + '</option>' + unicos(arr).map(v => `<option>${esc(v)}</option>`).join(''); if ([...s.options].some(o => o.value === cur)) s.value = cur; };
   opts('rFundo', TODOS.map(r => r.fundo), 'Todos');
@@ -776,21 +1226,57 @@ function filtrados() {
   return TODOS.filter(r => (!tp || r.tipo === tp) && (!fu || r.fundo === fu) && (!li || r.linea === li) && (!ct || r.controlador === ct) && (!pe || personas(r).includes(pe)))
     .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || ((b.creadoEn && b.creadoEn.seconds) || 0) - ((a.creadoEn && a.creadoEn.seconds) || 0));
 }
+// Los controles de largos del mismo día, calibrador y fundo se muestran como UNA fila (el día completo).
+let DIAS = {};
+function agruparFilas(F) {
+  DIAS = {}; const out = [], idx = {};
+  F.forEach(r => {
+    if (r.tipo !== 'largos') { out.push(r); return; }
+    const k = r.fecha + '|' + r.controlador + '|' + r.fundo;
+    if (!idx[k]) {
+      const id = 'dia_' + Object.keys(idx).length;
+      idx[k] = { id, esDia: true, tipo: 'largos', fecha: r.fecha, fundo: r.fundo, linea: r.linea, controlador: r.controlador, tandas: [],
+        cierre: CIERRES.find(c => c.fecha === r.fecha && c.controlador === r.controlador && c.fundo === r.fundo) || null };
+      DIAS[id] = idx[k]; out.push(idx[k]);
+    }
+    idx[k].tandas.push(r);
+  });
+  Object.values(DIAS).forEach(d => {
+    d.tandas.sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
+    d.nota = Math.round(d.tandas.reduce((a, t) => a + (t.nota || 0), 0) / d.tandas.length);
+    d.incumplimientos = d.tandas.reduce((a, t) => a + (t.incumplimientos || 0), 0);
+    d.notaDia = Math.round(d.tandas.reduce((a, t) => a + notaNum(t.nota), 0) / d.tandas.length * 10) / 10;
+  });
+  return out;
+}
 function renderR() {
-  const F = filtrados();
-  const prom = a => a.length ? Math.round(a.reduce((s, r) => s + (r.nota || 0), 0) / a.length) : null;
-  const sobre = F.filter(r => r.nota >= BONO).length;
-  const porTipo = ['tocones', 'trozos', 'arrumado'].map(k => { const a = F.filter(r => r.tipo === k); return a.length ? `<div class="kpi"><span>${NOMBRE_T[k]} (${a.length})</span><b>${prom(a)}</b></div>` : ''; }).join('');
+  const F0 = filtrados(), F = agruparFilas(F0);
+  // Indicadores en nota de 1 a 5 (verde desde 4,5), igual que en los informes
+  const notaFila = r => r.esDia ? r.notaDia : notaNum(r.nota);
+  const prom = a => Math.round(a.reduce((s, r) => s + notaFila(r), 0) / a.length * 10) / 10;
+  const colorN = v => `style="color:${v >= NOTA_OK ? 'var(--v)' : 'var(--r)'}"`;
+  const nTxt = v => v.toFixed(1).replace('.', ',');
+  const buenas = F.filter(r => notaFila(r) >= NOTA_OK).length;
+  const incTipo = { tocones: 0, preguntas: 0, trozos: 0 };
+  F0.forEach(r => { if (r.tipo === 'tocones') incTipo.tocones += r.incumplimientos || 0; else if (r.tipo === 'largos') incTipo.trozos += r.incumplimientos || 0; else incTipo.preguntas += r.incumplimientos || 0; });
+  const detInc = [incTipo.tocones ? incTipo.tocones + ' tocones' : '', incTipo.preguntas ? incTipo.preguntas + (incTipo.preguntas === 1 ? ' pregunta' : ' preguntas') : '', incTipo.trozos ? incTipo.trozos + ' trozos' : ''].filter(Boolean).join(' · ');
+  const porTipo = ['tocones', 'trozos', 'arrumado', 'largos'].map(k => {
+    const a = F.filter(r => r.tipo === k); if (!a.length) return '';
+    const v = prom(a), cant = a.length + (k === 'largos' ? (a.length === 1 ? ' día' : ' días') : (a.length === 1 ? ' control' : ' controles'));
+    return `<div class="kpi"><span>${NOMBRE_T[k]} · ${cant}</span><b ${colorN(v)}>${nTxt(v)}</b></div>`;
+  }).join('');
+  const npro = F.length ? prom(F) : null;
   $('rKpis').innerHTML = `<div class="kpis">
     <div class="kpi"><span>Controles</span><b>${F.length}</b></div>
-    <div class="kpi"><span>Nota promedio</span><b>${F.length ? prom(F) : '—'}</b></div>
-    <div class="kpi"><span>Sobre ${BONO}%</span><b>${F.length ? Math.round(sobre / F.length * 100) + '%' : '—'}</b></div>
-    <div class="kpi"><span>Incumplimientos</span><b>${F.reduce((s, r) => s + (r.incumplimientos || 0), 0)}</b></div>
+    <div class="kpi"><span>Nota promedio (1 a 5)</span><b ${npro !== null ? colorN(npro) : ''}>${npro !== null ? nTxt(npro) : '—'}</b></div>
+    <div class="kpi"><span>Con nota ≥ 4,5</span><b>${buenas} de ${F.length}</b>${F.length ? `<span>${Math.round(buenas / F.length * 100)}% de los controles</span>` : ''}</div>
+    <div class="kpi"><span>Incumplimientos</span><b>${F.reduce((s, r) => s + (r.incumplimientos || 0), 0)}</b>${detInc ? `<span>${detInc}</span>` : ''}</div>
     ${porTipo}</div>`;
   // incumplimientos más frecuentes
   const cnt = {};
-  F.forEach(r => {
+  F0.forEach(r => {
     if (r.tipo === 'tocones') { if (r.incumplimientos) cnt['Tocones sobre altura máxima'] = (cnt['Tocones sobre altura máxima'] || 0) + r.incumplimientos; }
+    else if (r.tipo === 'largos') { (r.trozos || []).forEach(z => { if (!z.ok) { const k = 'Largos · corte ' + (z.largoCorte || z.producto || '') + ' fuera de tolerancia'; cnt[k] = (cnt[k] || 0) + 1; } }); }
     else (r.items || []).forEach(it => { if (it.r === 'no') { const k = NOMBRE_T[r.tipo] + ' · ' + it.t; cnt[k] = (cnt[k] || 0) + 1; } });
   });
   const top = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 6);
@@ -798,9 +1284,9 @@ function renderR() {
   $('rTop').innerHTML = top.length ? `<div class="card"><h2>Incumplimientos más frecuentes</h2>${top.map(([k, v]) => `<div style="margin:8px 0;font-size:13px">${esc(k)} <b style="float:right">${v}</b><div class="bar"><i style="width:${Math.round(v / mx * 100)}%"></i></div></div>`).join('')}</div>` : '';
   if (!F.length) { $('rLista').innerHTML = '<p class="muted">No hay controles con esos filtros.</p>'; return; }
   $('rLista').innerHTML = `<div class="tw"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Fundo / Línea</th><th>Controlador</th><th>Nota</th><th>Inc.</th><th></th></tr></thead><tbody>
-    ${F.map(r => `<tr><td>${fmtF(r.fecha)}</td><td>${NOMBRE_T[r.tipo] || esc(r.tipo)}</td><td>${esc(r.fundo)}<br><span class="muted">${esc(r.linea)}</span></td><td>${esc(r.controlador)}</td>
-      <td><span class="chip ${r.nota >= BONO ? 'ok' : 'bad'}">${r.nota}</span></td><td>${r.incumplimientos || 0}</td>
-      <td style="white-space:nowrap"><button class="ic" title="Ver detalle" onclick="verDetalle('${r.id}')">👁️</button><button class="ic" title="Informe PDF" onclick="informePDF('${r.id}')">📄</button><button class="ic" title="Eliminar" onclick="eliminar('${r.id}')">🗑️</button></td></tr>`).join('')}
+    ${F.map(r => `<tr><td>${fmtF(r.fecha)}</td><td>${NOMBRE_T[r.tipo] || esc(r.tipo)}${r.esDia ? `<br><span class="muted">${r.tandas.length} de ${PAUTA.largos.tandasDia} controles${r.cierre ? ' 🔒' : ''}</span>` : ''}</td><td>${esc(r.fundo)}<br><span class="muted">${esc(r.linea)}</span></td><td>${esc(r.controlador)}</td>
+      <td><span class="chip ${notaFila(r) >= NOTA_OK ? 'ok' : 'bad'}">${nTxt(notaFila(r))}</span><br><span class="muted">${r.nota}%</span></td><td>${r.incumplimientos || 0}</td>
+      <td style="white-space:nowrap"><button class="ic" title="Ver detalle" onclick="verDetalle('${r.id}')">👁️</button><button class="ic" title="Informe PDF" onclick="informePDF('${r.id}')">📄</button><button class="ic" title="Editar" onclick="${r.esDia ? `editarDia('${r.id}')` : `editarControl('${r.id}')`}">✏️</button><button class="ic" title="Eliminar" onclick="eliminar('${r.id}')">🗑️</button></td></tr>`).join('')}
     </tbody></table></div>`;
 }
 function fotosDe(r, item) {
@@ -809,10 +1295,13 @@ function fotosDe(r, item) {
 }
 function fotosHTML(arr) { return (arr && arr.length) ? `<div class="fotos">${arr.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${esc(f.url)}" alt="foto"></a>`).join('')}</div>` : ''; }
 function verDetalle(id) {
+  if (DIAS[id]) return verDia(id);
   const r = TODOS.find(x => x.id === id); if (!r) return;
   const fila = (k, v) => v ? `<tr><td class="muted">${k}</td><td>${esc(v)}</td></tr>` : '';
   let cuerpo = '';
-  if (r.tipo === 'tocones') {
+  if (r.tipo === 'largos') {
+    cuerpo = detalleLargosHTML(r);
+  } else if (r.tipo === 'tocones') {
     cuerpo = `<p><b>Equipo:</b> ${esc(r.equipoVolteo)} · máx. ${fmtPts(r.maxCm)} cm</p><div class="tc">${(r.mediciones || []).map((v, i) => `<div><input readonly value="${v ?? ''}" class="${v !== null && v <= r.maxCm ? 'ok' : 'bad'}">T${i + 1}</div>`).join('')}</div>${fotosHTML(fotosDe(r, 'toc'))}`;
   } else {
     cuerpo = (r.items || []).map((it, k) => `<div class="item"><div class="q"><span class="pts">${fmtPts(it.pts)} pts</span>${k + 1}. ${esc(it.t)}</div>
@@ -823,12 +1312,44 @@ function verDetalle(id) {
     else if (r.simetria) cuerpo += `<p class="muted">Simetría: ${String(r.simetria.pct).replace('.', ',')}% (frente ${r.simetria.f1} / ${r.simetria.f2} m · posterior ${r.simetria.p1} / ${r.simetria.p2} m)</p>`;
   }
   $('modalBox').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:17px">${esc(r.tipoNombre || r.tipo)} · ${fmtF(r.fecha)}</h2><button class="ic" onclick="cerrarModal()">✖</button></div>
-    <p style="font-size:30px;font-weight:700;margin:8px 0">${r.nota} <span class="chip ${r.nota >= BONO ? 'ok' : 'bad'}">${r.nota >= BONO ? 'Sobre' : 'Bajo'} ${BONO}%</span></p>
-    <table>${fila('Fundo', r.fundo + (r.fundoCodigo ? ' (' + r.fundoCodigo + ')' : ''))}${fila('N° cancha', r.cancha)}${fila('Línea', r.linea)}${fila('Controlador', r.controlador)}${fila('Jefe de faena', r.jefeFaena)}${fila('Op. Volteo', r.opVolteo)}${fila('Op. Trozado', r.opTrozado)}${fila('Op. Clasificado', r.opClasificado)}${fila('Calibrador', r.calibrador)}${fila('GPS', r.gps ? r.gps.lat + ', ' + r.gps.lng : '')}${fila('Observación', r.observacion)}</table>
+    <p style="font-size:30px;font-weight:700;margin:8px 0;color:${notaNum(r.nota) >= NOTA_OK ? 'var(--v)' : 'var(--r)'}">${notaEscala(r.nota)} <span class="chip ${notaNum(r.nota) >= NOTA_OK ? 'ok' : 'bad'}">${r.nota}% · nota de 1 a 5</span></p>
+    <table>${fila('Fundo', r.fundo + (r.fundoCodigo ? ' (' + r.fundoCodigo + ')' : ''))}${fila('N° cancha', r.cancha)}${fila('Línea', r.linea)}${fila(r.tipo === 'largos' ? 'Calibrador' : 'Controlador', r.controlador)}${fila('Jefe de faena', r.jefeFaena)}${fila('Op. Volteo', r.opVolteo)}${fila('Op. Trozado', r.opTrozado)}${fila('Op. Clasificado', r.opClasificado)}${r.tipo === 'largos' ? '' : fila('Calibrador', r.calibrador)}${fila('GPS', r.gps ? r.gps.lat + ', ' + r.gps.lng : '')}${fila('Observación', r.observacion)}</table>
     <button class="btn p w" style="margin-top:12px" onclick="informePDF('${r.id}')">📄 Descargar informe PDF</button>
+    <button class="btn w" style="margin-top:8px" onclick="editarControl('${r.id}')">✏️ Editar este control</button>
     ${r.fotosPendientes > 0 ? `<div class="chip w" style="margin-top:10px">📷 ${r.fotosPendientes} foto(s) aún en el celular del controlador, se enviarán con señal</div>` : ''}
     <div style="margin-top:12px">${cuerpo}</div>`;
   $('modal').classList.add('on');
+}
+function verDia(id) {
+  const d = DIAS[id]; if (!d) return;
+  const meta = PAUTA.largos.tandasDia, notaD = Math.round(d.tandas.reduce((a, t) => a + notaNum(t.nota), 0) / d.tandas.length * 10) / 10;
+  $('modalBox').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:17px">Control de largos · ${fmtF(d.fecha)}</h2><button class="ic" onclick="cerrarModal()">✖</button></div>
+    <p style="font-size:30px;font-weight:700;margin:8px 0">${notaD.toFixed(1).replace('.', ',')} <span class="chip ${notaD >= NOTA_OK ? 'ok' : 'bad'}">nota del día</span> <span class="chip ${d.tandas.length >= meta ? 'ok' : 'w'}">${d.tandas.length} de ${meta} controles</span></p>
+    <table><tr><td class="muted">Fundo</td><td>${esc(d.fundo)}</td></tr><tr><td class="muted">Línea</td><td>${esc(d.linea)}</td></tr><tr><td class="muted">Calibrador</td><td>${esc(d.controlador)}</td></tr></table>
+    ${d.cierre ? `<div class="info" style="margin-top:8px">🔒 Día terminado con ${d.cierre.controlesHechos} de ${d.cierre.controlesMeta} controles · ${esc(d.cierre.motivo)}${d.cierre.detalle ? ' · ' + esc(d.cierre.detalle) : ''}</div>` : ''}
+    <button class="btn p w" style="margin-top:12px" onclick="informePDF('${id}')">📄 Descargar informe del día</button>
+    ${d.tandas.map((t, k) => `<div class="card" style="margin-top:12px;padding:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b>Control N° ${k + 1} · ${esc(t.hora || '')} hrs</b><span class="chip ${notaNum(t.nota) >= NOTA_OK ? 'ok' : 'bad'}">nota ${notaEscala(t.nota)}</span></div>
+      <div class="muted" style="margin:4px 0 6px">Trozador ${esc(t.opTrozado || '-')} · Cancha ${esc(t.cancha || '-')}</div>
+      ${detalleLargosHTML(t, true)}
+      <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" style="padding:6px 10px;font-size:13px" onclick="editarControl('${t.id}')">✏️ Editar este control</button><button class="btn d" style="padding:6px 10px;font-size:13px" onclick="eliminarTanda('${t.id}','${id}')">🗑️ Eliminar</button></div></div>`).join('')}`;
+  $('modal').classList.add('on');
+}
+async function eliminarTanda(tid, did) {
+  const t = TODOS.find(x => x.id === tid); if (!t || !confirm('¿Eliminar el control de largos de las ' + (t.hora || '') + ' hrs?')) return;
+  await borrarControl(t);
+  renderR();
+  const d = Object.values(DIAS).find(x => x.fecha === t.fecha && x.controlador === t.controlador && x.fundo === t.fundo);
+  if (d) verDia(d.id); else cerrarModal();
+  toast('Control eliminado');
+}
+function detalleLargosHTML(r, sinCierre) {
+  const ci = sinCierre ? null : CIERRES.find(c => c.fecha === r.fecha && c.controlador === r.controlador && c.fundo === r.fundo);
+  return `${ci ? `<div class="info" style="margin-bottom:8px">🔒 Día terminado con ${ci.controlesHechos} de ${ci.controlesMeta} controles · ${esc(ci.motivo)}${ci.detalle ? ' · ' + esc(ci.detalle) : ''}</div>` : ''}<p class="muted" style="margin:0 0 6px">Control N° ${r.tandaN || '-'} · ${esc(r.hora || '')} · Camino ${esc(r.camino || '-')} · tolerancia ±${fmtPts(r.tolCm ?? 3)} cm</p>
+  <div class="tw"><table><thead><tr><th>#</th><th>Largo a cortar</th><th>Medido</th><th>Diám.</th><th>Resultado</th></tr></thead><tbody>
+  ${(r.trozos || []).map(z => `<tr><td>${z.n}</td><td>${esc(z.largoCorte || z.producto || '')}</td><td>${z.medido === null || z.medido === undefined ? '' : cmTxt(z.medido)}</td><td>${z.diametro ?? '-'}</td>
+    <td><span class="chip ${z.ok ? 'ok' : 'bad'}">${z.variable ? (z.ok ? 'en rango' : 'fuera de rango') : (z.dif > 0 ? '+' : '') + fmtPts(z.dif) + ' cm'}</span>${z.obs ? `<div class="ay">${esc(z.obs)}</div>` : ''}</td></tr>`).join('')}
+  </tbody></table></div>`;
 }
 function cerrarModal() { $('modal').classList.remove('on'); }
 
@@ -849,10 +1370,12 @@ const notaNum = pct => Math.max(1, Math.round((pct || 0) / 20 * 10) / 10);
 const notaEscala = pct => notaNum(pct).toFixed(1).replace('.', ',');
 const NOTA_OK = 4.5; // verde desde 4,5; bajo eso, rojo
 const LOGO_CA = { d: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAFBAWgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD7LooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKRu3Ga4z4v/ETRvht4Vl1zVyzkfLDCv3pG7CgDtKK474R+O9P+I3gu18S6cpiSUlXiY8ow4INdhj0oAWjNFNbrx+JoAdkUhdVGWYD6mm5wOeK+dPiL8QtS1H4y6d4c0+7Mem206CQRt/rHzzmplJR3M6lVU9z6OyPWjIqOMgovrtFOHXpVGmo6iiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKTNLWfr2q2GhaTcarqlzHb2luhd5HOABQBV8W+J9D8Lab/aOv6jBY224KGkbGSfSuL+PXhGw+J/wivrazlE7eT9qs5IjneyjcAD74xXzh+2jrFr4107wt4p8P6pJdaBO0sMjZIjjcYwSKj/Z/+LXiL4V+JLXwT47SYaNdBTBLIc+UG+6ynuvrQBX/AGJvHc3hPx5eeCdYbyIb1yMSHAilXgr+dfbl5qdjaXcFpc3UUVxcZ8lGbBfHpXwx+134IPhHx5Z/EDw4Qum6kwuUmhPypJ1zn361l+B/EvxJ+Mnxh8PXkFzIX0ox72jJ8pEX7xPu1FgufoOCcU08jP8Ak02IOERXwWCgMfU4ri/H3im6guo/DXhtBca5dDaD/Dbqert9KWyE3Yq+OvEV3qOqf8Il4dlVJiub+8z8tsnpn1xXzl4iTw34c+MNm2m6l9qsLZ0a4uCckPn5snvXYfGLxBYeE/DDeD9D1D7Rq9yxbVbtT+8L9+fz4rwfAORkknqTzk1x16nQ8jFV7tI/QTw/rOm63psV9pV1HdW7KMMprRB9a+PP2d/Hp8J+KF0/UborpN4djbycRN2I/Gvr+3ljngWaB1kjcBlZTkEV006imehh6yrRuTjkUUDpRWh0BRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFBIHWgApG68HpS0yQqgLuwVVGST0AoAivLq3srWS6u5khgjUu7scBQK+Cv2qPjPP8QdePhnQ7oweHraby/MDY8984LH2ru/jR8drTxl4h1H4baSn/EuuCbaK8Q4ZpugH0zXFePf2b9T8IfBb/hI7iVrvW43D3EcfKpH2I/SgD0fxV8IIbD9kE6fa3a3M8ITVGmJ4CgZKivnPW/FGtfEXQfDfhSLSmvtX08mOOaNcySqeAv4V9Dfs9+I5/in8A9d+Hstw41eytytu7P/AKxSPlH0GP1rzX9mKG7+H37RMOg+IbELdFXiOVyVJBAIoQadTtP2XfF0fij7T8F/iNph1Fbdm+zCdcmMqcFW9MGvqPwL4C8KeB4biPw1pMNiJ2zIUHJ9s07SfAfhPSvFV14msNGtoNWuv9bcKmGal8feKbfw1pisF8/ULk+XaWw5Z3PTj0obE33KvxC8V/2JbxadpaC61y+Oy0t15IJ6ufQDrT/h/wCFl0C0ku76X7Vq92d11cNycn+Eewqr8PfC1xazS+I/EDC4128GWY8iBOyL6V2oGMjtU2JSbd2fHnx6+HuqeH/Fk+qpJ9rg1Od5kCZLLzkg/nXlpyGK4IPTGOlfaHxIVW+IXhJHAZGaQEEZB6V87fH/AEqx07xZcSWcCwmW4fcFGAa461NKVzx8Xh1BuSPPbS0lvruGxg/1tw4jTPqxwK+9PAWl3Gi+D9M0y7k8ye2t0SRs55A5r41+Gng/Wtd8UaNJb25jtnulZZz907DuI/IV9yrgKB7Vpho2R0ZfCych4ooHSiuo9MKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAoopGzjigBrnAyRx3PoK4H4xa/C/we8VXuiXa3EsFjKpaBwTG23r+FeY/tbfHNPB2nv4S8M3Cvrlym2eVefsynjH+8c8VW/Y98G6/pngLWbrx1IP7P18jy4LmTlg2ck5PGc0AeIfspw/C1tV/tfx5qZg1iC5V7JZT8jNwc/XNfeVwNI8TaFcWqTW99ZXURRwjhlII74r5b+JX7I+ll7jU/DHiCGyLsWjivCFRSecBq4r9k3xP4k8HfGabwVfXk11ZylopofM3gOpwGU+lAXMTSxqnwM/aZW3jgdreW42JEgOHgkPQepGK+4LLwh4TuvEcfjddCtxrk8I/wBKcHzApHT0/Sn674H8La34msfEWp6VBcalYZ+zysOmfX1rT1/V7DQNJm1LUJlht4Vz9fQAetFxPbUr+MPEVj4a0eS/vXyRxFEPvSt2AFcv4B8P32oak3jLxSu/Ubgf6JbkfLax9gB6nvVTwnot/wCMNbXxl4miaO2Q/wDEs09uiJ2dh6nrXpgHsKnclXlqITz7ml7UuAKMc4qijzr4jf8AJRPCH+9J/SvBP2kFI8Sk44Nw+D+Ar3z4i/8AJRPCP+9J/SvCP2j2Da0vB/4+5QfyFc1bZnnYzZndfs1fN4O0Z25MeoSc+gKGvoD69K+d/wBm2QjwHEMg+VfZ+meK+iB0yaul8KOjCW5NB1FAorY6gooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACuT8VfEbwR4X1OHTdf8SWFhdzf6uKWQBmrn/2i/iTH8Nfh9capGN9/P8AubRfRzwCfaviHwX8OfF3xftfEHi6LV4JLmykL3Mc5LSOcbvl54FAHr37WfwUvL671P4o6BfRT2EsaTTxBskKB98e1eTWvj34kfEbRNA+HWlzTyPbSKYmhJ3PjGC3sK9g/ZY/tjx78IfGfw31C/lAtz5Vm7tkxE5yPpmvFZU8Z/AH4h3UUZSLUvIeGG4K/KytxuXPegTPpf8AaWXVdb+DiaJoGri717QFibVbe2kzJGVUZJxXK/sS/CzVv7cn+IviOCeEFNlkso5l3cl+fej9ifwV4tvPEt98Q9YuZ47C9Vg0c2Sblj/Ec9q+uZ5ILK1aRzHBbxKSx4UKKGPYbqt7aadYzX17MkNvAheR2OAAK810W1u/iRrya7qkTw+HLR82Vq/HnsOjsPTvTN118Udd8v8AeQeE7CXLdjeSDp/wEV6jbwxW1vHDBGscaAKqqMACp3M/ifkSBQqhVwqgYAHTFKOKDzig9ae5YpIz9KO9NIGf6U4DmhjPO/iL/wAlE8I/70n9K8N/aWgEWpRSA/fvJf5CvcviL/yUXwj/AL8n9K8S/aZ5vbfH/P7KP0Fc9bZnnYzZmz+zzNt+H1+CPuXcRGOvLgV9LjsfavlX4ASkeD9Zj5+W4tzn/totfVa9B9Kuj8Jtg/4YtFFFbHWFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAAa4D41fFLQ/hf4dXUtVDzzzNsgt4yNzn1+ldxc3VrbyRJcXEcTSttjVmALH0HrXw1+2jPe6z8btK0a+ZorRFEcWDxhiMmgD0HV9e8L/tSeGIdAtLo6HrVpOJGimPLoDztrwnxE3iX4DfEnXND0meQrPbCASSZCyIwzuA6E9q0/i38P8AWPgV400XxJ4eu5rixk2TQzn5cNwdrV6v+0Zotv8AFn4I6N8UNGhV7+0g/wBI2f3Qfm/JqEI8n/Zs+NNl8KrzVX1nS7i8TU5RI7p8rg98Z4719TaM/wAJv2hbdNUl0wXtxprDIkyrx57HHWvKf2YvDvgX4w/DabS/EGgKNU0hvK+2quC4cEgj1xivevgr8J9B+Fem3tpo081wbyTzJZJRg+wpsEd1p9pZ6Zp8dnZwxW1rboFSNRhVUV5nrt/d/EfxBJ4d0WR4vD9m+NQvV489h/yzX29am8Z65qHi7XH8F+FpWSFTjU79fuxr3QH1xXeeGtEsfD2iwaVpsIjhiXGe7nux9zUbkX53Ys6Rp1ppenw2FjCsNvCoVFUdqtlRQnSlplpWG9Rx2o/Gg8E4HNePftB/Gyz+GiW2ladaf2n4guziC2B+UZ6bj2zTGT/tS+NvEvgX4dnVPDUUf2l50jaZ/wDlnkgD86h/Z0+MUXxB0v8As3WYVsPEVqoE0LceaP7y5rxjVfjT/wALG8DeIvA3xG0j+w9Ta2Nzabc4LJ8wHPfivLvhlpPxN8XXo8e+EQpvtCEcYhhOHuFUgYx3oEfYXiPxFoOvfFnw/pul6nDdXdhJKt1FH96I5HBryj9pgZS0Yjn+0Z/ywtdloXgq00P4peHfFz2T2Wta9C0up25PCS4BbH4k1yn7UEBihsHzlX1Cc/jha5q2zOHF7Mr/ALPh8zw1rkIyWWW3Y/TzVr6tU5UEdCK+V/2cUA0LWWJ2hzH+OGBr6i09/MsoHzncgNXQ1iVg3+7RZFFA6UVsdoUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAN0POKyvE2u6Z4b0O61rWLlLWzt0LuznHT+tap6V598e/AP/Cxfh7d6DFKI7s/NbszELu/2sdRQB8keIfH3jj44/GvTovBxmtrfTpw9mqsQqoDzI31H866r9uzwpeg6D4uifznt41tr14jnbLxgnHTpXk0sXjf9nf4kn9/AL8220unMc0ZHT8DXtP7Jmk+KPiBZeLJfGKvd+GdbRg4n53SHoUz0xz0poRY8RePfDPxP/ZauBrF3arrenW43QMRuEijgj8hXQfsIXEusfCHUNJ1KIS2cM/lIjjIZWXJH5mvMvEv7InjSHXrhPDusWLaWz5iMxYOF9Gxwa+q/gp4BtPhx4BsvDsEnnzRruuJiOZHPJ/CkBueEfC2geE9OfT/D+mw2MDyGRljXGWJyTXKfEPxRf3mpJ4L8KfvNUuRtubhelrH3YnsatfEnxdc2UkXhvw6ouNfvvljA5Fuvd2+lafw98I23hbTWLubjUrk77y6flpG9M+lTe5DfM7It+CPDNj4W0WPT7Ndz9ZpT96Rj1JP1q5qet6RpjrHqGo21s7nCq8gBzXK/HLx9B8OPh9fa/IA0+PLtkPQyHpX5u+K/FfiDxTrdxrWtardS3dw+4jzSAvoAB0xTSsWlbQ/VuJ1kjDoyurDKkHINOyc9PrXxX+yV8eL3TdWt/BXi++e4sbhhHZXEpyYm7KT6Gvq/4meJZvCvgbUvEVpaG9ktYDIka8g8ZBPtTGcp+0H8XNJ+GHhmSV5Ul1e4Ui0tgec+pHpXzJL8MvFXxC+FN38WtR1hrjXEma4gjU5CopyR+FeqaB4U8IftIaFb+PdT3wamlu8EtnG3yJIOA2DyKxv2R9fbw34l8RfBjxMWIhlc2Ym/5aJyG/PigDzbXfFem+P9b+Gd1aWkP9tR3S2WqRbcF4wQCW+uTX1b8IPhJYfDnX9d1PTrx2h1V9wtf4Iec8Vg+DP2b/Bfhj4jyeM7e6vLiQyNJHaS7fKjY9xgZ4r2ugRwHjs4+I/hM9/3vH5V45+1IxbS9JbqTqE/4fKtexePAP8AhYvhUdv3v9K8f/agAGg6Kw6/2jcA/wDfK1z1epw4rZkf7OJJ0W7jCj5gxye+BmvpTw6/maHZyH+KJT+lfNv7PGI9FVsZ3i4/DETGvojwU2/wnpjHqbdf5U6GxWD+BG2KKKK3O0KKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAD0pmBx3p9GBQB8rftq/CLWvEs6eNtFKyx2FowuoScseeqirH7CHxBXVPDVx4FvQiXWnZkt1AwWj/iz75xX03eQR3VrLbTIGjlQowIzkEYry/4Q/BDw18OfFGq+IdOlluLy/ZtpfgRIxyVH6UCPU+efU1x/xJ8Yx+GrKOysozd61e/JZ2qcnJ/iPoKufEHxbaeE9Ha6mUzXMh2W1unLSOegxWF8NfCd2t1J4v8AFB8/XL0blVuRbIeij0qW76EN3fKi78NfB8miRy6xrLi61+++e4lPIjH9xfQCtvxn4m0fwh4eudc1u7S2tIFyxY8sfQDuTVzXtVsNE0e51bU7lLe0tkMkkjnAAFfnl+0h8Yb/AOJniRre2leDQLRyLeLOPMP94iqRSVj0j9s7x1ZeM/BfhfUNAuGm0m9BcqeCCCRyPwrhf2Wvhjo3xM1DW7LWJXjMEGIGTqHI4NZdl4N8TTfs7X3iG5tpDp6XamyVhyE4yR7ZzW7+xZ4vtvDvxZWxvZVitNShMasf+enYUDPM/iX4P1bwB41uvD2o70uLZ98Ey8blz8rA+tfcv7LfjqH4lfCn+zNYZZ722iNteRn+JCMfyrlf28PA8WreCLXxdbIou9MlEbkDl0b1+mK8h/YP12Sx+LEmi7yIr63dm54JUEimBoWfiu+/Zr+K/iXRpbWS60q/zNaIB8uW5UD6cV7B8JPAsHxF1LR/jN4js59J1xlYNaxjajqCNjZ69K9d8ZeAPCXjC4tbjxDo1vey2rBomdRkGujt4Iba2jt7eNY4o1CoijAUDtSGOPbHNOXPekAGKd3pMDz7x8QvxF8KsegE39K8l/ajjP8AwjuhyKNym/nb81WvWPiJ/wAlB8L/AO7N/SvLf2nv+RO0M/8AT3Lj8hWFXqcOJ6mR8AGJ01I8kgJckAf9cmr6P8AjHg3SgQR/oydfpXzp+zum6xViQFAnDfjGRX0X4GKjwtYoCSEjC8+wp0Nh4T4Ubo6UUDpRW52hRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUhoAWjNJ1pcUAFGRR2pvTtmgBSeaxfGHiPTvDGiTarqUmFjGEQfekbsoHc1Z8RavYaHpE+p6jMsNvCuWJPX0A96838J6Tf+P/ABBH4w8SRNHpVs+dLsGHB9JGHepbtoiJS1siz4B8Oal4h1keOfF8Z+0PzYWTfdt07HHrXpk8sdvA80rhI41LOT2ApJ5obWBp55EihjUlnY4CgVwvg74meDviFquteGtIuvPks8xS56SDGCV9qaVhxjY+Q/2rPjbdeOtal8MaJK8Gg2UpV8HBuJBwSfYc14TYSwwXsE9xCJ4I5AzxHo4z0r6Xk/Zb167+MtzazFE8MPOblrkHkqTkoPfmuC/al+FyfDjxpF/ZkDJot5GBAx5ww65PrVFH2votj4d+IPwXt9P05Ik0y+08RoEAxGduP0NfnT4y8Pax4B8a3Ok3CTWt5p9wTbyMMFlB+Vh9RX0v+wR49P8ApvgW/uCcHzbJGPRe4/nXs/7QnwY0j4paOJAy2Wt2yn7NdKv3v9lvUUgPnPXf2j7PxL8DLnwprljI2vMiwiQDKOMY3H3rkv2LtPkvfjrp5G8JDBI7MvQYUnFVNT/Z0+KVlqrWA0dbkBtoniPyH355r6r/AGXfgmfhlpkupaxLHca5dj59g+WFfQUwPcqDRRSATtS96D2o70gPPPiJ/wAlA8Mf7s39K8w/aZjDeB9Hk6bLuX+Qr034kkjx34aI67Jv6V5r+0ojL8PNFL5OZ3Yn8qxqdTgxPUxf2ciw0y4k7ISuT2yMV9EeBXJ0UpuDGOQr+VfPP7OuP+Eb1B+u2aIfm4FfQPgFt1pfIQP3d3IvH1NKhsPB/Cjph0ooHSiug7gooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKQ0tFABTS2DjFOpjZ/GkCFBz1BFc8fGfh9dV1LTH1CKO501N90rnGwYzmvPfjt8WovCkT6Nokiyaw4wzDkQj3968r1xrnxRFp3xE1i0WwsQVhvlLbTekHqPUVDqWdkctTEJOyPWNPgvfiv4iTVLxJLfwlYyH7LC3BvZAfvkf3a9bhjihhSKJAkaDaqgYAArP8LyadL4esZdMEaWRhVognRRjp+FcHrPx2+HmlePIfCFxqym7kba8ynMUbejN0FVFWNoR0uZX7YWm+ItR+D14fDl1JC1u3m3IjOC0Q6j8s18SfAzxrceAviPputxyMls7iK7GeqE9/fNfprqFpaarpc1ncBJ7W6iKsOoZSK/Mn43eCLzwD8Q9S0O4RvJMzS20mOGRjkY+nSqLZ+nWm3kGo6db31s+6G4jWVD7EZFeZ/tP+AE8e/C6/toId+oWa/aLXaMszLztH1rh/wBiL4jJ4i8FN4U1G6Dappf+rDn5pIj3+g4Fe5eKPE2ieGobWXWr+K1S6nWCLzGA3MxwKBn5geCPEOo+CvGtlrVuWiubGcCZB3APKmv098B+JLDxb4T0/wAQafKrw3cIY7TwrY+ZfwORXwd+1z8OZPBvxDfUrGDOkau3nQeXyAx65x75r6P/AGItC8VaJ8NZl8QRyQWdxKJLCGThlQ9Tj3PNAHvw59aXFIMZpaACiiihgB7UnelPak70hHnXxK/5Hrw2f+mc39K4D9pPH/CstIOOfNNdz8T5tnjzwyv96Kc/+g1xH7RatL8KNKnA6SE/nWNTqcWI+0cp+z1/yLOsYPBntv8A0atfQHw2YtHrHBGNRlH/AI8a+e/2e2B8O6zGGwwntif+/q19B/DhPLTWFySf7Qlb82NFD4QwfwnXjpRQOlFbncFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRSE4oAM1h+ObnWLTwve3OhJHJfxRl4xJ045P6VtkjnJ6da8m8b69qHjfxAfA/hWZ4rRG/4muoJ/AndFPqaluxE5Wj5nm0LaT8VtWXxLrllb6Vb6SpOpyKcecy9QPWuL8ZeI7j4jeL7HRNL22WkrIILKH7qIo4yR617R8WPg3FeeFYU8JmS2ubZQrwiQhbgd9w7muJ+JPwqHg/4WWWo2rMdWgkD3UyHG36fSuacJJ3PMqUqj3PV/E/h698L/AAB1LRdDu5vtkFgfLmBy24kEkfrX5uNHd3F3Oz+ZNcq5aV+rEg8mv0P/AGddd8SeKfA11BrkG+2RDDb3MnWUEencD1r4p1+2l+G/x0mTUYFmWx1HzpIiMrJGxPBHcV1U3eOh6NKXNFNbHtX7Kf7QFzZXMHg3xpe77M4Szu5TzGeyk+leh/tq/Dw+LfA9v4q0mMTX2mJksvO+E85Hr1r5x/aR+HFn4Q1Wx8R+H5RJoWtILiDa3MLHkj869p/ZM+NFnrmir8OPGU4a62GK0nlORMh/hOe9M1Pmf4PeNrn4f+PbDxLAHKRHZcxjq8Z6r+YFX/jX8Udc+JXio6teTPBaQN/odqjHbEM9cetdf8bvgH418OeMb+bQtDuNW0i4kaaGS2GSgJyQR2rqf2Yv2etT1vWo/EXjfTpbLTbVw0dpMMNMw6Z9qAPpn4Rwp4y+Fnh2/wDFujRPdxwqUS4jDFdvAPPsAa9HRVRVRFCqowABgAUy3iihhjhgRY4o1CoqjgAdBUtAB3ooooAKKKKGAHtSHrSntSGkI8v+Kv8AyP8A4X/65T/+y1yP7Qqlfg7pg9WzXY/FFVb4heGA3aG4P/oNct+0EFb4L2D9cbcEfWsqi0Zx4jaRw37NkYk0rxAOPl8hvykU19BeA3/0rUl3Z3TM/wCZr5j+Avi3RvDx1Sy1d3iN/Gqwvj5QQQeTX0j8PZ45dTuTFKkivCrjacjmpoNctiMFJcqSO5XpRQOlFdB6AUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUc5pOaAFpGpM5rzn4p+OLnT54vC3htRc6/e/KoXnyVP8R9KTdiZSSKvxL8V6hqerL4E8HnzNUnH+m3K/dtYz1yfWuu8B+FbDwnocen2gDzH5p5j96V+5Jqj8MvBdt4S0hlZjcandHzb25blnc9efSpfij460P4feFLjXdauFjVFIhiz80r44UDvSiru7JjF35mXPFXjHw54Xmso9d1W3sXvZRFCJGAyTVvxJpFn4i0OfS7sBra5TDY7j1r8y/iX488Q/ELxe2tancSyP5v+iQqTiMZ4AFfo38HLjWbv4ZaDP4iheHVGtF89HGGB7fpinYvfc3dC0qy0TSbfTNOhEVvboFRQK+Mf2+PCiaf4y03xLbQkR30ZS4fHG8fd/rX28fWvjb/AIKC6LrA1fRNeDTSaUEMLKM7VkPT+RprTYLLofNmreIPEHiK307TL68lvI7QeVaQDJwPpTtd0XxJ4I1u3GpWlxpl+gWe3LgqcEZBBrq/2ab3SrL4yaK2r20c8MsypH5nRGJ4NfdHxt+EXh34p6dawamTbXFuwMdzEBv2/wB36Uxmd+y14/vviD8M4rzVYGW8tGEErkcS+h/SvVsAYCqAo7CsXwN4W0nwd4Zs/D+i26w2tsmOOrHux9zW9ikA0df6elOoxRQAUUUUAFFFFDAD2pDSmkNLqI8x+Kf/ACUDw3/173H/ALLXKfHZS3wL09xkhdmfzrq/ikM/EDw0B3t7j/2Wub+OSkfAO1BOD+7/AJ1lU6nJXV1JHkvwS8Baf4ws9audRdgtnbNJCF67scV3/wCyVqMiatrej3EzSPD9xnOTj0rN/ZQdv7O8UIT8osicfhVL4WrJ4V+N9laO2yPU4/Ncn0IyKyppRSZy0VycjR9W0UDpRXUesFFFApgFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAGk7daR+3Fcn8S/Glj4N0M3Eg86+mOy0tl5aVz049KV+4m7K5S+KnjpPC9mlhpsP27Xr0+XaWqcncf4m9AKi+FfgV9Bjl1rW5he+Ib477m4bnZn+FfQCs34U+C75b6Txr4sJn1y9+aNH6WyHoB6V6LqmoWeladPqGo3CW9tboXkkc4AAqYpvVmcU5u7G6vqmn6PZm81O9htbfcFEkrYGScAV+ef7WHi/X/EvxTvdP1aYiy08hbOFT+7KkZ3D1PvVv8Aac+Nl78RdcbTtIme18P2EmYFBwZnB++f8K9J8HfCFPjF8MbLxTq0k1nqltZPBAxTAuSOQxP4YrTY0PN/2OrDwpqHxdt18TqjyRpusY5PuGUdM5619EfEX9prQfDfxDsfDOlwxX1kJhFf3YbiPnGF9a+HruHUvDviCW33TWWoWcpXcrbWUjvXXfBT4Z638UPFy2VmJI7SNxJd3jjhecnnuaQz9MbG6hv7GC8tnDwzxiRG9VIyKp+J9A0nxJpT6ZrFnDd2z8hJFyAccEe9cn4Q8XeC9I1u1+GdnrUc2qWNqoKswOccYz698V349elAH58D4AfEJPi5caTpVhLBaW935kWovxGFzn5a+/tMt5bbTLS2mfzJYYUjd/7zBQCatetKOBQAxQR0p4oooAKKKKACiiigAooooYAaQ0p7UhOKQjzH4pkr4/8ADTDqLe4x/wCO1578fvFNpD8MtG8NZWS9u4llcA/6tQTg/jXoHxacReNvD8rdEtbk/wDoNfI2u6pcarqDXd1K0hXMcef4UBOBXPWny6Hm4ytyNpdT0z9nHxPpeiXetabqU3kvf2bpDI33dwU8GtX4vINL1fwX4lt2xI6RRMR6DArw6UkRsQSDg4I6ivZ/izBc3fwl8KXy5Js4EZj1PQc1hCbcTlo1m6dux9W2U6XNnFcRHckiBgfbFS5rjvg1qY1T4a6Lcb98i2ypIf8AaHWuxx6V3p3R7cJcyTFoFHagUFBRRRTAKKKKACiiigAooooAKKKKACiiigAoopM80ABOKTcfag1l+Jtb0/w9os+ranMsMEKknJ6n0FK4r2RU8eeKtN8JaFLqmoSAcbYY8/NK/YAd64D4aeGNS8T68fiB4yiPnN/yDbN/uwJ2Yj1qh4L0XUfiZ4lHjbxMjpo8D/8AErsn4BA/iIr2pECIAoCqBgAcACp+J3Ml775ug25ngtbaS5uJEihiUs7scBQK+Ef2q/jjP401SXwx4buHj0O2crJIhx9oYf0r7F+KmlDxZ8P9c8OWF+kd5dWrIpjkG4Hr2r4J+EnwS8U+NvGdzodxaT6Za2bMt1cyJjaR0AzVmpy/wisvD2ofEjQ7PxRJ5ekvcATehPYH8a/T2wsLO30SPT9MjjgtRBsgEY4CkYBr8tPHXh3UfBvjC+0K+Rku9PnwjEY3Y5Vh+lfoH+yz46Xxv8LrOSacSX9iBBc885HT9KBnw18dPCWs+E/iRqtnqsc0gkmaSKdlOJFJ6g1rfCP4x6v8OPCOt6HpVuhl1Ml0uP4omIxkV97/ABX8CaT498IX+jX1vD9omhZYbjywXjbsQetfnVqXwu8dWPig+HT4evTOZjFHIE+VhnAbNMVix8G4/E2ufGHSLrSjcXWqm68+aUZOAepY+lfpxb+aLeJZiDKFG/HrjmvJ/wBmz4Qaf8NPDCTXMSS67dqGupyMlf8AYFeuAY5HWkA6iiigYUUUUAFFFFABRRRQAUGig0AJRQab0NIDyT45XUFr4m0OS5mSFDa3K7mOOeMCvkRe/wDvH+Zr3X9r57n/AISbT1YssPl/uzngnvXhdcGId5HhY6d6lhH5jYD0NfS2hWNtr/wesbSORJn+zEMAclSq9P0r5qIz1r6D/ZO0G4nsNV1idpPsro0MKljtDdCQKmiruxnhfefKjpf2RdVNx4GudMkfMtvdOwBPIU9B+le3Ka+PPBHjgfDDx54jhW1+0wSTmIITjbg//Xru/wDhpSHtogx/vGuuFSKVmz06eJpxjaT1PonNKDXzqP2lYcc6IP8Avo0f8NKRf9AMf99GqVaHc1+t0u59FUm72r52P7SkI/5gg/76NbXgX48ReJfFun6CNJEP2xygfJ+XjNHtYt6MaxVJu1z24Nk06mLx0pwrU6OgtFFFABRRRQAUUmRQGBoAWiijNABTCOc04sB1qG7uIra3kuLiRY4Y1LuzcBQKGDIdV1Cz0vTp9Qv51gtoELSOxwABXimnW2o/GbxSNT1BJrXwdYy/6Nb9DdEH7ze1N1C71L4zeK20rTne38I2En+kzjj7QQeg9a9s0nTrPSdNhsLCBYbaFQiIoxwKhe8YfxPQmhS3srRY0SOCCFMAAYVFH9K+Mf2oP2htWvNbuvCXgu9NpYW+UubyI/NI3op7D3r2T9srx1c+DfhgLWwkeK71WQ28cq/wgDn+dfAWmSWw1W2l1LdLbmdWueeSuRuP86tG2xq6P418W6Xqkeo2PibVBdI27c9yzBj7gnmvvP8AZa+KUPxG8JyNdwW8Gu2zbbwxqF88/wB/A9a8e+PHwv8AhynwLg8beDIBB5cayrJuz5gxyp9653/gn/NKnxP1WMbiklkpYZ4HWqewHZ/t8eA0e10/x1YQ/v0/0a72rxt6hj79q8h/ZH+ID+Cfifa21xPs0vVT9nn3NhEJ6N9c8fjX3z448PWXirwrqGgahEJILqErg9j2P51+X/jzw9e+DPGWoaLcLJFNYz5jJHUZypH6VIz9WVYMFdTlWGQR3FI0ELTLM0SNIv3WKjI/GvP/ANnTWtY174S6Lfa5BLFeGFVYyDBcAcGvRKACiijNABRRRmgAooooAKKM0ZoAKKKKACiiigBBTWGT6U6mtnrQK1zgfjd4V8PeIfCM1xrkn2c2aM8NwOqH096+K5RGJZBCxkjDEISMEj1NfUf7XWtTWPhKz0mJiq30h3Y68f8A66+WQP8A69cGJd5Hi5hJe0sgIB47Gve/2bviVbWCp4O1OOOCOQsYLgcDPo1eCcHqPwp0UkkUqSo5V0OQw4INY05uD0OSjU9m+ZG58RDnx7rhByDeORWDUt3PLdXMlzO+6WRtzk9zUX1pNkSd2FFHfFFToibvYK7T4F5/4W74e7/6Qf8A0E1xddr8CR/xd7w97XB/9BNVSfvI2ot88T7hOM0vWvB7z4zanD8Yz4ZGngacs3kNuPzE/wB6vdk5UHsRkV6qknsfRRmpbD6KBRTLCkpTSdqTQDXIXJPAAyTWfoGs2Gs280+nzCWOGdoHI/vr1rE+LXiCLw14F1HUZG2nyzGhz/ERxXiv7JXi6UapqHh2/uNxuWM8IP8Ae6sf5VLmlKxhOsozUe59MGmN04NKaTIGc8AdarqbCOyxxl3YKijLE9AK8N8b69qXxR8UnwT4WlePRrdwdTvUOA4H8APpVn4p+L9T8Wa+Ph74KkYyMcaheJ0iXuM+tej/AA88Iab4N0CLTLCMbsbp5iPmlbuSahtt2MW/aPlWxf8AC2g6d4c0W30nTIFighUDgdT6mvHfjJ+0p4W8C60+h2MLarqULbZ0T7sfqM+td/8AHXxU3gr4Va3r8ZxLBBtj9dzHbx+dfmfbwar4g1l0topr/Urpy+1eXkPf61okbaLRH2b4n1/wt+0v8L7nS9DkS38S2I82C2nO0h++PUcV87/F/wCDGufDrwpo2s6mC7XuYp1A4icZ6+2K4Xw5rWt+C/FUOq6c81jqVlJ86Hg8dVI7195Wt7pX7QX7P91ECi3skO2TAyYp1APHpnH61T0A+H/+E/8AEB+HI8CG5dtL8/zSCfr8v05rrf2Z/ijpnwt8UXmo6nYNcRXkYjLp95AM/wCNeZ6xp1zo2t3OlahG0U9rKY5VPYA17RB+zlrPiHwZY+KvAesQavaXMXmNDOAjoe68d6QH1d4G+Pnw18WbFttcjspWICx3R8sknsM1e8W/B/wR4u8a2HjHVbFbi6t1G0D7kncE+tfAVp8M/Gtv4z07Sb7w5fQSm8j/AHhjypAYEkH0r9OdEga30ayt5M7ordEOfUKBSGT20UUEKQQxpFHGNqIowAKl7UhA60tAMTtQKG4FNz60BccBSY5qtqF9a6fZyXd5OkEEY3M7nAArzfSfjn4JvvEEulG6eAK+1J3HyN+NQ5JbkOpGDs2epUA1Xs7y2vbdLi0njniYZVkbIIqYHnmqRd0PopM8daWmIKKKKBhQaKDQAhpCPeg0jMqgs7AKOpPakB4T+2BpFzd+G9O1SNSYbKRvMI7Zxj+VfMFfe3jHT9I8S+HbrR7y4gaOdCB+8HDdjXxJ418NXvhTXrjS7zDiNv3UinIdexrixENeY8bMIa86MTvTokaSVI4wS7NgCmnp0r1r9njwFPr3iNNc1GBRpdpyN5AEjdsVzwXM7WOGEHUkkjy6Swu01FtO+zubsPsMQGW3emK9S8LfAXxVq2mC9u3SxLrmON/vfjW/8J9Lsbr4z+Mdcv41kXSHeZAeR/niuU8bfGnxdrOs3B06/NjYJIVhjRRnAOOTWsYQWsjpjSp0489Qn0n4M3x19tE8Q3z6ZMx/0eUD93L7bvWut/4ZpmPTxC3/AHz/APWpfhB8Q7jxrbXPhLxay3Fx5ZksbgDa+9RkAEfTrXt3gXxDDqvhm1uLu5iS7C7Z1YgEMK3p06UkddKhRqK6PEP+GaJ/+hhP5VRufhld/C3xHoHiK3uZNYn+2eWlqF5Y7T0r6Z+32X/P3B/32K4n4j3MEniLwb5M8bsNVzhWz/yzar9jBao2eFprVLU8A8Wa/qEnxp03XT4YljvIm3myVDvlP0rv2+NHjxrhIl+HN3CPMCsWRulM8Tsf+GodEOe39K+gCqE5Kgn1IognfRhRpvV8xHp8rz2UM0iFHkjVmU9iRnFFTiitzsQGikbpUN1PHbW0txMdsUaF2PoAOaTdgeh85/teeJd89l4Zt5c7R5lyn16V4j4J1qbw74q0/V4X2+TMN5/2CeavfE/X5fEnjrU9UkbcpmZIm9UBwv6VzRAKkGvOq1LzujwK9Zuq5dj9CtE1CHVNJtdQtzujuIw6/iK8t+L/AI/vPtqeB/Bv+ka5enZJInIt1PU/WvNfAnxb1Cx+G8fhfT4JrvxBK/k2oAOFU8Z/CvYfg18PV8K2T6pqrC61+9+e5nbkpn+EV2KXMj1Y1HVSUfmaXwo8BWfgrRBFn7RqU/z3dy3LO56811V5qOn2MkcV5ewQPIcIsjgFjWJ8TvFVt4M8Eal4huWAFtESmTwWxwK/NPxj488UeLPENzreo6vdrLNIWREkIWMZ4xWqVtDpjFRVkfdP7aNo1z8AtZuFY4g8t8A8MC4FfIn7KEsMPx98PNPgZYgMTgA17h+zd4uvvit8KfEfw68RSPeXVpZloZjyWH8IPrzivleym1Pwb40jkcNb3+mXWJV7gg8iqWhR9L/tw/CmO0lT4gaHbKkTnZqEca4APZ/x/pXJ/sM+N20H4jt4ZmZmtNaTbEucBJB827HuBivqSLW/D3xa+B93eQuktvcWLGaLOTFIq5wffNfAPwpvJdI+Kej3Fu21oNRMakem4r/Ki4WPcP25vhu+keI4fHGmWwFleHZebecSf3j7V0n/AAT81LxIbbVtMktpW0BT5kU7g4Eh6qD6V9PeJfD+k+K/Dj6Rrlql1Z3EY3owqx4a0PSvD2lRaXo9lFaWsQwqIuPxNIC5LbwyypK8EbvHyrMoJH0qcdOaKKACiikoARua4j40eItU8LeB7nVtIg8y5QgbsZEY/vH2rtzzXHfGtQfhT4kJAOLByPrUu5E9U7HlWiaJ46+MWk2d74g1RNM0NhnZb/en+o9K7TU/gb4JufDX9kW1o9u6j5LjOWDep9a0/wBnvn4SaJ/1xr0Cp5E9zKFGLV5as+S9TtPiZ8Hb8y2t1NfaSG+Vzl49voR/Ca9L+H/x70DW/LtddQ6XdNxvJzGfcntXsF/Y2t/ayWl5Ak8MgwyMMivnn4sfAPPnar4OwTy0lmxxn1I/wqJRlDYynCpS1jqj6Hsrq3vbdLm0njngcZV0OQasCvh3wf408XeANeSF7i5iijkAntZwfu55ABr7N8PazZ6zo9lqNvOhS6iDqAe+OR+FVTqc2j3NKGIVTQ1s0U0fXNL+FaHSLSEij3qpq+oWul6dNf3kqxW8KF3Y9gKGxNpK5bFcr8WLhrbwDqsscjxuIWwynBBxXlOt/tCTTXksPhfw5PqMKHHnAf0rnvFPxg8V6/4eu9JufBd0guE2+YFPy1EpppnLVxEWmluefeE/DvxD8S6UNR0e71Ce3LFM/aD1HWr938LfiTdsGvLOe5YfdaWQsQK2fhf8QvFfgTw0NEtfCl1dRiVpPMKEYLHOK6r/AIXx40/6Em5/75NcqimveZxKnCS99s81/wCFQ+Pcf8gg/wDfVXrT4dfFezgEFq2oW0I5EcU5VR+Fd5/wvjxp/wBCTc/98ml/4Xx4zBz/AMITc4/3TTUKa2GqNJbNkHwm8D+LtF0nxhLrFs8Ut5ZjZIzZZyAc18/urJLIjgqwkYEHqDmvo4/HvxM0W2T4fXj5GD15/SvF/F8Wo654hudWtPDF5p6XJ3PAIiQG9aVRKy5TPEwXKlHWxs/s9WE178WNKZEYpC5aUjsuDX1NP8OPDc1zLcbb2JpWLMI7gqufpXzF8K/E+u+AmuJbTwhdXd1cDaZmQghfQV33/C+PGfbwTcj/AICaui4xjZo6MLOMI6nrv/CtfDn/AD01L/wKNS6d8PfDtjqVtqCLeST2z74vNnLBW9cV47/wvjxp/wBCVc/98ml/4Xv407+Cbk/8BNa88ex0qtT3sXPEwx+1Do3Of/1V9BV8dXvjPxNd/Ee08aP4XuxNbdIdhwfxrvIvjv4vM8aHwLcgNIFJweAT1ohURnRrR1R9FCiodPma4sYJ3TY0kauV9CQDiitjtRMwyK84/aF8S/8ACO/Dq8aKQC4uh5SLnkg8H9K9HbpXyh+1j4k/tLxhb6HE+YrBdzYPBJHSsqsrROfFVOSmzxZRgYyTS0UV5nW5889zrPhFrsfhz4haXqMyI8fmiNtwyAG4z+tfc8TJJEksbBlYZVh3FfnYd3BUlW7EdjX2j+z94pHiX4f2Zd83FoohcE88cZrsw0vsnqZdUSvBnB/t0z3MfweMERIhlmHm4HXHSvmv9l74f+HviPeeItE1gmO+WyV9NfdjbJk5+vFfY37T3htvE/wd1ixhUtLEnnKcdMda+D/gN4ufwX8UNG1rzCIRN5EwJwNrHaSfpXb0PV1PuH9nD4LWfwp067mluze6recSzdAEB4UV4x+2d8GrwalJ4+8L2Zmjl51CGMZIPd69a/ao+JN94R+FCah4dlX7RqmI4bleQgIySPwrzP8AYh+JGr67eap4O8S30upIVMsL3Tb2bPVST2pDPmLwn438UeFbS9stB1Wa0trxSk8W44I78etdJ+zj4TvvGPxb0q3to3MEM5uLqXGQgHOfxNfYHjn9mP4c+JNVfUoLaXTJ5XLTLA2Eb6L0Fd78LPhp4T+G+mvZ+G7Hynlx507tueT8T29qAOyjjCRomchVAp4FFFABRRRQAUlLTTQBFdXEFrC01xKkUaDLOxwAK8V+MvxV8N3nhvWPC2lNNf3t1A0CmJSUBPvW/wDHmzv7qHRVY3DaH9sA1JLckOVxxkjtnFdfonhXwxZWEA0/RLKOLaCreSNxGOpPrWcrvYwlzTujzX9nXx/oB8L2HhO5n+y6napsZJflDH2zXtXXoeDXE+M/hx4T1uzkllsIrG5jBeO6tx5bRsOhyKg+Buu3+t+DidRd5XtJnt1uGGPNVWIDfkKcG1ox0+aHus70HjPahiqqWZgqjkk9hXlPxC+N/hzwtqL6bbI2o3UfEgQ/Kp9M1zQ+Mlt45hg8M2S/2TdahIIpZXfhYz97afXFS6kdhPEU07X1PPf2h7qbxL4hfWdM0pv7KtyYvtiJxIw4OT9aw/h5481XTdY8Oae1y4sbOdlPzcFXOTmvrDWdK0nSPAM+mpaQy20VuVSJgCJGx1+pNfDV7lNSudqeTidiFH8GG6fhXNUvCVzzcQpUanMnufoXbTRzwRzxHKSKGU+oNSA9iK+Tvh58ede0m8tbTxB5V3pSKsXyRhXjUfxZHWvqLQdUstZ0uHUdOnWe2mXcjg11QqKa0PSo4iNVaF815H+1XqUtl8L5YYWKtPOgJB7dxXrgrxT9rsf8W8jJ/wCe4oqXUWGIuoOx2Pwc8O6Np3w90o21jAXmgWWR2jBZmPXmuy+wWOP+POD/AL4Fc/8ACjj4daJn/n1WuoXpzTitEXBLlWhW/s+x6fY4P+/YpfsFj/z5wf8AfsVYp1VZFcqKv2Cx/wCfOD/v2KPsFj/z5wf9+xVqii3kHKit9gsf+fSD/v2KT7BY/wDPnB/37FWqQ4ot2HyorCwsf+fOD/v2KX+z7H/nzg/79irIpKVgsit/Z9j/AM+cH/fsUGwsu9nB/wB8CrOaPrT0FyoqnT7H/nzg/wC/YoFhZDn7HBx/sCrRFFA+WPYEAAwBgCilFFMZHdGVbaRoFDyhSUUnAJ7Cvk7xP8FPiZrHiG+1OW1sW+0TMy7rtcgE19aNwKaMH8aicFLcxrUVVVmfHN18CPiHa2stzLaWAjjUu+Lpc4Fcd4N8Lah4o8Ur4e08ot2wc/O2ANvXmvufxMB/wj9/jr5Dfyr5M/Z2IHx0h7/Jcf0rmnSipLzPPq4WnGcV3L//AAzz41Gcy2nP/TUV6V8Bvh34u8CavcnUXt3sLhcMFlB2n2Fe15FHUda3jSUdjsp4WnCV4kN3bxXdpLazoGimQowPcEV+bP7SHw7uvh78R72yZCum3rG4snUcBT/Dn1FfpZXDfGX4baJ8S/C0mk6pEqXCAtbXAHzRN9fStUdR8PT/ABeXVvgLc/DzX7J7u+hKnTbwnPlAEZB/Ctv9h6CaX4wB4wzLFFlyOw96yfEn7N/xP0fVWtINKW9hZ9sM0bZDDPBPpX1N+yp8G5PhpoE99rQR9evv9cVORGvZRTA9w4NGBSDpxS0gDA9aOKKKACijNGRSAKKMilyKAI5oopozHLGro3VWGQacoVVCqoAAwAO1LkUZFAFe9t47u1ltZgTHKpVgDg4rkvHktt4O+Geo/wBkItsIIGEIH949TXZn2rk/i5pT6t8PdWtIozJKYCUUdSamV7GdW/K2j5Q+EvgK9+JOuXJlu/s8K5kuJyNxLHnGKk+Lvw8u/h1rFmsd81zFPloZ1XaVIpnwe+IF18OdVnMlobm3kGyaLOCGHf8ACn/GT4jz/EDULWVbM2tvbAhEzkknvXEnDl13PF/dOnd/EdF4M+KlnBp8C+KLm+vZ4WBVUzt46Z9a8r125ivtbv72FdsdzcySqv8AdDMTivZvCH7P1zrvhmy1K71d9PuZ03NFszgdv0rat/2Z4kmVpvEjyR/xLs6/pVOlOSLdCtUijyP4Ovoy+O7Ya95H9nPGySed90Zr6E+Cur6Xp3jDV/B2k6gl5psf76zZGyBnkgGvn34xeEbfwZ4vfR7SR5IBErqzDqT1qb4E6lPpfxM0ya2z+9cRMO2G4NKnLklyhQlKlNQsfb3bivFf2vP+SeRf9dxXtWeceleJ/teOo+H8KlgGM4wK66ukGerX+BnoPwkfzPhzop9LdRXWCuU+EUTQ/DrRlbqbZWrqxVR1SLp6xQuKKTvS00WFFFFMAooooAKKKKACiiigAooooAKKKKAIL+ZreymnSMyNGhYIP4iO1eFXvxo8bQ300Mfw7vJI0cqr4PI9a97YZFJsGeg/KplG/UzqRctnY+eNR+Mfji8sLi0Pw7vV85CmcHjNeV+BJfFfhDxmniZPCt/K6iQCJoyM7q+3Nq+g/KkaONvvIp+orN0m3e5hPDOTTctj54/4Xl42z/yIV3/3yaP+F5eNv+hCuv8Avk19DeTD/wA8k/75FJ5EP/PJP++afJLuX7Kp/MfPf/C8vG3/AEIV1/3yaP8AheXjfP8AyIV1g/7Jr6E8iH/nkn/fNAhiH/LJP++aXJLuL2VT+Y+e/wDheXjb/oQrr/vk0n/C8fG//Qh3Q9PlPNfQvkQ/88Y/++RR5MP/ADyT/vkU+SXcPZVP5j56/wCF5eN/+hBuv++TS/8AC8/G3/QhXf8A3ya+hPIh/wCeSf8AfIo8mL/nkn/fNHJPuP2VT+Y+e/8Ahefjb/oQrv8A75NNk+O3jNBl/Alyo9wa+hvJi/55J/3zTZbS2lXbJbxOPQoKOSfcXsqn8x87f8L98WY/5EqbP0NH/C/fFg/5kqb8jX0H/Zenf8+Nv/37FH9l6d/z42//AH7FLkl3D2NT+Y+fP+F++LP+hKm/I0f8L98Wf9CVN+Rr6D/svTv+fG3/AO/Yo/svTv8Anxt/+/Yp8ku4exqfzHz5/wAL98Wf9CVN+Ro/4X74r/6Eqb8jX0H/AGXp3/Pjb/8AfsUf2Xp3/Pjb/wDfsUcku4exqfzHz5/wv3xX/wBCVN+RpD8e/FTDa3gmbaeDwelfQv8AZenf8+Nv/wB+xSf2Xp3/AD42/wD37FHs5dxOjU/mPhjxel9rniC51W08NXWnrO25olQkbu5qHw1Bd6PrMOo3/hy6vooDv8plIUkdzX3b/Zenf8+Vv/37FI2laaylTY2xB4I8sc1l9W1vc53l93e586Q/tDa5GoSPwkQijCgZ4FO/4aJ8Qc/8Um3619A/8I3oP/QIsv8AvyKB4c0L/oEWX/fkVoqc11N1RqfzHx98VfG9z4+e2nuPDUlndwZAlXJyDWR8Ntak8I+JI9bn0CbUjEDsjYFQD619sf8ACOaD/wBAiy/78ij/AIRzQf8AoEWX/fkVHsHe9zH6k+bm5tTwc/tH6nwf+EJm/wC+2/wrHmk8X/Gvxbpy3ulSadolo+91dSFZc8jPevpD/hHNB/6BFl/35FaFtbQW0Qit4UijHRUXArTkk92dHsZv4pEWm2kFhYwWVuoSKCMIi+gFWKXApcVodKVhBS0YopgFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB//2Q==', w: 360, h: 321 };
-const L1 = t => String(t ?? '').replace(/[–—]/g, '-').replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/≤/g, '<=').replace(/≥/g, '>=').replace(/[^\x00-\xFF]/g, '');
+const L1 = t => String(t ?? '').replace(/[–—]/g, '-').replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/≤/g, '<=').replace(/≥/g, '>=').replace(/→/g, '>').replace(/[^\x00-\xFF]/g, '');
 async function informePDF(id) {
+  if (DIAS[id]) id = DIAS[id].tandas[0].id;
   const r = TODOS.find(x => x.id === id); if (!r) return;
   if (!window.jspdf || !window.jspdf.jsPDF) { toast('No se pudo cargar el generador de PDF. Revisa la conexión.'); return; }
+  if (r.tipo === 'largos') return informeLargosDia(r);
   toast('Generando informe…', 8000);
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -992,16 +1515,6 @@ async function informePDF(id) {
     if (sinCargar) { espacio(8); set(AMB, 8.5, false); doc.text(sinCargar + ' foto(s) no se pudieron incluir; se pueden ver en la app (Resultados, boton Ver detalle).', M, y); y += 8; }
   }
 
-  // ---------- Firmas ----------
-  if (y + 4 > 258) nuevaPagina(); else y = 258;
-  const fw = (CW - 20) / 2;
-  [['Controlador', r.controlador], ['Jefe de faena', r.jefeFaena]].forEach((f, i) => {
-    const x = M + i * (fw + 20);
-    doc.setDrawColor(150); doc.setLineWidth(0.3); doc.line(x, y + 12, x + fw, y + 12);
-    set(TXT, 9, true); doc.text(L1(f[1] || ' '), x + fw / 2, y + 17, { align: 'center' });
-    set(GRIS, 8, false); doc.text('Firma ' + f[0].toLowerCase(), x + fw / 2, y + 21.5, { align: 'center' });
-  });
-
   // ---------- Pie ----------
   const n = doc.getNumberOfPages();
   for (let i = 1; i <= n; i++) {
@@ -1015,15 +1528,128 @@ async function informePDF(id) {
   toast('Informe descargado ✔');
 }
 
+async function informeLargosDia(r0) {
+  const grupo = TODOS.filter(r => r.tipo === 'largos' && r.fecha === r0.fecha && r.controlador === r0.controlador && r.fundo === r0.fundo)
+    .sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
+  toast('Generando informe del día…', 8000);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, M = 14, CW = W - 2 * M;
+  const VERDE = [27, 94, 32], VERDE2 = [46, 125, 50], VCLARO = [232, 245, 233], ROJO = [198, 40, 40], RCLARO = [255, 235, 238],
+        GRIS = [96, 125, 139], GCLARO = [245, 247, 246], TXT = [33, 43, 38], ACLARO = [255, 248, 225];
+  const set = (c, size, bold) => { doc.setTextColor(...c); doc.setFontSize(size); doc.setFont('helvetica', bold ? 'bold' : 'normal'); };
+  let y;
+  const nuevaPagina = () => { doc.addPage(); y = 18; };
+  const espacio = h => { if (y + h > 280) nuevaPagina(); };
+  const seccion = t => { espacio(16); doc.setFillColor(...VERDE2); doc.rect(M, y, 1.6, 6, 'F'); set(VERDE, 12, true); doc.text(L1(t), M + 4, y + 4.6); y += 10; };
+  const promPct = grupo.length ? Math.round(grupo.reduce((a, r) => a + (r.nota || 0), 0) / grupo.length) : 0;
+  // nota del día = promedio de las notas de cada control (las mismas que se ven impresas)
+  const notaDia = grupo.length ? Math.round(grupo.reduce((a, r) => a + notaNum(r.nota), 0) / grupo.length * 10) / 10 : 1;
+  const okDia = notaDia >= NOTA_OK;
+  const totalTrozos = grupo.reduce((a, r) => a + (r.trozos || []).length, 0), fuera = grupo.reduce((a, r) => a + (r.trozos || []).filter(z => !z.ok).length, 0);
+  const meta = PAUTA.largos.tandasDia;
+  const cierre = CIERRES.find(c => c.fecha === r0.fecha && c.controlador === r0.controlador && c.fundo === r0.fundo);
+  // encabezado
+  doc.setFillColor(...VERDE); doc.rect(0, 0, W, 34, 'F'); doc.setFillColor(...VERDE2); doc.rect(0, 34, W, 1.5, 'F');
+  set([255, 255, 255], 18, true); doc.text('Informe de Control de Largos', M, 15);
+  set([200, 230, 201], 11, false); doc.text('Control de largos en trozado  |  Control interno', M, 23);
+  set([200, 230, 201], 9, false); doc.text('Fecha del control: ' + fmtF(r0.fecha), M, 29);
+  const LH = 20, LW = LH * LOGO_CA.w / LOGO_CA.h, LY = (34 - LH - 3) / 2;
+  doc.setFillColor(255, 255, 255); doc.roundedRect(W - M - LW - 3, LY, LW + 3, LH + 3, 2, 2, 'F');
+  try { doc.addImage(LOGO_CA.d, 'JPEG', W - M - LW - 1.5, LY + 1.5, LW, LH); } catch (e) {}
+  y = 44;
+  // tarjetas
+  const cards = [
+    { t: 'NOTA DEL DÍA (1 a 5)', v: notaDia.toFixed(1).replace('.', ','), c: okDia ? VERDE : ROJO, bg: okDia ? VCLARO : RCLARO },
+    { t: cierre ? 'CONTROLES DEL DÍA (TERMINADO)' : 'CONTROLES DEL DÍA', v: grupo.length + ' de ' + meta, c: grupo.length >= meta ? VERDE : (cierre ? [141, 90, 0] : ROJO), bg: grupo.length >= meta ? GCLARO : (cierre ? ACLARO : GCLARO) },
+    { t: 'TROZOS FUERA DE TOLERANCIA', v: fuera + ' de ' + totalTrozos, c: fuera ? ROJO : VERDE, bg: GCLARO }
+  ];
+  const cw = (CW - 8) / 3;
+  cards.forEach((k, i) => { const x = M + i * (cw + 4); doc.setFillColor(...k.bg); doc.roundedRect(x, y, cw, 22, 2.5, 2.5, 'F'); set(GRIS, 7.5, true); doc.text(L1(k.t), x + cw / 2, y + 6.5, { align: 'center' }); set(k.c, 18, true); doc.text(k.v, x + cw / 2, y + 16.5, { align: 'center' }); });
+  y += 26;
+  doc.setFillColor(230, 233, 231); doc.roundedRect(M, y, CW, 3, 1.5, 1.5, 'F');
+  doc.setFillColor(...(okDia ? VERDE2 : ROJO)); doc.roundedRect(M, y, Math.max(3, CW * Math.min(5, notaDia) / 5), 3, 1.5, 1.5, 'F');
+  y += 9;
+  // datos y esquema
+  const ultimo = grupo[grupo.length - 1] || r0;
+  const bloque = (x, w, titulo, filas) => {
+    const h = 9 + filas.length * 5.6;
+    doc.setFillColor(...GCLARO); doc.roundedRect(x, y, w, h, 2.5, 2.5, 'F');
+    set(VERDE, 9.5, true); doc.text(titulo, x + 4, y + 6.5);
+    filas.forEach((f, i) => { const yy = y + 12.5 + i * 5.6; set(GRIS, 8.5, true); doc.text(L1(f[0]), x + 4, yy); set(TXT, 9, false); doc.text(doc.splitTextToSize(L1(f[1] || '-'), w - 34)[0], x + 30, yy); });
+    return h;
+  };
+  const bw = (CW - 4) / 2;
+  const jefe = (grupo.find(g => g.jefeFaena) || {}).jefeFaena || '';
+  const h1 = bloque(M, bw, 'Datos del día', [['Fundo', r0.fundo + (r0.fundoCodigo ? ' (' + r0.fundoCodigo + ')' : '')], ['Línea', r0.linea], ['Calibrador', r0.controlador], ['Jefe de faena', jefe]]);
+  const cortes = [...new Set(grupo.flatMap(g => (g.trozos || []).map(z => z.largoCorte || z.producto)).filter(Boolean))];
+  const h2 = bloque(M + bw + 4, bw, 'Criterio', [['Tolerancia', '+/- ' + fmtPts(ultimo.tolCm ?? 3) + ' cm del largo a cortar'], ['Largo variable', 'cumple dentro del rango'], ['Largos a cortar', cortes.join('  |  ')], ['Trozos/control', String((ultimo.trozos || []).length || 10)]]);
+  y += Math.max(h1, h2) + 8;
+  // tandas
+  const base = { margin: { left: M, right: M }, theme: 'plain', styles: { fontSize: 8.4, cellPadding: { top: 1.7, bottom: 1.7, left: 1.6, right: 1.6 }, textColor: TXT, valign: 'middle', halign: 'center', lineColor: [225, 229, 227], lineWidth: { bottom: 0.2 } },
+    headStyles: { fillColor: VERDE, textColor: 255, fontStyle: 'bold', fontSize: 8.2, halign: 'center' }, alternateRowStyles: { fillColor: [250, 251, 250] } };
+  const pill = (d, ok, txt) => {
+    const cx = d.cell.x + d.cell.width / 2, cy = d.cell.y + d.cell.height / 2, pw = Math.min(d.cell.width - 3, 22);
+    doc.setFillColor(...(ok ? VCLARO : RCLARO)); doc.roundedRect(cx - pw / 2, cy - 2.6, pw, 5.2, 2.6, 2.6, 'F');
+    set(ok ? VERDE : ROJO, 7.8, true); doc.text(txt, cx, cy + 1, { align: 'center' });
+  };
+  grupo.forEach((r, k) => {
+    const okT = notaNum(r.nota) >= NOTA_OK;
+    espacio(30);
+    seccion('Control N° ' + (k + 1) + '  |  ' + (r.hora || '') + ' hrs');
+    doc.setFillColor(...(okT ? VCLARO : RCLARO)); doc.roundedRect(W - M - 30, y - 10.5, 30, 7, 2, 2, 'F');
+    set(okT ? VERDE : ROJO, 9, true); doc.text('Nota ' + notaEscala(r.nota), W - M - 15, y - 5.6, { align: 'center' });
+    set(GRIS, 8.5, false);
+    doc.text(L1('Trozador: ' + (r.opTrozado || '-') + '   |   N° cancha: ' + (r.cancha || '-') + '   |   Camino: ' + (r.camino || '-') + '   |   ' + (r.puntosObtenidos ?? 0) + ' de ' + (r.puntosAplicables ?? 10) + ' trozos en tolerancia'), M, y); y += 3;
+    const tz = r.trozos || [];
+    doc.autoTable({ ...base, startY: y,
+      head: [['#', 'Largo a cortar', 'Medido', 'Dif. (cm)', 'Diám.', 'Resultado', 'Observación']],
+      body: tz.map(z => [z.n, (z.largoCorte || (z.variable ? cmTxt(z.min) + '-' + cmTxt(z.max) : cmTxt(z.corte))) + ' m', cmTxt(z.medido) + ' m', z.variable ? 'rango' : (z.dif > 0 ? '+' : '') + fmtPts(z.dif), z.diametro ?? '-', z.ok ? 'Cumple' : 'Fuera', L1(z.obs || '')]),
+      columnStyles: { 0: { cellWidth: 7, textColor: GRIS }, 1: { cellWidth: 30 }, 2: { cellWidth: 22 }, 3: { cellWidth: 18 }, 4: { cellWidth: 14 }, 5: { cellWidth: 22 }, 6: { halign: 'left' } },
+      didParseCell: d => { if (d.section === 'body' && d.column.index === 3 && !tz[d.row.index].ok) { d.cell.styles.textColor = ROJO; d.cell.styles.fontStyle = 'bold'; } },
+      willDrawCell: d => { if (d.section === 'body' && d.column.index === 5) d.cell.text = []; },
+      didDrawCell: d => { if (d.section === 'body' && d.column.index === 5) pill(d, tz[d.row.index].ok, tz[d.row.index].ok ? 'Cumple' : 'Fuera'); } });
+    y = doc.lastAutoTable.finalY + 4;
+    if (r.observacion) { set(TXT, 8.5, false); const ls = doc.splitTextToSize(L1('Obs.: ' + r.observacion), CW); espacio(ls.length * 4 + 2); doc.text(ls, M, y + 2); y += ls.length * 4 + 2; }
+    y += 4;
+  });
+  if (grupo.length < meta) {
+    const txt = cierre ? 'Día terminado con ' + grupo.length + ' de ' + meta + ' controles. Motivo: ' + cierre.motivo + (cierre.detalle ? ' (' + cierre.detalle + ')' : '') + '.'
+                       : 'Faltan ' + (meta - grupo.length) + ' control(es) para completar los ' + meta + ' del día.';
+    const ls = doc.splitTextToSize(L1(txt), CW - 8), h = ls.length * 4.6 + 4;
+    espacio(h + 2); doc.setFillColor(...ACLARO); doc.roundedRect(M, y, CW, h, 2, 2, 'F'); set([141, 90, 0], 9, true); doc.text(ls, M + 4, y + 5.3); y += h + 4;
+  }
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i); doc.setDrawColor(220); doc.setLineWidth(0.2); doc.line(M, 286, W - M, 286);
+    set([150, 150, 150], 7.5, false);
+    doc.text('Forestal Corte Alto Ltda.  |  Control de largos en trozado  |  Generado ' + new Date().toLocaleString('es-CL'), M, 290.5);
+    doc.text('Página ' + i + ' de ' + n, W - M, 290.5, { align: 'right' });
+  }
+  doc.save('Control_Largos_' + (r0.fundo || '').replace(/\s+/g, '_') + '_' + r0.fecha + '_' + (r0.controlador || '').replace(/\s+/g, '_') + '.pdf');
+  toast('Informe del día descargado ✔');
+}
+
 async function eliminar(id) {
+  if (DIAS[id]) {
+    const d = DIAS[id];
+    if (!confirm('¿Eliminar los ' + d.tandas.length + ' controles de largos del ' + fmtF(d.fecha) + ' de ' + d.controlador + '?')) return;
+    for (const t of d.tandas) await borrarControl(t);
+    if (d.cierre) { try { await conTimeout(db.collection(COL).doc(d.cierre.id).delete(), 6000); } catch (e) {} CIERRES = CIERRES.filter(c => c.id !== d.cierre.id); }
+    renderR(); toast('Controles del día eliminados'); return;
+  }
   const r = TODOS.find(x => x.id === id); if (!r) return;
   if (!confirm('¿Eliminar el control de ' + (r.tipoNombre || r.tipo) + ' del ' + fmtF(r.fecha) + '? También se borran sus fotos.')) return;
+  if (await borrarControl(r)) { renderR(); toast('Control eliminado'); }
+}
+async function borrarControl(r) {
+  const id = r.id;
   const paths = [...(r.fotos || []), ...(r.items || []).flatMap(i => i.fotos || []), ...(r.fotosExtra || [])].map(f => f.path).filter(Boolean);
   try { await colaFotos.quitarDeControl(id); } catch (e) {}
   if (st) for (const p of paths) { try { await conTimeout(st.ref(p).delete(), 8000); } catch (e) { console.warn('No se pudo borrar foto', p, e); } }
-  try { await conTimeout(db.collection(COL).doc(id).delete(), 6000); } catch (e) { if (e.message !== 'timeout') { toast('No se pudo eliminar: ' + (e.code || e.message)); return; } }
+  try { await conTimeout(db.collection(COL).doc(id).delete(), 6000); } catch (e) { if (e.message !== 'timeout') { toast('No se pudo eliminar: ' + (e.code || e.message)); return false; } }
   TODOS = TODOS.filter(x => x.id !== id);
-  renderR(); toast('Control eliminado');
+  return true;
 }
 
 // ================= CONFIGURACIÓN DE PAUTA =================
@@ -1037,6 +1663,9 @@ function renderCfg() {
   <div class="card"><h2>Tocones · altura máxima por equipo de volteo</h2>
     ${Object.keys(eq).map(e => `<div class="cfg-row" style="grid-template-columns:1fr 90px"><div>${esc(e)}</div><input type="number" step="0.5" min="0" data-eq="${esc(e)}" value="${eq[e]}"></div>`).join('')}
     <div class="muted" style="margin-top:6px">10 tocones · 10 pts cada uno.</div></div>
+  <div class="card"><h2>Control de largos · tolerancia</h2>
+    <div class="cfg-row" style="grid-template-columns:1fr 90px"><div>Tolerancia ± (cm) respecto al largo de corte del esquema. La pulpa de largo variable cumple si queda dentro de su rango, sin tolerancia.</div><input type="number" step="0.5" min="0" id="cfgTolLargos" value="${PAUTA.largos.tol}"></div>
+    <div class="muted" style="margin-top:6px">10 trozos por control · nota = % de trozos dentro de tolerancia · ${PAUTA.largos.tandasDia} controles al día.</div></div>
   <div class="card"><h2>Trozos en cancha · puntaje por pregunta</h2>
     <div class="cfg-row muted" style="border:0"><div>Pregunta</div><div>Pts</div><div>Permite</div></div>${filas('trozos')}
     <div class="suma" id="suma_trozos"></div></div>
@@ -1072,10 +1701,13 @@ async function guardarCfg() {
     const def = DEF[k].items.find(x => x.id === id);
     items[id] = { pts, na: $('cfgBox').querySelector(`input[data-na="${id}"]`).checked, conf: pts !== def.pts ? true : !!def.conf };
   });
-  const data = { equipos, items, simMin: smin, simMax: smax, actualizado: firebase.firestore.FieldValue.serverTimestamp() };
+  const tolL = num($('cfgTolLargos').value);
+  if (tolL === null || tolL < 0) { toast('Revisa la tolerancia del control de largos.'); return; }
+  const data = { equipos, items, simMin: smin, simMax: smax, tolLargos: tolL, actualizado: firebase.firestore.FieldValue.serverTimestamp() };
   try { await conTimeout(db.collection(COL_CFG).doc('pauta').set(data), 6000); toast('Pauta guardada ✔'); }
   catch (e) { if (e.message === 'timeout') toast('Sin señal: la pauta se guardará al volver la conexión.'); else { toast('No se pudo guardar: ' + (e.code || e.message)); return; } }
   aplicarPauta(data);
+  { const d2 = { ...data }; delete d2.actualizado; LS.set('cc_pauta', d2); }
   renderCfg();
   if (estado.tipo && !hayAvance()) { $('evalTitulo').textContent = 'Evaluación · ' + PAUTA[estado.tipo].nombre; renderItems(); }
 }
@@ -1096,12 +1728,14 @@ function tab(t) {
 }
 (async function init() {
   $('fecha').value = hoy();
-  const d = new Date(); $('rDesde').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01'; $('rHasta').value = hoy();
+  $('rMes').value = hoy().slice(0, 7); rangoDelMes(true);
   llenarSelects();
   document.querySelectorAll('[data-tipos]').forEach(el => el.style.display = 'none');
   actualizarEstadoRed();
   await cargarPauta();
   await cargarListas();
+  restaurarBorrador();
+  ['input', 'change', 'click'].forEach(ev => $('sec-nuevo').addEventListener(ev, guardarBorrador));
   sincronizar();
 })();
 </script>
