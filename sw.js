@@ -9,7 +9,7 @@
    alguien abre la app.
    ============================================================ */
 
-const CACHE_VERSION = 'v23.9';
+const CACHE_VERSION = 'v24.0';
 const CACHE_NAME = `corte-alto-${CACHE_VERSION}`;
 
 /* Archivos que se guardan para que la app funcione más rápido
@@ -31,6 +31,7 @@ const ARCHIVOS_CACHE = [
   './documentos.html',
   './comparador-volumenes.html',
   './controles-mininco.html',
+  './controles-calidad.html',
   './huinche.html',
   './cuadrilla-diaria.html',
   './bodega-inventario.html',
@@ -38,6 +39,22 @@ const ARCHIVOS_CACHE = [
   './manifest.json',
   './logo.png'
 ];
+
+/* Librerías externas (Firebase, PDF) que usan los módulos.
+   Sus direcciones incluyen la versión, así que nunca cambian:
+   se pueden guardar y usar sin señal sin riesgo de quedar
+   desactualizadas. */
+const LIBRERIAS_EXTERNAS = [
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js',
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'
+];
+const SERVIDORES_LIBRERIAS = ['www.gstatic.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'unpkg.com'];
+/* Si internet no responde en este tiempo (señal muy débil),
+   se muestra la copia guardada en vez de quedar esperando. */
+const ESPERA_MAXIMA_MS = 4000;
 
 /* ============================================================
    INSTALACIÓN — se ejecuta cuando el navegador detecta una
@@ -47,10 +64,13 @@ const ARCHIVOS_CACHE = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ARCHIVOS_CACHE).catch(() => {
-        /* si algún archivo de la lista no existe todavía, no
-           bloqueamos la instalación por eso */
-      });
+      /* Se guarda cada archivo por separado: si uno no existe,
+         los demás igual quedan guardados (antes, si fallaba uno,
+         no se guardaba ninguno). También se guardan las librerías
+         externas que necesitan los módulos para funcionar sin señal. */
+      return Promise.all([...ARCHIVOS_CACHE, ...LIBRERIAS_EXTERNAS].map(url =>
+        cache.add(url).catch(() => { /* si falla uno, seguimos con los demás */ })
+      ));
     })
   );
   self.skipWaiting(); // no espera: pasa a activarse de inmediato
@@ -80,9 +100,52 @@ self.addEventListener('activate', event => {
    guardada. Esto es lo que evita que alguien quede "pegado"
    en una versión vieja.
    ============================================================ */
+async function redConPlazo(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const red = fetch(request).then(respuesta => {
+    if (respuesta && (respuesta.ok || respuesta.type === 'opaque')) cache.put(request, respuesta.clone());
+    return respuesta;
+  });
+  red.catch(() => {}); // evita avisos de error si internet falla mientras se busca la copia
+  const guardada = await cache.match(request, { ignoreSearch: request.mode === 'navigate' });
+  if (!guardada) return red; // nunca se ha guardado: hay que esperar a internet
+  return new Promise(resolve => {
+    let listo = false;
+    const usar = r => { if (!listo) { listo = true; resolve(r); } };
+    const t = setTimeout(() => usar(guardada), ESPERA_MAXIMA_MS);
+    red.then(r => { clearTimeout(t); usar(r && (r.ok || r.type === 'opaque') ? r : guardada); })
+       .catch(() => { clearTimeout(t); usar(guardada); });
+  });
+}
+async function cacheLibreria(request) {
+  const guardada = await caches.match(request);
+  if (guardada) return guardada;
+  const respuesta = await fetch(request);
+  if (respuesta && (respuesta.ok || respuesta.type === 'opaque')) {
+    const cache = await caches.open(CACHE_NAME);
+    cache.put(request, respuesta.clone());
+  }
+  return respuesta;
+}
+
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
 
+  /* Páginas y archivos de la app (mismo sitio): internet primero,
+     pero si la señal es tan mala que no responde en 4 segundos,
+     se usa la copia guardada para que la app abra igual. */
+  if (url.origin === self.location.origin) {
+    event.respondWith(redConPlazo(event.request));
+    return;
+  }
+  /* Librerías externas con versión fija: se usan desde el celular. */
+  if (SERVIDORES_LIBRERIAS.includes(url.hostname)) {
+    event.respondWith(cacheLibreria(event.request).catch(() => caches.match(event.request)));
+    return;
+  }
+
+  /* Todo lo demás: igual que antes. */
   event.respondWith(
     fetch(event.request)
       .then(respuesta => {

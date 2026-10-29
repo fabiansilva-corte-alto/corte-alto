@@ -15,6 +15,10 @@ header a{color:#fff;text-decoration:none;font-size:24px;line-height:1}
 header h1{font-size:17px;margin:0;font-weight:600}
 header small{display:block;font-size:11px;opacity:.85;font-weight:400}
 .banner{background:var(--r);color:#fff;padding:10px 14px;font-size:13px;display:none}
+.red{display:none;padding:8px 14px;font-size:13px;text-align:center;line-height:1.35}
+.red.off{display:block;background:#455a64;color:#fff}
+.red.pend{display:block;background:var(--ac);color:#6d4600}
+.red.ok{display:block;background:var(--vc);color:var(--v)}
 .tabs{display:flex;background:#fff;border-bottom:1px solid var(--bd);position:sticky;top:56px;z-index:19}
 .tabs button{flex:1;border:0;background:none;padding:12px 4px;font-size:14px;color:var(--g);border-bottom:3px solid transparent;cursor:pointer}
 .tabs button.on{color:var(--v);border-bottom-color:var(--v);font-weight:600}
@@ -95,6 +99,7 @@ th{font-size:12px;color:var(--g);font-weight:600}
   <div><h1>Controles de Calidad</h1><small>Controles internos · Tocones, Trozos en cancha, Arrumado pino</small></div>
 </header>
 <div class="banner" id="banner">⚠️ Falta pegar el <b>apiKey</b> real en el firebaseConfig de este archivo. Mientras tanto no se puede guardar ni consultar.</div>
+<div class="red" id="estadoRed"></div>
 <nav class="tabs">
   <button id="tb-nuevo" class="on" onclick="tab('nuevo')">Nuevo control</button>
   <button id="tb-res" onclick="tab('res')">Resultados</button>
@@ -205,7 +210,9 @@ if (CFG_OK && window.firebase) {
   db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
   try { st = firebase.storage(); st.setMaxUploadRetryTime(15000); st.setMaxOperationRetryTime(8000); } catch (e) { st = null; }
 } else {
-  document.getElementById('banner').style.display = 'block';
+  const b = document.getElementById('banner');
+  if (CFG_OK) b.innerHTML = '📴 La app todavía no está disponible sin señal en este celular. Ábrela una vez con señal para que quede guardada y luego funcionará offline.';
+  b.style.display = 'block';
 }
 const COL = 'controles_calidad', COL_CFG = 'config_controles_calidad', CLAVE_CFG = '1771', BONO = 90;
 
@@ -253,13 +260,21 @@ const DEF = {
 };
 let PAUTA = JSON.parse(JSON.stringify(DEF));
 
+const LS = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
 async function cargarPauta() {
+  const local = LS.get('cc_pauta');
+  if (local) aplicarPauta(local);
   if (!db) return;
   try {
     const s = await conTimeout(db.collection(COL_CFG).doc('pauta').get(), 8000);
     if (!s.exists) return;
-    aplicarPauta(s.data());
-  } catch (e) { console.warn('Pauta: usando valores por defecto', e); }
+    const d = s.data(); delete d.actualizado;
+    aplicarPauta(d); LS.set('cc_pauta', d);
+    if (estado.tipo && !hayAvance()) renderItems();
+  } catch (e) { console.warn('Pauta: usando la guardada en el celular', e); }
 }
 function aplicarPauta(d) {
   PAUTA = JSON.parse(JSON.stringify(DEF));
@@ -279,11 +294,18 @@ function aplicarPauta(d) {
 const L = { fundos: [], lineas: [], jefes: [], calib: [], volteo: [], trozado: [], clasif: [] };
 async function getCol(n) {
   if (!db) return [];
-  try { const s = await conTimeout(db.collection(n).get(), 10000); return s.docs.map(d => ({ id: d.id, ...d.data() })); }
-  catch (e) { console.warn('No se pudo leer ' + n, e); return []; }
+  try { const s = await conTimeout(db.collection(n).get(), 8000); return s.docs.map(d => ({ id: d.id, ...d.data() })); }
+  catch (e) {
+    try { const s = await db.collection(n).get({ source: 'cache' }); if (!s.empty) return s.docs.map(d => ({ id: d.id, ...d.data() })); } catch (e2) {}
+    console.warn('No se pudo leer ' + n, e); return null;
+  }
 }
 async function cargarListas() {
-  const [f, l, j, c, o] = await Promise.all(['config_fundos', 'config_lineas', 'config_jefes_faena', 'config_calibradores', 'config_operadores'].map(getCol));
+  const local = LS.get('cc_listas');
+  if (local && local.fundos) { Object.assign(L, local); llenarSelects(); }
+  const res = await Promise.all(['config_fundos', 'config_lineas', 'config_jefes_faena', 'config_calibradores', 'config_operadores'].map(getCol));
+  if (res.every(x => x === null) && local && local.fundos) return; // sin señal: se quedan las listas guardadas en el celular
+  const [f, l, j, c, o] = res.map(x => x || []);
   L.fundos = f.filter(x => x.nombre).sort((a, b) => byName(a.nombre, b.nombre));
   if (!L.fundos.length) L.fundos = [{ nombre: 'EL OLIVILLO', codigo: '628' }, { nombre: 'LOS ALPES HIJ1', codigo: '729' }, { nombre: 'SANTA ROSA', codigo: '1724' }];
   L.lineas = unicos(l.map(x => x.nombre));
@@ -292,6 +314,7 @@ async function cargarListas() {
   L.calib = unicos(c.map(x => x.nombre));
   const opF = fn => unicos(o.filter(x => (x.funciones || []).some(z => String(z).toUpperCase().includes(fn))).map(x => x.nombre));
   L.volteo = opF('VOLTEO'); L.trozado = opF('TROZADO'); L.clasif = opF('CLASIFICADO');
+  if (!res.some(x => x === null)) LS.set('cc_listas', { fundos: L.fundos.map(x => ({ nombre: x.nombre, codigo: x.codigo || '' })), lineas: L.lineas, jefes: L.jefes, calib: L.calib, volteo: L.volteo, trozado: L.trozado, clasif: L.clasif });
   llenarSelects();
 }
 function fillSel(id, names, ph, valores) {
@@ -503,7 +526,7 @@ async function subirFoto(file, path) {
   if (!st) throw new Error('Storage no disponible');
   const blob = await comprimir(file);
   const ref = st.ref(path);
-  await conTimeout(ref.put(blob, { contentType: 'image/jpeg' }), 25000);
+  await conTimeout(ref.put(blob, { contentType: 'image/jpeg' }), 15000);
   const url = await conTimeout(ref.getDownloadURL(), 8000);
   return { url, path };
 }
@@ -577,13 +600,18 @@ async function guardar() {
   const btn = $('btnGuardar'); btn.disabled = true; btn.textContent = 'Guardando…';
   try {
     const ref = db.collection(COL).doc();
-    let fallos = 0, nFotos = 0;
+    let enCola = 0, nFotos = 0, sinRed = !navigator.onLine || !st;
     const subir = async (id, lista) => {
       const out = [];
       for (let i = 0; i < lista.length; i++) {
         nFotos++;
-        try { out.push(await subirFoto(lista[i], `${COL}/${t}/${ref.id}/${id}_${i + 1}.jpg`)); }
-        catch (e) { fallos++; console.warn('No se pudo subir foto', e); }
+        const path = `${COL}/${t}/${ref.id}/${id}_${i + 1}.jpg`;
+        if (!sinRed) {
+          try { out.push(await subirFoto(lista[i], path)); continue; }
+          catch (e) { sinRed = true; console.warn('Foto a la cola (sin señal)', e); }
+        }
+        try { await colaFotos.agregar({ docId: ref.id, item: id, path, blob: await comprimir(lista[i]) }); enCola++; }
+        catch (e) { console.warn('No se pudo guardar la foto en el celular', e); }
       }
       return out;
     };
@@ -616,11 +644,15 @@ async function guardar() {
       if (t === 'trozos') data.corteza = num(($('corteza') || {}).value);
       if (t === 'arrumado') { data.simetria = estado.sim; data.simRango = [PAUTA.arrumado.simMin, PAUTA.arrumado.simMax]; }
     }
+    if (enCola) data.fotosPendientes = enCola;
     const w = ref.set(data);
-    let msg = 'Control guardado ✔ (nota ' + c.nota + ')';
-    try { await conTimeout(w, 6000); }
-    catch (e) { if (e.message === 'timeout') msg = 'Sin señal: el control quedó guardado en el celular y se subirá solo al volver la conexión.'; else throw e; }
-    if (fallos) msg += ' · ' + fallos + ' de ' + nFotos + ' foto(s) no se pudieron subir.';
+    pendientes.agregar(ref.id);
+    w.then(() => { pendientes.quitar(ref.id); }).catch(e => console.warn('Escritura rechazada', e));
+    let msg = 'Control guardado ✔ (nota ' + notaEscala(c.nota) + ')';
+    try { if (!navigator.onLine) throw new Error('timeout'); await conTimeout(w, 6000); }
+    catch (e) { if (e.message === 'timeout') msg = '📴 Sin señal: el control quedó guardado en el celular y se enviará solo cuando vuelva la señal.'; else throw e; }
+    if (enCola) msg += ' ' + enCola + ' foto(s) quedaron en el celular y se enviarán solas con señal.';
+    actualizarEstadoRed();
     toast(msg, 6000);
     limpiarEvaluacion();
   } catch (e) {
@@ -635,6 +667,87 @@ function limpiarEvaluacion() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// ================= MODO SIN SEÑAL =================
+// Fotos que no se pudieron subir quedan en el celular (IndexedDB) y se envían solas al volver la señal.
+const colaFotos = {
+  _db: null,
+  abrir() {
+    if (this._db) return Promise.resolve(this._db);
+    if (!window.indexedDB) return Promise.reject(new Error('Este navegador no permite guardar fotos sin señal'));
+    return new Promise((ok, no) => {
+      const rq = indexedDB.open('cc_offline', 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore('fotos', { keyPath: 'path' });
+      rq.onsuccess = () => { this._db = rq.result; ok(rq.result); };
+      rq.onerror = () => no(rq.error);
+    });
+  },
+  async tx(modo, fn) {
+    const d = await this.abrir();
+    return new Promise((ok, no) => { const t = d.transaction('fotos', modo); const r = fn(t.objectStore('fotos')); t.oncomplete = () => ok(r && r.result); t.onerror = () => no(t.error); });
+  },
+  agregar(f) { return this.tx('readwrite', s => s.put(f)); },
+  todas() { return this.tx('readonly', s => s.getAll()); },
+  quitar(path) { return this.tx('readwrite', s => s.delete(path)); },
+  async quitarDeControl(docId) { let l = []; try { l = (await this.todas()) || []; } catch (e) { return; } for (const f of l) if (f.docId === docId) await this.quitar(f.path); },
+  async contar() { try { return ((await this.todas()) || []).length; } catch (e) { return 0; } }
+};
+const pendientes = {
+  lista() { return LS.get('cc_pend_docs') || []; },
+  agregar(id) { const l = this.lista(); if (!l.includes(id)) { l.push(id); LS.set('cc_pend_docs', l); } },
+  quitar(id) { LS.set('cc_pend_docs', this.lista().filter(x => x !== id)); actualizarEstadoRed(); }
+};
+let sincronizando = false;
+async function sincronizar() {
+  if (!db || !navigator.onLine || sincronizando) { actualizarEstadoRed(); return; }
+  sincronizando = true;
+  try {
+    // controles guardados sin señal: confirmar que ya llegaron al servidor
+    for (const id of pendientes.lista()) {
+      try { const d = await conTimeout(db.collection(COL).doc(id).get({ source: 'server' }), 8000); if (d.exists) pendientes.quitar(id); } catch (e) { break; }
+    }
+    // fotos en cola
+    if (st) {
+      let cola = [];
+      try { cola = (await colaFotos.todas()) || []; } catch (e) { cola = []; }
+      for (const f of cola) {
+        try {
+          const ref = st.ref(f.path);
+          await conTimeout(ref.put(f.blob, { contentType: 'image/jpeg' }), 20000);
+          const url = await conTimeout(ref.getDownloadURL(), 8000);
+          try {
+            await conTimeout(db.collection(COL).doc(f.docId).update({
+              fotosExtra: firebase.firestore.FieldValue.arrayUnion({ item: f.item, url, path: f.path }),
+              fotosPendientes: firebase.firestore.FieldValue.increment(-1)
+            }), 10000);
+          } catch (e) {
+            if (e && e.code === 'not-found') { try { await ref.delete(); } catch (e2) {} } else throw e;
+          }
+          await colaFotos.quitar(f.path);
+        } catch (e) { console.warn('Foto sigue en cola', e); break; }
+      }
+    }
+  } finally { sincronizando = false; actualizarEstadoRed(); }
+}
+async function actualizarEstadoRed() {
+  const el = $('estadoRed'); if (!el) return;
+  const nDocs = pendientes.lista().length, nFotos = await colaFotos.contar();
+  const partes = [];
+  if (nDocs) partes.push(nDocs + (nDocs === 1 ? ' control' : ' controles'));
+  if (nFotos) partes.push(nFotos + (nFotos === 1 ? ' foto' : ' fotos'));
+  if (!navigator.onLine) {
+    el.className = 'red off';
+    el.textContent = '📴 Sin señal: puedes seguir haciendo controles, quedan guardados en el celular.' + (partes.length ? ' Pendientes: ' + partes.join(' y ') + '.' : '');
+  } else if (partes.length) {
+    el.className = 'red pend'; el.textContent = '⏳ Enviando pendientes: ' + partes.join(' y ') + '…';
+  } else if (el.classList.contains('pend') || el.classList.contains('off')) {
+    el.className = 'red ok'; el.textContent = '✔ Todo enviado';
+    clearTimeout(actualizarEstadoRed._t); actualizarEstadoRed._t = setTimeout(() => { el.className = 'red'; }, 4000);
+  }
+}
+window.addEventListener('online', () => { actualizarEstadoRed(); setTimeout(sincronizar, 2000); });
+window.addEventListener('offline', actualizarEstadoRed);
+setInterval(sincronizar, 60000);
+
 // ================= RESULTADOS =================
 let TODOS = [];
 const NOMBRE_T = { tocones: 'Tocones', trozos: 'Trozos', arrumado: 'Arrumado' };
@@ -645,7 +758,10 @@ async function consultar() {
   if (!d || !h || d > h) { toast('Revisa el rango de fechas.'); return; }
   $('rLista').innerHTML = '<p class="muted">Cargando…</p>';
   try {
-    const s = await db.collection(COL).where('fecha', '>=', d).where('fecha', '<=', h).get();
+    const q = db.collection(COL).where('fecha', '>=', d).where('fecha', '<=', h);
+    let s;
+    try { s = await conTimeout(q.get(), 8000); }
+    catch (e) { s = await q.get({ source: 'cache' }); toast('📴 Sin señal: se muestran los controles guardados en este celular.', 5000); }
     TODOS = s.docs.map(x => ({ id: x.id, ...x.data() }));
   } catch (e) { console.error(e); $('rLista').innerHTML = '<p class="muted">No se pudo consultar (' + esc(e.code || e.message) + ').</p>'; return; }
   const opts = (id, arr, ph) => { const s = $(id), cur = s.value; s.innerHTML = '<option value="">' + ph + '</option>' + unicos(arr).map(v => `<option>${esc(v)}</option>`).join(''); if ([...s.options].some(o => o.value === cur)) s.value = cur; };
@@ -687,17 +803,21 @@ function renderR() {
       <td style="white-space:nowrap"><button class="ic" title="Ver detalle" onclick="verDetalle('${r.id}')">👁️</button><button class="ic" title="Informe PDF" onclick="informePDF('${r.id}')">📄</button><button class="ic" title="Eliminar" onclick="eliminar('${r.id}')">🗑️</button></td></tr>`).join('')}
     </tbody></table></div>`;
 }
+function fotosDe(r, item) {
+  const base = item === 'toc' ? (r.fotos || []) : (((r.items || []).find(i => i.id === item) || {}).fotos || []);
+  return base.concat((r.fotosExtra || []).filter(f => f.item === item));
+}
 function fotosHTML(arr) { return (arr && arr.length) ? `<div class="fotos">${arr.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${esc(f.url)}" alt="foto"></a>`).join('')}</div>` : ''; }
 function verDetalle(id) {
   const r = TODOS.find(x => x.id === id); if (!r) return;
   const fila = (k, v) => v ? `<tr><td class="muted">${k}</td><td>${esc(v)}</td></tr>` : '';
   let cuerpo = '';
   if (r.tipo === 'tocones') {
-    cuerpo = `<p><b>Equipo:</b> ${esc(r.equipoVolteo)} · máx. ${fmtPts(r.maxCm)} cm</p><div class="tc">${(r.mediciones || []).map((v, i) => `<div><input readonly value="${v ?? ''}" class="${v !== null && v <= r.maxCm ? 'ok' : 'bad'}">T${i + 1}</div>`).join('')}</div>${fotosHTML(r.fotos)}`;
+    cuerpo = `<p><b>Equipo:</b> ${esc(r.equipoVolteo)} · máx. ${fmtPts(r.maxCm)} cm</p><div class="tc">${(r.mediciones || []).map((v, i) => `<div><input readonly value="${v ?? ''}" class="${v !== null && v <= r.maxCm ? 'ok' : 'bad'}">T${i + 1}</div>`).join('')}</div>${fotosHTML(fotosDe(r, 'toc'))}`;
   } else {
     cuerpo = (r.items || []).map((it, k) => `<div class="item"><div class="q"><span class="pts">${fmtPts(it.pts)} pts</span>${k + 1}. ${esc(it.t)}</div>
       <span class="chip ${it.r === 'si' ? 'ok' : it.r === 'no' ? 'bad' : 'w'}">${it.r === 'si' ? 'Cumple' : it.r === 'no' ? (it.ptsObt > 0 ? 'Parcial · ' + fmtPts(Math.round(it.ptsObt * 10) / 10) + ' pts' : 'No cumple') : 'N/A'}</span>
-      ${it.monu ? `<div class="ay">Ruma ${esc(it.monu.tipo)} · ${it.monu.faltan.length ? 'Faltaba: ' + esc(it.monu.faltan.join(', ')) : 'Monumentación completa'}</div>` : ''}${it.obs ? `<div class="ay">${esc(it.obs)}</div>` : ''}${fotosHTML(it.fotos)}</div>`).join('');
+      ${it.monu ? `<div class="ay">Ruma ${esc(it.monu.tipo)} · ${it.monu.faltan.length ? 'Faltaba: ' + esc(it.monu.faltan.join(', ')) : 'Monumentación completa'}</div>` : ''}${it.obs ? `<div class="ay">${esc(it.obs)}</div>` : ''}${fotosHTML(fotosDe(r, it.id))}</div>`).join('');
     if (r.tipo === 'trozos' && r.corteza !== null && r.corteza !== undefined) cuerpo += `<p class="muted">% corteza: ${r.corteza}%</p>`;
     if (r.simetria && r.simetria.rumas) cuerpo += `<p class="muted">Simetría: ${r.simetria.cumplen} de ${r.simetria.total} rumas cumplen</p>` + r.simetria.rumas.map((m, i) => `<div class="muted">Ruma ${i + 1}: ${String(m.pct).replace('.', ',')}% ${m.ok ? '✔' : '✖'} (frente ${m.f1} / ${m.f2} m · atrás ${m.p1} / ${m.p2} m)</div>`).join('');
     else if (r.simetria) cuerpo += `<p class="muted">Simetría: ${String(r.simetria.pct).replace('.', ',')}% (frente ${r.simetria.f1} / ${r.simetria.f2} m · posterior ${r.simetria.p1} / ${r.simetria.p2} m)</p>`;
@@ -706,6 +826,7 @@ function verDetalle(id) {
     <p style="font-size:30px;font-weight:700;margin:8px 0">${r.nota} <span class="chip ${r.nota >= BONO ? 'ok' : 'bad'}">${r.nota >= BONO ? 'Sobre' : 'Bajo'} ${BONO}%</span></p>
     <table>${fila('Fundo', r.fundo + (r.fundoCodigo ? ' (' + r.fundoCodigo + ')' : ''))}${fila('N° cancha', r.cancha)}${fila('Línea', r.linea)}${fila('Controlador', r.controlador)}${fila('Jefe de faena', r.jefeFaena)}${fila('Op. Volteo', r.opVolteo)}${fila('Op. Trozado', r.opTrozado)}${fila('Op. Clasificado', r.opClasificado)}${fila('Calibrador', r.calibrador)}${fila('GPS', r.gps ? r.gps.lat + ', ' + r.gps.lng : '')}${fila('Observación', r.observacion)}</table>
     <button class="btn p w" style="margin-top:12px" onclick="informePDF('${r.id}')">📄 Descargar informe PDF</button>
+    ${r.fotosPendientes > 0 ? `<div class="chip w" style="margin-top:10px">📷 ${r.fotosPendientes} foto(s) aún en el celular del controlador, se enviarán con señal</div>` : ''}
     <div style="margin-top:12px">${cuerpo}</div>`;
   $('modal').classList.add('on');
 }
@@ -851,8 +972,8 @@ async function informePDF(id) {
   }
 
   // ---------- Fotos ----------
-  const fotos = r.tipo === 'tocones' ? (r.fotos || []).map(f => ({ ...f, n: 'Tocones fuera de norma' })) :
-    (r.items || []).flatMap((it, k) => (it.fotos || []).map(f => ({ ...f, n: 'Pregunta ' + (k + 1) })));
+  const fotos = r.tipo === 'tocones' ? fotosDe(r, 'toc').map(f => ({ ...f, n: 'Tocones fuera de norma' })) :
+    (r.items || []).flatMap((it, k) => fotosDe(r, it.id).map(f => ({ ...f, n: 'Pregunta ' + (k + 1) })));
   if (fotos.length) {
     seccion('Registro fotográfico');
     let x = M, sinCargar = 0; const FW = 56, FH = 42;
@@ -897,7 +1018,8 @@ async function informePDF(id) {
 async function eliminar(id) {
   const r = TODOS.find(x => x.id === id); if (!r) return;
   if (!confirm('¿Eliminar el control de ' + (r.tipoNombre || r.tipo) + ' del ' + fmtF(r.fecha) + '? También se borran sus fotos.')) return;
-  const paths = [...(r.fotos || []), ...(r.items || []).flatMap(i => i.fotos || [])].map(f => f.path).filter(Boolean);
+  const paths = [...(r.fotos || []), ...(r.items || []).flatMap(i => i.fotos || []), ...(r.fotosExtra || [])].map(f => f.path).filter(Boolean);
+  try { await colaFotos.quitarDeControl(id); } catch (e) {}
   if (st) for (const p of paths) { try { await conTimeout(st.ref(p).delete(), 8000); } catch (e) { console.warn('No se pudo borrar foto', p, e); } }
   try { await conTimeout(db.collection(COL).doc(id).delete(), 6000); } catch (e) { if (e.message !== 'timeout') { toast('No se pudo eliminar: ' + (e.code || e.message)); return; } }
   TODOS = TODOS.filter(x => x.id !== id);
@@ -977,8 +1099,10 @@ function tab(t) {
   const d = new Date(); $('rDesde').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01'; $('rHasta').value = hoy();
   llenarSelects();
   document.querySelectorAll('[data-tipos]').forEach(el => el.style.display = 'none');
+  actualizarEstadoRed();
   await cargarPauta();
   await cargarListas();
+  sincronizar();
 })();
 </script>
 
