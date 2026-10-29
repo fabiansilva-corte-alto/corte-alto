@@ -140,11 +140,9 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 .doc-item-meta{font-size:11.5px;color:var(--text3);margin-top:2px}
 .doc-item-acciones{display:flex;gap:8px;flex-shrink:0}
 .badge-vigente{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--green-light);color:var(--green2);margin-left:8px}
-/* Seguimiento manual de anexos pendientes (celador/jefe/oficina) — pedido por Fabián 29 oct 2026. */
-.badge-seguimiento{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;display:inline-block}
-.seguimiento-botones{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
-.seguimiento-botones button{border:1px solid var(--border);background:#fff;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:var(--font)}
-.seguimiento-botones button.activo{border-color:transparent}
+/* Seguimiento manual de anexos pendientes (celador/jefe/oficina) — pedido por Fabián 29 oct
+   2026, pasado a selector único (columna "Proceso") a pedido suyo el mismo día. */
+.selector-seguimiento{border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;min-width:170px}
 .estado-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:8px;vertical-align:middle}
 .estado-dot.verde{background:var(--green2)}
 .estado-dot.rojo{background:var(--red)}
@@ -506,7 +504,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
       <div class="tabla-wrap">
         <table class="tabla">
           <thead>
-            <tr><th>Trabajador</th><th>Centro</th><th>Fundo actual (cuadrilla)</th><th>Anexo vigente</th><th>Estado</th></tr>
+            <tr><th>Trabajador</th><th>Centro</th><th>Fundo actual (cuadrilla)</th><th>Anexo vigente</th><th>Estado</th><th>Proceso</th></tr>
           </thead>
           <tbody id="anexos-tabla-body"></tbody>
         </table>
@@ -3110,32 +3108,37 @@ const ESTADOS_SEGUIMIENTO = {
   recepcionado_falta_subir: { label: "Recepcionado, falta subir a servidor", color: "var(--purple)", bg: "var(--purple-bg)" }
 };
 
+// Selector único (en vez de botones) — pedido por Fabián 29 oct 2026: una columna aparte
+// "Proceso" con un <select> por fila, en vez de un badge + botones apilados bajo "Estado".
+// "Sin estado" es una opción elegible más: volver a ella borra el seguimiento guardado.
 function htmlSeguimientoAnexo(f){
   const actual = f.seguimiento ? f.seguimiento.estado : null;
-  const badge = actual
-    ? `<span class="badge-seguimiento" style="color:${ESTADOS_SEGUIMIENTO[actual].color};background:${ESTADOS_SEGUIMIENTO[actual].bg}">${escapeHtml(ESTADOS_SEGUIMIENTO[actual].label)}</span>`
-    : `<span class="badge-seguimiento" style="color:var(--text3);background:var(--bg)">Sin estado</span>`;
-  const botones = Object.keys(ESTADOS_SEGUIMIENTO).map(clave => `
-    <button type="button" class="${clave === actual ? "activo" : ""}" style="${clave === actual ? `background:${ESTADOS_SEGUIMIENTO[clave].color};color:#fff` : ""}" onclick="actualizarSeguimientoAnexo('${f.id}', '${clave}', this)">${escapeHtml(ESTADOS_SEGUIMIENTO[clave].label)}</button>
-  `).join("");
-  return `<div style="margin-top:6px">${badge}<div class="seguimiento-botones">${botones}</div></div>`;
+  const color = actual ? ESTADOS_SEGUIMIENTO[actual].color : "var(--text3)";
+  const bg = actual ? ESTADOS_SEGUIMIENTO[actual].bg : "var(--card)";
+  const opciones = `<option value=""${actual ? "" : " selected"}>Sin estado</option>` + Object.keys(ESTADOS_SEGUIMIENTO).map(clave =>
+    `<option value="${clave}"${clave === actual ? " selected" : ""}>${escapeHtml(ESTADOS_SEGUIMIENTO[clave].label)}</option>`
+  ).join("");
+  return `<select class="selector-seguimiento" style="color:${color};background:${bg};border-color:${color}" onchange="actualizarSeguimientoAnexo('${f.id}', this.value, this)">${opciones}</select>`;
 }
 
-window.actualizarSeguimientoAnexo = async function(trabajadorId, estado, boton){
-  const original = boton.textContent;
-  boton.disabled = true;
-  boton.textContent = "Guardando…";
+window.actualizarSeguimientoAnexo = async function(trabajadorId, estado, selectEl){
+  selectEl.disabled = true;
   try{
-    const actualizadoPor = (usuarioActual && usuarioActual.nombre) || "—";
-    const actualizadoEn = new Date().toISOString();
-    await setDoc(doc(db, "anexos_seguimiento", trabajadorId), { estado, actualizadoPor, actualizadoEn });
     const fila = (anexosDatos || []).find(f => f.id === trabajadorId);
-    if(fila) fila.seguimiento = { estado, actualizadoPor, actualizadoEn };
+    if(estado){
+      const actualizadoPor = (usuarioActual && usuarioActual.nombre) || "—";
+      const actualizadoEn = new Date().toISOString();
+      await setDoc(doc(db, "anexos_seguimiento", trabajadorId), { estado, actualizadoPor, actualizadoEn });
+      if(fila) fila.seguimiento = { estado, actualizadoPor, actualizadoEn };
+    }else{
+      // "Sin estado" elegido de nuevo: borra el seguimiento guardado.
+      await deleteDoc(doc(db, "anexos_seguimiento", trabajadorId));
+      if(fila) fila.seguimiento = null;
+    }
     renderAnexosPendientes();
   }catch(e){
     alert("No se pudo guardar el estado. Intenta de nuevo.");
-    boton.disabled = false;
-    boton.textContent = original;
+    renderAnexosPendientes(); // deja el selector como estaba antes del cambio
   }
 };
 
@@ -3146,7 +3149,7 @@ window.fetchAnexosPendientes = async function(forzar){
   const contador = document.getElementById("anexos-contador");
   if(!cuerpo) return;
   contador.textContent = "Cargando…";
-  cuerpo.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">Cargando…</td></tr>`;
+  cuerpo.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">Cargando…</td></tr>`;
 
   try{
     if(dotDatosTodos === null) await fetchDotacionTodos();
@@ -3271,7 +3274,7 @@ window.fetchAnexosPendientes = async function(forzar){
 
     anexosDatos = filas;
   }catch(e){
-    cuerpo.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--red);padding:20px">No se pudo cargar. Intenta de nuevo.</td></tr>`;
+    cuerpo.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--red);padding:20px">No se pudo cargar. Intenta de nuevo.</td></tr>`;
     contador.textContent = "Error al cargar.";
     anexosDatos = null;
     return;
@@ -3306,7 +3309,7 @@ window.renderAnexosPendientes = function(){
   }
 
   if(!filas.length){
-    cuerpo.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">${soloPendientes ? (anexosDatos.length ? "No hay anexos pendientes 🎉" : "Sin registros de cuadrilla en los últimos 45 días.") : "Sin datos de cuadrilla todavía."}</td></tr>`;
+    cuerpo.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">${soloPendientes ? (anexosDatos.length ? "No hay anexos pendientes 🎉" : "Sin registros de cuadrilla en los últimos 45 días.") : "Sin datos de cuadrilla todavía."}</td></tr>`;
     return;
   }
 
@@ -3326,7 +3329,6 @@ window.renderAnexosPendientes = function(){
         <div style="margin-top:4px;font-size:12px;color:var(--text3)">Ya tiene anexo de ${escapeHtml(f.anexoSugerido.fundo || f.fundoActual)}, falta marcarlo vigente</div>
         ${f.diasEnFundo >= 2 ? `<div style="margin-top:2px;font-size:11.5px;font-weight:700;color:var(--amber)">Lleva ${f.diasEnFundo} días informado en este fundo</div>` : ""}
         <button class="btn-secondary" style="margin-top:4px;padding:4px 10px;font-size:12.5px" onclick="marcarVigenteDesdeAnexosPendientes('${f.anexoSugerido.id}', '${f.id}', this)">Marcar vigente</button>
-        ${htmlSeguimientoAnexo(f)}
       `;
     }else{
       // No existe ningún anexo_fundo para el fundo actual: hay que generar uno nuevo y hacerlo firmar.
@@ -3351,7 +3353,6 @@ window.renderAnexosPendientes = function(){
         <div style="margin-top:4px;font-size:12px;color:var(--red)">Sin anexo de ${escapeHtml(f.fundoActual || "este fundo")} — generar y firmar uno nuevo</div>
         ${f.diasEnFundo >= 2 ? `<div style="margin-top:2px;font-size:11.5px;font-weight:700;color:var(--amber)">Lleva ${f.diasEnFundo} días informado en este fundo</div>` : ""}
         ${pregunta}
-        ${htmlSeguimientoAnexo(f)}
       `;
     }
     return `
@@ -3364,6 +3365,7 @@ window.renderAnexosPendientes = function(){
         <td>${escapeHtml(f.fundoActual || "—")} <span style="color:var(--text3)">· ${fechaLegibleAnexos(f.fechaCuadrilla)} (${escapeHtml(f.jefeFaena||"—")})</span></td>
         <td>${anexoTxt}</td>
         <td>${estadoBadge}</td>
+        <td>${f.estado === "pendiente" ? htmlSeguimientoAnexo(f) : ""}</td>
       </tr>
     `;
   }).join("");
