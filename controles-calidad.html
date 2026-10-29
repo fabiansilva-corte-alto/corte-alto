@@ -50,6 +50,10 @@ input,select,textarea{width:100%;padding:10px;border:1px solid var(--bd);border-
 .fotobtn{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:8px 10px;border-radius:8px;background:var(--ac);color:#8d5a00;cursor:pointer;border:1px dashed #e0a800}
 .simbox{background:#f7f9f8;border:1px solid var(--bd);border-radius:8px;padding:10px;margin-bottom:8px}
 .simbox .g2 input{padding:8px}
+.ruma{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin-top:8px}
+.ruma table td{border:0;padding:4px 3px}
+.ruma input{padding:8px;text-align:center}
+.info{background:var(--ac);color:#6d4600;border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.4}
 .tc{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .tc div{text-align:center;font-size:11px;color:var(--g)}
 .tc input{text-align:center;padding:9px 2px}
@@ -239,7 +243,7 @@ const DEF = {
     { id: 'a6', pts: 15, conf: true, t: '¿El proceso en aserrables y/o debobinables se ejecuta sin errores operacionales? (mal despicado, corte oblicuo, astillamiento, grietas, partiduras, visera o daño de cabezal)', ay: 'Muestra de 20 trozos aserrables y/o debobinables. El debobinable no acepta defectos operacionales ni corte oblicuo. En el aserrable: astillamiento y agrietamiento reducen diámetro; partidura reduce largo y, si supera 3,5 cm de profundidad, también diámetro.' },
     { id: 'a7', pts: 12, conf: false, t: '¿Los trozos pulpables cumplen con la longitud especificada?', ay: 'Medir 20 trozos. Pulpable: largo real fijo (+4 cm) o variable según esquema de trozado. Cumple: máximo 1 trozo corto o sobrelargo fuera de norma.' },
     { id: 'a8', pts: 4, conf: true, t: '¿El proceso en pulpables se ejecuta sin errores operacionales? (mal despicado, bifurcados o sobre diámetro mezclado)', ay: 'Muestra de 20 trozos pulpables. Pino pulpable: diámetro real entre 8 y 45 cm (mayores según esquema de trozado). Cumple: ≤ 1 trozo con error operacional.' },
-    { id: 'a9', pts: 5, conf: false, sim: true, t: '¿La ruma presenta simetría de acuerdo al estándar?', ay: 'Muestra 3 rumas. Simetría = máx. altura frente (hacia el camino) ÷ mín. altura posterior (hacia el área de cosecha) × 100. Altura máxima de ruma: 4 m.' },
+    { id: 'a9', pts: 5, conf: false, sim: true, t: '¿La ruma presenta simetría de acuerdo al estándar?', ay: 'Muestra {N}. Simetría = máx. altura frente (hacia el camino) ÷ mín. altura posterior (hacia el área de cosecha) × 100. Altura máxima de ruma: 4 m.' },
     { id: 'a10', pts: 4, conf: true, monu: true, t: '¿La ruma cuenta con monumentación correcta según tipo de producto (aserrable, debobinable y pulpable)?', ay: 'Marca abajo los elementos que SÍ están en la ruma revisada. Si falta alguno, la pregunta queda No cumple.' },
     { id: 'a11', pts: 8, conf: false, t: '¿La ruma aserrable y/o debobinable se encuentra correctamente calibrada?', ay: 'Cada trozo se mide en la punta (extremo de menor diámetro), sin corteza y descontando nudos muertos, hendiduras y deformaciones. Diámetro JAS = par inferior sin decimales (ej.: 21,2 → 20).' },
     { id: 'a12', pts: 8, conf: false, t: '¿Los trozos se encuentran libres de manchas, esporas y/o daño por siniestro?', ay: 'Siniestrado: industrial código 172, pulpable código 162 (tizne menor al 50%). Todo trozo carbonizado con daño a la madera se clasifica como combustible. En rollizos no debe ingresar madera quemada.' }
@@ -314,7 +318,7 @@ function hayAvance() { return Object.values(estado.resp).some(x => x.r || x.foto
 function elegirTipo(t) {
   if (estado.tipo === t) return;
   if (estado.tipo && hayAvance() && !confirm('Cambiar el tipo de control borra las respuestas ingresadas. ¿Continuar?')) return;
-  estado = { tipo: t, resp: {}, gps: estado.gps, sim: null };
+  estado = { tipo: t, resp: {}, gps: estado.gps, sim: null, rumas: [{}] };
   ['tocones', 'trozos', 'arrumado'].forEach(k => $('tp-' + k).classList.toggle('on', k === t));
   document.querySelectorAll('[data-tipos]').forEach(el => el.style.display = el.dataset.tipos.split(' ').includes(t) ? '' : 'none');
   $('evalTitulo').textContent = 'Evaluación · ' + PAUTA[t].nombre;
@@ -335,16 +339,72 @@ function pedirGPS() {
 function bloqueFotos(id, txt) {
   return `<label class="fotobtn">📷 ${txt}<input type="file" accept="image/*" multiple hidden onchange="addFotos('${id}',this)"></label><div class="fotos" id="f_${id}"></div>`;
 }
+const nRumasTxt = n => n + (n === 1 ? ' ruma' : ' rumas');
+function ayudaSim(it) { return it.ay.replace('{N}', nRumasTxt((estado.rumas || [{}]).length)); }
 function simHTML() {
   const a = PAUTA.arrumado;
-  return `<div class="simbox"><div class="muted" style="margin-bottom:4px">Calculadora · cumple entre ${fmtPts(a.simMin)}% y ${fmtPts(a.simMax)}%</div>
-  <div class="g2">
-   <div><label class="l">Frente lado 1 (m)</label><input inputmode="decimal" id="s_f1" oninput="calcSim()"></div>
-   <div><label class="l">Frente lado 2 (m)</label><input inputmode="decimal" id="s_f2" oninput="calcSim()"></div>
-   <div><label class="l">Posterior lado 1 (m)</label><input inputmode="decimal" id="s_p1" oninput="calcSim()"></div>
-   <div><label class="l">Posterior lado 2 (m)</label><input inputmode="decimal" id="s_p2" oninput="calcSim()"></div>
-  </div><div style="margin-top:8px"><b id="s_res">—</b> <span id="s_chip" class="chip"></span></div></div>`;
+  return `<div class="simbox">
+    <div class="info">📏 Recuerda: las 4 alturas de cada ruma se miden en <b>ambos extremos</b> de la ruma, no al medio. Frente = cara hacia el camino · Atrás = cara hacia el área de cosecha.</div>
+    <div class="muted" style="margin:8px 0 0">Calculadora · cada ruma cumple entre ${fmtPts(a.simMin)}% y ${fmtPts(a.simMax)}%</div>
+    <div id="rumasBox"></div>
+    <button type="button" class="btn w" style="margin-top:8px" onclick="agregarRuma()">+ Agregar ruma</button>
+    <div style="margin-top:8px"><b id="s_res">—</b> <span id="s_chip" class="chip"></span></div></div>`;
 }
+const CAMPOS_R = [['f1', 'Frente', 'izq.'], ['f2', 'Frente', 'der.'], ['p1', 'Atrás', 'izq.'], ['p2', 'Atrás', 'der.']];
+function renderRumas() {
+  const box = $('rumasBox'); if (!box) return;
+  if (!estado.rumas || !estado.rumas.length) estado.rumas = [{}];
+  const v = (r, k) => r[k] === undefined || r[k] === null ? '' : String(r[k]).replace('.', ',');
+  box.innerHTML = estado.rumas.map((r, i) => `<div class="ruma">
+    <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">Ruma ${i + 1}</b>
+      <span><span class="chip" id="rc_${i}"></span>${estado.rumas.length > 1 ? ` <button type="button" class="ic" title="Quitar ruma" onclick="quitarRuma(${i})">🗑️</button>` : ''}</span></div>
+    <table><tr><td></td><td class="muted" style="text-align:center">Extremo izquierdo</td><td class="muted" style="text-align:center">Extremo derecho</td></tr>
+      <tr><td class="muted">Frente (m)</td><td><input inputmode="decimal" id="r${i}_f1" value="${v(r, 'f1')}" oninput="rumaInput(${i})"></td><td><input inputmode="decimal" id="r${i}_f2" value="${v(r, 'f2')}" oninput="rumaInput(${i})"></td></tr>
+      <tr><td class="muted">Atrás (m)</td><td><input inputmode="decimal" id="r${i}_p1" value="${v(r, 'p1')}" oninput="rumaInput(${i})"></td><td><input inputmode="decimal" id="r${i}_p2" value="${v(r, 'p2')}" oninput="rumaInput(${i})"></td></tr>
+    </table></div>`).join('');
+  const ay = $('ay_sim'), it = PAUTA.arrumado.items.find(x => x.sim);
+  if (ay && it) ay.textContent = ayudaSim(it);
+  calcSim();
+}
+function rumaInput(i) {
+  const r = estado.rumas[i];
+  ['f1', 'f2', 'p1', 'p2'].forEach(k => { r[k] = num($('r' + i + '_' + k).value); });
+  calcSim();
+}
+function agregarRuma() { estado.rumas.push({}); renderRumas(); }
+function quitarRuma(i) {
+  const r = estado.rumas[i];
+  if (['f1', 'f2', 'p1', 'p2'].some(k => r[k] !== null && r[k] !== undefined) && !confirm('¿Quitar la ruma ' + (i + 1) + ' con sus mediciones?')) return;
+  estado.rumas.splice(i, 1); renderRumas();
+}
+function calcSim() {
+  const a = PAUTA.arrumado, it = a.items.find(i => i.sim);
+  const chip = $('s_chip'), res = $('s_res'); if (!res) return;
+  const rumas = estado.rumas || [];
+  let completas = 0, cumplen = 0, conDatos = 0; const faltan = [];
+  rumas.forEach((r, i) => {
+    const vals = ['f1', 'f2', 'p1', 'p2'].map(k => r[k]);
+    const c = $('rc_' + i);
+    if (vals.some(x => x !== null && x !== undefined)) conDatos++;
+    if (vals.some(x => x === null || x === undefined || x <= 0)) { r.pct = null; r.ok = null; if (c) { c.textContent = ''; c.className = 'chip'; } faltan.push(i + 1); return; }
+    r.pct = Math.round(Math.max(r.f1, r.f2) / Math.min(r.p1, r.p2) * 1000) / 10;
+    r.ok = r.pct >= a.simMin && r.pct <= a.simMax;
+    completas++; if (r.ok) cumplen++;
+    if (c) { c.textContent = String(r.pct).replace('.', ',') + '% · ' + (r.ok ? 'Cumple' : 'No cumple'); c.className = 'chip ' + (r.ok ? 'ok' : 'bad'); }
+  });
+  if (!conDatos) { estado.sim = null; res.textContent = '—'; chip.textContent = ''; chip.className = 'chip'; if (it && (estado.resp[it.id] || {}).frac !== undefined && estado.resp[it.id].frac !== null) responder(it.id, null); return; }
+  if (faltan.length) {
+    estado.sim = null; res.textContent = 'Completa ' + (faltan.length === 1 ? 'la ruma ' : 'las rumas ') + faltan.join(', ');
+    chip.textContent = ''; chip.className = 'chip'; if (it) responder(it.id, null); return;
+  }
+  const frac = cumplen / completas;
+  estado.sim = { rumas: rumas.map(r => ({ f1: r.f1, f2: r.f2, p1: r.p1, p2: r.p2, pct: r.pct, ok: r.ok })), cumplen, total: completas, frac };
+  const ptsObt = Math.round(it.pts * frac * 10) / 10;
+  res.textContent = cumplen + ' de ' + completas + (completas === 1 ? ' ruma cumple' : ' rumas cumplen') + ' → ' + fmtPts(ptsObt) + ' de ' + fmtPts(it.pts) + ' pts';
+  chip.textContent = frac === 1 ? 'Cumple' : (frac === 0 ? 'No cumple' : 'Parcial'); chip.className = 'chip ' + (frac === 1 ? 'ok' : frac === 0 ? 'bad' : 'w');
+  if (it) responder(it.id, frac === 1 ? 'si' : 'no', frac);
+}
+
 function renderItems() {
   const box = $('items'), t = estado.tipo;
   if (!t) { box.innerHTML = '<p class="muted">Elige el tipo de control para empezar.</p>'; actualizar(); return; }
@@ -361,7 +421,7 @@ function renderItems() {
     box.innerHTML = PAUTA[t].items.map((it, k) => `
       <div class="item" id="it_${it.id}">
         <div class="q"><span class="pts">${fmtPts(it.pts)} pts</span>${k + 1}. ${esc(it.t)}</div>
-        ${it.ay ? `<div class="ay">${esc(it.ay)}</div>` : ''}
+        ${it.ay ? `<div class="ay"${it.sim ? ' id="ay_sim"' : ''}>${esc(it.sim ? ayudaSim(it) : it.ay)}</div>` : ''}
         ${it.sim ? simHTML() : ''}${it.monu ? monuHTML() : ''}
         <div class="resp">
           <button type="button" class="si" onclick="responder('${it.id}','si')">Cumple</button>
@@ -372,12 +432,13 @@ function renderItems() {
       </div>`).join('') +
       (t === 'trozos' ? `<div class="item"><div class="q">% de corteza en trozos según estándar <span class="tag s">informativo</span></div><div class="ay">No suma puntos, igual que en el control de Mininco.</div><input type="number" inputmode="numeric" min="0" max="100" id="corteza" placeholder="Ej: 70"></div>` : '');
     PAUTA[t].items.forEach(it => ensureResp(it.id));
+    if (PAUTA[t].items.some(it => it.sim)) { if (!estado.rumas || !estado.rumas.length) estado.rumas = [{}]; renderRumas(); }
   }
   actualizar();
 }
 
-function responder(id, r) {
-  const x = ensureResp(id); x.r = r;
+function responder(id, r, frac) {
+  const x = ensureResp(id); x.r = r; x.frac = (typeof frac === 'number') ? frac : null;
   const box = $('it_' + id);
   if (box) {
     box.classList.remove('err');
@@ -411,19 +472,6 @@ function monuEval() {
   m.faltan = faltan;
   $('monuRes').textContent = faltan.length ? 'Faltan ' + faltan.length + ': ' + faltan.join(', ') : 'Monumentación completa ✔';
   const it = PAUTA.arrumado.items.find(i => i.monu); if (it) responder(it.id, faltan.length ? 'no' : 'si');
-}
-
-function calcSim() {
-  const a = PAUTA.arrumado, g = id => num($(id).value);
-  const f1 = g('s_f1'), f2 = g('s_f2'), p1 = g('s_p1'), p2 = g('s_p2');
-  const chip = $('s_chip'), res = $('s_res');
-  if ([f1, f2, p1, p2].some(v => v === null || v <= 0)) { estado.sim = null; res.textContent = '—'; chip.textContent = ''; chip.className = 'chip'; return; }
-  const pct = Math.max(f1, f2) / Math.min(p1, p2) * 100;
-  const ok = pct >= a.simMin && pct <= a.simMax;
-  estado.sim = { f1, f2, p1, p2, pct: Math.round(pct * 10) / 10 };
-  res.textContent = String(estado.sim.pct).replace('.', ',') + '%';
-  chip.textContent = ok ? 'Cumple' : 'No cumple'; chip.className = 'chip ' + (ok ? 'ok' : 'bad');
-  const it = a.items.find(i => i.sim); if (it) responder(it.id, ok ? 'si' : 'no');
 }
 
 // ---------- fotos ----------
@@ -490,7 +538,8 @@ function calcular() {
     const r = (estado.resp[it.id] || {}).r;
     if (r === 'na') return;
     aplic += it.pts;
-    if (r === 'si') obt += it.pts; else if (r === 'no') inc++; else pend++;
+    const fr = (estado.resp[it.id] || {}).frac;
+    if (r === 'si') obt += it.pts; else if (r === 'no') { inc++; if (typeof fr === 'number') obt += it.pts * fr; } else pend++;
   });
   return { nota: aplic ? Math.round(obt / aplic * 100) : 0, obt, aplic, pend, incumpl: inc };
 }
@@ -556,7 +605,7 @@ async function guardar() {
       opClasificado: t === 'arrumado' ? val('sClasif') : '',
       calibrador: t !== 'tocones' ? val('sCalib') : '',
       gps: estado.gps || null,
-      nota: c.nota, puntosObtenidos: c.obt, puntosAplicables: c.aplic, incumplimientos: c.incumpl,
+      nota: c.nota, puntosObtenidos: Math.round(c.obt * 100) / 100, puntosAplicables: c.aplic, incumplimientos: c.incumpl,
       observacion: $('obsGeneral').value.trim(),
       creadoEn: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -567,7 +616,7 @@ async function guardar() {
       data.items = [];
       for (const it of PAUTA[t].items) {
         const x = estado.resp[it.id];
-        const fila = { id: it.id, t: it.t, pts: it.pts, r: x.r, obs: ($('o_' + it.id) || {}).value || '', fotos: x.r === 'no' ? await subir(it.id, x.fotos) : [] };
+        const fila = { id: it.id, t: it.t, pts: it.pts, r: x.r, ptsObt: x.r === 'si' ? it.pts : (typeof x.frac === 'number' ? Math.round(it.pts * x.frac * 100) / 100 : 0), obs: ($('o_' + it.id) || {}).value || '', fotos: x.r === 'no' ? await subir(it.id, x.fotos) : [] };
         if (it.monu && estado.monu) fila.monu = { tipo: estado.monu.tipo, faltan: estado.monu.faltan || [] };
         data.items.push(fila);
       }
@@ -587,7 +636,7 @@ async function guardar() {
 }
 function limpiarEvaluacion() {
   const t = estado.tipo;
-  estado = { tipo: t, resp: {}, gps: estado.gps, sim: null };
+  estado = { tipo: t, resp: {}, gps: estado.gps, sim: null, rumas: [{}] };
   $('obsGeneral').value = '';
   renderItems();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -654,10 +703,11 @@ function verDetalle(id) {
     cuerpo = `<p><b>Equipo:</b> ${esc(r.equipoVolteo)} · máx. ${fmtPts(r.maxCm)} cm</p><div class="tc">${(r.mediciones || []).map((v, i) => `<div><input readonly value="${v ?? ''}" class="${v !== null && v <= r.maxCm ? 'ok' : 'bad'}">T${i + 1}</div>`).join('')}</div>${fotosHTML(r.fotos)}`;
   } else {
     cuerpo = (r.items || []).map((it, k) => `<div class="item"><div class="q"><span class="pts">${fmtPts(it.pts)} pts</span>${k + 1}. ${esc(it.t)}</div>
-      <span class="chip ${it.r === 'si' ? 'ok' : it.r === 'no' ? 'bad' : 'w'}">${it.r === 'si' ? 'Cumple' : it.r === 'no' ? 'No cumple' : 'N/A'}</span>
+      <span class="chip ${it.r === 'si' ? 'ok' : it.r === 'no' ? 'bad' : 'w'}">${it.r === 'si' ? 'Cumple' : it.r === 'no' ? (it.ptsObt > 0 ? 'Parcial · ' + fmtPts(Math.round(it.ptsObt * 10) / 10) + ' pts' : 'No cumple') : 'N/A'}</span>
       ${it.monu ? `<div class="ay">Ruma ${esc(it.monu.tipo)} · ${it.monu.faltan.length ? 'Faltaba: ' + esc(it.monu.faltan.join(', ')) : 'Monumentación completa'}</div>` : ''}${it.obs ? `<div class="ay">${esc(it.obs)}</div>` : ''}${fotosHTML(it.fotos)}</div>`).join('');
     if (r.tipo === 'trozos' && r.corteza !== null && r.corteza !== undefined) cuerpo += `<p class="muted">% corteza: ${r.corteza}%</p>`;
-    if (r.simetria) cuerpo += `<p class="muted">Simetría: ${String(r.simetria.pct).replace('.', ',')}% (frente ${r.simetria.f1} / ${r.simetria.f2} m · posterior ${r.simetria.p1} / ${r.simetria.p2} m)</p>`;
+    if (r.simetria && r.simetria.rumas) cuerpo += `<p class="muted">Simetría: ${r.simetria.cumplen} de ${r.simetria.total} rumas cumplen</p>` + r.simetria.rumas.map((m, i) => `<div class="muted">Ruma ${i + 1}: ${String(m.pct).replace('.', ',')}% ${m.ok ? '✔' : '✖'} (frente ${m.f1} / ${m.f2} m · atrás ${m.p1} / ${m.p2} m)</div>`).join('');
+    else if (r.simetria) cuerpo += `<p class="muted">Simetría: ${String(r.simetria.pct).replace('.', ',')}% (frente ${r.simetria.f1} / ${r.simetria.f2} m · posterior ${r.simetria.p1} / ${r.simetria.p2} m)</p>`;
   }
   $('modalBox').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:17px">${esc(r.tipoNombre || r.tipo)} · ${fmtF(r.fecha)}</h2><button class="ic" onclick="cerrarModal()">✖</button></div>
     <p style="font-size:30px;font-weight:700;margin:8px 0">${r.nota} <span class="chip ${r.nota >= BONO ? 'ok' : 'bad'}">${r.nota >= BONO ? 'Sobre' : 'Bajo'} ${BONO}%</span></p>
@@ -755,16 +805,26 @@ function tab(t) {
 </script>
 
 <script>
-// Service Worker: actualización automática (igual que los demás módulos)
+// Service Worker: actualización automática (mismo bloque que index.html)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(reg => {
-    reg.addEventListener('updatefound', () => {
-      const nw = reg.installing;
-      if (nw) nw.addEventListener('statechange', () => { if (nw.state === 'installed' && navigator.serviceWorker.controller) nw.postMessage && nw.postMessage({ type: 'SKIP_WAITING' }); });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+      reg.addEventListener('updatefound', () => {
+        const nuevoWorker = reg.installing;
+        nuevoWorker.addEventListener('statechange', () => {
+          if (nuevoWorker.state === 'installed' && navigator.serviceWorker.controller) nuevoWorker.postMessage('SKIP_WAITING');
+        });
+      });
+      reg.update();
+    }).catch(() => {});
+    let yaRecargo = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (yaRecargo) return;
+      yaRecargo = true;
+      window.location.reload();
     });
-  }).catch(() => {});
-  let recargado = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (recargado) return; recargado = true; location.reload(); });
+  });
 }
 </script>
 </body>
