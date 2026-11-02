@@ -419,9 +419,13 @@
         <input type="radio" name="or-usar" id="or-usar-prop" value="prop" style="width:16px;height:16px;accent-color:var(--verde-oscuro)" onchange="orActualizarPreview()">
         <span style="font-size:14px">Usar meta <strong>calculada</strong></span>
       </label>
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border-radius:8px;border:1.5px solid var(--borde);background:var(--fondo-tarjeta)">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border-radius:8px;border:1.5px solid var(--borde);background:var(--fondo-tarjeta);margin-bottom:8px">
         <input type="radio" name="or-usar" id="or-usar-manual" value="manual" style="width:16px;height:16px;accent-color:var(--verde-oscuro)" onchange="orActualizarPreview()">
         <span style="font-size:14px">Usar meta <strong>manual</strong></span>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border-radius:8px;border:1.5px solid var(--borde);background:var(--fondo-tarjeta)">
+        <input type="radio" name="or-usar" id="or-usar-oferta" value="oferta" style="width:16px;height:16px;accent-color:var(--verde-oscuro)" onchange="orActualizarPreview()">
+        <span style="font-size:14px">Usar <strong>vol. ofertado</strong></span>
       </label>
 
       <div id="or-usar-preview" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--verde-claro);font-size:12px;color:var(--verde-oscuro)"></div>
@@ -1760,8 +1764,10 @@ window.cargarOfertaRodales = async function(){
       const usar = data.meta_calto_usar || 'prop';
       const radProp   = document.getElementById('or-usar-prop');
       const radManual = document.getElementById('or-usar-manual');
+      const radOferta = document.getElementById('or-usar-oferta');
       if(radProp)   radProp.checked   = usar === 'prop';
       if(radManual) radManual.checked = usar === 'manual';
+      if(radOferta) radOferta.checked = usar === 'oferta';
       orActualizarPreview();
     }
   } catch(e){ /* sin conexión */ }
@@ -1777,16 +1783,25 @@ window.orActualizarPreview = function(){
   const metaCalcTxt = metaCalcEl ? metaCalcEl.textContent.replace(/[^\d.,]/g,'').replace('.','').replace(',','.') : '';
   const metaCalc = parseFloat(metaCalcTxt) * 1000; // está en miles en la celda
 
+  // Leer vol. ofertado total desde la tabla
+  const totalOfEl = document.getElementById('or-total-ofertado');
+  const totalOfTxt = totalOfEl ? totalOfEl.textContent.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.') : '';
+  const totalOf = parseFloat(totalOfTxt);
+
   if(!preview) return;
   let txt = '';
   if(usar === 'prop'){
     txt = isNaN(metaCalc) || metaCalc <= 0
       ? '✅ Se usará la meta calculada (ingresa rodales para ver el valor)'
       : `✅ El dashboard usará la meta calculada: ${Math.round(metaCalc).toLocaleString('es-CL')} m³`;
-  } else {
+  } else if(usar === 'manual'){
     txt = isNaN(manual)
       ? '⚠️ Ingresa un valor manual primero'
       : `✅ El dashboard usará la meta manual: ${Math.round(manual).toLocaleString('es-CL')} m³`;
+  } else {
+    txt = isNaN(totalOf) || totalOf <= 0
+      ? '✅ Se usará el vol. ofertado (ingresa rodales para ver el valor)'
+      : `✅ El dashboard usará el vol. ofertado: ${Math.round(totalOf).toLocaleString('es-CL')} m³`;
   }
   preview.textContent = txt;
   preview.style.display = 'block';
@@ -1831,7 +1846,10 @@ window.guardarOfertaRodales = async function(){
   const metaManual = isNaN(manualRaw) ? null : manualRaw / 1000; // guardar en miles igual que meta_calto
   if(usar === 'manual' && metaManual === null){ toast('Ingresa un valor manual antes de guardar'); return; }
   // meta_calto = el que usa el dashboard
-  const metaCaltoFinal = usar === 'manual' ? metaManual : metaCaltoTotal;
+  // "prop" → meta calculada por contrato | "manual" → override manual | "oferta" → vol. ofertado total
+  const metaCaltoFinal = usar === 'manual' ? metaManual
+                       : usar === 'oferta' ? totalOfertado / 1000  // totalOfertado ya está en m³, guardar en miles
+                       : metaCaltoTotal;
 
   try{
     await setDoc(doc(db, COL_OFERTA_RODALES, idOfertaRodales(linea, mes, anio)), {
@@ -1840,12 +1858,12 @@ window.guardarOfertaRodales = async function(){
       total_ofertado: totalOfertado,
       meta_calto_prop:   metaCaltoTotal,   // calculada (referencia)
       meta_calto_manual: metaManual,        // override manual (en miles, puede ser null)
-      meta_calto_usar:   usar,              // "prop" | "manual"
+      meta_calto_usar:   usar,              // "prop" | "manual" | "oferta"
       meta_calto:        metaCaltoFinal     // el que lee el dashboard
     });
     const info = document.getElementById('or-guardado-info');
     info.style.display = 'block';
-    const etiq = usar === 'manual' ? 'manual' : 'calculada';
+    const etiq = usar === 'manual' ? 'manual' : usar === 'oferta' ? 'vol. ofertado' : 'calculada';
     info.innerHTML = `✅ Meta CALTO guardada (<strong>${etiq}</strong>): <strong>${orFmt(metaCaltoFinal, 3)} m³</strong>`;
     toast('Meta CALTO guardada correctamente');
     orActualizarPreview();
