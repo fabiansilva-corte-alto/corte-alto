@@ -810,17 +810,41 @@ const toISO = d => d.toISOString().split('T')[0];
 const loaderHTML = '<div class="loading-block"><div class="spinner"></div></div>';
 
 // ── CORTE HORARIO ─────────────────────────────────────────────────────────
-// Antes de las 20:00 el sistema se considera en el día anterior,
+// Antes de las 20:00 (hora Chile) el sistema se considera en el día anterior,
 // porque los calibradores ingresan la producción después de las 18-20 hrs.
 const HORA_CORTE = 20;
-function diaBase() {
+function horaLocalChile() {
+  // Chile = America/Santiago. Usamos Intl para obtener la hora local real.
   const ahora = new Date();
-  if(ahora.getHours() < HORA_CORTE) {
-    const ayer = new Date(ahora);
-    ayer.setDate(ayer.getDate() - 1);
-    return ayer;
+  const partes = new Intl.DateTimeFormat('es-CL', {
+    timeZone: 'America/Santiago',
+    hour: 'numeric', hour12: false
+  }).formatToParts(ahora);
+  return parseInt(partes.find(p => p.type === 'hour').value);
+}
+function diaBaseISO() {
+  // Fecha local Chile como string YYYY-MM-DD
+  const ahora = new Date();
+  const fechaLocal = new Intl.DateTimeFormat('es-CL', {
+    timeZone: 'America/Santiago',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(ahora); // dd-mm-yyyy en es-CL
+  const [d, m, a] = fechaLocal.split('-');
+  const hoy = `${a}-${m}-${d}`;
+  if(horaLocalChile() < HORA_CORTE) {
+    // Restar un día usando componentes locales para evitar bugs UTC
+    const [ay, am, ad] = hoy.split('-').map(Number);
+    const dt = new Date(ay, am - 1, ad - 1); // midnight local
+    const yy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
   }
-  return ahora;
+  return hoy;
+}
+function diaBase() {
+  // Retorna un objeto Date apuntando al mediodía de diaBaseISO (para compatibilidad)
+  return new Date(`${diaBaseISO()}T12:00:00`);
 }
 
 // ── FILTRO MES/AÑO ────────────────────────────────────────────────────────
@@ -858,9 +882,9 @@ function getFechas() {
   const [a,m] = mes.split('-');
   const diasMes = new Date(+a, +m, 0).getDate();
   const desde = `${mes}-01`;
-  const hasta = toISO(diaBase()) <= `${mes}-${String(diasMes).padStart(2,'0')}`
-    && toISO(diaBase()) >= desde
-    ? toISO(diaBase())
+  const hasta = diaBaseISO() <= `${mes}-${String(diasMes).padStart(2,'0')}`
+    && diaBaseISO() >= desde
+    ? diaBaseISO()
     : `${mes}-${String(diasMes).padStart(2,'0')}`;
   return { desde, hasta, mesStr:mes };
 }
@@ -1005,7 +1029,7 @@ window.consultar = async function() {
 
     // ── Producción extra: últimos días antes del período (para bloque Últimos 3 días) ──
     // Necesitamos al menos 3 fechas distintas; si el período tiene menos, buscamos hacia atrás
-    const _hoyStr = toISO(diaBase());
+    const _hoyStr = diaBaseISO();
     const fechasEnPeriodo = [...new Set(prodTodo.map(d=>d.fecha))].filter(f=>f<=_hoyStr).sort();
     let prodHistorico = [...prodTodo];
     if(fechasEnPeriodo.length < 3) {
@@ -1154,7 +1178,7 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
   }
 
   // Meta acumulada hasta diaBase() — antes de las 20h usamos ayer, después usamos hoy
-  const ayerISO = toISO(diaBase());
+  const ayerISO = diaBaseISO();
   const hastaMetaAcum = hasta < ayerISO ? hasta : ayerISO;
   let metaAcum = 0;
   lineasReales.forEach(lin => {
@@ -1166,7 +1190,7 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
   const falta     = Math.max(0, metaTotal-volTotal);
   const promDia   = diasConProd>0 ? volTotal/diasConProd : 0;
   // Días restantes del mes
-  const hoyISO    = toISO(diaBase());
+  const hoyISO    = diaBaseISO();
   const diasMes   = mesStr ? new Date(+a,+m,0).getDate() : diasConProd;
   // Fin del mes seleccionado
   const finMesISO = mesStr ? `${mesStr}-${String(diasMes).padStart(2,'0')}` : hasta;
@@ -1544,7 +1568,7 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
         const diasMesC = new Date(a,m,0).getDate();
         const hoy = diaBase(); const ayer = diaBase();
         const inicioMes = new Date(a,m-1,1); const finMes = new Date(a,m-1,diasMesC);
-        const mesTerminadoC = toISO(diaBase()) > `${mesStr}-${String(diasMesC).padStart(2,'0')}`;
+        const mesTerminadoC = diaBaseISO() > `${mesStr}-${String(diasMesC).padStart(2,'0')}`;
         const ayerEf = ayer<inicioMes?inicioMes:(ayer>finMes?finMes:ayer);
         const diasHastaAyer = Math.max(0, Math.round((ayerEf-inicioMes)/86400000)+1);
         const metaCaltoAcum = diasMesC>0 ? (metaCalto/diasMesC)*diasHastaAyer : 0;
@@ -1642,7 +1666,7 @@ async function renderUltimos3(prodTodo, metasPorLinea) {
   };
 
   // Últimas 3 fechas GLOBALES (de cualquier línea) — excluye el día actual (puede estar incompleto)
-  const _hoyISO = toISO(diaBase());
+  const _hoyISO = diaBaseISO();
   const fechasGlobales = [...new Set(prodTodo.map(d=>d.fecha).filter(Boolean))]
     .filter(f => f <= _hoyISO)
     .sort().slice(-3);
@@ -3420,7 +3444,7 @@ window.toggleCalto = async function(btn, lin, mesStr) {
   const metaCaltoTotal1000_t = metaCalto * 1000;
   const metaCaltoAcum1000_t  = metaCaltoAcum * 1000;
   const faltaCalto_t = Math.max(0, metaCaltoTotal1000_t - volLinActual);
-  const mesTerminadoT = mesStr ? (() => { const [a,m]=mesStr.split('-').map(Number); return toISO(diaBase()) > `${mesStr}-${String(new Date(a,m,0).getDate()).padStart(2,'0')}`; })() : false;
+  const mesTerminadoT = mesStr ? (() => { const [a,m]=mesStr.split('-').map(Number); return diaBaseISO() > `${mesStr}-${String(new Date(a,m,0).getDate()).padStart(2,'0')}`; })() : false;
   const promCalto_t = diasHastaAyer>0 ? volLinActual/diasHastaAyer : 0;
   const proyecCalto_t = mesTerminadoT ? volLinActual : (promCalto_t * diasMesC);
   const celdaMetaTotal2 = document.getElementById(`calto-meta-total-${linKey}`);
