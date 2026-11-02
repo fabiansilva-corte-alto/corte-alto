@@ -1,1 +1,3487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dashboard">
+<meta name="theme-color" content="#1a1a1a">
+<title>Dashboard — Corte Alto</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f5;--card:#fff;--border:#e0e0e0;--border2:#d0d0d0;
+  --text:#1a1a1a;--text2:#555;--text3:#888;
+  --green:#3B6D11;--green-bg:#EAF3DE;
+  --red:#A32D2D;--red-bg:#FCEBEB;
+  --amber:#854F0B;--amber-bg:#FAEEDA;
+  --blue:#1D5FAD;--blue-bg:#E8F0FB;
+  --purple:#3C3489;--purple-bg:#EEEDFE;
+  --radius:12px;--radius-sm:8px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;min-height:100vh}
+.app{max-width:720px;margin:0 auto;padding:1rem}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding:.75rem 1rem;background:var(--card);border-radius:var(--radius);border:1px solid var(--border)}
+.header-left{display:flex;align-items:center;gap:8px}
+.back-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2);display:flex;align-items:center;padding:4px}
+.header-title{font-size:16px;font-weight:600}
+.header-sub{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+
+/* SECCIÓN */
+.section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1rem}
+.section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.875rem;display:flex;align-items:center;gap:6px}
+
+/* FILTROS */
+.filters-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.filter-field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px}
+.filter-label{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+select,input[type=date]{width:100%;font-size:14px;font-family:var(--font);padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--text);outline:none}
+.btn-consultar{background:var(--text);color:#fff;border:none;padding:9px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;align-self:flex-end}
+.btn-consultar:disabled{opacity:.5;cursor:wait}
+
+/* ── FILTRO MES/AÑO + AVANZADO ── */
+input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--text);outline:none}
+.btn-avanzado{background:none;border:1px solid var(--border);color:var(--text2);padding:8px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:var(--font);white-space:nowrap;align-self:flex-end}
+.btn-avanzado.active{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
+.filtro-avanzado{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+
+/* ── BANDA EJECUTIVA ── */
+.exec-band{background:linear-gradient(135deg,#1a1a2e 0%,#2d4a6e 100%);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem}
+.exec-band-title{font-size:10px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
+.exec-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:.625rem;margin-bottom:.625rem}
+.exec-kpi{background:rgba(255,255,255,.12);border-radius:10px;padding:.625rem .875rem}
+.exec-kpi-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.exec-kpi-val{font-size:28px;font-weight:800;color:#fff;line-height:1}
+.exec-kpi-val.ok{color:#a8f0a0}
+.exec-kpi-val.warn{color:#ffe080}
+.exec-kpi-val.bad{color:#ffaaaa}
+.exec-kpi-sub{font-size:9px;color:rgba(255,255,255,.55);margin-top:2px}
+.exec-extras{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem}
+.exec-extra{background:rgba(0,0,0,.15);border-radius:8px;padding:.4rem .6rem;text-align:center}
+.exec-extra-label{font-size:9px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px;line-height:1.3}
+.exec-extra-val{font-size:16px;font-weight:800;color:#fff}
+
+/* ── 3 COLUMNAS LÍNEAS ── */
+.lineas-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1rem}
+.linea-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.linea-head{padding:.5rem .875rem;font-size:11px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center}
+.lh-t1{background:#1D5FAD}.lh-t2{background:#3B6D11}.lh-t3{background:#854F0B}
+.linea-body{padding:.75rem .875rem}
+.linea-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:.625rem}
+.lkpi{text-align:center}
+.lkpi-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.lkpi-val{font-size:24px;font-weight:800;line-height:1}
+.lkpi-val.blue{color:var(--blue)}.lkpi-val.ok{color:var(--green)}.lkpi-val.warn{color:var(--amber)}.lkpi-val.bad{color:var(--red)}
+.lkpi-sub{font-size:10px;color:var(--text3);margin-top:3px}
+/* ── KPIs DUAL CALTO / FORMIN (solo T2/T3) ── */
+.dual-table{width:100%;border-collapse:collapse;margin-bottom:.625rem;font-size:11px}
+.dual-table td,.dual-table th{padding:5px 8px;vertical-align:middle;border:1px solid var(--border);text-align:center}
+/* encabezados */
+.dual-table .th-prod{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);background:transparent;text-align:center}
+.dual-table .th-calto{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#1a6e1a;background:rgba(60,180,60,.13)}
+.dual-table .th-formin{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);background:var(--bg2)}
+/* col izquierda — etiqueta + valor */
+.dual-table .td-left{background:transparent;text-align:center;padding:5px 8px;vertical-align:middle}
+.dual-table .dk-row-label{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}
+.dual-table .dk-row-val{font-size:17px;font-weight:800;color:var(--text);line-height:1.1}
+.dual-table .dk-row-val.blue{color:var(--blue)}
+.dual-table .dk-row-sub{font-size:9px;color:var(--text3)}
+/* celdas CALTO */
+.dual-table .td-calto{background:rgba(60,180,60,.06)}
+.dual-table .td-calto .dk-val{font-size:18px;font-weight:800;color:var(--text);line-height:1.1}
+.dual-table .td-calto .dk-val.blue{color:var(--blue)}
+.dual-table .td-calto .dk-val.bad{color:var(--red)}
+/* celdas FORMIN */
+.dual-table .td-formin{background:var(--bg2)}
+.dual-table .td-formin .dk-val{font-size:14px;font-weight:600;color:var(--text2);line-height:1.1}
+/* descripción y sub */
+.dual-table .dk-desc{font-size:9px;color:var(--text3);margin-bottom:2px}
+.dual-table .dk-sub{font-size:9px;color:var(--text3);margin-top:1px}
+.linea-extras{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.lextra{background:var(--bg);border-radius:6px;padding:6px 9px}
+.lextra-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px;line-height:1.2}
+.lextra-val{font-size:15px;font-weight:700;color:var(--text)}
+
+/* ── DESGLOSE MADEREO POR LÍNEA ── */
+.madereo-desglose{margin-top:7px;padding-top:6px;border-top:1px solid var(--border)}
+.madereo-title{font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.madereo-table{width:100%;border-collapse:collapse}
+.madereo-table th{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;padding:3px 5px;text-align:right;border-bottom:1px solid var(--border)}
+.madereo-table th:first-child{text-align:left}
+.madereo-table th.col-pct{text-align:center}
+.madereo-table td{font-size:13px;font-weight:600;color:var(--text);padding:5px 5px;text-align:right;border-bottom:1px solid var(--bg)}
+.madereo-table td:first-child{text-align:left;font-weight:700}
+.madereo-table td.col-pct{text-align:center}
+.madereo-table tr:last-child td{border-bottom:none}
+.madereo-eq-label{display:flex;align-items:center;gap:5px}
+.madereo-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.madereo-dot.torre{background:#1D5FAD}
+.madereo-dot.skidder{background:#854F0B}
+.mpct-ok{background:var(--green-bg);color:var(--green);font-weight:800;padding:2px 6px;border-radius:4px;display:inline-block}
+.mpct-warn{background:var(--amber-bg);color:var(--amber);font-weight:800;padding:2px 6px;border-radius:4px;display:inline-block}
+.mpct-bad{background:var(--red-bg);color:var(--red);font-weight:800;padding:2px 6px;border-radius:4px;display:inline-block}
+
+/* ── PANEL META CALTO (oculto) ── */
+.calto-btn{background:rgba(255,255,255,.18);border:none;border-radius:5px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;flex-shrink:0;transition:background .15s;padding:0}
+.calto-btn:hover{background:rgba(255,255,255,.35)}
+.calto-panel{display:none;border-top:2px solid var(--border);padding:.625rem .875rem .75rem;background:linear-gradient(180deg,#f9fdf5 0%,#fff 100%)}
+.calto-panel.abierto{display:block}
+.calto-panel-title{font-size:9px;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem;display:flex;align-items:center;gap:5px}
+.calto-kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:.5rem}
+.calto-kpi{background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 8px;text-align:center}
+.calto-kpi-label{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;line-height:1.2}
+.calto-kpi-val{font-size:17px;font-weight:800;color:var(--green);line-height:1}
+.calto-kpi-sub{font-size:9px;color:var(--text3);margin-top:2px}
+.calto-kpi-val.ok{color:var(--green)}.calto-kpi-val.warn{color:var(--amber)}.calto-kpi-val.bad{color:var(--red)}
+.calto-rodales{margin-top:.375rem}
+.calto-rodales-title{font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.calto-table{width:100%;border-collapse:collapse;font-size:11px}
+.calto-table th{font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;padding:2px 5px;border-bottom:1px solid var(--border);text-align:right}
+.calto-table th:first-child{text-align:left}
+.calto-table td{padding:3px 5px;border-bottom:1px solid #f0f0f0;color:var(--text);font-weight:600;text-align:right}
+.calto-table td:first-child{text-align:left;color:var(--text2)}
+.calto-table tr:last-child td{border-bottom:none}
+.calto-loading{font-size:11px;color:var(--text3);text-align:center;padding:.5rem 0}
+.calto-fundo{font-size:10px;color:var(--text2);margin-bottom:.375rem;display:flex;align-items:center;gap:4px}
+
+/* ── ÚLTIMOS 3 DÍAS ── */
+.u3-lineas{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.u3-bloque{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.u3-bloque-header{padding:.35rem .75rem;font-size:10px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:5px;opacity:.92}
+.u3-dias{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+.u3-card{border:none;border-right:1px solid rgba(0,0,0,.05);padding:.625rem .5rem;text-align:center;position:relative}
+.u3-card:last-child{border-right:none}
+.u3-card.ok{background:var(--green-bg)}
+.u3-card.warn{background:var(--green-bg)}
+.u3-card.bad{background:var(--red-bg)}
+.u3-card.sin{background:#fafafa}
+.u3-card.ok{border-color:var(--green);background:var(--green-bg)}
+.u3-card.warn{border-color:var(--amber);background:var(--amber-bg)}
+.u3-card.bad{border-color:var(--red);background:var(--red-bg)}
+.u3-card.sin{border-color:var(--border);background:#fafafa}
+.u3-fecha{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:4px}
+.u3-vol{font-size:20px;font-weight:800;line-height:1;display:inline}
+.u3-vol.ok{color:var(--green)}
+.u3-vol.warn{color:var(--green)}
+.u3-vol.bad{color:var(--red)}
+.u3-vol.sin{color:var(--text3)}
+.u3-sub{font-size:10px;color:var(--text3);margin-top:3px}
+.u3-row-label{font-size:12px;font-weight:600;color:var(--text2);margin-top:4px;line-height:1.3}
+.u3-row-label .u3-vol{font-size:20px;font-weight:800;line-height:1;vertical-align:middle}
+.u3-meta{font-weight:500;color:var(--text3)}
+.u3-delta{font-size:11px;font-weight:700;margin-top:5px;padding:2px 6px;border-radius:4px;display:inline-block}
+.u3-delta.ok{background:var(--green);color:#fff}
+.u3-delta.warn{background:var(--green);color:#fff}
+.u3-delta.bad{background:var(--red);color:#fff}
+.u3-delta.sin{background:var(--border);color:var(--text3)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:700px){
+  .lineas-grid{grid-template-columns:1fr}
+  .exec-kpis{grid-template-columns:1fr 1fr}
+  .exec-extras{grid-template-columns:1fr 1fr}
+}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:.75rem}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem}
+.kpi-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.kpi-value{font-size:24px;font-weight:800;line-height:1}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.kpi-bar{height:4px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px}
+.kpi-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+
+/* TARJETA EQUIPOS VOLUMEN */
+.vol-eq-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem;margin-bottom:.75rem}
+.vol-eq-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.vol-eq-item{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;display:flex;flex-direction:column;gap:2px;min-width:110px}
+.vol-eq-name{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase}
+.vol-eq-val{font-size:16px;font-weight:800;color:var(--green)}
+.vol-eq-unit{font-size:10px;color:var(--text3)}
+
+/* CHIPS FILTRO LÍNEA TABLA */
+.tabla-linea-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.tlc-btn{font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--text2);cursor:pointer;font-family:var(--font);letter-spacing:.03em;transition:all .15s}
+.tlc-btn:hover{border-color:var(--text2);color:var(--text)}
+.tlc-active{background:var(--text);color:#fff;border-color:var(--text)}
+.tlc-btn.tlc-active.tlc-t1{background:var(--blue);border-color:var(--blue);color:#fff}
+.tlc-btn.tlc-active.tlc-t2{background:var(--green);border-color:var(--green);color:#fff}
+.tlc-btn.tlc-active.tlc-t3{background:var(--amber);border-color:var(--amber);color:#fff}
+
+/* TARJETA RODALES */
+.rodal-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem;margin-bottom:.75rem}
+.rodal-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.rodal-item{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;min-width:130px}
+.rodal-fundo{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+.rodal-num{font-size:12px;font-weight:700;color:var(--text2)}
+.rodal-vol{font-size:15px;font-weight:800;color:var(--blue)}
+.rodal-unit{font-size:10px;color:var(--text3)}
+
+/* GRÁFICO */
+.chart-wrap{position:relative;width:100%;height:220px}
+
+/* OEE NÚMEROS */
+.oee-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem}
+.oee-num-card{border-radius:var(--radius-sm);padding:.75rem;text-align:center;border:2px solid transparent}
+.oee-num-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.7;margin-bottom:4px}
+.oee-num-val{font-size:38px;font-weight:900;line-height:1}
+.oee-num-meta{font-size:10px;margin-top:4px;opacity:.65}
+.oee-ok{background:var(--green-bg);border-color:#C2DDA6;color:var(--green)}
+.oee-bad{background:var(--red-bg);border-color:#F0C9C9;color:var(--red)}
+.oee-na{background:#f5f5f5;border-color:var(--border);color:var(--text3)}
+
+/* CAUSALES */
+.causal-list{display:flex;flex-direction:column;gap:6px}
+.causal-row{display:flex;align-items:center;gap:8px}
+.causal-rank{font-size:11px;font-weight:800;color:var(--text3);width:16px;flex-shrink:0;text-align:center}
+.causal-bar-wrap{flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden}
+.causal-bar-fill{height:100%;background:var(--red);border-radius:3px}
+.causal-name{font-size:11px;color:var(--text2);flex:2;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.causal-horas{font-size:11px;font-weight:700;color:var(--text);flex-shrink:0}
+
+/* TABLA RENDIMIENTO */
+.rend-table{width:100%;border-collapse:collapse;font-size:12px}
+.rend-table th{font-size:9px;font-weight:700;padding:5px 7px;text-align:center;background:#f5f5f5;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid var(--border)}
+.rend-table th:first-child{text-align:left}
+.rend-table td{padding:6px 7px;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle}
+.rend-table td:first-child{text-align:left;font-weight:700}
+.rend-table tr:last-child td{border-bottom:none}
+.rend-group{font-size:9px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.05em;padding:4px 7px}
+.rend-alpine{background:#1D5FAD}
+.rend-skidder{background:#854F0B}
+.rend-proc{background:#3B6D11}
+.rend-shovel{background:#3C3489}
+.rend-val{display:inline-block;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:700;background:#f0f0f0;color:var(--text2)}
+.rend-na{color:var(--text3);font-size:11px}
+
+/* PIE CHARTS */
+.pie-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.pie-card{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;display:flex;flex-direction:column;align-items:center}
+.pie-card-title{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:.5rem;display:flex;align-items:center;justify-content:center;gap:5px;text-align:center}
+.pie-canvas-wrap{width:100px;height:100px}
+.pie-legend{display:flex;flex-direction:row;flex-wrap:wrap;gap:4px 8px;margin-top:8px;width:100%;justify-content:center}
+.pie-legend .leg-row{display:flex;align-items:center;gap:4px}
+.pie-legend .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pie-legend .leg-name{font-size:10px;color:var(--text2);white-space:nowrap}
+
+/* UTILIZACIÓN POR LÍNEA */
+.util-lineas{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.util-col{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem .75rem;display:flex;flex-direction:column;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.util-col-header{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem;text-align:center}
+
+/* COMPARADOR RENDIMIENTO */
+.comp-table{width:100%;border-collapse:collapse;font-size:12px}
+.comp-table th{padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;text-align:center;border:1px solid rgba(255,255,255,.2)}
+.comp-table th:first-child{background:#f5f5f5;color:var(--text3);text-align:left;border-color:var(--border)}
+.comp-table td{padding:8px 10px;border:1px solid var(--border);text-align:center;font-size:13px;font-weight:600;color:var(--text)}
+.comp-table td:first-child{text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;background:#fafafa}
+.comp-best{color:var(--green);font-weight:800}
+.comp-worst{color:var(--red)}
+.comp-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;user-select:none}
+.comp-chip.selected{border-color:var(--text)!important;box-shadow:0 0 0 1px var(--text)}
+
+/* MODAL MULTI-SELECT FILTROS */
+.ms-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:flex-end;justify-content:center}
+.ms-overlay.open{display:flex}
+.ms-modal{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:75vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.ms-modal-head{padding:16px 20px 8px;border-bottom:1px solid var(--border)}
+.ms-modal-title{font-size:15px;font-weight:700;color:var(--text)}
+.ms-modal-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.ms-modal-body{overflow-y:auto;flex:1;padding:4px 0}
+.ms-modal-item{display:flex;align-items:center;gap:12px;padding:12px 20px;cursor:pointer;font-size:14px;color:var(--text);border-bottom:1px solid #f5f5f5}
+.ms-modal-item:hover{background:#fafafa}
+.ms-modal-item input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--green);flex-shrink:0}
+.ms-modal-footer{padding:12px 20px;border-top:1px solid var(--border)}
+.ms-modal-ok{width:100%;padding:13px;background:var(--text);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font)}
+
+/* Botón de filtro multi-select en el form */
+.ms-trigger{width:100%;font-size:14px;font-family:var(--font);padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--text);outline:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left;min-height:38px}
+.ms-trigger:after{content:"▾";font-size:10px;color:var(--text3);flex-shrink:0}
+
+/* TABLA PRODUCCIÓN DIARIA */
+.prod-wrap{overflow-x:auto;margin-top:8px}
+.prod-table{width:100%;border-collapse:collapse;font-size:11px;min-width:400px}
+.prod-table .row-tipo th{padding:4px 7px;font-size:10px;font-weight:800;color:#fff;text-align:center;border:1px solid rgba(255,255,255,.2)}
+.tipo-torre{background:#1D5FAD}.tipo-skidder{background:#854F0B}.tipo-shovel{background:#3C3489}
+.tipo-dia{background:#f5f5f5!important;color:var(--text3)!important}
+.tipo-total{background:#1a1a1a}
+.prod-table .row-op th{padding:3px 7px;font-size:10px;font-weight:600;color:var(--text2);background:#f8f8f8;text-align:center;border:1px solid var(--border);white-space:nowrap}
+.prod-table .row-op th:first-child{text-align:left}
+.prod-table td{padding:4px 9px;border:1px solid var(--border);text-align:center;color:var(--text2);font-size:11px;min-width:60px}
+.prod-table td:first-child{text-align:center;font-weight:700;color:var(--text3);background:#fafafa;font-size:11px;min-width:34px}
+.prod-table td.val{color:var(--text);font-weight:600;text-align:center}
+.prod-table td.vacio{color:#ddd;text-align:center}
+.prod-table td.total-dia{font-weight:800;color:#fff;background:#1a1a1a;text-align:center}
+.prod-table .row-total td{font-weight:800;padding:6px 9px;border-top:2px solid var(--border2);text-align:center}
+.prod-table .row-total td:first-child{background:#1a1a1a;color:#fff;text-align:center;font-size:11px}
+.prod-table .row-total .tot-torre{background:var(--blue-bg);color:var(--blue)}
+.prod-table .row-total .tot-sk{background:var(--amber-bg);color:var(--amber)}
+.prod-table .row-total .tot-shovel{background:var(--purple-bg);color:var(--purple)}
+.prod-table .row-total .tot-grand{background:#1a1a1a;color:#fff}
+
+/* VOLUMEN POR FUNDO */
+.fundo-section{margin-bottom:.75rem}
+.fundo-header{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:var(--green);border-radius:var(--radius-sm);margin-bottom:6px;gap:10px;flex-wrap:wrap}
+.fundo-header-name{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em}
+.fundo-header-vol{font-size:13px;font-weight:800;color:#fff;white-space:nowrap}
+/* VMA summary en header fundo */
+.fundo-header-vma{display:flex;gap:14px;align-items:center}
+.fundo-hvma-item{display:flex;flex-direction:column;align-items:center}
+.fundo-hvma-label{font-size:8px;color:rgba(255,255,255,.7);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}
+.fundo-hvma-val-row{display:flex;align-items:center;gap:4px}
+.fundo-hvma-val{font-size:12px;font-weight:800;color:#fff}
+.fundo-hvma-badge{font-size:9px;font-weight:800;padding:1px 5px;border-radius:6px;white-space:nowrap}
+.fundo-hvma-badge.pos{background:rgba(100,180,255,.35);color:#d0eeff}
+.fundo-hvma-badge.neg{background:rgba(255,80,80,.3);color:#ffd0d0}
+.fundo-hvma-badge.neu{background:rgba(255,255,255,.15);color:rgba(255,255,255,.75)}
+/* VMA comparación en tarjeta rodal */
+.vma-row{display:flex;gap:6px;margin-top:6px;padding-top:5px;border-top:1px solid var(--border)}
+.vma-cell{flex:1;text-align:center}
+.vma-cell-label{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+.vma-cell-val{font-size:13px;font-weight:800;line-height:1}
+.vma-diff{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin-top:4px;padding:2px 6px;border-radius:10px}
+.vma-diff.pos{background:#E0F0FF;color:#1255A0}
+.vma-diff.neg{background:var(--red-bg);color:var(--red)}
+.vma-diff.neu{background:#f0f0f0;color:var(--text3)}
+.fundo-rodales{display:flex;flex-wrap:wrap;gap:6px}
+.fundo-rodal-item{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 10px;min-width:110px}
+.fundo-rodal-num{font-size:11px;font-weight:700;color:var(--text2)}
+.fundo-rodal-vol{font-size:14px;font-weight:800;color:var(--blue)}
+.fundo-rodal-pct{font-size:10px;color:var(--text3);margin-top:1px}
+.fundo-rodal-bar{height:3px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden}
+.fundo-rodal-bar-fill{height:100%;background:var(--blue);border-radius:2px}
+
+/* MODAL EQUIPOS */
+.eq-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
+.eq-modal-overlay.open{display:flex}
+.eq-modal{background:#fff;border-radius:var(--radius);padding:1.25rem;width:90%;max-width:400px;max-height:80vh;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.eq-modal-title{font-size:14px;font-weight:700;color:var(--text)}
+.eq-modal-body{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:4px}
+.eq-modal-group{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:8px 4px 3px;border-bottom:1px solid var(--border)}
+.eq-modal-item{display:flex;align-items:center;gap:8px;padding:7px 4px;cursor:pointer;font-size:13px;border-radius:6px}
+.eq-modal-item:hover{background:#f5f5f5}
+.eq-modal-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--green);flex-shrink:0}
+.eq-modal-footer{display:flex;gap:8px;padding-top:4px;border-top:1px solid var(--border)}
+.eq-modal-footer button{flex:1;padding:9px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);border:none}
+.eq-modal-ok{background:var(--text);color:#fff}
+.eq-modal-cancel{background:#f0f0f0;color:var(--text2)}
+.eq-modal-selall{font-size:11px;color:var(--blue);cursor:pointer;text-decoration:underline;text-align:right}
+
+/* PIE % en leyenda */
+.pie-legend .leg-pct{font-size:10px;font-weight:700;color:var(--text3);margin-left:2px}
+
+/* BLOQUE ÁRBOLES */
+.arb-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.5rem}
+.arb-card{background:#f8f8f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.875rem 1rem}
+.arb-card-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;display:flex;align-items:center;gap:5px}
+.arb-total{font-size:28px;font-weight:900;line-height:1;margin-bottom:4px}
+.arb-unit{font-size:11px;color:var(--text3)}
+.arb-desglose{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+.arb-row{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.arb-row-label{color:var(--text2)}
+.arb-row-val{font-weight:700;color:var(--text)}
+.arb-eq-list{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+.arb-eq-row{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.arb-eq-name{color:var(--text2)}
+.arb-eq-val{font-weight:700;color:var(--text)}
+.arb-bar{height:4px;background:var(--border);border-radius:2px;margin-top:3px;overflow:hidden}
+.arb-bar-fill{height:100%;border-radius:2px}
+
+/* VARAS EN PISO */
+.varas-grid{display:flex;flex-direction:column;gap:.75rem}
+.varas-card{border-radius:var(--radius-sm);padding:.875rem 1rem;border:2px solid transparent}
+.varas-card.rojo{background:#FFF0F0;border-color:#F0C9C9}
+.varas-card.normal{background:#f8f8f8;border-color:var(--border)}
+.varas-linea{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between}
+.varas-badge-urgente{background:var(--red-bg);color:var(--red);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.varas-nums{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.varas-num{text-align:center}
+.varas-num-label{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.varas-num-val{font-size:20px;font-weight:900;line-height:1}
+.varas-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:.75rem}
+.varas-bar-fill{height:100%;border-radius:4px;transition:width .4s}
+
+/* CAMBIO DE LÍNEA — layout 3 columnas */
+.cl-lineas{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.cl-col{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem .75rem;display:flex;flex-direction:column;gap:0}
+.cl-col-header{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding-bottom:.5rem;margin-bottom:.625rem;text-align:center}
+.cl-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:.75rem}
+.cl-kpi{text-align:center;background:var(--bg);border-radius:6px;padding:5px 3px}
+.cl-kpi-val{font-size:15px;font-weight:800;line-height:1.1}
+.cl-kpi-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin-top:2px}
+.cl-cond{margin-bottom:10px}
+.cl-cond-label{font-size:11px;font-weight:600;color:var(--text);margin-bottom:5px;display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.cl-nodata{font-size:11px;color:var(--text3)}
+/* clases antiguas (por si quedan referencias en otra parte) */
+.cl-header{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem}
+.cl-stat{border-radius:var(--radius-sm);padding:.75rem;display:flex;align-items:center;gap:10px}
+.cl-stat.blue{background:var(--blue-bg);border:1px solid #C0D5F0}
+.cl-stat.amber{background:var(--amber-bg);border:1px solid #E8C98A}
+.cl-icon{font-size:22px;line-height:1}
+.cl-val{font-size:20px;font-weight:900;line-height:1}
+.cl-val.blue{color:var(--blue)}
+.cl-val.amber{color:var(--amber)}
+.cl-label{font-size:10px;color:var(--text3);margin-top:2px}
+.cl-sub{font-size:10px;font-weight:600;color:var(--text2);margin-top:2px}
+.cl-cond-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;padding-top:10px;border-top:1px solid var(--border)}
+.seg-bar{height:22px;border-radius:6px;overflow:hidden;display:flex;width:100%;margin-bottom:5px}
+.seg{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;min-width:0;overflow:hidden}
+.seg span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 5px}
+.seg-legend{display:flex;gap:8px;flex-wrap:wrap}
+.seg-leg{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)}
+.seg-dot{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+
+/* EMPTY / LOADER */
+.empty-state{text-align:center;padding:2rem 1rem;color:var(--text3);font-size:13px}
+.spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-block{display:flex;align-items:center;justify-content:center;gap:8px;padding:1.5rem;color:var(--text3);font-size:13px}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:90%;text-align:center}
+.toast.show{opacity:1}
+
+/* OEE FILTRO EQUIPO */
+.oee-equipo-row{display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap}
+.oee-equipo-row label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.oee-equipo-row select{flex:1;min-width:160px}
+
+/* ═══ LAYOUT ESCRITORIO (≥900px) ═══ */
+@media(min-width:900px){
+  .app{max-width:1200px;padding:1.25rem}
+
+  /* Filtros en una sola fila */
+  .filters-row{flex-wrap:nowrap}
+
+  /* KPI grid: 3 columnas reales */
+  .kpi-grid{grid-template-columns:repeat(3,1fr)}
+
+  /* Layout 2 columnas para bloques principales */
+  .desktop-2col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+  .desktop-full{grid-column:1/-1}
+
+  /* Pie charts lado a lado ya están bien */
+  .pie-row{grid-template-columns:1fr 1fr}
+
+  /* Tabla producción más cómoda */
+  .prod-table{font-size:12px}
+  .prod-table td{padding:5px 9px}
+
+  /* Varas en piso: 2 columnas */
+  .varas-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+
+  /* Árboles: siempre 2×2 */
+  .arb-grid{grid-template-columns:1fr 1fr}
+
+  /* Causales: más ancho */
+  .causal-bar-wrap{min-width:120px}
+
+  /* OEE números más grandes */
+  .oee-num-val{font-size:44px}
+
+  /* Header más compacto */
+  .header-title{font-size:18px}
+}
+
+@media(max-width:520px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .kpi-value{font-size:20px}
+  .oee-num-val{font-size:28px}
+  .filters-row{flex-direction:column}
+  .btn-consultar{width:100%;justify-content:center}
+  .rend-table{font-size:11px}
+}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <button class="back-btn" onclick="window.location.href='index.html'"><i class="ti ti-arrow-left"></i></button>
+      <div>
+        <div class="header-sub">Corte Alto · Sistema de gestión</div>
+        <div class="header-title">📊 Dashboard de gestión</div>
+      </div>
+    </div>
+    <img src="logo.png" alt="Corte Alto" style="height:62px;width:auto;object-fit:contain">
+  </div>
+
+  <!-- ═══ BLOQUE 1: FILTRO GENERAL ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-filter"></i> Filtro general</div>
+    <!-- Fila principal: Mes/Año + botón avanzado + Consultar -->
+    <div class="filters-row" style="margin-bottom:0">
+      <div class="filter-field" style="max-width:200px">
+        <div class="filter-label"><i class="ti ti-calendar-month"></i> Mes y año</div>
+        <input type="month" id="f-mes">
+      </div>
+      <!-- Campos ocultos que sigue leyendo consultar() -->
+      <input type="hidden" id="f-desde">
+      <input type="hidden" id="f-hasta">
+      <button class="btn-avanzado" id="btn-avanzado" onclick="toggleAvanzado()">
+        <i class="ti ti-adjustments-horizontal"></i> Filtro avanzado
+      </button>
+      <button class="btn-consultar" onclick="consultar()" id="btn-consultar">
+        <i class="ti ti-search"></i> Consultar
+      </button>
+    </div>
+    <!-- Panel avanzado (oculto por defecto) -->
+    <div class="filtro-avanzado" id="filtro-avanzado" style="display:none">
+      <div class="filters-row" style="margin-bottom:10px">
+        <div class="filter-field" style="max-width:150px">
+          <div class="filter-label"><i class="ti ti-calendar"></i> Desde</div>
+          <input type="date" id="f-desde-adv">
+        </div>
+        <div class="filter-field" style="max-width:150px">
+          <div class="filter-label"><i class="ti ti-calendar"></i> Hasta</div>
+          <input type="date" id="f-hasta-adv">
+        </div>
+        <div class="filter-field">
+          <div class="filter-label"><i class="ti ti-git-branch"></i> Línea</div>
+          <select id="f-linea">
+            <option value="">Todas las líneas</option>
+          </select>
+        </div>
+      </div>
+      <div class="filters-row">
+        <div class="filter-field">
+          <div class="filter-label"><i class="ti ti-map-pin"></i> Fundo <span id="f-fundo-lbl" style="font-weight:400;color:var(--text3)">(todos)</span></div>
+          <button class="ms-trigger" onclick="msAbrir('fundo')">
+            <span id="f-fundo-txt">Todos los fundos</span>
+          </button>
+        </div>
+        <div class="filter-field">
+          <div class="filter-label"><i class="ti ti-engine"></i> Eq. Madereo <span id="f-eqm-lbl" style="font-weight:400;color:var(--text3)">(todos)</span></div>
+          <button class="ms-trigger" onclick="msAbrir('eqm')">
+            <span id="f-eqm-txt">Todos los equipos</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL FUNDO -->
+  <div class="ms-overlay" id="ms-overlay-fundo" onclick="msCerrar('fundo')">
+    <div class="ms-modal" onclick="event.stopPropagation()">
+      <div class="ms-modal-head">
+        <div class="ms-modal-title">🗺 Seleccionar fundos</div>
+        <div class="ms-modal-sub">Seleccione 1 o más opciones</div>
+      </div>
+      <div class="ms-modal-body" id="ms-body-fundo"></div>
+      <div class="ms-modal-footer">
+        <button class="ms-modal-ok" onclick="msOK('fundo')">Listo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EQ. MADEREO -->
+  <div class="ms-overlay" id="ms-overlay-eqm" onclick="msCerrar('eqm')">
+    <div class="ms-modal" onclick="event.stopPropagation()">
+      <div class="ms-modal-head">
+        <div class="ms-modal-title">⚙️ Seleccionar Eq. Madereo</div>
+        <div class="ms-modal-sub">Seleccione 1 o más opciones</div>
+      </div>
+      <div class="ms-modal-body" id="ms-body-eqm"></div>
+      <div class="ms-modal-footer">
+        <button class="ms-modal-ok" onclick="msOK('eqm')">Listo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 1. BANDA EJECUTIVA ═══ -->
+  <div id="exec-wrap" style="display:none">
+    <div class="exec-band" id="exec-consolidado"></div>
+    <div class="lineas-grid" id="exec-lineas"></div>
+  </div>
+
+  <!-- ═══ 2. ÚLTIMOS 3 DÍAS ═══ -->
+  <div class="section" id="seccion-ultimos3" style="display:none">
+    <div class="section-title"><i class="ti ti-history"></i> Últimos 3 días — cumplimiento diario</div>
+    <div id="ultimos3-wrap"></div>
+  </div>
+
+  <!-- ═══ 3. GRÁFICO PRODUCCIÓN DIARIA VS. META ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-chart-bar"></i> Producción diaria vs. meta</div>
+    <div class="chart-wrap" id="chart-wrap">
+      <canvas id="chart-prod"></canvas>
+    </div>
+    <div id="chart-empty" class="empty-state" style="display:none">
+      <i class="ti ti-chart-bar-off" style="font-size:26px;display:block;margin-bottom:.5rem"></i>
+      Sin datos de producción para el período
+    </div>
+  </div>
+
+  <!-- ═══ 4. PRODUCCIÓN DIARIA POR EQUIPO Y OPERADOR ═══ -->
+  <div class="section">
+    <div id="kpi-prod" style="display:none"></div>
+    <div id="vol-eq-card">
+      <div class="kpi-label" style="margin-bottom:0"><i class="ti ti-table"></i> Producción diaria por equipo y operador</div>
+      <div class="loading-block"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- ═══ 5. VOLUMEN POR FUNDO Y RODAL ═══ -->
+  <div class="section">
+    <div class="rodal-card" id="rodal-card">
+      <div class="kpi-label"><i class="ti ti-trees"></i> Volumen por fundo y rodal</div>
+      <div class="loading-block"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- ═══ 6. UTILIZACIÓN DE EQUIPOS ═══ -->
+  <div style="background:transparent;padding:0;margin-bottom:1rem">
+    <div class="section-title" style="padding:0 .25rem;margin-bottom:.5rem"><i class="ti ti-chart-pie"></i> Utilización de equipos</div>
+    <div id="util-wrap">
+      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+
+  <!-- ═══ 7. CAMBIOS DE LÍNEA ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-refresh"></i> Cambios de línea — Torre / Alpine</div>
+    <div id="cambio-wrap">
+      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+
+  <!-- ═══ 8. ÁRBOLES POR TIPO DE EQUIPO ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-trees"></i> Árboles por tipo de equipo</div>
+    <div id="arb-wrap">
+      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+
+  <!-- ═══ 9. PRODUCTIVIDAD OEE + TOP 5 CAUSALES TPOB ═══ -->
+  <div class="section" id="seccion-oee">
+    <div class="section-title"><i class="ti ti-settings-2"></i> Productividad OEE — Top 5 causales de pérdida (TPOB)</div>
+    <div class="oee-equipo-row">
+      <label><i class="ti ti-engine"></i> Equipo</label>
+      <select id="f-proc" onchange="renderOEE()">
+        <option value="">— Seleccionar procesador —</option>
+      </select>
+    </div>
+    <div class="oee-nums" id="oee-nums">
+      <div class="oee-num-card oee-na"><div class="oee-num-label">OEE</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 66%</div></div>
+      <div class="oee-num-card oee-na"><div class="oee-num-label">FD</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 75%</div></div>
+      <div class="oee-num-card oee-na"><div class="oee-num-label">FE</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 88%</div></div>
+    </div>
+    <div id="oee-mini" style="display:none;background:#f8f8f8;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:1rem"></div>
+    <div class="section-title" style="margin-top:.25rem"><i class="ti ti-clock-pause"></i> Top 5 causales de pérdida (TPOB)</div>
+    <div id="causal-wrap">
+      <div class="empty-state">Selecciona un procesador para ver causales</div>
+    </div>
+  </div>
+
+  <!-- ═══ 10+11. CAUSALES MADEREO + VOLTEO (2 col en escritorio) ═══ -->
+  <div class="desktop-2col">
+
+  <!-- ═══ CAUSALES MADEREO ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-clock-pause"></i> Top 5 causales de pérdida — Madereo (Torre / Skidder)</div>
+    <div class="oee-equipo-row">
+      <label><i class="ti ti-engine"></i> Equipo</label>
+      <select id="f-madereo" onchange="renderCausalesTipo(window._jefeData,['TORRE','ALPINE','SKIDDER'],'causal-madereo-wrap',this.value)">
+        <option value="">Todos los equipos</option>
+      </select>
+    </div>
+    <div id="causal-madereo-wrap">
+      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+
+  <!-- ═══ CAUSALES VOLTEO ═══ -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-clock-pause"></i> Top 5 causales de pérdida — Volteo (Shovel)</div>
+    <div class="oee-equipo-row">
+      <label><i class="ti ti-engine"></i> Equipo</label>
+      <select id="f-volteo" onchange="renderCausalesTipo(window._jefeData,['SHOVEL'],'causal-volteo-wrap',this.value)">
+        <option value="">Todos los equipos</option>
+      </select>
+    </div>
+    <div id="causal-volteo-wrap">
+      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+
+  </div><!-- /desktop-2col causales -->
+
+  <!-- ═══ BLOQUE 4: RENDIMIENTO POR EQUIPO ═══ -->
+  <div class="section">
+    <div class="section-title" style="justify-content:space-between;flex-wrap:wrap;gap:6px">
+      <span><i class="ti ti-table"></i> Rendimiento por equipo</span>
+      <div style="display:flex;gap:6px">
+        <button onclick="abrirModalEquipos()" style="background:var(--blue-bg);color:var(--blue);border:1px solid #C0D5F0;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font)">
+          <i class="ti ti-filter"></i> <span id="rend-eq-label">Todos los equipos</span>
+        </button>
+        <button onclick="toggleComparador()" id="btn-comparador" style="background:#f0f0f0;color:var(--text2);border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font)">
+          <i class="ti ti-columns"></i> Comparar
+        </button>
+      </div>
+    </div>
+    <div id="comparador-wrap" style="display:none;margin-bottom:.75rem;padding:.75rem;background:#f8f8f8;border-radius:var(--radius-sm);border:1px solid var(--border)">
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button id="comp-mode-eq" onclick="setComparadorModo('equipo')"
+          style="flex:1;padding:5px 8px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);border:1px solid var(--border);background:var(--text);color:#fff">
+          ⚙ Por equipo
+        </button>
+        <button id="comp-mode-op" onclick="setComparadorModo('operador')"
+          style="flex:1;padding:5px 8px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);border:1px solid var(--border);background:#f0f0f0;color:var(--text2)">
+          👤 Por operador
+        </button>
+      </div>
+      <div id="comp-panel-equipo">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px">Selecciona equipos del mismo tipo para comparar:</div>
+        <div id="comparador-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+        <button onclick="renderComparador()" style="background:var(--text);color:#fff;border:none;padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)">Ver comparación</button>
+      </div>
+      <div id="comp-panel-operador" style="display:none">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">Selecciona un equipo para comparar sus operadores:</div>
+        <select id="comp-eq-selector" onchange="renderComparadorOperadores()"
+          style="width:100%;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font)">
+          <option value="">— Elige un equipo —</option>
+        </select>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:10px;text-align:center">
+        Presiona <strong>Comparar</strong> nuevamente para cerrar este panel
+      </div>
+    </div>
+    <div id="comparador-result" style="display:none;margin-bottom:.75rem;overflow-x:auto"></div>
+    <div id="rend-wrap">
+      <div class="loading-block"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+
+<!-- MODAL EQUIPOS RENDIMIENTO -->
+<div class="eq-modal-overlay" id="eq-modal-overlay">
+  <div class="eq-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="eq-modal-title">⚙️ Seleccionar equipos</div>
+      <div style="display:flex;gap:10px">
+        <span class="eq-modal-selall" onclick="eqModalSelAll(true)">Todos</span>
+        <span class="eq-modal-selall" onclick="eqModalSelAll(false)">Ninguno</span>
+      </div>
+    </div>
+    <div class="eq-modal-body" id="eq-modal-body"><!-- se puebla dinámicamente --></div>
+    <div class="eq-modal-footer">
+      <button class="eq-modal-cancel" onclick="eqModalCancelar()">Cancelar</button>
+      <button class="eq-modal-ok" onclick="eqModalOK()">✓ Aplicar</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, getDocs, query, where, orderBy, doc, getDoc }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const fb = {
+  apiKey:"AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+  authDomain:"reporte-inicio-faena-forestal.firebaseapp.com",
+  projectId:"reporte-inicio-faena-forestal",
+  storageBucket:"reporte-inicio-faena-forestal.firebasestorage.app",
+  messagingSenderId:"962534414054",
+  appId:"1:962534414054:web:fa43371d31413fc0524d27"
+};
+const db = getFirestore(initializeApp(fb));
+
+// ── UTILS ──────────────────────────────────────────────────────────────────
+const showToast = msg => {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+};
+const fmt2 = n => (isNaN(n)||n==null) ? '—' : Number(n).toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt0 = n => (isNaN(n)||n==null) ? '—' : Math.round(n).toLocaleString('es-CL');
+const pct0 = n => (isNaN(n)||n==null) ? '—' : Math.round(n)+'%';
+const avg  = arr => arr.length ? arr.reduce((s,v)=>s+v,0)/arr.length : NaN;
+const toISO = d => d.toISOString().split('T')[0];
+const loaderHTML = '<div class="loading-block"><div class="spinner"></div></div>';
+
+// ── CORTE HORARIO ─────────────────────────────────────────────────────────
+// Antes de las 20:00 (hora Chile) el sistema se considera en el día anterior,
+// porque los calibradores ingresan la producción después de las 18-20 hrs.
+const HORA_CORTE = 20;
+function horaLocalChile() {
+  // Chile = America/Santiago. Usamos Intl para obtener la hora local real.
+  const ahora = new Date();
+  const partes = new Intl.DateTimeFormat('es-CL', {
+    timeZone: 'America/Santiago',
+    hour: 'numeric', hour12: false
+  }).formatToParts(ahora);
+  return parseInt(partes.find(p => p.type === 'hour').value);
+}
+function diaBaseISO() {
+  // Fecha local Chile como string YYYY-MM-DD
+  const ahora = new Date();
+  const fechaLocal = new Intl.DateTimeFormat('es-CL', {
+    timeZone: 'America/Santiago',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(ahora); // dd-mm-yyyy en es-CL
+  const [d, m, a] = fechaLocal.split('-');
+  const hoy = `${a}-${m}-${d}`;
+  if(horaLocalChile() < HORA_CORTE) {
+    // Restar un día usando componentes locales para evitar bugs UTC
+    const [ay, am, ad] = hoy.split('-').map(Number);
+    const dt = new Date(ay, am - 1, ad - 1); // midnight local
+    const yy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
+  return hoy;
+}
+function diaBase() {
+  // Retorna un objeto Date apuntando al mediodía de diaBaseISO (para compatibilidad)
+  return new Date(`${diaBaseISO()}T12:00:00`);
+}
+
+// ── FILTRO MES/AÑO ────────────────────────────────────────────────────────
+const hoy = new Date(); // hora real para UI (selector de mes, etc.)
+const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+document.getElementById('f-mes').value = mesActual;
+
+// Sync fechas avanzadas con el mes actual
+const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0);
+document.getElementById('f-desde-adv').value = toISO(primerDia);
+document.getElementById('f-hasta-adv').value = toISO(hoy);
+
+// ── TOGGLE FILTRO AVANZADO ─────────────────────────────────────────────────
+let AVANZADO_ACTIVO = false;
+window.toggleAvanzado = function() {
+  AVANZADO_ACTIVO = !AVANZADO_ACTIVO;
+  document.getElementById('filtro-avanzado').style.display = AVANZADO_ACTIVO ? 'block' : 'none';
+  const btn = document.getElementById('btn-avanzado');
+  btn.classList.toggle('active', AVANZADO_ACTIVO);
+  btn.innerHTML = AVANZADO_ACTIVO
+    ? '<i class="ti ti-x"></i> Cerrar avanzado'
+    : '<i class="ti ti-adjustments-horizontal"></i> Filtro avanzado';
+};
+
+// Helper: obtiene desde/hasta desde mes o avanzado
+function getFechas() {
+  if(AVANZADO_ACTIVO) {
+    const d = document.getElementById('f-desde-adv').value;
+    const h = document.getElementById('f-hasta-adv').value;
+    return { desde:d, hasta:h };
+  }
+  const mes = document.getElementById('f-mes').value;
+  if(!mes) return { desde:'', hasta:'' };
+  const [a,m] = mes.split('-');
+  const diasMes = new Date(+a, +m, 0).getDate();
+  const desde = `${mes}-01`;
+  const hasta = diaBaseISO() <= `${mes}-${String(diasMes).padStart(2,'0')}`
+    && diaBaseISO() >= desde
+    ? diaBaseISO()
+    : `${mes}-${String(diasMes).padStart(2,'0')}`;
+  return { desde, hasta, mesStr:mes };
+}
+
+// ── CARGAR LÍNEAS, FUNDOS Y EQUIPOS MADEREO ──────────────────────────────
+const MS_SEL = { fundo: null, eqm: null }; // null=todos, Set=filtro activo
+
+(async () => {
+  // Líneas
+  try {
+    const snap = await getDocs(query(collection(db,'config_lineas'), orderBy('nombre')));
+    const sel = document.getElementById('f-linea');
+    snap.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d.data().nombre; o.textContent = d.data().nombre;
+      sel.appendChild(o);
+    });
+  } catch(e) {}
+
+  // Fundos
+  try {
+    const snap = await getDocs(query(collection(db,'config_fundos'), orderBy('nombre')));
+    const body = document.getElementById('ms-body-fundo');
+    // Opción Todos al inicio
+    body.innerHTML = `<label class="ms-modal-item">
+      <input type="checkbox" class="ms-chk-fundo" value="__todos__" id="ms-fundo-todos" onchange="msTodosToggle('fundo',this)"> Todos
+    </label>`;
+    snap.forEach(d => {
+      const nombre = d.data().nombre;
+      if(!nombre) return;
+      body.innerHTML += `<label class="ms-modal-item">
+        <input type="checkbox" class="ms-chk-fundo" value="${nombre}" onchange="msItemChange('fundo')">
+        ${nombre}
+      </label>`;
+      (d.data().rodales||[]).forEach(r => {
+        if(r.rodal && r.vma) VMA_MININCO[String(r.rodal)] = parseFloat(r.vma)||0;
+      });
+    });
+  } catch(e) {}
+
+  // Equipos madereo (Torre + Skidder)
+  try {
+    const snap = await getDocs(query(collection(db,'config_equipos'), orderBy('nombre')));
+    const body = document.getElementById('ms-body-eqm');
+    const grupos = {};
+    snap.forEach(d => {
+      const data = d.data();
+      const tipo = (data.tipo||'').toUpperCase();
+      if(!data.nombre) return;
+      let g = null;
+      if(tipo==='TORRE'||tipo==='ALPINE') g = 'Torre / Alpine';
+      else if(tipo==='SKIDDER') g = 'Skidder';
+      if(g) { if(!grupos[g]) grupos[g]=[]; grupos[g].push(data.nombre); }
+    });
+    // Opción Todos
+    body.innerHTML = `<label class="ms-modal-item">
+      <input type="checkbox" class="ms-chk-eqm" value="__todos__" id="ms-eqm-todos" onchange="msTodosToggle('eqm',this)"> Todos
+    </label>`;
+    Object.entries(grupos).forEach(([g, eqs]) => {
+      body.innerHTML += `<div style="padding:8px 20px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;background:#f8f8f8;border-bottom:1px solid var(--border)">${g}</div>`;
+      eqs.forEach(nombre => {
+        body.innerHTML += `<label class="ms-modal-item">
+          <input type="checkbox" class="ms-chk-eqm" value="${nombre}" onchange="msItemChange('eqm')">
+          ${nombre}
+        </label>`;
+      });
+    });
+  } catch(e) {}
+})();
+
+// ── FUNCIONES MULTI-SELECT ─────────────────────────────────────────────────
+window.msAbrir = function(id) {
+  document.getElementById(`ms-overlay-${id}`).classList.add('open');
+};
+window.msCerrar = function(id) {
+  document.getElementById(`ms-overlay-${id}`).classList.remove('open');
+};
+window.msOK = function(id) {
+  msCerrar(id);
+  msActLabel(id);
+  // Actualizar MS_SEL
+  const chks = [...document.querySelectorAll(`.ms-chk-${id}`)].filter(c=>c.value!=='__todos__');
+  const sel = chks.filter(cb=>cb.checked).map(cb=>cb.value);
+  MS_SEL[id] = (sel.length===0||sel.length===chks.length) ? null : new Set(sel);
+};
+window.msTodosToggle = function(id, cb) {
+  const chks = [...document.querySelectorAll(`.ms-chk-${id}`)].filter(c=>c.value!=='__todos__');
+  // Todos marcado → marcar todos los items; desmarcado → desmarcar todos
+  chks.forEach(c => c.checked = cb.checked);
+};
+window.msItemChange = function(id) {
+  const chks = [...document.querySelectorAll(`.ms-chk-${id}`)].filter(c=>c.value!=='__todos__');
+  const todosEl = document.getElementById(`ms-${id}-todos`);
+  // Todos se marca solo si todos los items están marcados
+  if(todosEl) todosEl.checked = chks.every(c=>c.checked);
+};
+
+function msActLabel(id) {
+  const chks = [...document.querySelectorAll(`.ms-chk-${id}`)].filter(c=>c.value!=='__todos__');
+  const sel = chks.filter(cb=>cb.checked).map(cb=>cb.value);
+  const txt = document.getElementById(`f-${id}-txt`);
+  const lbl = document.getElementById(`f-${id}-lbl`);
+  if(!txt||!lbl) return;
+  if(sel.length===0 || sel.length===chks.length) {
+    txt.textContent = id==='fundo'?'Todos los fundos':'Todos los equipos';
+    lbl.textContent = '(todos)';
+  } else {
+    txt.textContent = sel.length<=2 ? sel.join(', ') : `${sel.length} seleccionados`;
+    lbl.textContent = `(${sel.length})`;
+  }
+}
+
+function getFundoFiltro() { return MS_SEL.fundo; }
+function getEqmFiltro()   { return MS_SEL.eqm; }
+
+// ── ESTADO GLOBAL ─────────────────────────────────────────────────────────
+let G = { prod:[], jefe:[], meta:{}, inicio:[], desde:'', hasta:'' };
+let chartInst = null;
+let VMA_MININCO = {};
+
+// ── CONSULTAR ─────────────────────────────────────────────────────────────
+window.consultar = async function() {
+  const { desde, hasta, mesStr } = getFechas();
+  const linea = AVANZADO_ACTIVO ? document.getElementById('f-linea').value : '';
+  // sync hidden fields para compatibilidad con resto del código
+  document.getElementById('f-desde').value = desde;
+  document.getElementById('f-hasta').value = hasta;
+  if(!desde||!hasta){ showToast('⚠️ Selecciona un período'); return; }
+  if(desde>hasta){ showToast('⚠️ Fecha Desde > Hasta'); return; }
+
+  document.getElementById('btn-consultar').disabled = true;
+  mostrarLoaders();
+
+  const fundoFiltro = getFundoFiltro(); // null=todos
+  const eqmFiltro   = getEqmFiltro();   // null=todos
+
+  try {
+    // ── Producción: consulta SIN filtro de línea ──────────────────────────
+    let snap = await getDocs(query(collection(db,'reportes_produccion'),
+      where('fecha','>=',desde), where('fecha','<=',hasta), orderBy('fecha')));
+    let prodTodo = []; snap.forEach(d => prodTodo.push(d.data()));
+
+    // ── Producción extra: últimos días antes del período (para bloque Últimos 3 días) ──
+    // Necesitamos al menos 3 fechas distintas; si el período tiene menos, buscamos hacia atrás
+    const _hoyStr = diaBaseISO();
+    const fechasEnPeriodo = [...new Set(prodTodo.map(d=>d.fecha))].filter(f=>f<=_hoyStr).sort();
+    let prodHistorico = [...prodTodo];
+    if(fechasEnPeriodo.length < 3) {
+      const snapAntes = await getDocs(query(collection(db,'reportes_produccion'),
+        where('fecha','<',desde), orderBy('fecha','desc')));
+      const antesData = []; snapAntes.forEach(d => antesData.push(d.data()));
+      // Agregar hasta completar 3 fechas distintas
+      const fechasVistas = new Set(fechasEnPeriodo);
+      const fechasExtra = new Set();
+      // Primero identificar qué fechas extra necesitamos
+      for(const d of antesData) {
+        if(fechasVistas.size + fechasExtra.size >= 3) break;
+        if(!fechasVistas.has(d.fecha)) fechasExtra.add(d.fecha);
+      }
+      // Luego agregar TODOS los registros de esas fechas extra
+      antesData.forEach(d => { if(fechasExtra.has(d.fecha)) prodHistorico.push(d); });
+    }
+
+    // prod para KPI cards y gráfico → filtro LÍNEA
+    let prod = linea ? prodTodo.filter(d=>(d.linea||d.codLinea||'')===linea) : prodTodo;
+
+    // prodEqm para tabla diaria, volumen producido, rodales/fundo
+    // → filtro EQ.MADEREO únicamente (independiente de línea Y fundo)
+    let prodEqm = prodTodo.map(d => ({
+      ...d,
+      cartolas: (d.cartolas||[]).filter(c => {
+        if(eqmFiltro && !eqmFiltro.has(c.equipo||'') && !eqmFiltro.has(c.procesador||'')) return false;
+        return true;
+      })
+    })).filter(d => !eqmFiltro || d.cartolas.length>0);
+
+    // ── Productividad jefe: consulta SIN filtro de línea ─────────────────
+    snap = await getDocs(query(collection(db,'productividad_jefe'),
+      where('fecha','>=',desde), where('fecha','<=',hasta), orderBy('fecha')));
+    let jefeTodo = []; snap.forEach(d => jefeTodo.push(d.data()));
+
+    // jefeLinea → OEE, Causales Volteo (filtro LÍNEA)
+    let jefeLinea = linea ? jefeTodo.filter(d=>(d.linea||'')===linea) : jefeTodo;
+
+    // jefeEqm → Tabla diaria, Utilización, Causales Madereo, Cambios de línea (filtro EQ.MADEREO)
+    let jefeEqm = jefeTodo.map(d => ({
+      ...d,
+      equipos: (d.equipos||[]).filter(eq => !eqmFiltro || eqmFiltro.has(eq.equipo||''))
+    })).filter(d => !eqmFiltro || d.equipos.length>0);
+    // jefeEqm NO filtra por fundo — solo por Eq.Madereo
+
+    // Meta volumen (filtro LÍNEA)
+    const meta = await cargarMeta(desde, hasta, linea, prod);
+
+    // Inicio jornada (filtro LÍNEA)
+    snap = await getDocs(query(collection(db,'reportes_v3'),
+      where('fecha','>=',desde), where('fecha','<=',hasta)));
+    let inicio = []; snap.forEach(d => inicio.push(d.data()));
+    if(linea) inicio = inicio.filter(d=>(d.linea||'')===linea);
+
+    G = { prod, prodEqm, jefe:jefeLinea, jefeEqm, meta, inicio, desde, hasta };
+
+    // ── Banda ejecutiva (solo en modo mes completo) ───────────────────────
+    await renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHistorico);
+    // renderUltimos3 es llamado desde dentro de renderEjecutivo (tiene acceso a metasPorLinea)
+
+    // Poblar selector procesadores (por LÍNEA)
+    poblarProcesadores(jefeLinea);
+
+    // Bloques por LÍNEA
+    renderProduccion();          // KPI cards (usa G.prod) — gráfico al final
+    renderOEE();
+
+    // Bloques por EQ.MADEREO
+    _tablaLineaFiltro = 'TODAS'; // resetear filtro al cargar nuevos datos
+    renderTablaDiariaEqm();
+    renderRodalesFundoEqm(jefeLinea);
+    renderUtilizacion(jefeEqm);
+    renderCambioLinea(jefeEqm);
+    window._jefeData = jefeEqm;
+    poblarSelectorEquipo(jefeEqm, ['TORRE','ALPINE','SKIDDER'], 'f-madereo');
+    poblarSelectorEquipo(jefeEqm, ['SHOVEL'], 'f-volteo');
+    renderArboles(jefeEqm, jefeLinea);
+    renderCausalesTipo(jefeEqm, ['TORRE','ALPINE','SKIDDER'], 'causal-madereo-wrap', '');
+    renderCausalesTipo(jefeLinea, ['SHOVEL'], 'causal-volteo-wrap', '');
+    renderRendimiento();
+
+  } catch(e) {
+    showToast('❌ Error: '+e.message);
+    console.error(e);
+  }
+  document.getElementById('btn-consultar').disabled = false;
+};
+
+// ── BANDA EJECUTIVA ────────────────────────────────────────────────────────
+const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+// Líneas derivadas dinámicamente desde los datos (no hardcodeado)
+const LIN_CLASSES = ['lh-t1','lh-t2','lh-t3','lh-t1','lh-t2','lh-t3']; // cicla si hay más de 3
+
+async function cargarMetaLinea(lin, mesStr) {
+  const [a,m] = mesStr.split('-');
+  try {
+    const snap = await getDoc(doc(db,'config_volumen_meta',`${lin}_${mesStr}`));
+    if(!snap.exists()) return { total:0, porDia:{} };
+    let total=0; const porDia={};
+    (snap.data().valores||[]).forEach((v,i)=>{
+      const f=`${a}-${m}-${String(i+1).padStart(2,'0')}`;
+      const n=parseFloat(v)||0; total+=n; porDia[f]=n;
+    });
+    return { total, porDia };
+  } catch(e){ return { total:0, porDia:{} }; }
+}
+
+async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHistorico) {
+  const wrap = document.getElementById('exec-wrap');
+  // Solo mostrar si tenemos datos
+  if(!prodTodo.length && !jefeTodo.length) { wrap.style.display='none'; return; }
+  wrap.style.display = 'block';
+
+  const [a,m] = (mesStr||desde).split('-');
+  const mesLabel = mesStr
+    ? `${MESES_ES[+m-1]} ${a}`
+    : `${desde} → ${hasta}`;
+
+  // ── Derivar líneas reales desde los datos ────────────────────────────
+  const lineasReales = [...new Set(prodTodo.map(d=>d.linea||d.codLinea||'').filter(Boolean))].sort();
+  // Si no hay campo linea en prod, intenta con jefe
+  if(!lineasReales.length) {
+    const fromJefe = [...new Set(jefeTodo.map(d=>d.linea||'').filter(Boolean))].sort();
+    lineasReales.push(...fromJefe);
+  }
+  // DEBUG temporal: loguear valores de linea encontrados
+  console.log('[Ejecutivo] lineasReales:', lineasReales, '| mesStr:', mesStr);
+  console.log('[Ejecutivo] Muestra campos linea en prod:', prodTodo.slice(0,3).map(d=>({linea:d.linea,codLinea:d.codLinea,totalGlobal:d.totalGlobal})));
+  if(mesStr) console.log('[Ejecutivo] Buscando meta en config_volumen_meta/{lin}_{mesStr}:', lineasReales.map(l=>`${l}_${mesStr}`));
+
+  // ── Volumen total consolidado ─────────────────────────────────────────
+  const volTotal = prodTodo.reduce((s,d)=>s+(parseFloat(d.totalGlobal)||0),0);
+  const diasConProd = new Set(prodTodo.map(d=>d.fecha)).size || 1;
+
+  // ── Meta total (suma de todas las líneas reales) ─────────────────────
+  const metasPorLinea = {};
+  let metaTotal = 0;
+  if(mesStr && lineasReales.length) {
+    for(const lin of lineasReales) {
+      const ml = await cargarMetaLinea(lin, mesStr);
+      metasPorLinea[lin] = ml;
+      metaTotal += ml.total;
+    }
+  }
+
+  // Meta acumulada hasta diaBase() — antes de las 20h usamos ayer, después usamos hoy
+  const ayerISO = diaBaseISO();
+  const hastaMetaAcum = hasta < ayerISO ? hasta : ayerISO;
+  let metaAcum = 0;
+  lineasReales.forEach(lin => {
+    if(!metasPorLinea[lin]) return;
+    Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f>=desde && f<=hastaMetaAcum) metaAcum+=v; });
+  });
+
+  const cumpl     = metaAcum>0 ? volTotal/metaAcum*100 : NaN;
+  const falta     = Math.max(0, metaTotal-volTotal);
+  const promDia   = diasConProd>0 ? volTotal/diasConProd : 0;
+  // Días restantes del mes
+  const hoyISO    = diaBaseISO();
+  const diasMes   = mesStr ? new Date(+a,+m,0).getDate() : diasConProd;
+  // Fin del mes seleccionado
+  const finMesISO = mesStr ? `${mesStr}-${String(diasMes).padStart(2,'0')}` : hasta;
+  const mesTerminado = hoyISO > finMesISO;
+  // Si el mes ya terminó, no proyectamos — el total ES la proyección
+  const diasRest  = mesTerminado ? 0 : Math.max(0, diasMes - diasConProd);
+  const proyecc   = mesTerminado ? volTotal : volTotal + promDia * diasRest;
+
+  const pctCls = isNaN(cumpl)?'':(cumpl>=100?'ok':cumpl>=85?'warn':'bad');
+
+  // ── Render consolidado ────────────────────────────────────────────────
+  document.getElementById('exec-consolidado').innerHTML = `
+    <div class="exec-band-title"><i class="ti ti-chart-pie-2"></i> Consolidado faena — ${mesLabel}</div>
+    <div class="exec-kpis">
+      <div class="exec-kpi">
+        <div class="exec-kpi-label"><i class="ti ti-stack-2"></i> Volumen producido</div>
+        <div class="exec-kpi-val">${fmt0(volTotal)} <span style="font-size:12px;opacity:.7">m³</span></div>
+        <div class="exec-kpi-sub">${prodTodo.length} reportes en el período</div>
+      </div>
+      <div class="exec-kpi" id="cons-meta-kpi">
+        <div class="exec-kpi-label"><i class="ti ti-target"></i> Meta acumulada <span style="font-size:8px;opacity:.5;font-weight:400;margin-left:4px">CALTO</span></div>
+        <div class="exec-kpi-val" id="cons-meta-val">— <span style="font-size:12px;opacity:.7">m³</span></div>
+        <div class="exec-kpi-sub" id="cons-meta-sub">cargando…</div>
+        <div style="margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;color:rgba(255,255,255,.55)"><span style="font-size:8px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">Formin</span> ${fmt0(metaAcum)} m³ acum. / ${fmt0(metaTotal)} m³ total</div>
+      </div>
+      <div class="exec-kpi" id="cons-cumpl-kpi">
+        <div class="exec-kpi-label"><i class="ti ti-rosette"></i> Cumplimiento <span style="font-size:8px;opacity:.5;font-weight:400;margin-left:4px">CALTO</span></div>
+        <div class="exec-kpi-val" id="cons-cumpl-val">—</div>
+        <div class="exec-kpi-sub" id="cons-cumpl-sub">cargando…</div>
+        <div style="margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;color:rgba(255,255,255,.55)"><span style="font-size:8px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">Formin</span> ${isNaN(cumpl)?'—':Math.round(cumpl)+'%'}</div>
+      </div>
+    </div>
+    <div class="exec-extras">
+      <div class="exec-extra">
+        <div class="exec-extra-label">Meta total <span style="opacity:.5;font-size:8px">CALTO</span></div>
+        <div class="exec-extra-val" id="cons-metatotal-val">— m³</div>
+        <div style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.1);font-size:9px;color:rgba(255,255,255,.5)"><span style="font-size:7px;text-transform:uppercase;letter-spacing:.05em">Formin</span> ${fmt0(metaTotal)} m³</div>
+      </div>
+      <div class="exec-extra">
+        <div class="exec-extra-label">Falta por hacer <span style="opacity:.5;font-size:8px">CALTO</span></div>
+        <div class="exec-extra-val" id="cons-falta-val">— m³</div>
+        <div style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.1);font-size:9px;color:rgba(255,255,255,.5)"><span style="font-size:7px;text-transform:uppercase;letter-spacing:.05em">Formin</span> ${fmt0(falta)} m³</div>
+      </div>
+      <div class="exec-extra">
+        <div class="exec-extra-label">Prom m³/día (${diasConProd} días)</div>
+        <div class="exec-extra-val">${fmt0(promDia)} m³</div>
+      </div>
+      <div class="exec-extra">
+        <div class="exec-extra-label">Proyección m³${mesTerminado ? '' : `<br><span style="font-weight:400;opacity:.7">(${diasRest} días rest.)</span>`}</div>
+        <div class="exec-extra-val">${fmt0(proyecc)} m³</div>
+      </div>
+    </div>`;
+
+  // ── Carga CALTO consolidado async ─────────────────────────────────────
+  if(mesStr) {
+    (async () => {
+      const lineasT2T3 = lineasReales; // todas las líneas
+      if(!lineasT2T3.length) return;
+      let metaCaltoTotal = 0;
+      for(const lin of lineasT2T3) {
+        const datos = await cargarOfertaRodalesLinea(lin, mesStr);
+        if(!datos) continue;
+        let mc = datos.meta_calto != null ? parseFloat(datos.meta_calto) : 0;
+        if(!datos.meta_calto && Array.isArray(datos.rodales)) {
+          const totalOf = datos.rodales.reduce((s,f)=>s+(parseFloat(f.vol_ofertado)||0),0);
+          datos.rodales.forEach(f => {
+            const vn = volNormalParaVMA_dash(parseFloat(f.vma));
+            const vol = parseFloat(f.vol_ofertado)||0;
+            if(vn != null) mc += (totalOf>0 ? vol/totalOf : 0) * vn;
+          });
+        }
+        metaCaltoTotal += mc;
+      }
+      // metaCaltoTotal está en miles (×1000 para m³)
+      const metaCaltoTotal1000 = metaCaltoTotal * 1000;
+      // Meta acumulada CALTO hasta ayer
+      const [aC,mC] = mesStr.split('-').map(Number);
+      const diasMesC = new Date(aC,mC,0).getDate();
+      const ayerC = diaBase();
+      const inicioMesC = new Date(aC,mC-1,1); const finMesC = new Date(aC,mC-1,diasMesC);
+      const ayerEfC = ayerC<inicioMesC?inicioMesC:(ayerC>finMesC?finMesC:ayerC);
+      const diasHastaAyerC = Math.max(0, Math.round((ayerEfC-inicioMesC)/86400000)+1);
+      const metaCaltoAcum1000 = diasMesC>0 ? (metaCaltoTotal1000/diasMesC)*diasHastaAyerC : 0;
+      const pctCalto = metaCaltoAcum1000>0 ? volTotal/metaCaltoAcum1000*100 : NaN;
+      const pctCls2 = isNaN(pctCalto)?'':(pctCalto>=100?'ok':pctCalto>=85?'warn':'bad');
+      const faltaCalto = Math.max(0, metaCaltoTotal1000 - volTotal);
+      const elMeta = document.getElementById('cons-meta-val');
+      const elMetaSub = document.getElementById('cons-meta-sub');
+      const elCumpl = document.getElementById('cons-cumpl-val');
+      const elCumplSub = document.getElementById('cons-cumpl-sub');
+      const elMetaTotal = document.getElementById('cons-metatotal-val');
+      const elFalta = document.getElementById('cons-falta-val');
+      if(elMeta) elMeta.innerHTML = `${fmt0(metaCaltoAcum1000)} <span style="font-size:12px;opacity:.7">m³</span>`;
+      if(elMetaSub) elMetaSub.textContent = `Meta total mes: ${fmt0(metaCaltoTotal1000)} m³`;
+      if(elCumpl) { elCumpl.className = `exec-kpi-val ${pctCls2}`; elCumpl.textContent = isNaN(pctCalto)?'—':Math.round(pctCalto)+'%'; }
+      if(elCumplSub) elCumplSub.textContent = `${fmt0(volTotal)} / ${fmt0(metaCaltoAcum1000)} m³`;
+      if(elMetaTotal) elMetaTotal.textContent = `${fmt0(metaCaltoTotal1000)} m³`;
+      if(elFalta) elFalta.textContent = `${fmt0(faltaCalto)} m³`;
+    })();
+  }
+
+  // ── Render columnas por línea ─────────────────────────────────────────
+  const lineasWrap = document.getElementById('exec-lineas');
+  lineasWrap.innerHTML = '';
+
+  for(let li=0; li<lineasReales.length; li++) {
+    const lin = lineasReales[li];
+    const prodLin  = prodTodo.filter(d=>(d.linea||d.codLinea||'')===lin);
+    const jefeLin  = jefeTodo.filter(d=>(d.linea||'')===lin);
+    const volLin   = prodLin.reduce((s,d)=>s+(parseFloat(d.totalGlobal)||0),0);
+    const metaLin  = metasPorLinea[lin]?.total || 0;
+
+    // Meta acumulada de esta línea hasta ayer (no incluir día de consulta)
+    let metaAcumLin = 0;
+    if(metasPorLinea[lin]) {
+      Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f>=desde && f<=hastaMetaAcum) metaAcumLin+=v; });
+    }
+
+    const cumplLin  = metaAcumLin>0 ? volLin/metaAcumLin*100 : NaN;
+    const faltaLin  = Math.max(0, metaLin-volLin);
+    const diasLin   = new Set(prodLin.map(d=>d.fecha)).size || 1;
+    const promLin   = diasLin>0 ? volLin/diasLin : 0;
+    const diasRestL = mesTerminado ? 0 : Math.max(0, diasMes-diasLin);
+    const proyecLin = mesTerminado ? volLin : volLin + promLin*diasRestL;
+
+    const pctL = isNaN(cumplLin)?'':(cumplLin>=100?'blue':'bad');
+    const linClass = LIN_CLASSES[li % LIN_CLASSES.length];
+
+    // ── Desglose madereo Torre vs Skidder para esta línea ────────────────
+    // Volumen por equipo desde cartolas (solo reportes de esta línea)
+    const volPorEq = {};
+    prodLin.forEach(d => {
+      (d.cartolas||[]).forEach(c => {
+        if(!c.equipo) return;
+        let v = 0; (c.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
+        volPorEq[c.equipo] = (volPorEq[c.equipo]||0) + v;
+      });
+    });
+
+    // Clasificar equipos: Torre (ALPINE/TORRE) vs Skidder (SK/SKIDDER)
+    const eqTorre = {}, eqSkidder = {}, eqOtro = {};
+    Object.entries(volPorEq).forEach(([eq, v]) => {
+      const n = eq.toUpperCase();
+      if(n.includes('ALPINE') || n.includes('TORRE')) eqTorre[eq] = v;
+      else if(n.includes('SK') || n.includes('SKIDDER')) eqSkidder[eq] = v;
+      else eqOtro[eq] = v;
+    });
+
+    const volTorre   = Object.values(eqTorre).reduce((s,v)=>s+v,0);
+    const volSkidder = Object.values(eqSkidder).reduce((s,v)=>s+v,0);
+    const volMadereoTotal = volTorre + volSkidder + Object.values(eqOtro).reduce((s,v)=>s+v,0);
+
+    // % reales
+    const pctTorreReal   = volMadereoTotal>0 ? volTorre/volMadereoTotal*100 : 0;
+    const pctSkidderReal = volMadereoTotal>0 ? volSkidder/volMadereoTotal*100 : 0;
+
+    // % planificados (fijos; primera línea = Los Alpes T1: 35/65, resto: 46/54)
+    const esAlpes = li === 0;
+    const pctTorrePlan   = esAlpes ? 35 : 46;
+    const pctSkidderPlan = esAlpes ? 65 : 54;
+
+    // Color % real: verde si está entre 98%-102% del plan, ámbar ±10%, rojo fuera
+    const pctColor = (real, plan) => {
+      if(plan===0) return 'mpct-ok';
+      const ratio = real/plan*100;
+      if(ratio>=98 && ratio<=102) return 'mpct-ok';
+      if(ratio>=90 && ratio<=110) return 'mpct-warn';
+      return 'mpct-bad';
+    };
+
+    const desgloseHTML = volMadereoTotal>0 ? `
+      <div class="madereo-desglose">
+        <div class="madereo-title"><i class="ti ti-truck"></i> Madereo — Torre vs Skidder</div>
+        <table class="madereo-table">
+          <thead>
+            <tr>
+              <th>Equipo</th>
+              <th>Vol. real</th>
+              <th class="col-pct">% real</th>
+              <th class="col-pct">% plan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="madereo-eq-label"><span class="madereo-dot torre"></span>Torre</div></td>
+              <td>${fmt0(volTorre)} m³</td>
+              <td class="col-pct"><span class="${pctColor(pctTorreReal, pctTorrePlan)}">${pctTorreReal.toFixed(0)}%</span></td>
+              <td class="col-pct" style="color:var(--text3)">${pctTorrePlan}%</td>
+            </tr>
+            <tr>
+              <td><div class="madereo-eq-label"><span class="madereo-dot skidder"></span>Skidder</div></td>
+              <td>${fmt0(volSkidder)} m³</td>
+              <td class="col-pct"><span class="${pctColor(pctSkidderReal, pctSkidderPlan)}">${pctSkidderReal.toFixed(0)}%</span></td>
+              <td class="col-pct" style="color:var(--text3)">${pctSkidderPlan}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>` : '';
+
+    // Dual CALTO aplica a todas las líneas
+    const esT2oT3 = true;
+    const caltoBtn = esT2oT3
+      ? `<button class="calto-btn" title="Meta CALTO" onclick="toggleCalto(this,'${lin}','${mesStr||''}')" aria-label="Meta CALTO"><i class="ti ti-trees"></i></button>`
+      : '';
+
+    const card = document.createElement('div');
+    card.className = 'linea-card';
+    card.dataset.vollin = volLin;
+    card.innerHTML = `
+      <div class="linea-head ${linClass}">
+        <span>${lin}</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;opacity:.8">${prodLin.length} rep.</span>
+          ${caltoBtn}
+        </div>
+      </div>
+      <div class="linea-body">
+        ${esT2oT3 ? `
+        <table class="dual-table" id="dual-kpis-${lin.replace(/\s+/g,'-')}">
+          <thead>
+            <tr>
+              <th class="th-prod">Producción</th>
+              <th class="th-calto">CALTO</th>
+              <th class="th-formin">FORMIN</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Fila 1: Producido real (rowspan 3) / Meta total mes -->
+            <tr>
+              <td class="td-left" rowspan="5" style="position:relative;padding:0">
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px;border-bottom:1px solid var(--border)">
+                    <div class="dk-row-label">Producido real</div>
+                    <div class="dk-row-val blue">${fmt0(volLin)}</div>
+                    <div class="dk-row-sub">m³</div>
+                  </div>
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px;border-bottom:1px solid var(--border)">
+                    <div class="dk-row-label">Prom/día</div>
+                    <div class="dk-row-val">${fmt0(promLin)}</div>
+                    <div class="dk-row-sub">m³</div>
+                  </div>
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px">
+                    <div class="dk-row-label">Proyección${mesTerminado ? '' : ` (${diasRestL} d.)`}</div>
+                    <div class="dk-row-val">${fmt0(proyecLin)}</div>
+                    <div class="dk-row-sub">m³</div>
+                  </div>
+                </div>
+              </td>
+              <td class="td-calto" id="calto-meta-total-${lin.replace(/\s+/g,'-')}">
+                <div class="dk-desc">Meta total mes</div>
+                <div class="dk-val" style="color:var(--text3)">—</div>
+                <div class="dk-sub">m³</div>
+              </td>
+              <td class="td-formin">
+                <div class="dk-desc">Meta total mes</div>
+                <div class="dk-val">${fmt0(metaLin)}</div>
+                <div class="dk-sub">m³</div>
+              </td>
+            </tr>
+            <!-- Fila 2: Meta acum. -->
+            <tr>
+              <td class="td-calto" id="calto-meta-acum-${lin.replace(/\s+/g,'-')}">
+                <div class="dk-desc">Meta acum.</div>
+                <div class="dk-val" style="color:var(--text3)">—</div>
+                <div class="dk-sub">m³</div>
+              </td>
+              <td class="td-formin">
+                <div class="dk-desc">Meta acum.</div>
+                <div class="dk-val">${fmt0(metaAcumLin)}</div>
+                <div class="dk-sub">m³</div>
+              </td>
+            </tr>
+            <!-- Fila 3: % cumplim. -->
+            <tr>
+              <td class="td-calto" id="calto-cumpl-${lin.replace(/\s+/g,'-')}">
+                <div class="dk-desc">% cumplim.</div>
+                <div class="dk-val" style="color:var(--text3)">—</div>
+                <div class="dk-sub">cargando…</div>
+              </td>
+              <td class="td-formin">
+                <div class="dk-desc">% cumplim.</div>
+                <div class="dk-val">${isNaN(cumplLin)?'—':Math.round(cumplLin)+'%'}</div>
+              </td>
+            </tr>
+            <!-- Fila 4: ¿Cuánto falta? -->
+            <tr>
+              <td class="td-calto" id="calto-falta-${lin.replace(/\s+/g,'-')}">
+                <div class="dk-desc">¿Cuánto falta?</div>
+                <div class="dk-val" style="color:var(--text3)">—</div>
+                <div class="dk-sub">m³</div>
+              </td>
+              <td class="td-formin">
+                <div class="dk-desc">¿Cuánto falta?</div>
+                <div class="dk-val">${fmt0(faltaLin)}</div>
+                <div class="dk-sub">m³</div>
+              </td>
+            </tr>
+            <!-- Fila 5: Ritmo diario necesario -->
+            <tr>
+              <td class="td-calto" id="calto-ritmo-${lin.replace(/\s+/g,'-')}">
+                <div class="dk-desc">Ritmo necesario</div>
+                <div class="dk-val" style="color:var(--text3)">—</div>
+                <div class="dk-sub">m³/día</div>
+              </td>
+              <td class="td-formin">
+                <div class="dk-desc">Ritmo necesario</div>
+                <div class="dk-val">${diasRestL > 0 ? fmt0(faltaLin / diasRestL) : (faltaLin <= 0 ? '✓' : '—')}</div>
+                <div class="dk-sub">${diasRestL > 0 ? 'm³/día' : (faltaLin <= 0 ? 'Meta lograda' : '')}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        ` : `
+        <div class="linea-kpis">
+          <div class="lkpi">
+            <div class="lkpi-label">Producido</div>
+            <div class="lkpi-val blue">${fmt0(volLin)}</div>
+            <div class="lkpi-sub">m³</div>
+          </div>
+          <div class="lkpi">
+            <div class="lkpi-label">Meta acum.</div>
+            <div class="lkpi-val" style="color:var(--text2)">${fmt0(metaAcumLin)}</div>
+            <div class="lkpi-sub">m³</div>
+          </div>
+          <div class="lkpi">
+            <div class="lkpi-label">Cumplim.</div>
+            <div class="lkpi-val ${pctL}">${isNaN(cumplLin)?'—':Math.round(cumplLin)+'%'}</div>
+            <div class="lkpi-sub">${fmt0(volLin)}/${fmt0(metaAcumLin)}</div>
+          </div>
+        </div>
+        `}
+        <div class="linea-extras">
+          ${!esT2oT3 ? `
+          <div class="lextra">
+            <div class="lextra-label">Meta total</div>
+            <div class="lextra-val">${fmt0(metaLin)} m³</div>
+          </div>
+          <div class="lextra">
+            <div class="lextra-label">Falta</div>
+            <div class="lextra-val">${fmt0(faltaLin)} m³</div>
+          </div>
+          ` : ''}
+          ${!esT2oT3 ? `
+          <div class="lextra">
+            <div class="lextra-label">Prom/día</div>
+            <div class="lextra-val">${fmt0(promLin)} m³</div>
+          </div>
+          <div class="lextra">
+            <div class="lextra-label">Proyección${mesTerminado ? '' : ` (${diasRestL} d.)`}</div>
+            <div class="lextra-val">${fmt0(proyecLin)} m³</div>
+          </div>
+          ` : ''}
+        </div>
+        ${desgloseHTML}
+      </div>
+      ${esT2oT3 ? `<div class="calto-panel" data-lin="${lin}" data-mes="${mesStr||''}"><div class="calto-loading"><i class="ti ti-loader-2" style="animation:spin .8s linear infinite"></i> Cargando…</div></div>` : ''}`;
+    lineasWrap.appendChild(card);
+
+    // Para T2/T3: cargar datos CALTO automáticamente (sin abrir panel)
+    if(esT2oT3 && mesStr) {
+      (async () => {
+        const datos = await cargarOfertaRodalesLinea(lin, mesStr);
+        if(!datos) return;
+        let metaCalto = datos.meta_calto != null ? parseFloat(datos.meta_calto) : 0;
+        const totalOf = datos.total_ofertado != null ? parseFloat(datos.total_ofertado)
+          : (Array.isArray(datos.rodales) ? datos.rodales.reduce((s,f)=>s+(parseFloat(f.vol_ofertado)||0),0) : 0);
+        if(!datos.meta_calto && Array.isArray(datos.rodales)) {
+          datos.rodales.forEach(f => {
+            const vn = volNormalParaVMA_dash(parseFloat(f.vma));
+            const vol = parseFloat(f.vol_ofertado)||0;
+            if(vn != null) metaCalto += (totalOf>0 ? vol/totalOf : 0) * vn;
+          });
+        }
+        const [a,m] = mesStr.split('-').map(Number);
+        const diasMesC = new Date(a,m,0).getDate();
+        const hoy = diaBase(); const ayer = diaBase();
+        const inicioMes = new Date(a,m-1,1); const finMes = new Date(a,m-1,diasMesC);
+        const mesTerminadoC = diaBaseISO() > `${mesStr}-${String(diasMesC).padStart(2,'0')}`;
+        const ayerEf = ayer<inicioMes?inicioMes:(ayer>finMes?finMes:ayer);
+        const diasHastaAyer = Math.max(0, Math.round((ayerEf-inicioMes)/86400000)+1);
+        const metaCaltoAcum = diasMesC>0 ? (metaCalto/diasMesC)*diasHastaAyer : 0;
+        const volLinActual = volLin;
+        const pctCumpl = metaCaltoAcum>0 ? volLinActual/(metaCaltoAcum*1000)*100 : NaN;
+        const pctCls = isNaN(pctCumpl)?'':(pctCumpl>=100?'ok':pctCumpl>=85?'warn':'bad');
+        const linKey = lin.replace(/\s+/g,'-');
+        const metaCaltoTotal1000 = metaCalto * 1000;
+        const metaCaltoAcum1000 = metaCaltoAcum * 1000;
+        const faltaCalto = Math.max(0, metaCaltoTotal1000 - volLinActual);
+        // Prom/día y Proyección se calculan con el producido real (igual para CALTO y FORMIN)
+        const promCalto = diasHastaAyer>0 ? volLinActual/diasHastaAyer : 0;
+        const proyecCalto = mesTerminadoC ? volLinActual : (promCalto * diasMesC);
+        const celdaMetaTotal = document.getElementById(`calto-meta-total-${linKey}`);
+        const celdaMetaAcum  = document.getElementById(`calto-meta-acum-${linKey}`);
+        const celdaCumpl     = document.getElementById(`calto-cumpl-${linKey}`);
+        const celdaFalta     = document.getElementById(`calto-falta-${linKey}`);
+        const celdaProyec    = document.getElementById(`calto-proyec-${linKey}`);
+        const celdaRitmo     = document.getElementById(`calto-ritmo-${linKey}`);
+        if(celdaMetaTotal) celdaMetaTotal.innerHTML = `<div class="dk-desc">Meta total mes</div><div class="dk-val" style="color:var(--text2)">${fmt0(metaCaltoTotal1000)}</div><div class="dk-sub">m³</div>`;
+        if(celdaMetaAcum)  celdaMetaAcum.innerHTML  = `<div class="dk-desc">Meta acum.</div><div class="dk-val" style="color:var(--text2)">${fmt0(metaCaltoAcum1000)}</div><div class="dk-sub">m³</div>`;
+        const pctClsDual = isNaN(pctCumpl)?'':(pctCumpl>=100?'blue':'bad');
+        if(celdaCumpl)    celdaCumpl.innerHTML    = `<div class="dk-desc">% cumplim.</div><div class="dk-val ${pctClsDual}">${isNaN(pctCumpl)?'—':Math.round(pctCumpl)+'%'}</div>`;
+        if(celdaFalta)    celdaFalta.innerHTML    = `<div class="dk-desc">¿Cuánto falta?</div><div class="dk-val">${fmt0(faltaCalto)}</div><div class="dk-sub">m³</div>`;
+        if(celdaProyec)   celdaProyec.innerHTML   = `<div class="dk-val">${fmt0(proyecCalto)}</div><div class="dk-sub">m³</div>`;
+        // Fila 5: ritmo diario necesario CALTO
+        if(celdaRitmo) {
+          const diasRestC = mesTerminadoC ? 0 : Math.max(0, diasMesC - diasHastaAyer);
+          if(faltaCalto <= 0){
+            celdaRitmo.innerHTML = `<div class="dk-desc">Ritmo necesario</div><div class="dk-val blue">✓</div><div class="dk-sub">Meta lograda</div>`;
+          } else if(diasRestC > 0){
+            const ritmoC = faltaCalto / diasRestC;
+            celdaRitmo.innerHTML = `<div class="dk-desc">Ritmo necesario</div><div class="dk-val">${fmt0(ritmoC)}</div><div class="dk-sub">m³/día</div>`;
+          } else {
+            celdaRitmo.innerHTML = `<div class="dk-desc">Ritmo necesario</div><div class="dk-val bad">⚠</div><div class="dk-sub">Mes terminado</div>`;
+          }
+        }
+      })();
+    }
+  }
+
+  // ── Últimos 3 días ────────────────────────────────────────────────────────
+  await renderUltimos3(prodHistorico || prodTodo, metasPorLinea);
+}
+
+// ── ÚLTIMOS 3 DÍAS POR LÍNEA ──────────────────────────────────────────────
+async function renderUltimos3(prodTodo, metasPorLinea) {
+  const sec  = document.getElementById('seccion-ultimos3');
+  const wrap = document.getElementById('ultimos3-wrap');
+  if(!sec || !wrap) return;
+
+  // Líneas presentes
+  const lineas = [...new Set(prodTodo.map(d=>d.linea||d.codLinea||'').filter(Boolean))].sort();
+  if(!lineas.length){ sec.style.display='none'; return; }
+
+  // Cargar metas de meses anteriores que aparezcan en prodHistorico
+  const mesesEnDatos = [...new Set(prodTodo.map(d=>d.fecha?.slice(0,7)).filter(Boolean))];
+  const mesesEnMetasPorLinea = Object.values(metasPorLinea||{}).flatMap(m=>Object.keys(m.porDia||{}).map(f=>f.slice(0,7)));
+  const mesesExtra = mesesEnDatos.filter(mes=>!mesesEnMetasPorLinea.includes(mes));
+  const metasExtra = {}; // { linea: { fecha: valor } }
+  for(const mes of mesesExtra) {
+    for(const lin of lineas) {
+      try {
+        const snap = await getDoc(doc(db,'config_volumen_meta',`${lin}_${mes}`));
+        if(!snap.exists()) continue;
+        const [a,m] = mes.split('-');
+        if(!metasExtra[lin]) metasExtra[lin] = {};
+        (snap.data().valores||[]).forEach((v,i)=>{
+          const f=`${a}-${m}-${String(i+1).padStart(2,'0')}`;
+          metasExtra[lin][f] = parseFloat(v)||0;
+        });
+      } catch(e){}
+    }
+  }
+
+  const diasLabels  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const mesesLabels = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const LIN_COLORS  = ['#1D5FAD','#3B6D11','#854F0B'];
+
+  const makeDayCard = (fecha, volDia, metaDia) => {
+    const delta = metaDia > 0 ? volDia - metaDia : NaN;
+    const cumpl = metaDia > 0 ? (volDia / metaDia * 100) : NaN;
+    const cls   = isNaN(cumpl) ? 'sin' : (cumpl >= 100 ? 'ok' : 'bad');
+    const [y,mo,d] = fecha.split('-').map(Number);
+    const dow = new Date(y, mo-1, d).getDay();
+    const fechaLabel = `${diasLabels[dow]} ${d} ${mesesLabels[mo-1]}`;
+    const deltaStr = isNaN(delta) ? '—' : (delta >= 0 ? `+${fmt0(delta)}` : `${fmt0(delta)}`);
+    return `
+      <div class="u3-card ${cls}">
+        <div class="u3-fecha">${fechaLabel}</div>
+        <div class="u3-row-label">Real <span class="u3-vol ${cls}">${fmt0(volDia)}</span> m³</div>
+        ${metaDia>0 ? `<div class="u3-row-label u3-meta">Meta <span>${fmt0(metaDia)}</span> m³</div>` : ''}
+        <div class="u3-delta ${cls}">${deltaStr} m³</div>
+      </div>`;
+  };
+
+  // Últimas 3 fechas GLOBALES (de cualquier línea) — excluye el día actual (puede estar incompleto)
+  const _hoyISO = diaBaseISO();
+  const fechasGlobales = [...new Set(prodTodo.map(d=>d.fecha).filter(Boolean))]
+    .filter(f => f <= _hoyISO)
+    .sort().slice(-3);
+
+  const bloques = lineas.map((lin, li) => {
+    const prodLin = prodTodo.filter(d=>(d.linea||d.codLinea||'')===lin);
+    // Usar las fechas globales (no solo las de esta línea)
+    const fechas = fechasGlobales;
+    const metaLin = metasPorLinea?.[lin];
+
+    const cards = fechas.map(fecha => {
+      const volDia  = prodLin.filter(d=>d.fecha===fecha).reduce((s,d)=>s+(parseFloat(d.totalGlobal)||0),0);
+      // Buscar meta: primero en metasPorLinea del período, luego en metasExtra (meses anteriores)
+      const metaDia = parseFloat(metaLin?.porDia?.[fecha]) || parseFloat(metasExtra?.[lin]?.[fecha]) || 0;
+      return makeDayCard(fecha, volDia, metaDia);
+    });
+
+    const color = LIN_COLORS[li % LIN_COLORS.length];
+    return `
+      <div class="u3-bloque" style="border-color:${color}">
+        <div class="u3-bloque-header" style="background:${color}">
+          ${lin}
+        </div>
+        <div class="u3-dias">${cards.join('')}</div>
+      </div>`;
+  });
+
+  wrap.innerHTML = `<div class="u3-lineas">${bloques.join('')}</div>`;
+  sec.style.display = '';
+}
+
+// ── META ──────────────────────────────────────────────────────────────────
+async function cargarMeta(desde, hasta, linea, prod) {
+  const meta = {};
+  const meses = new Set();
+  let cur = new Date(desde+'T12:00:00');
+  const fin = new Date(hasta+'T12:00:00');
+  while(cur<=fin){ meses.add(toISO(cur).slice(0,7)); cur.setDate(cur.getDate()+1); }
+  const lineas = linea ? [linea] : [...new Set(prod.map(d=>d.linea).filter(Boolean))];
+  for(const lin of lineas) {
+    for(const mes of meses) {
+      const [a,m] = mes.split('-');
+      try {
+        const snap = await getDoc(doc(db,'config_volumen_meta',`${lin}_${mes}`));
+        if(snap.exists()) {
+          (snap.data().valores||[]).forEach((v,i)=>{
+            const f=`${a}-${m}-${String(i+1).padStart(2,'0')}`;
+            if(f>=desde&&f<=hasta) meta[f]=(meta[f]||0)+(parseFloat(v)||0);
+          });
+        }
+      } catch(e){}
+    }
+  }
+  return meta;
+}
+
+// ── LOADERS ───────────────────────────────────────────────────────────────
+function mostrarLoaders() {
+  // kpi-prod eliminado (datos ahora en banda ejecutiva)
+  document.getElementById('vol-eq-card').innerHTML =
+    '<div class="kpi-label"><i class="ti ti-engine"></i> Volumen por equipo</div>'+loaderHTML;
+  document.getElementById('rodal-card').innerHTML =
+    '<div class="kpi-label"><i class="ti ti-trees"></i> Volumen por rodal</div>'+loaderHTML;
+  document.getElementById('rend-wrap').innerHTML = loaderHTML;
+  document.getElementById('chart-wrap').style.display = 'none';
+  document.getElementById('chart-empty').style.display = 'none';
+}
+
+// ── POBLAR SELECTOR PROCESADORES ──────────────────────────────────────────
+function poblarProcesadores(jefe) {
+  const procesadores = new Set();
+  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
+    if((eq.tipo||'').toUpperCase()==='PROCESADOR' && eq.equipo)
+      procesadores.add(eq.equipo);
+  }));
+  const sel = document.getElementById('f-proc');
+  sel.innerHTML = '<option value="">— Seleccionar procesador —</option>';
+  [...procesadores].sort().forEach(nombre => {
+    const o = document.createElement('option');
+    o.value = nombre; o.textContent = nombre;
+    sel.appendChild(o);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUE 2: PRODUCCIÓN
+// ══════════════════════════════════════════════════════════════════════════
+function renderProduccion() {
+  const { prod, prodEqm, meta, inicio, desde, hasta } = G;
+
+  // ── KPI cards: volReal desde prodEqm (filtro Eq.Madereo) para que cuadre con tabla ──
+  // Suma volumen solo de cartolas de equipos seleccionados
+  const volReal = prodEqm.reduce((s,d) => {
+    return s + (d.cartolas||[]).reduce((sc,c) => {
+      let v=0; (c.productos||[]).forEach(p=>v+=parseFloat(p.vol)||0);
+      return sc+v;
+    },0);
+  }, 0);
+  const metaTotal = Object.values(meta).reduce((s,v)=>s+v,0);
+  const cumpl = metaTotal>0 ? (volReal/metaTotal)*100 : NaN;
+
+  const colorCumpl = isNaN(cumpl)?'var(--text3)':cumpl>=90?'var(--green)':cumpl>=70?'var(--amber)':'var(--red)';
+  const barColor   = isNaN(cumpl)?'var(--border)':cumpl>=90?'var(--green)':cumpl>=70?'#D97706':'var(--red)';
+
+  document.getElementById('kpi-prod').innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="ti ti-stack-3"></i> Volumen producido</div>
+      <div class="kpi-value" style="color:var(--text)">${fmt0(volReal)} <span style="font-size:14px;font-weight:600">m³</span></div>
+      <div class="kpi-sub">${prod.length} reportes en el período</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(isNaN(cumpl)?0:cumpl,100)}%;background:${barColor}"></div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="ti ti-target"></i> Volumen meta</div>
+      <div class="kpi-value" style="color:var(--text2)">${fmt0(metaTotal)} <span style="font-size:14px;font-weight:600">m³</span></div>
+      <div class="kpi-sub">${metaTotal>0?'Meta acumulada del período':'Sin meta cargada'}</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:100%;background:#e0e0e0"></div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="ti ti-percentage"></i> Cumplimiento de meta</div>
+      <div class="kpi-value" style="color:${colorCumpl}">${pct0(cumpl)}</div>
+      <div class="kpi-sub">${fmt0(volReal)} / ${fmt0(metaTotal)} m³</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(isNaN(cumpl)?0:cumpl,100)}%;background:${barColor}"></div></div>
+    </div>`;
+
+  // ── Gráfico ──
+  renderGrafico(prod, meta, desde, hasta);
+}
+
+// ── TABLA DIARIA (filtro EQ.MADEREO) ────────────────────────────────────
+// Estado global para el filtro de línea de la tabla
+let _tablaLineaFiltro = 'TODAS';
+
+// Exponer globalmente para que los onclick en innerHTML puedan llamarla
+window.renderTablaDiariaEqm = function renderTablaDiariaEqm(lineaFiltro) {
+  // Si se llama sin argumento, usar el estado actual
+  if(lineaFiltro !== undefined) _tablaLineaFiltro = lineaFiltro;
+  const filtro = _tablaLineaFiltro;
+
+  const { prodEqm:prod, desde, hasta } = G;
+  // ── Volumen por equipo/operador (tabla diaria) y por procesador (bloque 4) ──
+  const volEqM = {}, volEqP = {};
+  // Estructura: prodDiaria[fecha][equipo][opMadereo] = vol
+  // eqLinea: equipo → linea (para filtrar columnas)
+  const prodDiaria = {};
+  const eqLinea = {}; // equipo → linea
+  prod.forEach(d => {
+    const lin = d.linea || d.codLinea || '';
+    (d.cartolas||[]).forEach(c => {
+      let v = 0; (c.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
+      if(c.equipo)     volEqM[c.equipo]     = (volEqM[c.equipo]||0) + v;
+      if(c.procesador) volEqP[c.procesador] = (volEqP[c.procesador]||0) + v;
+      // Solo equipos madereo con opMadereo
+      if(c.equipo && v > 0) {
+        const op = (c.opMadereo||'Sin op.').trim();
+        if(lin) eqLinea[c.equipo] = lin;
+        if(!prodDiaria[d.fecha]) prodDiaria[d.fecha] = {};
+        if(!prodDiaria[d.fecha][c.equipo]) prodDiaria[d.fecha][c.equipo] = {};
+        prodDiaria[d.fecha][c.equipo][op] = (prodDiaria[d.fecha][c.equipo][op]||0) + v;
+      }
+    });
+  });
+
+  // Construir tabla: equipos y operadores con producción
+  // Columnas: equipo → operadores únicos con producción
+  const colsEq = {}; // equipo -> Set de operadores
+  Object.values(prodDiaria).forEach(porEq => {
+    Object.entries(porEq).forEach(([eq, porOp]) => {
+      if(!colsEq[eq]) colsEq[eq] = new Set();
+      Object.keys(porOp).forEach(op => colsEq[eq].add(op));
+    });
+  });
+
+  // Ordenar equipos: Torre primero, luego Skidder, luego Shovel
+  const TIPO_EQ = eq => {
+    const n = eq.toUpperCase();
+    if(n.includes('ALPINE')||n.includes('TORRE')) return 0;
+    if(n.includes('SK')||n.includes('SKIDDER')) return 1;
+    if(n.includes('SHOVEL')) return 2;
+    return 3;
+  };
+
+  // Detectar líneas disponibles para los chips
+  const lineasDisp = [...new Set(Object.keys(colsEq).map(eq=>eqLinea[eq]).filter(Boolean))].sort();
+
+  // Filtrar equipos por línea seleccionada
+  const todosEquipos = Object.keys(colsEq).sort((a,b)=>TIPO_EQ(a)-TIPO_EQ(b)||a.localeCompare(b));
+  const equiposOrden = (filtro === 'TODAS')
+    ? todosEquipos
+    : todosEquipos.filter(eq => (eqLinea[eq]||'') === filtro);
+
+  // Chips de línea
+  const chipsHTML = lineasDisp.length > 1 ? `
+    <div class="tabla-linea-chips">
+      <button class="tlc-btn${filtro==='TODAS'?' tlc-active':''}" onclick="renderTablaDiariaEqm('TODAS')">Todas</button>
+      ${lineasDisp.map(lin => {
+        const short = lin.replace('LÍNEA ','');
+        return `<button class="tlc-btn${filtro===lin?' tlc-active tlc-'+short.toLowerCase().replace(' ',''):''}" onclick="renderTablaDiariaEqm('${lin}')">${short}</button>`;
+      }).join('')}
+    </div>` : '';
+
+  if(!equiposOrden.length) {
+    document.getElementById('vol-eq-card').innerHTML =
+      `<div class="kpi-label"><i class="ti ti-table"></i> Producción diaria por equipo y operador</div>
+       ${chipsHTML}
+       <div class="empty-state" style="padding:1rem;font-size:12px">Sin datos de producción para esta línea</div>`;
+    return;
+  }
+
+  // Tipo por equipo para colores
+  const tipoClase = eq => {
+    const n = eq.toUpperCase();
+    if(n.includes('ALPINE')||n.includes('TORRE')) return 'tipo-torre';
+    if(n.includes('SK')) return 'tipo-skidder';
+    if(n.includes('SHOVEL')) return 'tipo-shovel';
+    return 'tipo-total';
+  };
+
+  // Abreviar nombre: "Teobaldo Villalobos" → "T. Villalobos"
+  const abrevNombre = nombre => {
+    const p = nombre.trim().split(/\s+/);
+    if(p.length >= 2) return p[0][0].toUpperCase() + '. ' + p.slice(1).join(' ');
+    return nombre;
+  };
+
+  // Columnas totales
+  const totalCols = equiposOrden.reduce((s,eq)=>s+colsEq[eq].size, 0);
+
+  // Precalcular totales por equipo (para mostrar en cabecera)
+  const totalesEq = {};
+  equiposOrden.forEach(eq => { totalesEq[eq] = 0; });
+
+  // Fila tipo equipo (con total del equipo)
+  // Se completa después de calcular totales — por ahora placeholder
+  // Fila operadores
+  let headOp = '<tr class="row-op"><th></th>';
+  equiposOrden.forEach(eq => {
+    const ops = [...colsEq[eq]].sort();
+    ops.forEach(op => { headOp += `<th>${abrevNombre(op)}</th>`; });
+  });
+  headOp += '<th></th></tr>';
+
+  // Filas días — solo días con producción dentro del rango
+  // Generar todos los días del rango
+  const diasRango = [];
+  let cur = new Date(desde+'T12:00:00');
+  const fin2 = new Date(hasta+'T12:00:00');
+  while(cur<=fin2){ diasRango.push(toISO(cur)); cur.setDate(cur.getDate()+1); }
+
+  const totalesOp = {}; // eq -> op -> total
+  const totalDias = {}; // fecha -> total
+  equiposOrden.forEach(eq=>{totalesOp[eq]={};[...colsEq[eq]].forEach(op=>{totalesOp[eq][op]=0;});});
+
+  let rows = '';
+  diasRango.forEach(fecha => {
+    const diaNum = parseInt(fecha.split('-')[2]);
+    const hayProd = prodDiaria[fecha];
+    let totalDia = 0;
+    let rowHTML = `<td>${diaNum}</td>`;
+    equiposOrden.forEach(eq => {
+      const ops = [...colsEq[eq]].sort();
+      ops.forEach(op => {
+        const v = hayProd?.[eq]?.[op] || 0;
+        if(v>0){
+          rowHTML += `<td class="val">${fmt0(v)}</td>`;
+          totalDia += v;
+          totalesOp[eq][op] = (totalesOp[eq][op]||0) + v;
+          totalesEq[eq] = (totalesEq[eq]||0) + v;
+        } else {
+          rowHTML += `<td class="vacio">—</td>`;
+        }
+      });
+    });
+    if(totalDia>0){
+      rowHTML += `<td class="total-dia">${fmt0(totalDia)}</td>`;
+      rows += `<tr>${rowHTML}</tr>`;
+    }
+  });
+
+  // Fila tipo equipo con total (ahora que tenemos los totales)
+  let headTipo = '<tr class="row-tipo"><th class="tipo-dia">DÍA</th>';
+  equiposOrden.forEach(eq => {
+    const ops = [...colsEq[eq]].sort();
+    headTipo += `<th class="${tipoClase(eq)}" colspan="${ops.length}">${eq} · ${fmt0(totalesEq[eq]||0)} m³</th>`;
+  });
+  headTipo += '<th class="tipo-total">TOTAL</th></tr>';
+
+  // Fila total operadores
+  let totalRow = '<tr class="row-total"><td>TOTAL</td>';
+  let grandTotal = 0;
+  equiposOrden.forEach(eq => {
+    const cls = tipoClase(eq).replace('tipo-','tot-');
+    const ops = [...colsEq[eq]].sort();
+    ops.forEach(op => {
+      const v = totalesOp[eq][op]||0;
+      grandTotal += v;
+      totalRow += `<td class="${cls}">${fmt0(v)}</td>`;
+    });
+  });
+  totalRow += `<td class="tot-grand">${fmt0(grandTotal)}</td></tr>`;
+
+  document.getElementById('vol-eq-card').innerHTML =
+    `<div class="kpi-label" style="margin-bottom:4px"><i class="ti ti-table"></i> Producción diaria por equipo y operador</div>
+     ${chipsHTML}
+     <div class="prod-wrap">
+       <table class="prod-table">
+         <thead>${headTipo}${headOp}</thead>
+         <tbody>${rows||'<tr><td colspan="'+(totalCols+2)+'" style="text-align:center;color:var(--text3);padding:1rem">Sin producción registrada</td></tr>'}</tbody>
+         <tfoot>${totalRow}</tfoot>
+       </table>
+     </div>
+     <div style="font-size:10px;color:var(--text3);margin-top:6px">
+       * Volumen en m³ · Operador = quien madereó esa madera (opMadereo) · Solo equipos con producción en el período
+     </div>`;
+
+}
+
+// ── RODALES/FUNDO (filtro EQ.MADEREO) ───────────────────────────────────
+function renderRodalesFundoEqm(jefeLinea) {
+  const { prodEqm:prod } = G;
+
+  // ── Volumen + árb procesador por fundo y rodal ─────────────────────
+  const fundoMap = {};
+  prod.forEach(d => {
+    (d.cartolas||[]).forEach(cc => {
+      if(!cc.rodal) return;
+      const fundo = d.fundo || cc.fundo || '—';
+      if(!fundoMap[fundo]) fundoMap[fundo] = { vol:0, rodales:{} };
+      let v = 0;
+      (cc.productos||[]).forEach(p => v += parseFloat(p.vol)||0);
+      fundoMap[fundo].vol += v;
+      if(!fundoMap[fundo].rodales[cc.rodal])
+        fundoMap[fundo].rodales[cc.rodal] = { vol:0, arbProc:0 };
+      fundoMap[fundo].rodales[cc.rodal].vol += v;
+    });
+  });
+
+  // ── Árboles por rodal desde PROCESADORES ──────────────────────────
+  (jefeLinea||[]).forEach(d => (d.equipos||[]).forEach(eq => {
+    if((eq.tipo||'').toUpperCase()!=='PROCESADOR') return;
+    const fundo = d.fundo || '—';
+    (eq.rodales||[]).forEach(r => {
+      const rodal = String(r.rodal||'').trim();
+      const arb   = parseInt(r.arboles)||0;
+      if(!rodal||!arb) return;
+      const fundoKey = fundoMap[fundo] ? fundo :
+        Object.keys(fundoMap).find(f => fundoMap[f].rodales[rodal]) || fundo;
+      if(!fundoMap[fundoKey]) return;
+      if(!fundoMap[fundoKey].rodales[rodal])
+        fundoMap[fundoKey].rodales[rodal] = { vol:0, arbProc:0 };
+      fundoMap[fundoKey].rodales[rodal].arbProc += arb;
+    });
+  }));
+
+  // ── Helper badge ──────────────────────────────────────────────────
+  const badge = (vmaReal, vmaMini, inline=false) => {
+    if(vmaMini===null||vmaReal===null) return '';
+    const diff = vmaReal - vmaMini;
+    const pctD = (diff/vmaMini*100);
+    const neu  = Math.abs(diff)<0.02;
+    const cls  = neu?'neu':diff>0?'pos':'neg';
+    const icon = neu?'=':diff>0?'▲':'▼';
+    if(inline) return `<span class="fundo-hvma-badge ${cls}">${icon} ${Math.abs(pctD).toFixed(1)}%</span>`;
+    return `<div class="vma-diff ${cls}">${icon} ${Math.abs(pctD).toFixed(1)}%</div>`;
+  };
+
+  const fundosOrden = Object.entries(fundoMap).sort((a,b)=>b[1].vol-a[1].vol);
+
+  const fundoHTML = fundosOrden.length ? fundosOrden.map(([fundo, datos]) => {
+    const rodalesOrden = Object.entries(datos.rodales).sort((a,b)=>b[1].vol-a[1].vol);
+
+    // ── Promedios ponderados del fundo ────────────────────────────
+    let volConMini=0, sumMiniPond=0, volConReal=0, arbConReal=0;
+    rodalesOrden.forEach(([num, rd]) => {
+      const vm = VMA_MININCO[String(num)];
+      if(vm) { sumMiniPond += vm * rd.vol; volConMini += rd.vol; }
+      if(rd.arbProc>0 && rd.vol>0) { volConReal += rd.vol; arbConReal += rd.arbProc; }
+    });
+    const vmaMiniFundo = volConMini>0 ? sumMiniPond/volConMini : null;
+    const vmaRealFundo = arbConReal>0 ? volConReal/arbConReal  : null;
+
+    // ── Header fundo — VMA inline, compacto ──────────────────────
+    let headerVmaHTML = '';
+    if(vmaMiniFundo!==null || vmaRealFundo!==null) {
+      headerVmaHTML = `<div class="fundo-header-vma">
+        ${vmaMiniFundo!==null?`<div class="fundo-hvma-item">
+          <div class="fundo-hvma-label">VMA Mininco</div>
+          <div class="fundo-hvma-val-row"><div class="fundo-hvma-val">${vmaMiniFundo.toFixed(3)}</div></div>
+        </div>`:''}
+        ${vmaRealFundo!==null?`<div class="fundo-hvma-item">
+          <div class="fundo-hvma-label">VMA Real</div>
+          <div class="fundo-hvma-val-row">
+            <div class="fundo-hvma-val">${vmaRealFundo.toFixed(3)}</div>
+            ${badge(vmaRealFundo, vmaMiniFundo, true)}
+          </div>
+        </div>`:''}
+      </div>`;
+    }
+
+    // ── Tarjetas rodal ────────────────────────────────────────────
+    const rodalItems = rodalesOrden.map(([num, rd]) => {
+      const pct     = datos.vol>0 ? (rd.vol/datos.vol*100) : 0;
+      const vmaMini = VMA_MININCO[String(num)] || null;
+      const vmaReal = (rd.arbProc>0 && rd.vol>0) ? rd.vol/rd.arbProc : null;
+
+      let vmaHTML = '';
+      if(vmaMini!==null || vmaReal!==null) {
+        vmaHTML = `
+          <div class="vma-row">
+            <div class="vma-cell">
+              <div class="vma-cell-label">VMA Mininco</div>
+              <div class="vma-cell-val" style="color:var(--amber)">${vmaMini!==null?vmaMini.toFixed(3):'—'}</div>
+            </div>
+            <div class="vma-cell">
+              <div class="vma-cell-label">VMA Real</div>
+              <div class="vma-cell-val" style="color:var(--blue)">${vmaReal!==null?vmaReal.toFixed(3):'—'}</div>
+            </div>
+          </div>
+          ${badge(vmaReal, vmaMini, false)}`;
+      }
+
+      return `<div class="fundo-rodal-item" style="min-width:140px">
+        <div class="fundo-rodal-num">Rodal ${num}</div>
+        <div class="fundo-rodal-vol">${fmt0(rd.vol)} <span style="font-size:10px;font-weight:400;color:var(--text3)">m³</span></div>
+        <div class="fundo-rodal-pct">${pct.toFixed(1)}% del fundo</div>
+        <div class="fundo-rodal-bar"><div class="fundo-rodal-bar-fill" style="width:${Math.min(pct,100).toFixed(1)}%"></div></div>
+        ${vmaHTML}
+      </div>`;
+    }).join('');
+
+    return `<div class="fundo-section">
+      <div class="fundo-header">
+        <div class="fundo-header-name">📍 ${fundo}</div>
+        ${headerVmaHTML}
+        <div class="fundo-header-vol">${fmt0(datos.vol)} m³</div>
+      </div>
+      <div class="fundo-rodales">${rodalItems}</div>
+    </div>`;
+  }).join('') : '<div style="font-size:12px;color:var(--text3)">Sin datos de rodales</div>';
+
+  document.getElementById('rodal-card').innerHTML =
+    `<div class="kpi-label"><i class="ti ti-trees"></i> Volumen por fundo y rodal</div>
+     <div style="font-size:10px;color:var(--text3);margin:4px 0 8px">
+       <span style="color:var(--amber);font-weight:700">■</span> VMA Mininco = tarifa que pagan &nbsp;·&nbsp;
+       <span style="color:var(--blue);font-weight:700">■</span> VMA Real = procesadores del período &nbsp;·&nbsp;
+       <span style="background:#E0F0FF;color:#1255A0;font-weight:700;padding:0 4px;border-radius:4px">▲</span> real mayor &nbsp;
+       <span style="background:#FCEBEB;color:#A32D2D;font-weight:700;padding:0 4px;border-radius:4px">▼</span> real menor
+     </div>
+     <div style="margin-top:4px">${fundoHTML}</div>`;
+}
+
+// ── GRÁFICO ───────────────────────────────────────────────────────────────
+function renderGrafico(prod, meta, desde, hasta) {
+  const prodPorFecha = {};
+  prod.forEach(d => {
+    prodPorFecha[d.fecha] = (prodPorFecha[d.fecha]||0) + (parseFloat(d.totalGlobal)||0);
+  });
+  const labels=[], reales=[], metas=[];
+  let cur = new Date(desde+'T12:00:00');
+  const fin = new Date(hasta+'T12:00:00');
+  while(cur<=fin) {
+    const f = toISO(cur);
+    labels.push(`${String(cur.getDate()).padStart(2,'0')}/${String(cur.getMonth()+1).padStart(2,'0')}`);
+    reales.push(parseFloat(((prodPorFecha[f]||0)).toFixed(2)));
+    metas.push(parseFloat(((meta[f]||0)).toFixed(2)));
+    cur.setDate(cur.getDate()+1);
+  }
+  const hayDatos = reales.some(v=>v>0)||metas.some(v=>v>0);
+  document.getElementById('chart-wrap').style.display = hayDatos?'block':'none';
+  document.getElementById('chart-empty').style.display = hayDatos?'none':'block';
+  if(!hayDatos) return;
+  if(chartInst) chartInst.destroy();
+  const ctx = document.getElementById('chart-prod').getContext('2d');
+  chartInst = new Chart(ctx, {
+    data:{
+      labels,
+      datasets:[
+        {type:'bar',label:'Real (m³)',data:reales,
+         backgroundColor:reales.map((v,i)=>
+           metas[i]>0?(v>=metas[i]?'rgba(59,109,17,.75)':'rgba(163,45,45,.7)'):'rgba(100,100,100,.45)'
+         ),borderRadius:3,order:2},
+        {type:'line',label:'Meta (m³)',data:metas,
+         borderColor:'#854F0B',backgroundColor:'transparent',
+         borderWidth:2,borderDash:[5,3],pointRadius:2,
+         pointBackgroundColor:'#854F0B',tension:.2,order:1}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:11},boxWidth:14,padding:12}},
+        tooltip:{mode:'index',intersect:false,callbacks:{label:c=>` ${c.dataset.label}: ${fmt0(c.parsed.y)} m³`}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:15}},
+        y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10},callback:v=>fmt0(v)}}
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUE 3: OEE
+// ══════════════════════════════════════════════════════════════════════════
+window.renderOEE = function() {
+  const equipoSel = document.getElementById('f-proc').value;
+  const { jefe } = G;
+
+  // parsePct: acepta "33%", "33", 33 → número
+  const parsePct = v => {
+    if(v==null) return NaN;
+    const n = parseFloat(String(v).replace('%',''));
+    return isNaN(n) ? NaN : n;
+  };
+
+  const oees=[],fds=[],fes=[],tps=[],tobs=[],tocs=[];
+  // causalesMap: { codigo: { nombre, horas_eess, horas_formin } }
+  const causalesMap = {};
+
+  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
+    if((eq.tipo||'').toUpperCase()!=='PROCESADOR') return;
+    if(eq.reportaOEE !== true) return;
+    if(equipoSel && (eq.equipo||'')!==equipoSel) return;
+
+    // FIX 1: parsear correctamente OEE/FD/FE
+    // Calcular desde TP/TOB/TOC si los campos oee/fd/fe fallan
+    const tpRaw  = parseFloat(eq.tpProgramado||eq.tp)||0;
+    const tobRaw = parseFloat(eq.tob)||0;
+    const tocRaw = parseFloat(eq.toc)||0;
+
+    // OEE/FD/FE se guardan como decimales en Firestore (0.3345 = 33.45%)
+    // Si el valor es <= 1 se asume decimal y se multiplica x100
+    const toPercent = v => {
+      const n = parsePct(v);
+      if(isNaN(n)) return NaN;
+      return n <= 1 ? n * 100 : n;
+    };
+    let oeeV = toPercent(eq.oee);
+    let fdV  = toPercent(eq.fd);
+    let feV  = toPercent(eq.fe);
+
+    // Fallback: recalcular desde TP/TOB/TOC si los campos vienen vacíos
+    if((isNaN(oeeV)||oeeV===0) && tpRaw>0) {
+      fdV  = ((tpRaw - tobRaw) / tpRaw) * 100;
+      feV  = (tpRaw - tobRaw) > 0 ? ((tpRaw - tobRaw - tocRaw) / (tpRaw - tobRaw)) * 100 : 0;
+      oeeV = (fdV/100) * (feV/100) * 100;
+    }
+
+    if(oeeV>0) oees.push(oeeV);
+    if(fdV>0)  fds.push(fdV);
+    if(feV>0)  fes.push(feV);
+
+    const tobV = parseFloat(eq.tob)||0;
+    const tocV = parseFloat(eq.toc)||0;
+    const tpV  = parseFloat(eq.tpProgramado||eq.tp)||0;
+    tobs.push(tobV);
+    tocs.push(tocV);
+    if(tpV>0) tps.push(tpV);
+
+    // FIX 3: causales con nombre completo y responsable separado
+    (eq.detenciones||[]).forEach(det => {
+      const cod    = String(det.codigo||det.motivo||'—').trim();
+      const nombre = String(det.motivo||det.codigo||'—').trim();
+      const resp   = String(det.resp||det.responsable||'EESS').toUpperCase();
+      const h      = parseFloat(det.horas)||0;
+      if(!causalesMap[cod]) causalesMap[cod] = { nombre, horas_eess:0, horas_formin:0 };
+      // usar el nombre más descriptivo si ya existe
+      if(nombre.length > causalesMap[cod].nombre.length)
+        causalesMap[cod].nombre = nombre;
+      if(resp==='FORMIN') causalesMap[cod].horas_formin += h;
+      else                causalesMap[cod].horas_eess   += h;
+    });
+  }));
+
+  if(!equipoSel) {
+    document.getElementById('oee-nums').innerHTML = `
+      <div class="oee-num-card oee-na"><div class="oee-num-label">OEE</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 66%</div></div>
+      <div class="oee-num-card oee-na"><div class="oee-num-label">FD</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 75%</div></div>
+      <div class="oee-num-card oee-na"><div class="oee-num-label">FE</div><div class="oee-num-val">—</div><div class="oee-num-meta">meta 88%</div></div>`;
+    document.getElementById('oee-mini').style.display='none';
+    document.getElementById('causal-wrap').innerHTML =
+      '<div class="empty-state">Selecciona un procesador para ver causales</div>';
+    return;
+  }
+
+  const oeeV=avg(oees), fdV=avg(fds), feV=avg(fes);
+
+  const makeCard = (label,val,meta) => {
+    const cls = isNaN(val)?'oee-na':val>=meta?'oee-ok':'oee-bad';
+    return `<div class="oee-num-card ${cls}">
+      <div class="oee-num-label">${label}</div>
+      <div class="oee-num-val">${pct0(val)}</div>
+      <div class="oee-num-meta">meta ${meta}%</div>
+    </div>`;
+  };
+  document.getElementById('oee-nums').innerHTML =
+    makeCard('OEE',oeeV,66)+makeCard('FD',fdV,75)+makeCard('FE',feV,88);
+
+  // FIX 2: mostrar total + promedio para TP/TOB/TOC
+  const sum  = arr => arr.reduce((s,v)=>s+v,0);
+  const miniEl = document.getElementById('oee-mini');
+  miniEl.style.display='block';
+  miniEl.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px;color:var(--text2)">
+      <div>
+        <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">TP</div>
+        <div>Total: <strong>${fmt2(sum(tps))} h</strong></div>
+        <div style="color:var(--text3)">Prom: ${fmt2(avg(tps))} h</div>
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">TOB</div>
+        <div>Total: <strong>${fmt2(sum(tobs))} h</strong></div>
+        <div style="color:var(--text3)">Prom: ${fmt2(avg(tobs))} h</div>
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">TOC</div>
+        <div>Total: <strong>${fmt2(sum(tocs))} h</strong></div>
+        <div style="color:var(--text3)">Prom: ${fmt2(avg(tocs))} h</div>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:6px">${oees.length} registros en el período</div>`;
+
+  // FIX 3: Top 5 causales con nombre completo y color por responsable
+  // ordenar por horas totales (eess + formin)
+  const top5 = Object.entries(causalesMap)
+    .map(([cod,v])=>({ cod, nombre:v.nombre, total:v.horas_eess+v.horas_formin,
+                       horas_eess:v.horas_eess, horas_formin:v.horas_formin }))
+    .sort((a,b)=>b.total-a.total).slice(0,5);
+  const maxH = top5.length ? top5[0].total : 1;
+
+  if(!top5.length) {
+    document.getElementById('causal-wrap').innerHTML =
+      '<div class="empty-state">Sin detenciones registradas</div>';
+    return;
+  }
+
+  // Color: FORMIN=verde, EESS=azul
+  const fmtResp = (label,h) => h>0
+    ? `<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;
+        background:${label==='FORMIN'?'var(--green-bg)':'var(--blue-bg)'};
+        color:${label==='FORMIN'?'var(--green)':'var(--blue)'}">
+        ${label} ${fmt2(h)}h</span>`
+    : '';
+
+  document.getElementById('causal-wrap').innerHTML = `
+    <div class="causal-list">
+      ${top5.map((c,i)=>`
+        <div class="causal-row" style="align-items:flex-start;gap:8px;padding:4px 0">
+          <div class="causal-rank" style="padding-top:2px">${i+1}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;
+                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.nombre}">
+              ${c.nombre}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <div class="causal-bar-wrap" style="flex:1;min-width:80px">
+                <div class="causal-bar-fill" style="width:${(c.total/maxH)*100}%"></div>
+              </div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                ${fmtResp('EESS',c.horas_eess)}
+                ${fmtResp('FORMIN',c.horas_formin)}
+              </div>
+            </div>
+          </div>
+          <div class="causal-horas" style="padding-top:2px">${fmt2(c.total)} h</div>
+        </div>`).join('')}
+    </div>`;
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUE 4: RENDIMIENTO POR EQUIPO
+// ══════════════════════════════════════════════════════════════════════════
+function renderRendimiento() {
+  const { jefe, prod } = G;
+  const eqFiltro = EQ_FILTRO_REND; // null = todos
+
+  const toP = v => { const n=parseFloat(String(v||'').replace('%','')); return isNaN(n)?NaN:(n<=1?n*100:n); };
+
+  // Acumular por equipo con campos correctos de Firestore
+  const eqs = {};
+  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
+    const tipo   = (eq.tipo||'').toUpperCase();
+    const nombre = eq.equipo||'—';
+    if(eqFiltro && !eqFiltro.has(nombre)) return;
+    const key    = `${tipo}__${nombre}`;
+    if(!eqs[key]) eqs[key]={tipo,nombre,ciclos:0,arboles:0,horas:0,oees:[],fds:[],fes:[]};
+    const e = eqs[key];
+
+    // Horas: siempre desde horasTrabajo (campo real guardado en Firestore)
+    e.horas += parseFloat(eq.horasTrabajo)||0;
+
+    if(tipo==='TORRE'||tipo==='ALPINE') {
+      // Ciclos y árboles a nivel de equipo (por carro)
+      e.ciclos  += parseInt(eq.ciclos)||0;
+      e.arboles += parseInt(eq.arboles)||0;
+    } else if(tipo==='SKIDDER') {
+      // Ciclos y árboles a nivel de equipo
+      e.ciclos  += parseInt(eq.ciclos)||0;
+      e.arboles += parseInt(eq.arboles)||0;
+    } else if(tipo==='PROCESADOR') {
+      // Árboles desde rodales[]
+      (eq.rodales||[]).forEach(r=>{ e.arboles+=parseInt(r.arboles)||0; });
+      // OEE/FD/FE
+      const oV=toP(eq.oee),fV=toP(eq.fd),feV=toP(eq.fe);
+      if(oV>0) e.oees.push(oV);
+      if(fV>0) e.fds.push(fV);
+      if(feV>0) e.fes.push(feV);
+    } else if(tipo==='SHOVEL') {
+      // Árboles desde volteos[]
+      (eq.volteos||[]).forEach(v=>{ e.arboles+=parseInt(v.arboles)||0; });
+    }
+  }));
+
+  // Volumen por equipo de madereo (eq. madereo: Alpine, Skidder) desde c.equipo
+  const volEqMadereo = {};
+  // Volumen por procesador (trozado) desde c.procesador
+  const volEqProc = {};
+  prod.forEach(d=>(d.cartolas||[]).forEach(c=>{
+    let v=0;(c.productos||[]).forEach(p=>v+=parseFloat(p.vol)||0);
+    // Madereo: campo equipo (Alpine-3, SK625N3, etc.)
+    if(c.equipo) volEqMadereo[c.equipo]=(volEqMadereo[c.equipo]||0)+v;
+    // Procesador: campo procesador (PROC5, KOM2, etc.)
+    if(c.procesador) volEqProc[c.procesador]=(volEqProc[c.procesador]||0)+v;
+  }));
+  // Volumen total del período (fallback si no hay campo procesador en datos viejos)
+  const volTotalProd = Object.values(volEqMadereo).reduce((s,v)=>s+v,0);
+
+  const grupos = {
+    ALPINE:    { label:'Alpine / Torre',   cls:'rend-alpine',  items:[] },
+    SKIDDER:   { label:'Skidder',          cls:'rend-skidder', items:[] },
+    PROCESADOR:{ label:'Procesador',       cls:'rend-proc',    items:[] },
+    SHOVEL:    { label:'Shovel',           cls:'rend-shovel',  items:[] },
+  };
+  Object.values(eqs).forEach(e=>{
+    if(e.tipo==='TORRE'||e.tipo==='ALPINE') grupos.ALPINE.items.push(e);
+    else if(e.tipo==='SKIDDER')             grupos.SKIDDER.items.push(e);
+    else if(e.tipo==='PROCESADOR')          grupos.PROCESADOR.items.push(e);
+    else if(e.tipo==='SHOVEL')              grupos.SHOVEL.items.push(e);
+  });
+
+  const vv = n => `<span class="rend-val">${n}</span>`;
+  const na = () => `<span class="rend-na">—</span>`;
+
+  let html = '';
+  let hayDatos = false;
+
+  // Alpine / Torre / Skidder
+  ['ALPINE','SKIDDER'].forEach(gk => {
+    const g = grupos[gk];
+    if(!g.items.length) return;
+    hayDatos=true;
+    html += `<tr><td colspan="7" class="rend-group ${g.cls}">${g.label}</td></tr>
+      <tr style="background:#fafafa">
+        <th>Equipo</th><th>Árb/Ciclo</th><th>M³/Ciclo</th><th>VMA</th><th>Árb/Hr</th><th>M³/Hr</th><th>Ciclo/Hr</th>
+      </tr>`;
+    g.items.sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(e=>{
+      // Volumen desde cartolas campo equipo (eq. madereo)
+      const vol = volEqMadereo[e.nombre]||0;
+      const arbCiclo = e.ciclos>0 ? e.arboles/e.ciclos : NaN;
+      const m3Ciclo  = e.ciclos>0&&vol>0 ? vol/e.ciclos : NaN;
+      // VMA = m³/árbol (volumen por árbol)
+      const vma      = e.arboles>0&&vol>0 ? vol/e.arboles : NaN;
+      const arbH     = e.horas>0 ? e.arboles/e.horas : NaN;
+      const m3H      = e.horas>0&&vol>0 ? vol/e.horas : NaN;
+      const cicH     = e.horas>0&&e.ciclos>0 ? e.ciclos/e.horas : NaN;
+      html += `<tr>
+        <td>${e.nombre}</td>
+        <td>${isNaN(arbCiclo)?na():vv(fmt2(arbCiclo))}</td>
+        <td>${isNaN(m3Ciclo)?na():vv(fmt2(m3Ciclo))}</td>
+        <td>${isNaN(vma)?na():vv(fmt2(vma))}</td>
+        <td>${isNaN(arbH)?na():vv(fmt2(arbH))}</td>
+        <td>${isNaN(m3H)?na():vv(fmt2(m3H))}</td>
+        <td>${isNaN(cicH)?na():vv(fmt2(cicH))}</td>
+      </tr>`;
+    });
+  });
+
+  // Procesador — sin OEE/FD/FE (están en Bloque 3)
+  if(grupos.PROCESADOR.items.length) {
+    hayDatos=true;
+    html += `<tr><td colspan="4" class="rend-group rend-proc">Procesador</td></tr>
+      <tr style="background:#fafafa">
+        <th>Equipo</th><th>VMA (m³/árb)</th><th>Árb/Hr</th><th>M³/Hr</th>
+      </tr>`;
+    grupos.PROCESADOR.items.sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(e=>{
+      // Volumen desde cartolas campo procesador (trozado)
+      const vol = volEqProc[e.nombre]||0;
+      // VMA procesador = m³/árbol
+      const vma  = e.arboles>0&&vol>0 ? vol/e.arboles : NaN;
+      const arbH = e.horas>0 ? e.arboles/e.horas : NaN;
+      const m3H  = e.horas>0&&vol>0 ? vol/e.horas : NaN;
+      html += `<tr>
+        <td>${e.nombre}</td>
+        <td>${isNaN(vma)?na():vv(fmt2(vma))}</td>
+        <td>${isNaN(arbH)?na():vv(fmt2(arbH))}</td>
+        <td>${isNaN(m3H)?na():vv(fmt2(m3H))}</td>
+      </tr>`;
+    });
+  }
+
+  // Shovel
+  if(grupos.SHOVEL.items.length) {
+    hayDatos=true;
+    html += `<tr><td colspan="4" class="rend-group rend-shovel">Shovel</td></tr>
+      <tr style="background:#fafafa"><th>Equipo</th><th>Árb/Hr</th><th colspan="2"></th></tr>`;
+    grupos.SHOVEL.items.sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(e=>{
+      const arbH = e.horas>0 ? e.arboles/e.horas : NaN;
+      html += `<tr><td>${e.nombre}</td><td>${isNaN(arbH)?na():vv(fmt2(arbH))}</td><td colspan="2"></td></tr>`;
+    });
+  }
+
+  if(!hayDatos) {
+    document.getElementById('rend-wrap').innerHTML =
+      '<div class="empty-state"><i class="ti ti-engine-off" style="font-size:26px;display:block;margin-bottom:.5rem"></i>Sin datos de equipos para el período</div>';
+    return;
+  }
+  document.getElementById('rend-wrap').innerHTML =
+    `<div style="overflow-x:auto"><table class="rend-table"><tbody>${html}</tbody></table></div>
+     <div style="font-size:10px;color:var(--text3);margin-top:8px">
+       * VMA = m³/árbol · Horas desde horómetros · Vol madereo desde campo equipo · Vol procesador desde campo procesador en cartola
+     </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUE 5: UTILIZACIÓN DE EQUIPOS (pie charts por línea)
+// ══════════════════════════════════════════════════════════════════════════
+let pieCharts = []; // array de instancias Chart.js activas
+
+function renderUtilizacion(jefe) {
+  const wrap = document.getElementById('util-wrap');
+
+  // Destruir charts anteriores
+  pieCharts.forEach(c => c.destroy());
+  pieCharts = [];
+
+  // Constantes
+  const CARRO_ORDEN  = ['BEREUTER','WYSSEN','MIXTO'];
+  const CARRO_LABELS = ['Bereuter','Wyssen','Mixto'];
+  const CARRO_COLORS = ['#D97706','#1D5FAD','#7C5C3A'];
+  const HUI_ORDEN    = ['NO','SÍ','MIXTO'];
+  const HUI_LABELS   = ['Sin asistencia','Con asistencia','Mixto'];
+  const HUI_COLORS   = ['#3B6D11','#D97706','#A3C97A'];
+  const LIN_COLORS   = ['#1D5FAD','#3B6D11','#854F0B'];
+
+  const buildData = (map, orden) =>
+    orden.map(k => Object.entries(map).find(([key]) =>
+      key.toUpperCase()===k.toUpperCase())?.[1] || 0);
+
+  const makePie = (canvasId, labels, data, colors) => {
+    const ctx = document.getElementById(canvasId);
+    if(!ctx) return null;
+    const chart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels,
+        datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: c => {
+                const v = data[c.dataIndex];
+                const total = data.reduce((s,x)=>s+x,0);
+                const pct = total>0 ? Math.round((v/total)*100) : 0;
+                return ` ${c.label}: ${pct}% · ${v} día${v!==1?'s':''}`;
+              }
+            }
+          }
+        }
+      }
+    });
+    pieCharts.push(chart);
+    return chart;
+  };
+
+  const makeLegend = (labels, colors, data, total) =>
+    labels.map((l,i) => data[i]>0
+      ? `<div class="leg-row">
+           <div class="leg-dot" style="background:${colors[i]}"></div>
+           <div class="leg-name">${l}</div>
+           <div class="leg-pct">${Math.round(data[i]/total*100)}%</div>
+         </div>`
+      : '').join('');
+
+  const sinDatos = '<div style="font-size:11px;color:var(--text3);padding:.5rem 0;text-align:center">Sin datos</div>';
+
+  // Detectar líneas presentes en jefe
+  const lineas = [...new Set(jefe.map(d=>(d.linea||'').trim().toUpperCase()).filter(Boolean))].sort();
+
+  if(!lineas.length) {
+    wrap.innerHTML = sinDatos;
+    return;
+  }
+
+  // Construir columnas por línea
+  const columnas = lineas.map((lin, li) => {
+    const color = LIN_COLORS[li % LIN_COLORS.length];
+    const docs = jefe.filter(d=>(d.linea||'').trim().toUpperCase()===lin);
+    const slug = lin.replace(/\s+/g,'-').toLowerCase();
+
+    const carro = {}, huinche = {};
+    docs.forEach(d => (d.equipos||[]).forEach(eq => {
+      const tipo = (eq.tipo||'').toUpperCase();
+      if(tipo==='TORRE'||tipo==='ALPINE') {
+        const k = (eq.tipoCarro||'').replace('CARRO ','').trim()||'Sin dato';
+        carro[k] = (carro[k]||0)+1;
+      }
+      if(tipo==='SKIDDER') {
+        const h = (eq.huincheAsistencia||'Sin dato').trim();
+        huinche[h] = (huinche[h]||0)+1;
+      }
+    }));
+
+    const dataCarro   = buildData(carro,   CARRO_ORDEN);
+    const dataHuinche = buildData(huinche,  HUI_ORDEN);
+    const totalCarro   = dataCarro.reduce((s,v)=>s+v,0);
+    const totalHuinche = dataHuinche.reduce((s,v)=>s+v,0);
+
+    const pieCarroId  = `pie-carro-${slug}`;
+    const pieHuinId   = `pie-hui-${slug}`;
+
+    const bloqTorre = totalCarro > 0
+      ? `<div class="pie-card-title" style="font-size:10px">🏔 Torre / Alpine</div>
+         <div class="pie-canvas-wrap"><canvas id="${pieCarroId}"></canvas></div>
+         <div class="pie-legend">${makeLegend(CARRO_LABELS, CARRO_COLORS, dataCarro, totalCarro)}</div>`
+      : `<div class="pie-card-title" style="font-size:10px">🏔 Torre / Alpine</div>${sinDatos}`;
+
+    const bloqSkid = totalHuinche > 0
+      ? `<div class="pie-card-title" style="font-size:10px;margin-top:.75rem">🚜 Skidder</div>
+         <div class="pie-canvas-wrap"><canvas id="${pieHuinId}"></canvas></div>
+         <div class="pie-legend">${makeLegend(HUI_LABELS, HUI_COLORS, dataHuinche, totalHuinche)}</div>`
+      : `<div class="pie-card-title" style="font-size:10px;margin-top:.75rem">🚜 Skidder</div>${sinDatos}`;
+
+    return { slug, color, lin, bloqTorre, bloqSkid,
+             totalCarro, dataCarro, totalHuinche, dataHuinche,
+             pieCarroId, pieHuinId };
+  });
+
+  // Render HTML — 3 columnas
+  wrap.innerHTML = `
+    <div class="util-lineas">
+      ${columnas.map(c => `
+        <div class="util-col" style="border-top:3px solid ${c.color};border-color:${c.color};border-width:1px;border-top-width:3px;border-style:solid">
+          <div class="util-col-header" style="color:${c.color}">${c.lin}</div>
+          ${c.bloqTorre}
+          ${c.bloqSkid}
+        </div>`).join('')}
+    </div>`;
+
+  // Instanciar charts tras render
+  columnas.forEach(c => {
+    if(c.totalCarro>0)   makePie(c.pieCarroId,  CARRO_LABELS, c.dataCarro,   CARRO_COLORS);
+    if(c.totalHuinche>0) makePie(c.pieHuinId,   HUI_LABELS,   c.dataHuinche, HUI_COLORS);
+  });
+}
+
+// ── INICIO ────────────────────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUE 6: CAMBIOS DE LÍNEA
+// ══════════════════════════════════════════════════════════════════════════
+function renderCambioLinea(jefe) {
+  const wrap = document.getElementById('cambio-wrap');
+
+  // Acumulador por línea
+  const LIN_COLORS = {'LÍNEA T1':'#1D5FAD','LÍNEA T2':'#3B6D11','LÍNEA T3':'#854F0B'};
+  const linMap = {}; // linea → stats
+
+  const initLin = () => ({
+    cambios:0, horas:0,
+    cuerda:{'SÍ':0,'NO':0,'INCOMPLETA':0},
+    soportes:{'SÍ':0,'NO':0},
+    preInst:{'SÍ':0,'NO':0,'Sin dato':0},
+    perfil:{'Según perfil':0,'Con modificación':0},
+    motivoMod:{'Perfil no daba altura':0,'Perfil tenía soportes que no servían':0,'Otro problema no de perfileros':0}
+  });
+
+  jefe.forEach(d => {
+    const lin = (d.linea||'').trim() || 'SIN LÍNEA';
+    (d.equipos||[]).forEach(eq => {
+      const tipo=(eq.tipo||'').toUpperCase();
+      if(tipo!=='TORRE'&&tipo!=='ALPINE') return;
+      if((eq.cambioLinea||'').toUpperCase()!=='SÍ') return;
+      if(!linMap[lin]) linMap[lin] = initLin();
+      const L = linMap[lin];
+      L.cambios++;
+      L.horas += parseFloat(eq.horasCambioLinea)||0;
+      const ct=(eq.cuerdaTirada||'').toUpperCase();
+      if(ct==='SÍ') L.cuerda['SÍ']++;
+      else if(ct==='NO') L.cuerda['NO']++;
+      else if(ct==='INCOMPLETA') L.cuerda['INCOMPLETA']++;
+      const ls=(eq.lineaSoportes||'').toUpperCase();
+      if(ls==='SÍ') L.soportes['SÍ']++;
+      else if(ls==='NO') L.soportes['NO']++;
+      if(ls==='SÍ') {
+        const pi=(eq.preInstalado||'').toUpperCase();
+        if(pi==='SÍ') L.preInst['SÍ']++;
+        else if(pi==='NO') L.preInst['NO']++;
+        else L.preInst['Sin dato']++;
+      }
+      const cpRaw=(eq.cumplePerfil||'').trim();
+      const cp=cpRaw.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if(cp==='SI'||cp.startsWith('SI ')||cp.startsWith('SEGUN'))
+        L.perfil['Según perfil']++;
+      else if(cpRaw)
+        L.perfil['Con modificación']++;
+      // Motivo de modificación (solo cuando cumplePerfil = NO)
+      if(cp!=='SI'&&!cp.startsWith('SI ')&&!cp.startsWith('SEGUN')&&cpRaw){
+        const mm=(eq.motivoModificacion||'').trim();
+        if(mm==='Perfil no daba altura') L.motivoMod['Perfil no daba altura']++;
+        else if(mm==='Perfil tenía soportes que no servían') L.motivoMod['Perfil tenía soportes que no servían']++;
+        else if(mm) L.motivoMod['Otro problema no de perfileros']++;
+      }
+    });
+  });
+
+  const lineas = Object.keys(linMap).sort();
+  if(!lineas.length) {
+    wrap.innerHTML = '<div class="empty-state"><i class="ti ti-refresh-off" style="font-size:26px;display:block;margin-bottom:.5rem"></i>Sin cambios de línea en el período</div>';
+    return;
+  }
+
+  // Barra segmentada compacta
+  const segBar = (data, colors) => {
+    const entries = Object.entries(data).filter(([,v])=>v>0);
+    const total = entries.reduce((s,[,v])=>s+v,0);
+    if(!total) return '<div class="cl-nodata">Sin datos</div>';
+    const segs = entries.map(([,v],i)=>
+      `<div class="seg" style="width:${(v/total*100).toFixed(1)}%;background:${colors[i]}"><span>${v}</span></div>`
+    ).join('');
+    const legs = entries.map(([k,v],i)=>
+      `<div class="seg-leg"><div class="seg-dot" style="background:${colors[i]}"></div>${k}</div>`
+    ).join('');
+    return `<div class="seg-bar">${segs}</div><div class="seg-legend">${legs}</div>`;
+  };
+
+  const colHTML = lineas.map(lin => {
+    const L = linMap[lin];
+    const color = LIN_COLORS[lin] || '#555';
+    const prom = L.cambios ? (L.horas/L.cambios) : 0;
+    const totalConSop = L.soportes['SÍ'];
+    const totalPerfil = L.perfil['Según perfil'] + L.perfil['Con modificación'];
+    const pctPerfil = totalPerfil ? Math.round(L.perfil['Según perfil']/totalPerfil*100) : null;
+    const short = lin.replace('LÍNEA ','');
+
+    return `
+    <div class="cl-col">
+      <div class="cl-col-header" style="color:${color};border-bottom:2px solid ${color}">
+        ${short}
+      </div>
+      <div class="cl-kpis">
+        <div class="cl-kpi">
+          <div class="cl-kpi-val" style="color:${color}">${L.cambios}</div>
+          <div class="cl-kpi-label">Cambios</div>
+        </div>
+        <div class="cl-kpi">
+          <div class="cl-kpi-val" style="color:var(--amber)">${fmt2(L.horas)} h</div>
+          <div class="cl-kpi-label">Total</div>
+        </div>
+        <div class="cl-kpi">
+          <div class="cl-kpi-val" style="color:var(--text2)">${fmt2(prom)} h</div>
+          <div class="cl-kpi-label">Prom/cambio</div>
+        </div>
+      </div>
+      <div class="cl-cond">
+        <div class="cl-cond-label">🪢 Cuerda tirada</div>
+        ${segBar(L.cuerda,['#3B6D11','#A32D2D','#854F0B'])}
+      </div>
+      <div class="cl-cond">
+        <div class="cl-cond-label">🏗 Soportes</div>
+        ${segBar(L.soportes,['#1D5FAD','#A32D2D'])}
+      </div>
+      <div class="cl-cond">
+        <div class="cl-cond-label">⚡ Preinstalado
+          <span style="font-size:9px;color:var(--text3)">(${totalConSop} con sop.)</span>
+        </div>
+        ${totalConSop>0
+          ? segBar(L.preInst,['#3B6D11','#A32D2D','#888'])
+          : '<div class="cl-nodata">Sin cambios con soportes</div>'}
+      </div>
+      <div class="cl-cond">
+        <div class="cl-cond-label">📐 Perfil
+          ${pctPerfil!==null?`<span style="font-size:10px;font-weight:700;color:var(--green);margin-left:4px">${pctPerfil}% ok</span>`:''}
+        </div>
+        ${totalPerfil>0
+          ? segBar({'✅ Según perfil':L.perfil['Según perfil'],'🔧 Con modificación':L.perfil['Con modificación']},['#3B6D11','#A32D2D'])
+          : '<div class="cl-nodata">Sin datos</div>'}
+      </div>
+      ${totalPerfil>0 ? `
+      <div class="cl-cond" style="margin-top:-2px">
+        <div class="cl-cond-label" style="font-size:10px;color:var(--text3)">Motivo modificación</div>
+        ${[
+          ['Perfil no daba altura','#854F0B'],
+          ['Perfil tenía soportes que no servían','#1D5FAD'],
+          ['Otro problema no de perfileros','#888']
+        ].map(([k,c]) => {
+          const n = L.motivoMod[k]||0;
+          return '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">'
+            + '<div style="width:8px;height:8px;border-radius:50%;background:'+(n>0?c:'#ccc')+';flex-shrink:0"></div>'
+            + '<div style="font-size:10px;color:'+(n>0?'var(--text)':'var(--text3)')+';line-height:1.3">'+k+' <strong style="color:'+(n>0?c:'var(--text3)')+'"> ('+n+')</strong></div>'
+            + '</div>';
+        }).join('')}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML = `<div class="cl-lineas">${colHTML}</div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUES CAUSALES POR TIPO DE EQUIPO (Madereo / Volteo)
+// ══════════════════════════════════════════════════════════════════════════
+function poblarSelectorEquipo(jefe, tipos, selId) {
+  const equipos = new Set();
+  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
+    const tipo = (eq.tipo||'').toUpperCase();
+    if(tipos.some(t => tipo === t.toUpperCase()) && eq.equipo)
+      equipos.add(eq.equipo);
+  }));
+  const sel = document.getElementById(selId);
+  if(!sel) return;
+  const actual = sel.value;
+  sel.innerHTML = '<option value="">Todos los equipos</option>';
+  [...equipos].sort().forEach(nombre => {
+    const o = document.createElement('option');
+    o.value = nombre; o.textContent = nombre;
+    sel.appendChild(o);
+  });
+  if(actual && [...equipos].includes(actual)) sel.value = actual;
+}
+
+window.renderCausalesTipo = function(jefe, tipos, wrapId, equipoFiltro='') {
+  const causalesMap = {};
+  let hayDatos = false;
+
+  jefe.forEach(d => (d.equipos||[]).forEach(eq => {
+    const tipo = (eq.tipo||'').toUpperCase();
+    const nombre = (eq.equipo||'').trim();
+    // Si hay filtro de equipo, filtrar solo por nombre — el tipo ya fue validado al poblar el selector
+    if(equipoFiltro) {
+      if(nombre !== equipoFiltro) return;
+    } else {
+      // Sin filtro: filtrar por tipo
+      if(!tipos.some(t => tipo === t.toUpperCase())) return;
+    }
+    (eq.detenciones||[]).forEach(det => {
+      const cod  = String(det.codigo||'—').trim();
+      const mot  = String(det.motivo||det.codigo||'—').trim();
+      const resp = String(det.resp||'EESS').toUpperCase().trim();
+      const h    = parseFloat(det.horas)||0;
+      if(!causalesMap[cod]) causalesMap[cod] = { nombre:mot, horas_eess:0, horas_formin:0 };
+      if(mot.length > causalesMap[cod].nombre.length) causalesMap[cod].nombre = mot;
+      if(resp==='FORMIN') causalesMap[cod].horas_formin += h;
+      else                causalesMap[cod].horas_eess   += h;
+      hayDatos = true;
+    });
+  }));
+
+  const wrap = document.getElementById(wrapId);
+
+  if(!hayDatos) {
+    wrap.innerHTML = '<div class="empty-state">Sin detenciones registradas para el período</div>';
+    return;
+  }
+
+  const top5 = Object.entries(causalesMap)
+    .map(([cod,v]) => ({ cod, nombre:v.nombre,
+      total: v.horas_eess + v.horas_formin,
+      horas_eess: v.horas_eess, horas_formin: v.horas_formin }))
+    .sort((a,b) => b.total - a.total)
+    .slice(0,5);
+
+  const maxH = top5[0].total || 1;
+
+  const fmtResp = (label, h) => h > 0
+    ? `<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;
+        background:${label==='FORMIN'?'var(--green-bg)':'var(--blue-bg)'};
+        color:${label==='FORMIN'?'var(--green)':'var(--blue)'}">
+        ${label} ${fmt2(h)}h</span>`
+    : '';
+
+  wrap.innerHTML = `
+    <div class="causal-list">
+      ${top5.map((causal,i) => `
+        <div class="causal-row" style="align-items:flex-start;gap:8px;padding:4px 0">
+          <div class="causal-rank" style="padding-top:2px">${i+1}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;
+                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${causal.nombre}">
+              ${causal.nombre}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <div class="causal-bar-wrap" style="flex:1;min-width:80px">
+                <div class="causal-bar-fill" style="width:${(causal.total/maxH*100).toFixed(0)}%"></div>
+              </div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                ${fmtResp('EESS', causal.horas_eess)}
+                ${fmtResp('FORMIN', causal.horas_formin)}
+              </div>
+            </div>
+          </div>
+          <div class="causal-horas" style="padding-top:2px">${fmt2(causal.total)} h</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MODAL EQUIPOS — BLOQUE RENDIMIENTO
+// ══════════════════════════════════════════════════════════════════
+let EQ_FILTRO_REND = null; // null = todos
+let EQ_TEMPORAL = null;    // selección temporal mientras modal abierto
+
+const TIPOS_EXCLUIR_MODAL = ['HUINCHE DE ASISTENCIA','GARRA ORDENADORA'];
+const TIPO_LABEL_M = { TORRE:'Torre / Alpine', ALPINE:'Torre / Alpine', SKIDDER:'Skidder', PROCESADOR:'Procesador', SHOVEL:'Shovel' };
+let EQ_CONFIG_MODAL = [];
+
+// Cargar equipos para el modal desde config_equipos
+(async () => {
+  try {
+    const snap = await getDocs(query(collection(db,'config_equipos'), orderBy('nombre')));
+    snap.forEach(d => {
+      const data = d.data();
+      const tipo = (data.tipo||'').toUpperCase();
+      if(data.nombre && !TIPOS_EXCLUIR_MODAL.includes(tipo))
+        EQ_CONFIG_MODAL.push({ nombre: data.nombre, tipo });
+    });
+  } catch(e) {}
+})();
+
+window.abrirModalEquipos = function() {
+  const body = document.getElementById('eq-modal-body');
+  const grupos = {};
+  EQ_CONFIG_MODAL.forEach(eq => {
+    const g = TIPO_LABEL_M[eq.tipo] || eq.tipo || 'Otros';
+    if(!grupos[g]) grupos[g] = [];
+    grupos[g].push(eq.nombre);
+  });
+  body.innerHTML = Object.entries(grupos).map(([g, eqs]) => `
+    <div class="eq-modal-group">${g}</div>
+    ${eqs.map(nombre => `
+      <label class="eq-modal-item">
+        <input type="checkbox" class="eq-modal-chk" value="${nombre}"
+          ${EQ_FILTRO_REND!==null && EQ_FILTRO_REND.has(nombre) ? 'checked' : ''}>
+        ${nombre}
+      </label>`).join('')}
+  `).join('');
+  document.getElementById('eq-modal-overlay').classList.add('open');
+};
+
+window.eqModalSelAll = function(val) {
+  document.querySelectorAll('.eq-modal-chk').forEach(cb => cb.checked = val);
+};
+
+window.eqModalCancelar = function() {
+  document.getElementById('eq-modal-overlay').classList.remove('open');
+};
+
+window.eqModalOK = function() {
+  const todos = [...document.querySelectorAll('.eq-modal-chk')];
+  const sel = todos.filter(cb => cb.checked).map(cb => cb.value);
+  if(sel.length === 0 || sel.length === todos.length) {
+    EQ_FILTRO_REND = null;
+    document.getElementById('rend-eq-label').textContent = 'Todos los equipos';
+  } else {
+    EQ_FILTRO_REND = new Set(sel);
+    document.getElementById('rend-eq-label').textContent =
+      sel.length <= 2 ? sel.join(', ') : `${sel.length} equipos`;
+  }
+  document.getElementById('eq-modal-overlay').classList.remove('open');
+  renderRendimiento();
+};
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('eq-modal-overlay').addEventListener('click', function(e) {
+  if(e.target === this) eqModalCancelar();
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// BLOQUE ÁRBOLES POR TIPO DE EQUIPO
+// ══════════════════════════════════════════════════════════════════════════
+function renderArboles(jefeEqm, jefeLinea) {
+  // Torre + Skidder → jefeEqm (filtro Eq.Madereo)
+  const torre   = {}; // equipo → { total, operadores:{op→arb} }
+  const skidder = {};
+  jefeEqm.forEach(d => (d.equipos||[]).forEach(eq => {
+    const tipo = (eq.tipo||'').toUpperCase();
+    const nombre = eq.equipo||'—';
+    const op = eq.operador||'Sin op.';
+    const arb = parseInt(eq.arboles)||0;
+    if(tipo==='TORRE'||tipo==='ALPINE') {
+      if(!torre[nombre]) torre[nombre]={total:0,ops:{}};
+      torre[nombre].total += arb;
+      torre[nombre].ops[op] = (torre[nombre].ops[op]||0) + arb;
+    }
+    if(tipo==='SKIDDER') {
+      if(!skidder[nombre]) skidder[nombre]={total:0,ops:{}};
+      skidder[nombre].total += arb;
+      skidder[nombre].ops[op] = (skidder[nombre].ops[op]||0) + arb;
+    }
+  }));
+
+  // Procesador + Shovel → jefeLinea (filtro Línea)
+  const proc   = {};
+  const shovel = {};
+  jefeLinea.forEach(d => (d.equipos||[]).forEach(eq => {
+    const tipo = (eq.tipo||'').toUpperCase();
+    const nombre = eq.equipo||'—';
+    const op = eq.operador||'Sin op.';
+    if(tipo==='PROCESADOR') {
+      const arb = parseInt(eq.arboles)||0;
+      if(!proc[nombre]) proc[nombre]={total:0,ops:{}};
+      proc[nombre].total += arb;
+      proc[nombre].ops[op] = (proc[nombre].ops[op]||0) + arb;
+    }
+    if(tipo==='SHOVEL') {
+      // árboles volteados desde volteos[]
+      (eq.volteos||[]).forEach(v => {
+        const arb = parseInt(v.arboles)||0;
+        if(!shovel[nombre]) shovel[nombre]={total:0,ops:{}};
+        shovel[nombre].total += arb;
+        shovel[nombre].ops[op] = (shovel[nombre].ops[op]||0) + arb;
+      });
+    }
+  }));
+
+  const fmt0loc = n => Math.round(n).toLocaleString('es-CL');
+  const totalEqs = obj => Object.values(obj).reduce((s,e)=>s+e.total,0);
+
+  // Render de una tarjeta con desglose equipo → operadores
+  const tarjeta = (titulo, icono, color, data) => {
+    const total = totalEqs(data);
+    const entries = Object.entries(data).sort((a,b)=>b[1].total-a[1].total);
+    const maxTotal = entries[0]?.[1].total || 1;
+    const filas = entries.map(([eq, d]) => {
+      const pctEq = (d.total/maxTotal*100).toFixed(1);
+      const ops = Object.entries(d.ops).sort((a,b)=>b[1]-a[1]);
+      return `
+        <div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text)">
+            <span>${eq}</span><span>${fmt0loc(d.total)}</span>
+          </div>
+          <div class="arb-bar" style="margin-bottom:4px">
+            <div class="arb-bar-fill" style="width:${pctEq}%;background:${color}"></div>
+          </div>
+          ${ops.map(([op,arb])=>`
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);padding-left:8px">
+              <span>↳ ${op}</span><span>${fmt0loc(arb)}</span>
+            </div>`).join('')}
+        </div>`;
+    }).join('');
+    return `
+      <div class="arb-card">
+        <div class="arb-card-title" style="color:${color}">${icono} ${titulo}</div>
+        <div class="arb-total" style="color:${color}">${fmt0loc(total)}</div>
+        <div class="arb-unit" style="margin-bottom:10px">árboles</div>
+        ${entries.length ? filas : '<div style="font-size:12px;color:var(--text3)">Sin datos</div>'}
+      </div>`;
+  };
+
+  document.getElementById('arb-wrap').innerHTML = `
+    <div class="arb-grid">
+      ${tarjeta('Torre / Alpine','🏔','#1D5FAD', torre)}
+      ${tarjeta('Skidder','🚜','#854F0B', skidder)}
+      ${tarjeta('Procesador','⚙️','#3B6D11', proc)}
+      ${tarjeta('Shovel','🪵','#3C3489', shovel)}
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:4px">
+      * Torre/Skidder filtro Eq.Madereo · Procesador/Shovel filtro Línea · Desglose: equipo total → operadores
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// COMPARADOR DE RENDIMIENTO
+// ══════════════════════════════════════════════════════════════════════════
+let COMPARADOR_ABIERTO = false;
+let COMPARADOR_MODO = 'equipo';
+
+const COMP_COLOR = {TORRE:'#1D5FAD',ALPINE:'#1D5FAD',SKIDDER:'#854F0B',PROCESADOR:'#3B6D11',SHOVEL:'#3C3489'};
+const COMP_BG    = {TORRE:'#E8F0FB',ALPINE:'#E8F0FB',SKIDDER:'#FAEEDA',PROCESADOR:'#EAF3DE',SHOVEL:'#EEEDFE'};
+
+window.toggleComparador = function() {
+  COMPARADOR_ABIERTO = !COMPARADOR_ABIERTO;
+  const wrap = document.getElementById('comparador-wrap');
+  const result = document.getElementById('comparador-result');
+  const btn = document.getElementById('btn-comparador');
+  wrap.style.display = COMPARADOR_ABIERTO ? 'block' : 'none';
+  result.style.display = 'none';
+  btn.style.background = COMPARADOR_ABIERTO ? 'var(--text)' : '#f0f0f0';
+  btn.style.color = COMPARADOR_ABIERTO ? '#fff' : 'var(--text2)';
+  if(COMPARADOR_ABIERTO) setComparadorModo(COMPARADOR_MODO);
+};
+
+window.setComparadorModo = function(modo) {
+  COMPARADOR_MODO = modo;
+  const btnEq = document.getElementById('comp-mode-eq');
+  const btnOp = document.getElementById('comp-mode-op');
+  btnEq.style.background = modo==='equipo'   ? 'var(--text)' : '#f0f0f0';
+  btnEq.style.color      = modo==='equipo'   ? '#fff'        : 'var(--text2)';
+  btnOp.style.background = modo==='operador' ? 'var(--text)' : '#f0f0f0';
+  btnOp.style.color      = modo==='operador' ? '#fff'        : 'var(--text2)';
+  document.getElementById('comp-panel-equipo').style.display   = modo==='equipo'   ? 'block' : 'none';
+  document.getElementById('comp-panel-operador').style.display = modo==='operador' ? 'block' : 'none';
+  document.getElementById('comparador-result').style.display = 'none';
+  if(modo==='equipo') poblarComparadorSelector();
+  else poblarComparadorOperadorSelector();
+};
+
+// ── Acumulador unificado: Shovel usa volteos[], resto eq.arboles ───────────
+function mkAcc() { return {tipo:'',ciclos:0,arboles:0,horas:0,oees:[],fds:[],fes:[]}; }
+
+function acumularEq(acc, eq) {
+  const tipo=(eq.tipo||'').toUpperCase();
+  if(!acc.tipo) acc.tipo=tipo;
+  acc.ciclos += parseInt(eq.ciclos)||0;
+  acc.horas  += parseFloat(eq.horasTrabajo)||0;
+  const toP=v=>{const n=parseFloat(String(v||'').replace('%',''));return isNaN(n)?NaN:(n<=1?n*100:n);};
+  if(toP(eq.oee)>0) acc.oees.push(toP(eq.oee));
+  if(toP(eq.fd)>0)  acc.fds.push(toP(eq.fd));
+  if(toP(eq.fe)>0)  acc.fes.push(toP(eq.fe));
+  if(tipo==='SHOVEL') {
+    (eq.volteos||[]).forEach(v=>{acc.arboles+=parseInt(v.arboles)||0;});
+  } else {
+    acc.arboles+=parseInt(eq.arboles)||0;
+  }
+}
+
+// ── Indicadores por tipo ───────────────────────────────────────────────────
+function getIndicadores(tipo, volEq) {
+  const esTorre=tipo==='TORRE'||tipo==='ALPINE';
+  const esSkidder=tipo==='SKIDDER';
+  const esProcesador=tipo==='PROCESADOR';
+  if(esTorre||esSkidder) return [
+    {key:'arbCiclo',label:'Árb/Ciclo',    fn:(e,n)=>e.ciclos>0?e.arboles/e.ciclos:NaN},
+    {key:'m3Ciclo', label:'M³/Ciclo',     fn:(e,n)=>e.ciclos>0&&(volEq[n]||0)>0?volEq[n]/e.ciclos:NaN},
+    {key:'vma',     label:'VMA (m³/árb)', fn:(e,n)=>e.arboles>0&&(volEq[n]||0)>0?volEq[n]/e.arboles:NaN},
+    {key:'arbH',    label:'Árb/Hr',       fn:(e,n)=>e.horas>0?e.arboles/e.horas:NaN},
+    {key:'m3H',     label:'M³/Hr',        fn:(e,n)=>e.horas>0&&(volEq[n]||0)>0?volEq[n]/e.horas:NaN},
+    {key:'cicH',    label:'Ciclo/Hr',     fn:(e,n)=>e.horas>0&&e.ciclos>0?e.ciclos/e.horas:NaN},
+  ];
+  if(esProcesador) return [
+    {key:'vma', label:'VMA (m³/árb)', fn:(e,n)=>e.arboles>0&&(volEq[n]||0)>0?volEq[n]/e.arboles:NaN},
+    {key:'arbH',label:'Árb/Hr',       fn:(e,n)=>e.horas>0?e.arboles/e.horas:NaN},
+    {key:'m3H', label:'M³/Hr',        fn:(e,n)=>e.horas>0&&(volEq[n]||0)>0?volEq[n]/e.horas:NaN},
+    {key:'oee', label:'OEE %',        fn:(e,n)=>e.oees.length?e.oees.reduce((s,v)=>s+v,0)/e.oees.length:NaN,pct:true},
+    {key:'fd',  label:'FD %',         fn:(e,n)=>e.fds.length?e.fds.reduce((s,v)=>s+v,0)/e.fds.length:NaN,pct:true},
+    {key:'fe',  label:'FE %',         fn:(e,n)=>e.fes.length?e.fes.reduce((s,v)=>s+v,0)/e.fes.length:NaN,pct:true},
+  ];
+  return [{key:'arbH',label:'Árb Volt./Hr',fn:(e,n)=>e.horas>0?e.arboles/e.horas:NaN}];
+}
+
+// ── Tabla comparativa genérica ─────────────────────────────────────────────
+function tablaComparativa(nombres, accs, indics, color, volEq, subtitulo) {
+  const vals={};
+  indics.forEach(ind=>{vals[ind.key]={};nombres.forEach(n=>{vals[ind.key][n]=ind.fn(accs[n],n);});});
+  let html=subtitulo?`<div style="font-size:12px;font-weight:700;color:${color};margin-bottom:6px">${subtitulo}</div>`:'';
+  html+=`<table class="comp-table"><thead><tr>
+    <th style="background:#f5f5f5;color:var(--text3)">Indicador</th>
+    ${nombres.map(n=>`<th style="background:${color}">${n}</th>`).join('')}
+  </tr></thead><tbody>
+  <tr style="background:#fafafa">
+    <td style="font-size:10px;color:var(--text3)">Árboles</td>
+    ${nombres.map(n=>`<td style="font-size:11px;font-weight:700;color:var(--text2)">${Math.round(accs[n].arboles).toLocaleString('es-CL')}</td>`).join('')}
+  </tr>
+  <tr style="background:#fafafa">
+    <td style="font-size:10px;color:var(--text3)">Horas</td>
+    ${nombres.map(n=>`<td style="font-size:11px;color:var(--text2)">${fmt2(accs[n].horas)} h</td>`).join('')}
+  </tr>`;
+  indics.forEach(ind=>{
+    const rowVals=nombres.map(n=>vals[ind.key][n]);
+    const valid=rowVals.filter(v=>!isNaN(v));
+    const maxV=valid.length?Math.max(...valid):NaN;
+    const minV=valid.length?Math.min(...valid):NaN;
+    html+=`<tr><td>${ind.label}</td>`;
+    rowVals.forEach(v=>{
+      if(isNaN(v)){html+=`<td style="color:var(--text3)">—</td>`;return;}
+      const best=v===maxV&&valid.length>1;
+      const worst=v===minV&&valid.length>1&&maxV!==minV;
+      const display=ind.pct?Math.round(v)+'%':fmt2(v);
+      html+=`<td class="${best?'comp-best':worst?'comp-worst':''}">${display}${best?' ●':''}</td>`;
+    });
+    html+=`</tr>`;
+  });
+  html+=`</tbody></table><div style="font-size:10px;color:var(--text3);margin-top:6px">● = mejor valor del grupo</div>`;
+  return html;
+}
+
+// ── Modo: Por equipo ───────────────────────────────────────────────────────
+function poblarComparadorSelector() {
+  const {jefe}=G;
+  const eqsData={};
+  jefe.forEach(d=>(d.equipos||[]).forEach(eq=>{
+    const nombre=eq.equipo||'—';
+    if(!eqsData[nombre]) eqsData[nombre]=(eq.tipo||'').toUpperCase();
+  }));
+  document.getElementById('comparador-selector').innerHTML=
+    Object.entries(eqsData).sort((a,b)=>a[0].localeCompare(b[0])).map(([nombre,tipo])=>`
+      <label class="comp-chip" id="chip-${nombre}"
+        style="background:${COMP_BG[tipo]||'#f0f0f0'};color:${COMP_COLOR[tipo]||'#555'}"
+        onclick="toggleChip('${nombre}')">${nombre}</label>`).join('');
+}
+
+window.toggleChip = function(nombre) {
+  document.getElementById(`chip-${nombre}`).classList.toggle('selected');
+};
+
+window.renderComparador = function() {
+  const selChips=[...document.querySelectorAll('.comp-chip.selected')].map(ch=>ch.id.replace('chip-',''));
+  if(selChips.length<2){showToast('⚠️ Selecciona al menos 2 equipos');return;}
+  const {jefe,prodEqm}=G;
+  const accs={};
+  jefe.forEach(d=>(d.equipos||[]).forEach(eq=>{
+    const nombre=eq.equipo||'—';
+    if(!selChips.includes(nombre)) return;
+    if(!accs[nombre]) accs[nombre]=mkAcc();
+    acumularEq(accs[nombre],eq);
+  }));
+  const volEq={};
+  prodEqm.forEach(d=>(d.cartolas||[]).forEach(c=>{
+    let v=0;(c.productos||[]).forEach(p=>v+=parseFloat(p.vol)||0);
+    volEq[c.equipo||'—']=(volEq[c.equipo||'—']||0)+v;
+  }));
+  const tipo=Object.values(accs)[0]?.tipo||'';
+  const color=COMP_COLOR[tipo]||'#555';
+  const nombres=selChips.filter(n=>accs[n]);
+  const result=document.getElementById('comparador-result');
+  result.style.display='block';
+  result.innerHTML=tablaComparativa(nombres,accs,getIndicadores(tipo,volEq),color,volEq,null);
+};
+
+// ── Modo: Por operador ─────────────────────────────────────────────────────
+function poblarComparadorOperadorSelector() {
+  const {jefe}=G;
+  const eqOps={};
+  jefe.forEach(d=>(d.equipos||[]).forEach(eq=>{
+    const nombre=eq.equipo||'—';
+    const op=(eq.operador||'').trim();
+    if(!op) return;
+    if(!eqOps[nombre]) eqOps[nombre]=new Set();
+    eqOps[nombre].add(op);
+  }));
+  const sel=document.getElementById('comp-eq-selector');
+  sel.innerHTML='<option value="">— Elige un equipo —</option>';
+  Object.entries(eqOps).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([nombre,ops])=>{
+    const o=document.createElement('option');
+    o.value=nombre;
+    o.textContent=`${nombre}  (${ops.size} operador${ops.size!==1?'es':''})`;
+    sel.appendChild(o);
+  });
+  document.getElementById('comparador-result').style.display='none';
+}
+
+window.renderComparadorOperadores = function() {
+  const eqNombre=document.getElementById('comp-eq-selector').value;
+  if(!eqNombre) return;
+  const {jefe,prodEqm}=G;
+  let tipo_eq='';
+  outer:for(const d of jefe) for(const eq of (d.equipos||[])){
+    if((eq.equipo||'')===eqNombre){tipo_eq=(eq.tipo||'').toUpperCase();break outer;}
+  }
+  const opAcc={};
+  jefe.forEach(d=>(d.equipos||[]).forEach(eq=>{
+    if((eq.equipo||'')!==eqNombre) return;
+    const op=(eq.operador||'Sin op.').trim();
+    if(!opAcc[op]) opAcc[op]=mkAcc();
+    acumularEq(opAcc[op],eq);
+  }));
+  let volTotal=0;
+  prodEqm.forEach(d=>(d.cartolas||[]).forEach(c=>{
+    if((c.equipo||'')===eqNombre)(c.productos||[]).forEach(p=>volTotal+=parseFloat(p.vol)||0);
+  }));
+  const arbTotal=Object.values(opAcc).reduce((s,o)=>s+o.arboles,0);
+  const vmaG=arbTotal>0&&volTotal>0?volTotal/arbTotal:0;
+  const volOp={};
+  Object.entries(opAcc).forEach(([op,o])=>{volOp[op]=vmaG*o.arboles;});
+  const color=COMP_COLOR[tipo_eq]||'#555';
+  const nombres=Object.keys(opAcc).sort();
+  const result=document.getElementById('comparador-result');
+  result.style.display='block';
+  result.innerHTML=tablaComparativa(nombres,opAcc,getIndicadores(tipo_eq,volOp),color,volOp,`👤 Operadores de ${eqNombre}`);
+};
+
+window.addEventListener('DOMContentLoaded', () => consultar());
+
+// ── META CALTO — panel oculto en líneas T2/T3 ────────────────────────────────
+
+// TABLA_CONTRACTUAL: VMA (m³) → Vol. normal contrato (m³) — tramos [lo, hi)
+const TABLA_CONTRACTUAL = [
+  [0.20, 0.30, 10.357],
+  [0.30, 0.40, 11.600],
+  [0.40, 0.50, 12.609],
+  [0.50, 0.60, 13.426],
+  [0.60, 0.70, 13.942],
+  [0.70, 0.80, 14.500],
+  [0.80, 0.90, 14.948],
+  [0.90, 1.30, 15.426],
+  [1.30, 1.70, 15.934],
+  [1.70, 999,  16.292],
+];
+
+function volNormalParaVMA_dash(vma) {
+  const v = parseFloat(vma);
+  if(isNaN(v)) return null;
+  for(const [lo, hi, vol] of TABLA_CONTRACTUAL) {
+    if(v >= lo && v < hi) return vol;
+  }
+  return null;
+}
+
+function fmt3(n) {
+  return isNaN(n) ? '—' : n.toLocaleString('es-CL',{minimumFractionDigits:3,maximumFractionDigits:3});
+}
+function fmtVol(n) {
+  // Volumen ofertado: entero con separador de miles (punto), sin decimales
+  const v = parseFloat(n);
+  return isNaN(v) ? '—' : Math.round(v).toLocaleString('es-CL');
+}
+
+async function cargarOfertaRodalesLinea(lin, mesStr) {
+  // El ID en Firestore se guardó como "{linea}_{año}-{mes}"
+  // donde linea puede ser "LÍNEA T3" o "T3" según lo que vienen en los reportes.
+  // Intentamos variantes: con prefijo "LÍNEA ", sin prefijo, y con/sin mes.
+  const candidatos = [];
+  const variantes = [lin];
+  // Si lin no empieza con "LÍNEA ", agregar versión con prefijo
+  if(!lin.toUpperCase().startsWith('LÍNEA ') && !lin.toUpperCase().startsWith('LINEA ')) {
+    variantes.push(`LÍNEA ${lin}`);
+  }
+  // Si lin ya tiene "LÍNEA ", agregar versión sin prefijo
+  const sinPrefijo = lin.replace(/^LÍNEA\s+/i, '').replace(/^LINEA\s+/i, '');
+  if(sinPrefijo !== lin) variantes.push(sinPrefijo);
+
+  for(const v of variantes) {
+    if(mesStr) candidatos.push(`${v}_${mesStr}`);
+    candidatos.push(v); // genérico sin mes
+  }
+
+  for(const id of candidatos) {
+    try {
+      const snap = await getDoc(doc(db, 'config_oferta_rodales', id));
+      if(snap.exists()) return snap.data();
+    } catch(e) {}
+  }
+  return null;
+}
+
+window.toggleCalto = async function(btn, lin, mesStr) {
+  const card = btn.closest('.linea-card');
+  const panel = card.querySelector('.calto-panel');
+  if(!panel) return;
+
+  const estaAbierto = panel.classList.contains('abierto');
+  if(estaAbierto) {
+    panel.classList.remove('abierto');
+    return;
+  }
+
+  panel.classList.add('abierto');
+  // Si ya tiene contenido cargado, solo abrir
+  if(panel.dataset.cargado === '1') return;
+
+  // Cargar datos
+  panel.innerHTML = `<div class="calto-loading"><i class="ti ti-loader-2" style="animation:spin .8s linear infinite;display:inline-block"></i> Cargando…</div>`;
+
+  const datos = await cargarOfertaRodalesLinea(lin, mesStr);
+
+  if(!datos) {
+    panel.innerHTML = `<div class="calto-loading" style="color:var(--text3)"><i class="ti ti-info-circle"></i> Sin datos de oferta registrados para esta línea.</div>`;
+    panel.dataset.cargado = '1';
+    return;
+  }
+
+  // El doc guarda 'rodales' (array) y 'meta_calto' ya calculado
+  const filas = Array.isArray(datos.rodales) ? datos.rodales : [];
+  const fundo = datos.fundo || '—';
+
+  // Usar meta_calto precalculado si existe, o recalcular
+  let metaCalto = datos.meta_calto != null ? parseFloat(datos.meta_calto) : 0;
+  const totalOfertado = datos.total_ofertado != null ? parseFloat(datos.total_ofertado)
+    : filas.reduce((s,f) => s + (parseFloat(f.vol_ofertado)||0), 0);
+
+  if(!datos.meta_calto) {
+    // Recalcular desde filas si no viene precalculado
+    filas.forEach(f => {
+      const vma = parseFloat(f.vma);
+      const volN = volNormalParaVMA_dash(vma);
+      const vol = parseFloat(f.vol_ofertado) || 0;
+      const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
+      if(volN != null) metaCalto += pct * volN;
+    });
+  }
+
+  // Meta CALTO acumulada: (meta / días del mes) × días transcurridos hasta ayer
+  let metaCaltoAcum = 0;
+  let pctCumpl = NaN;
+  let diasMesC = 0;
+  let diasHastaAyer = 0;
+
+  if(mesStr) {
+    const [a, m] = mesStr.split('-').map(Number);
+    diasMesC = new Date(a, m, 0).getDate();
+    const ayer = diaBase();
+    // Días transcurridos del mes seleccionado hasta diaBase()
+    const inicioMes = new Date(a, m-1, 1);
+    const finMes    = new Date(a, m-1, diasMesC);
+    const ayerEfectivo = ayer < inicioMes ? inicioMes : (ayer > finMes ? finMes : ayer);
+    diasHastaAyer = Math.max(0, Math.round((ayerEfectivo - inicioMes) / 86400000) + 1);
+    metaCaltoAcum = diasMesC > 0 ? (metaCalto / diasMesC) * diasHastaAyer : 0;
+  }
+
+  // Buscar producción de esta línea en el período actual (volLin ya calculado arriba, pero aquí usamos los datos del doc)
+  // Usamos volLin del dashboard (lo pasamos via dataset)
+  const volLinActual = parseFloat(card.dataset.vollin) || 0;
+  if(metaCaltoAcum > 0 && volLinActual > 0) {
+    pctCumpl = volLinActual / (metaCaltoAcum * 1000) * 100;
+  }
+
+  const pctCls = isNaN(pctCumpl) ? '' : (pctCumpl >= 100 ? 'ok' : pctCumpl >= 85 ? 'warn' : 'bad');
+
+  // Tabla de rodales
+  let tablasHTML = '';
+  if(filas.length > 0) {
+    const rows = filas.map(f => {
+      const vma = parseFloat(f.vma);
+      const vol = parseFloat(f.vol_ofertado) || 0;
+      const pct = totalOfertado > 0 ? (vol / totalOfertado * 100) : 0;
+      const metaProp = f.meta_calto_proporcional != null
+        ? parseFloat(f.meta_calto_proporcional)
+        : (volNormalParaVMA_dash(vma) != null ? (vol / totalOfertado) * volNormalParaVMA_dash(vma) : null);
+      return `<tr>
+        <td>${f.rodal || '—'}</td>
+        <td>${isNaN(vma)?'—':vma.toFixed(2)}</td>
+        <td>${fmtVol(vol)}</td>
+        <td>${pct.toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1})}%</td>
+        <td style="font-weight:700;color:var(--green)">${metaProp != null ? fmt0(metaProp * 1000) : '—'}</td>
+      </tr>`;
+    }).join('');
+    tablasHTML = `
+      <div class="calto-rodales">
+        <div class="calto-rodales-title"><i class="ti ti-list-details"></i> Desglose por rodal</div>
+        <table class="calto-table">
+          <thead><tr><th>Rodal</th><th>VMA</th><th>Vol. of.</th><th>%</th><th>Meta prop.</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  panel.innerHTML = `
+    <div class="calto-panel-title"><i class="ti ti-trees"></i> Meta CALTO — ${lin}</div>
+    <div class="calto-fundo"><i class="ti ti-map-pin" style="color:var(--green)"></i> <strong>Fundo:</strong> ${fundo}</div>
+    <div class="calto-kpis">
+      <div class="calto-kpi">
+        <div class="calto-kpi-label">Meta CALTO<br>mensual</div>
+        <div class="calto-kpi-val">${fmt0(metaCalto * 1000)}</div>
+        <div class="calto-kpi-sub">m³</div>
+      </div>
+      <div class="calto-kpi">
+        <div class="calto-kpi-label">Meta CALTO<br>acum. (${diasHastaAyer} d.)</div>
+        <div class="calto-kpi-val">${fmt0(metaCaltoAcum * 1000)}</div>
+        <div class="calto-kpi-sub">m³</div>
+      </div>
+      <div class="calto-kpi">
+        <div class="calto-kpi-label">Cumplim.<br>vs Meta CALTO</div>
+        <div class="calto-kpi-val ${pctCls}">${isNaN(pctCumpl) ? '—' : Math.round(pctCumpl)+'%'}</div>
+        <div class="calto-kpi-sub">${fmt0(volLinActual)} / ${fmt0(metaCaltoAcum * 1000)}</div>
+      </div>
+    </div>
+    ${tablasHTML}`;
+  panel.dataset.cargado = '1';
+
+  // Actualizar celdas CALTO en el layout dual
+  const linKey = lin.replace(/\s+/g,'-');
+  const metaCaltoTotal1000_t = metaCalto * 1000;
+  const metaCaltoAcum1000_t  = metaCaltoAcum * 1000;
+  const faltaCalto_t = Math.max(0, metaCaltoTotal1000_t - volLinActual);
+  const mesTerminadoT = mesStr ? (() => { const [a,m]=mesStr.split('-').map(Number); return diaBaseISO() > `${mesStr}-${String(new Date(a,m,0).getDate()).padStart(2,'0')}`; })() : false;
+  const promCalto_t = diasHastaAyer>0 ? volLinActual/diasHastaAyer : 0;
+  const proyecCalto_t = mesTerminadoT ? volLinActual : (promCalto_t * diasMesC);
+  const celdaMetaTotal2 = document.getElementById(`calto-meta-total-${linKey}`);
+  const celdaMetaAcum2  = document.getElementById(`calto-meta-acum-${linKey}`);
+  const celdaCumpl2     = document.getElementById(`calto-cumpl-${linKey}`);
+  const celdaFalta2     = document.getElementById(`calto-falta-${linKey}`);
+  const celdaProyec2    = document.getElementById(`calto-proyec-${linKey}`);
+  if(celdaMetaTotal2) celdaMetaTotal2.innerHTML = `<div class="dk-desc">Meta total mes</div><div class="dk-val" style="color:var(--text2)">${fmt0(metaCaltoTotal1000_t)}</div><div class="dk-sub">m³</div>`;
+  if(celdaMetaAcum2)  celdaMetaAcum2.innerHTML  = `<div class="dk-desc">Meta acum.</div><div class="dk-val" style="color:var(--text2)">${fmt0(metaCaltoAcum1000_t)}</div><div class="dk-sub">m³</div>`;
+  const pctClsDual2 = isNaN(pctCumpl)?'':(pctCumpl>=100?'blue':'bad');
+  if(celdaCumpl2)    celdaCumpl2.innerHTML    = `<div class="dk-desc">% cumplim.</div><div class="dk-val ${pctClsDual2}">${isNaN(pctCumpl)?'—':Math.round(pctCumpl)+'%'}</div>`;
+  if(celdaFalta2)    celdaFalta2.innerHTML    = `<div class="dk-desc">¿Cuánto falta?</div><div class="dk-val">${fmt0(faltaCalto_t)}</div><div class="dk-sub">m³</div>`;
+  if(celdaProyec2)   celdaProyec2.innerHTML   = `<div class="dk-val">${fmt0(proyecCalto_t)}</div><div class="dk-sub">m³</div>`;
+};
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').then(reg=>{
+      if(reg.waiting)reg.waiting.postMessage('SKIP_WAITING');
+      reg.addEventListener('updatefound',()=>{
+        const nw=reg.installing;
+        nw.addEventListener('statechange',()=>{
+          if(nw.state==='installed'&&navigator.serviceWorker.controller)
+            nw.postMessage('SKIP_WAITING');
+        });
+      });
+      reg.update();
+    }).catch(()=>{});
+    let recargado=false;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(recargado)return;recargado=true;window.location.reload();
+    });
+  });
+}
+</script>
+</body>
+</html>
 
