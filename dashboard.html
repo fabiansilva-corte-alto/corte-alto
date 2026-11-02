@@ -809,8 +809,22 @@ const avg  = arr => arr.length ? arr.reduce((s,v)=>s+v,0)/arr.length : NaN;
 const toISO = d => d.toISOString().split('T')[0];
 const loaderHTML = '<div class="loading-block"><div class="spinner"></div></div>';
 
+// ── CORTE HORARIO ─────────────────────────────────────────────────────────
+// Antes de las 20:00 el sistema se considera en el día anterior,
+// porque los calibradores ingresan la producción después de las 18-20 hrs.
+const HORA_CORTE = 20;
+function diaBase() {
+  const ahora = new Date();
+  if(ahora.getHours() < HORA_CORTE) {
+    const ayer = new Date(ahora);
+    ayer.setDate(ayer.getDate() - 1);
+    return ayer;
+  }
+  return ahora;
+}
+
 // ── FILTRO MES/AÑO ────────────────────────────────────────────────────────
-const hoy = new Date();
+const hoy = new Date(); // hora real para UI (selector de mes, etc.)
 const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
 document.getElementById('f-mes').value = mesActual;
 
@@ -844,9 +858,9 @@ function getFechas() {
   const [a,m] = mes.split('-');
   const diasMes = new Date(+a, +m, 0).getDate();
   const desde = `${mes}-01`;
-  const hasta = toISO(new Date()) <= `${mes}-${String(diasMes).padStart(2,'0')}`
-    && toISO(new Date()) >= desde
-    ? toISO(new Date())
+  const hasta = toISO(diaBase()) <= `${mes}-${String(diasMes).padStart(2,'0')}`
+    && toISO(diaBase()) >= desde
+    ? toISO(diaBase())
     : `${mes}-${String(diasMes).padStart(2,'0')}`;
   return { desde, hasta, mesStr:mes };
 }
@@ -991,8 +1005,8 @@ window.consultar = async function() {
 
     // ── Producción extra: últimos días antes del período (para bloque Últimos 3 días) ──
     // Necesitamos al menos 3 fechas distintas; si el período tiene menos, buscamos hacia atrás
-    const _hoyStr = toISO(new Date());
-    const fechasEnPeriodo = [...new Set(prodTodo.map(d=>d.fecha))].filter(f=>f<_hoyStr).sort();
+    const _hoyStr = toISO(diaBase());
+    const fechasEnPeriodo = [...new Set(prodTodo.map(d=>d.fecha))].filter(f=>f<=_hoyStr).sort();
     let prodHistorico = [...prodTodo];
     if(fechasEnPeriodo.length < 3) {
       const snapAntes = await getDocs(query(collection(db,'reportes_produccion'),
@@ -1139,9 +1153,8 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
     }
   }
 
-  // Meta acumulada hasta ayer (no incluir día de consulta si aún no hay producción)
-  const _ayer = new Date(); _ayer.setDate(_ayer.getDate()-1);
-  const ayerISO = toISO(_ayer);
+  // Meta acumulada hasta diaBase() — antes de las 20h usamos ayer, después usamos hoy
+  const ayerISO = toISO(diaBase());
   const hastaMetaAcum = hasta < ayerISO ? hasta : ayerISO;
   let metaAcum = 0;
   lineasReales.forEach(lin => {
@@ -1153,7 +1166,7 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
   const falta     = Math.max(0, metaTotal-volTotal);
   const promDia   = diasConProd>0 ? volTotal/diasConProd : 0;
   // Días restantes del mes
-  const hoyISO    = toISO(new Date());
+  const hoyISO    = toISO(diaBase());
   const diasMes   = mesStr ? new Date(+a,+m,0).getDate() : diasConProd;
   // Fin del mes seleccionado
   const finMesISO = mesStr ? `${mesStr}-${String(diasMes).padStart(2,'0')}` : hasta;
@@ -1232,7 +1245,7 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
       // Meta acumulada CALTO hasta ayer
       const [aC,mC] = mesStr.split('-').map(Number);
       const diasMesC = new Date(aC,mC,0).getDate();
-      const hoyC = new Date(); const ayerC = new Date(hoyC); ayerC.setDate(ayerC.getDate()-1);
+      const ayerC = diaBase();
       const inicioMesC = new Date(aC,mC-1,1); const finMesC = new Date(aC,mC-1,diasMesC);
       const ayerEfC = ayerC<inicioMesC?inicioMesC:(ayerC>finMesC?finMesC:ayerC);
       const diasHastaAyerC = Math.max(0, Math.round((ayerEfC-inicioMesC)/86400000)+1);
@@ -1529,9 +1542,9 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
         }
         const [a,m] = mesStr.split('-').map(Number);
         const diasMesC = new Date(a,m,0).getDate();
-        const hoy = new Date(); const ayer = new Date(hoy); ayer.setDate(ayer.getDate()-1);
+        const hoy = diaBase(); const ayer = diaBase();
         const inicioMes = new Date(a,m-1,1); const finMes = new Date(a,m-1,diasMesC);
-        const mesTerminadoC = hoy.toISOString().slice(0,10) > `${mesStr}-${String(diasMesC).padStart(2,'0')}`;
+        const mesTerminadoC = toISO(diaBase()) > `${mesStr}-${String(diasMesC).padStart(2,'0')}`;
         const ayerEf = ayer<inicioMes?inicioMes:(ayer>finMes?finMes:ayer);
         const diasHastaAyer = Math.max(0, Math.round((ayerEf-inicioMes)/86400000)+1);
         const metaCaltoAcum = diasMesC>0 ? (metaCalto/diasMesC)*diasHastaAyer : 0;
@@ -1629,9 +1642,9 @@ async function renderUltimos3(prodTodo, metasPorLinea) {
   };
 
   // Últimas 3 fechas GLOBALES (de cualquier línea) — excluye el día actual (puede estar incompleto)
-  const _hoyISO = toISO(new Date());
+  const _hoyISO = toISO(diaBase());
   const fechasGlobales = [...new Set(prodTodo.map(d=>d.fecha).filter(Boolean))]
-    .filter(f => f < _hoyISO)
+    .filter(f => f <= _hoyISO)
     .sort().slice(-3);
 
   const bloques = lineas.map((lin, li) => {
@@ -3333,9 +3346,8 @@ window.toggleCalto = async function(btn, lin, mesStr) {
   if(mesStr) {
     const [a, m] = mesStr.split('-').map(Number);
     diasMesC = new Date(a, m, 0).getDate();
-    const hoy = new Date();
-    const ayer = new Date(hoy); ayer.setDate(ayer.getDate() - 1);
-    // Días transcurridos del mes seleccionado hasta ayer
+    const ayer = diaBase();
+    // Días transcurridos del mes seleccionado hasta diaBase()
     const inicioMes = new Date(a, m-1, 1);
     const finMes    = new Date(a, m-1, diasMesC);
     const ayerEfectivo = ayer < inicioMes ? inicioMes : (ayer > finMes ? finMes : ayer);
@@ -3408,7 +3420,7 @@ window.toggleCalto = async function(btn, lin, mesStr) {
   const metaCaltoTotal1000_t = metaCalto * 1000;
   const metaCaltoAcum1000_t  = metaCaltoAcum * 1000;
   const faltaCalto_t = Math.max(0, metaCaltoTotal1000_t - volLinActual);
-  const mesTerminadoT = mesStr ? (() => { const [a,m]=mesStr.split('-').map(Number); return new Date().toISOString().slice(0,10) > `${mesStr}-${String(new Date(a,m,0).getDate()).padStart(2,'0')}`; })() : false;
+  const mesTerminadoT = mesStr ? (() => { const [a,m]=mesStr.split('-').map(Number); return toISO(diaBase()) > `${mesStr}-${String(new Date(a,m,0).getDate()).padStart(2,'0')}`; })() : false;
   const promCalto_t = diasHastaAyer>0 ? volLinActual/diasHastaAyer : 0;
   const proyecCalto_t = mesTerminadoT ? volLinActual : (promCalto_t * diasMesC);
   const celdaMetaTotal2 = document.getElementById(`calto-meta-total-${linKey}`);
