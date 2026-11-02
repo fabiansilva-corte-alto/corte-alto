@@ -897,6 +897,15 @@ window.mostrarSeccion = function(id){
   if(id === "bandeja" && !fundosCatalogoCargados){
     fetchFundosCatalogo().then(renderFundosDatalist).catch(()=>{});
   }
+  if(id === "bandeja" && anexosDatos === null){
+    // Precarga en segundo plano (pedido por Fabián 2 nov 2026): antes el globo de alerta de
+    // "Anexos pendientes" en el menú lateral solo aparecía después de entrar manualmente a esa
+    // pestaña (porque fetchAnexosPendientes recién se disparaba ahí). Ahora se calcula apenas
+    // se entra al módulo (al caer en Bandeja), para que el número ya esté puesto desde el
+    // primer momento. La tabla de Anexos pendientes sigue sin pintarse hasta que se entra a esa
+    // pestaña — acá solo interesa el conteo para el globo.
+    fetchAnexosPendientes(false).catch(()=>{});
+  }
   if((id === "bandeja" || id === "boveda") && !empresasCatalogoCargado){
     // Se necesita para que el selector de empresa del modal "Agregar trabajador" (abierto
     // desde Bandeja o desde "Mover a otro trabajador" en la Bóveda) tenga opciones.
@@ -3314,6 +3323,7 @@ window.fetchAnexosPendientes = async function(forzar){
 
     anexosDatos = filas;
   }catch(e){
+    console.error("fetchAnexosPendientes falló:", e);
     cuerpo.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--red);padding:20px">No se pudo cargar. Intenta de nuevo.</td></tr>`;
     contador.textContent = "Error al cargar.";
     anexosDatos = null;
