@@ -498,6 +498,27 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 
       <div class="toolbar-desktop">
         <label class="chk-row" style="margin:0"><input type="checkbox" id="anexos-solo-pendientes" checked onchange="renderAnexosPendientes()"> Mostrar solo pendientes</label>
+        <input class="field-input buscar-desktop" id="anexos-buscar" type="text" placeholder="Buscar por nombre o RUT..." oninput="renderAnexosPendientes()">
+        <select class="field-input filtro-desktop" id="anexos-filtro-centro" onchange="renderAnexosPendientes()">
+          <option value="">Todos los centros</option>
+          <option value="FORMIN 1">FORMIN 1</option>
+          <option value="FORMIN 2">FORMIN 2</option>
+          <option value="FORMIN 3">FORMIN 3</option>
+          <option value="TALLER_COIHUE">Taller Coihue</option>
+          <option value="ROTATIVO">Rotativo</option>
+          <option value="__PENDIENTE__">Pendiente de asignar</option>
+        </select>
+        <select class="field-input filtro-desktop" id="anexos-filtro-tipo" onchange="renderAnexosPendientes()">
+          <option value="">Todos los tipos</option>
+          <option value="tiene_no_vigente">Falta marcar vigente</option>
+          <option value="sin_anexo">Sin anexo — generar nuevo</option>
+        </select>
+        <select class="field-input filtro-desktop" id="anexos-filtro-fundo" onchange="renderAnexosPendientes()">
+          <option value="">Todos los fundos</option>
+        </select>
+        <select class="field-input filtro-desktop" id="anexos-filtro-jefe" onchange="renderAnexosPendientes()">
+          <option value="">Todos los jefes de faena</option>
+        </select>
       </div>
 
       <div class="contador-desktop" id="anexos-contador">Cargando…</div>
@@ -3322,6 +3343,7 @@ window.fetchAnexosPendientes = async function(forzar){
     }
 
     anexosDatos = filas;
+    poblarFiltrosAnexos();
   }catch(e){
     console.error("fetchAnexosPendientes falló:", e);
     cuerpo.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--red);padding:20px">No se pudo cargar. Intenta de nuevo.</td></tr>`;
@@ -3333,6 +3355,27 @@ window.fetchAnexosPendientes = async function(forzar){
   renderAnexosPendientes();
 };
 
+// Llena las opciones de los filtros "Fundo" y "Jefe de faena" con los valores que de verdad
+// aparecen en los datos recién cargados (pedido por Fabián 2 nov 2026, al crecer mucho la
+// lista con los rotativos). Se llama una sola vez por cada fetch — no en cada render — para
+// que la lista de opciones no cambie mientras el usuario está filtrando, y se respeta lo que
+// ya estaba elegido si sigue siendo una opción válida.
+function poblarFiltrosAnexos(){
+  const selFundo = document.getElementById("anexos-filtro-fundo");
+  const selJefe = document.getElementById("anexos-filtro-jefe");
+  if(!selFundo || !selJefe) return;
+  const valorFundoActual = selFundo.value;
+  const valorJefeActual = selJefe.value;
+  const fundosUnicos = [...new Set((anexosDatos || []).map(f => f.fundoActual).filter(Boolean))].sort((a,b) => a.localeCompare(b, "es"));
+  const jefesUnicos = [...new Set((anexosDatos || []).map(f => f.jefeFaena).filter(Boolean))].sort((a,b) => a.localeCompare(b, "es"));
+  selFundo.innerHTML = `<option value="">Todos los fundos</option>` + fundosUnicos.map(f =>
+    `<option value="${escapeHtml(f)}"${f === valorFundoActual ? " selected" : ""}>${escapeHtml(f)}</option>`
+  ).join("");
+  selJefe.innerHTML = `<option value="">Todos los jefes de faena</option>` + jefesUnicos.map(j =>
+    `<option value="${escapeHtml(j)}"${j === valorJefeActual ? " selected" : ""}>${escapeHtml(j)}</option>`
+  ).join("");
+}
+
 window.renderAnexosPendientes = function(){
   const cuerpo = document.getElementById("anexos-tabla-body");
   const contador = document.getElementById("anexos-contador");
@@ -3340,9 +3383,35 @@ window.renderAnexosPendientes = function(){
 
   const chkSolo = document.getElementById("anexos-solo-pendientes");
   const soloPendientes = chkSolo ? chkSolo.checked : true;
+  // Filtros agregados (pedido por Fabián 2 nov 2026, al crecer mucho la lista con los
+  // rotativos): buscador de texto, centro, tipo de pendiente, fundo y jefe de faena. Los
+  // rotativos no tienen jefe de faena (no dependen de una cuadrilla con un fundo fijo), así
+  // que desaparecen al elegir un jefe específico — es esperado, se los avisé a Fabián.
+  const elBuscar = document.getElementById("anexos-buscar");
+  const term = elBuscar ? normalizar(elBuscar.value) : "";
+  const elCentro = document.getElementById("anexos-filtro-centro");
+  const filtroCentro = elCentro ? elCentro.value : "";
+  const elTipo = document.getElementById("anexos-filtro-tipo");
+  const filtroTipo = elTipo ? elTipo.value : "";
+  const elFundo = document.getElementById("anexos-filtro-fundo");
+  const filtroFundo = elFundo ? elFundo.value : "";
+  const elJefe = document.getElementById("anexos-filtro-jefe");
+  const filtroJefe = elJefe ? elJefe.value : "";
+  const hayFiltrosActivos = !!(term || filtroCentro || filtroTipo || filtroFundo || filtroJefe);
 
   let filas = anexosDatos.slice();
   if(soloPendientes) filas = filas.filter(f => f.estado === "pendiente");
+  if(term){
+    filas = filas.filter(f => (normalizar(f.trabajador.nombre) + " " + normalizar(f.trabajador.rut || "")).includes(term));
+  }
+  if(filtroCentro === "__PENDIENTE__"){
+    filas = filas.filter(f => !f.trabajador.centro);
+  }else if(filtroCentro){
+    filas = filas.filter(f => f.trabajador.centro === filtroCentro);
+  }
+  if(filtroTipo) filas = filas.filter(f => f.subEstado === filtroTipo);
+  if(filtroFundo) filas = filas.filter(f => f.fundoActual === filtroFundo);
+  if(filtroJefe) filas = filas.filter(f => f.jefeFaena === filtroJefe);
   filas.sort((a,b) => {
     if(a.estado !== b.estado) return a.estado === "pendiente" ? -1 : 1;
     if(a.estado === "pendiente" && (b.diasEnFundo||0) !== (a.diasEnFundo||0)) return (b.diasEnFundo||0) - (a.diasEnFundo||0);
@@ -3350,7 +3419,9 @@ window.renderAnexosPendientes = function(){
   });
 
   const totalPendientes = anexosDatos.filter(f => f.estado === "pendiente").length;
-  contador.textContent = `${totalPendientes} pendiente${totalPendientes === 1 ? "" : "s"} de ${anexosDatos.length} con cuadrilla reciente`;
+  contador.textContent = hayFiltrosActivos
+    ? `${filas.length} de ${totalPendientes} pendiente${totalPendientes === 1 ? "" : "s"} (con los filtros aplicados)`
+    : `${totalPendientes} pendiente${totalPendientes === 1 ? "" : "s"} de ${anexosDatos.length} con cuadrilla reciente`;
 
   const badge = document.getElementById("badge-anexos-pendientes");
   if(badge){
@@ -3359,7 +3430,10 @@ window.renderAnexosPendientes = function(){
   }
 
   if(!filas.length){
-    cuerpo.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">${soloPendientes ? (anexosDatos.length ? "No hay anexos pendientes 🎉" : "Sin registros de cuadrilla en los últimos 45 días.") : "Sin datos de cuadrilla todavía."}</td></tr>`;
+    const mensajeVacio = hayFiltrosActivos
+      ? "No hay resultados con esos filtros."
+      : (soloPendientes ? (anexosDatos.length ? "No hay anexos pendientes 🎉" : "Sin registros de cuadrilla en los últimos 45 días.") : "Sin datos de cuadrilla todavía.");
+    cuerpo.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">${mensajeVacio}</td></tr>`;
     return;
   }
 
