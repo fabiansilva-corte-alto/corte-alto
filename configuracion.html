@@ -344,16 +344,10 @@
   <div class="panel" id="panel-oferta-rodales">
 
     <div style="background:#fff;border:1px solid var(--borde);border-radius:12px;padding:14px;margin-bottom:14px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:10px">
         <div>
           <label>Línea</label>
           <select id="or-linea" onchange="cargarOfertaRodales()"></select>
-        </div>
-        <div>
-          <label>Fundo</label>
-          <select id="or-fundo" onchange="orCambioFundoGlobal()">
-            <option value="">— Todos —</option>
-          </select>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -379,6 +373,7 @@
         <table id="or-tabla" style="width:100%;border-collapse:collapse;font-size:13px">
           <thead>
             <tr style="background:var(--verde-oscuro);color:#fff">
+              <th style="padding:10px 8px;text-align:left;min-width:130px">Fundo</th>
               <th style="padding:10px 8px;text-align:left;min-width:110px">Rodal</th>
               <th style="padding:10px 8px;text-align:center;min-width:60px">VMA</th>
               <th style="padding:10px 8px;text-align:center;min-width:90px">Tramo contrato</th>
@@ -390,11 +385,11 @@
             </tr>
           </thead>
           <tbody id="or-tbody">
-            <tr><td colspan="8" style="text-align:center;color:#999;padding:20px;font-size:13px">Sin rodales ingresados</td></tr>
+            <tr><td colspan="9" style="text-align:center;color:#999;padding:20px;font-size:13px">Sin rodales ingresados</td></tr>
           </tbody>
           <tfoot>
             <tr style="background:var(--verde-claro);font-weight:700">
-              <td colspan="3" style="padding:10px 8px;font-size:13px;color:var(--verde-oscuro)">TOTAL</td>
+              <td colspan="4" style="padding:10px 8px;font-size:13px;color:var(--verde-oscuro)">TOTAL</td>
               <td id="or-total-ofertado" style="padding:10px 8px;text-align:right;font-size:13px;color:var(--verde-oscuro)">—</td>
               <td style="padding:10px 8px;text-align:right;font-size:13px;color:var(--verde-oscuro)">100%</td>
               <td style="padding:10px 8px"></td>
@@ -654,7 +649,6 @@ window.cambiarTab = function(tab){
   document.getElementById(`panel-${tab}`).classList.add('activo');
   if(tab === 'volumen-meta' && typeof window.cargarVolumenMeta === 'function') window.cargarVolumenMeta();
   if(tab === 'oferta-rodales'){
-    poblarSelectFundoOfertaRodales();
     if(typeof window.cargarOfertaRodales === 'function') window.cargarOfertaRodales();
   }
 };
@@ -700,7 +694,6 @@ function iniciarEscuchas(){
     fundos = snap.docs.map(d=>({id:d.id, ...d.data()}));
     renderFundos();
     renderSelectFundoEnLinea();
-    poblarSelectFundoOfertaRodales();
   });
   onSnapshot(query(collection(db, COL_LINEAS), orderBy('nombre')), snap=>{
     lineas = snap.docs.map(d=>({id:d.id, ...d.data()}));
@@ -1567,28 +1560,36 @@ function todosLosRodales(){
 function renderOrTabla(){
   const tbody = document.getElementById('or-tbody');
   if(orFilas.length === 0){
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:20px;font-size:13px">Sin rodales ingresados</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#999;padding:20px;font-size:13px">Sin rodales ingresados</td></tr>';
     document.getElementById('or-total-ofertado').textContent = '—';
     document.getElementById('or-meta-calto').textContent = '—';
     return;
   }
 
-  // Fundo global seleccionado en el header
-  const fundoGlobal = document.getElementById('or-fundo')?.value || '';
-  const rodalesFundo = fundoGlobal ? rodalesDesFundo(fundoGlobal) : [];
-
+  // Opciones de fundos disponibles
+  const fundosDisp = fundos.filter(f => f.activo !== false && (f.rodales||[]).length > 0);
   const totalOfertado = orFilas.reduce((s,f) => s + (parseFloat(String(f.vol||'').replace(/\./g,''))||0), 0);
 
   let metaCaltoTotal = 0;
   const rows = orFilas.map((fila, idx) => {
+    // Selector fundo por fila
+    const optsFundo = [
+      `<option value="">— Fundo —</option>`,
+      ...fundosDisp.map(f =>
+        `<option value="${f.nombre}" ${f.nombre===fila.fundo?'selected':''}>${f.nombre}</option>`
+      )
+    ].join('');
+
+    // Rodales del fundo seleccionado en esta fila
+    const rodalesFila = fila.fundo ? rodalesDesFundo(fila.fundo) : [];
     const optsRodal = [
-      `<option value="">${fundoGlobal ? '— Rodal —' : '← Elige fundo arriba'}</option>`,
-      ...rodalesFundo.map(r =>
+      `<option value="">${fila.fundo ? '— Rodal —' : '← Elige fundo'}</option>`,
+      ...rodalesFila.map(r =>
         `<option value="${r.rodal}" ${String(r.rodal)===fila.rodal?'selected':''}>${r.rodal}${r.vma ? ` (VMA ${r.vma})` : ''}</option>`
       )
     ].join('');
 
-    const vma = (fundoGlobal && fila.rodal) ? vmaDeRodal(fila.rodal, fundoGlobal) : null;
+    const vma = (fila.fundo && fila.rodal) ? vmaDeRodal(fila.rodal, fila.fundo) : null;
     const volN = vma != null ? volNormalParaVMA(vma) : null;
     const vol = parseFloat(String(fila.vol||'').replace(/\./g,'')) || 0;
     const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
@@ -1596,6 +1597,7 @@ function renderOrTabla(){
     if(metaProp != null) metaCaltoTotal += metaProp;
 
     return `<tr>
+      <td><select class="or-sel-fundo" data-idx="${idx}" onchange="orCambioFundo(this)">${optsFundo}</select></td>
       <td><select class="or-sel-rodal" data-idx="${idx}" onchange="orCambioRodal(this)">${optsRodal}</select></td>
       <td class="or-cell-calc" style="text-align:center">${vma != null ? vma.toFixed(2) : '<span style="color:#aaa">—</span>'}</td>
       <td style="text-align:center">${vma != null ? `<span class="or-tramo-badge">${tramoTexto(vma)}</span>` : '<span style="color:#aaa">—</span>'}</td>
@@ -1615,9 +1617,10 @@ function renderOrTabla(){
     metaCaltoTotal > 0 ? orFmt(metaCaltoTotal, 3) + ' m³' : '—';
 }
 
-window.orCambioFundoGlobal = function(){
-  // Al cambiar el fundo global, resetear todos los rodales de las filas
-  orFilas = orFilas.map(f => ({ ...f, rodal: '' }));
+window.orCambioFundo = function(sel){
+  const idx = parseInt(sel.dataset.idx);
+  orFilas[idx].fundo = sel.value;
+  orFilas[idx].rodal = ''; // resetear rodal al cambiar fundo
   renderOrTabla();
 };
 
@@ -1652,27 +1655,25 @@ window.orCambioVol = function(inp){
   document.querySelectorAll('#or-tbody tr').forEach((tr, i) => {
     const fila = orFilas[i];
     if(!fila) return;
-    const fundoGlobal = document.getElementById('or-fundo')?.value || '';
-    const vma = vmaDeRodal(fila.rodal, fundoGlobal);
+    const vma = vmaDeRodal(fila.rodal, fila.fundo || '');
     const volN = vma != null ? volNormalParaVMA(vma) : null;
     const vol = parseFloat(String(fila.vol||'').replace(/\./g,'')) || 0;
     const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
     const metaProp = (volN != null) ? pct * volN : null;
     const celdas = tr.querySelectorAll('td');
-    // td[4] = % del total, td[6] = Meta CALTO prop
-    if(celdas[4]) celdas[4].textContent = totalOfertado > 0
+    // td[5] = % del total, td[7] = Meta CALTO prop (col fundo agregada al inicio)
+    if(celdas[5]) celdas[5].textContent = totalOfertado > 0
       ? (pct*100).toFixed(1).replace('.',',')+'%' : '—';
-    if(celdas[6]) {
-      celdas[6].textContent = metaProp != null ? orFmt(metaProp * 1000, 0) : '—';
-      celdas[6].style.fontWeight = metaProp != null ? '700' : '400';
-      celdas[6].style.color = metaProp != null ? 'var(--verde-oscuro)' : '#aaa';
+    if(celdas[7]) {
+      celdas[7].textContent = metaProp != null ? orFmt(metaProp * 1000, 0) : '—';
+      celdas[7].style.fontWeight = metaProp != null ? '700' : '400';
+      celdas[7].style.color = metaProp != null ? 'var(--verde-oscuro)' : '#aaa';
     }
   });
   // Meta CALTO total en tfoot
   let metaCaltoTotal = 0;
   orFilas.forEach(fila => {
-    const fundoGlobal = document.getElementById('or-fundo')?.value || '';
-    const vma = vmaDeRodal(fila.rodal, fundoGlobal);
+    const vma = vmaDeRodal(fila.rodal, fila.fundo || '');
     const volN = vma != null ? volNormalParaVMA(vma) : null;
     const vol = parseFloat(String(fila.vol||'').replace(/\./g,'')) || 0;
     const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
@@ -1690,7 +1691,7 @@ window.orEliminarFila = function(idx){
 };
 
 window.agregarFilaOferta = function(){
-  orFilas.push({ rodal: '', vol: '' });
+  orFilas.push({ fundo: '', rodal: '', vol: '' });
   renderOrTabla();
   setTimeout(()=>{
     const trs = document.querySelectorAll('#or-tbody tr');
@@ -1727,17 +1728,7 @@ function poblarSelectLineaOfertaRodales(){
   if(actual && nombres.includes(actual)) sel.value = actual;
 }
 
-function poblarSelectFundoOfertaRodales(){
-  const sel = document.getElementById('or-fundo');
-  if(!sel) return;
-  const actual = sel.value;
-  const lista = fundos.filter(f => f.activo !== false && (f.rodales||[]).length > 0);
-  sel.innerHTML = [
-    '<option value="">— Todos los fundos —</option>',
-    ...lista.map(f => `<option value="${f.nombre}">${f.nombre}</option>`)
-  ].join('');
-  if(actual && lista.some(f => f.nombre === actual)) sel.value = actual;
-}
+// poblarSelectFundoOfertaRodales eliminada: el fundo ahora se selecciona por fila en renderOrTabla
 
 window.cargarOfertaRodales = async function(){
   const linea = document.getElementById('or-linea').value;
@@ -1758,12 +1749,7 @@ window.cargarOfertaRodales = async function(){
     const snap = await getDoc(doc(db, COL_OFERTA_RODALES, idOfertaRodales(linea, mes, anio)));
     if(snap.exists()){
       const data = snap.data();
-      // Restaurar fundo global si está guardado
-      if(data.fundo){
-        const selFundo = document.getElementById('or-fundo');
-        if(selFundo) selFundo.value = data.fundo;
-      }
-      orFilas = (data.rodales || []).map(r => ({ rodal: String(r.rodal||''), vol: String(r.vol_ofertado||'') }));
+      orFilas = (data.rodales || []).map(r => ({ fundo: String(r.fundo||''), rodal: String(r.rodal||''), vol: String(r.vol_ofertado||'') }));
       if(data.meta_calto != null){
         info.style.display = 'block';
         info.innerHTML = `✅ Meta CALTO guardada: <strong>${orFmt(data.meta_calto, 3)} m³</strong>`;
@@ -1810,23 +1796,23 @@ window.guardarOfertaRodales = async function(){
   const linea = document.getElementById('or-linea').value;
   const mes   = Number(document.getElementById('or-mes').value);
   const anio  = Number(document.getElementById('or-anio').value);
-  const fundoGlobal = document.getElementById('or-fundo')?.value || '';
   if(!linea){ toast('Selecciona una línea'); return; }
-  if(!fundoGlobal){ toast('Selecciona un fundo'); return; }
   if(orFilas.length === 0){ toast('Agrega al menos un rodal'); return; }
+  if(orFilas.some(f => !f.fundo)){ toast('Selecciona fundo en todas las filas'); return; }
+  if(orFilas.some(f => !f.rodal)){ toast('Selecciona rodal en todas las filas'); return; }
 
   const totalOfertado = orFilas.reduce((s,f) => s + (parseFloat(String(f.vol||'').replace(/\./g,''))||0), 0);
   let metaCaltoTotal = 0;
 
   const rodalesPayload = orFilas.map(fila => {
-    const vma = (fundoGlobal && fila.rodal) ? vmaDeRodal(fila.rodal, fundoGlobal) : null;
+    const vma = vmaDeRodal(fila.rodal, fila.fundo);
     const volN = vma != null ? volNormalParaVMA(vma) : null;
     const vol = parseFloat(String(fila.vol||'').replace(/\./g,'')) || 0;
     const pct = totalOfertado > 0 ? vol / totalOfertado : 0;
     const metaProp = (volN != null) ? pct * volN : null;
     if(metaProp != null) metaCaltoTotal += metaProp;
     return {
-      fundo: fundoGlobal,
+      fundo: fila.fundo,
       rodal: fila.rodal,
       vma: vma,
       tramo: tramoTexto(vma),
@@ -1836,6 +1822,8 @@ window.guardarOfertaRodales = async function(){
       meta_calto_proporcional: metaProp
     };
   });
+  // Fundos únicos usados en este mes
+  const fundosUsados = [...new Set(orFilas.map(f => f.fundo).filter(Boolean))];
 
   // Leer override manual y elección
   const manualRaw  = parseFloat(document.getElementById('or-meta-manual')?.value);
@@ -1847,7 +1835,7 @@ window.guardarOfertaRodales = async function(){
 
   try{
     await setDoc(doc(db, COL_OFERTA_RODALES, idOfertaRodales(linea, mes, anio)), {
-      linea, mes, anio, fundo: fundoGlobal,
+      linea, mes, anio, fundos: fundosUsados,
       rodales: rodalesPayload,
       total_ofertado: totalOfertado,
       meta_calto_prop:   metaCaltoTotal,   // calculada (referencia)
