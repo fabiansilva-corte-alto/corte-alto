@@ -834,7 +834,15 @@ window.abrirTarjeta=function(id){
   const pos=r.brecha>=0;
   const sgn=pos?'+':'';
   // Historial completo ordenado
-  const histOrd=[...todosReg].filter(x=>x.fundoId===r.fundoId).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const histOrdAll=[...todosReg].filter(x=>x.fundoId===r.fundoId).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  // Mostrar últimos 12, asegurando que el actual siempre esté
+  const MAX_HIST=12;
+  let histOrd=histOrdAll;
+  if(histOrdAll.length>MAX_HIST){
+    const idx=histOrdAll.findIndex(x=>x.id===r.id);
+    const start=Math.max(0,Math.min(idx,histOrdAll.length-MAX_HIST));
+    histOrd=histOrdAll.slice(start,start+MAX_HIST);
+  }
   const histRows=histOrd.map((h,i)=>{
     const p=h.brecha>=0, esActual=h.id===r.id;
     return`<div class="tarjeta-hist-item${esActual?' actual':''}">
@@ -886,7 +894,7 @@ window.abrirTarjeta=function(id){
         <div class="tarjeta-brecha-sub">${pos?'Inventario interno supera al portal':'Portal supera al inventario interno'}</div>
       </div>
       ${r.observaciones?`<div class="tarjeta-obs"><span>🔧</span><span>${r.observaciones}</span></div>`:''}
-      ${histRows?`<div class="tarjeta-hist-title">⏱ Histórico de brechas</div><div class="tarjeta-hist-grid">${histRows}</div>`:''}
+      ${histRows?`<div class="tarjeta-hist-title">⏱ Histórico de brechas <span style="font-weight:400;color:#aaa;font-size:9px;text-transform:none;letter-spacing:0">(últimos ${histOrd.length} registros)</span></div><div class="tarjeta-hist-grid">${histRows}</div>`:''}
     </div>`;
 
   // Guardar texto para copiar
