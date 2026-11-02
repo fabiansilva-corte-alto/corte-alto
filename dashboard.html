@@ -781,6 +781,42 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
 
 </div><!-- /app -->
 
+<!-- ── CORTE HORARIO (scope global, fuera del módulo) ──────────────────── -->
+<script>
+// Antes de las 20:00 (hora Chile) el sistema se considera en el día anterior,
+// porque los calibradores ingresan la producción después de las 18-20 hrs.
+const HORA_CORTE = 20;
+function horaLocalChile() {
+  const ahora = new Date();
+  const partes = new Intl.DateTimeFormat('es-CL', {
+    timeZone: 'America/Santiago',
+    hour: 'numeric', hour12: false
+  }).formatToParts(ahora);
+  return parseInt(partes.find(p => p.type === 'hour').value);
+}
+function diaBaseISO() {
+  const ahora = new Date();
+  const fechaLocal = new Intl.DateTimeFormat('es-CL', {
+    timeZone: 'America/Santiago',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(ahora); // dd-mm-yyyy en es-CL
+  const [d, m, a] = fechaLocal.split('-');
+  const hoy = `${a}-${m}-${d}`;
+  if (horaLocalChile() < HORA_CORTE) {
+    const [ay, am, ad] = hoy.split('-').map(Number);
+    const dt = new Date(ay, am - 1, ad - 1);
+    const yy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
+  return hoy;
+}
+function diaBase() {
+  return new Date(`${diaBaseISO()}T12:00:00`);
+}
+</script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, getDocs, query, where, orderBy, doc, getDoc }
@@ -808,44 +844,6 @@ const pct0 = n => (isNaN(n)||n==null) ? '—' : Math.round(n)+'%';
 const avg  = arr => arr.length ? arr.reduce((s,v)=>s+v,0)/arr.length : NaN;
 const toISO = d => d.toISOString().split('T')[0];
 const loaderHTML = '<div class="loading-block"><div class="spinner"></div></div>';
-
-// ── CORTE HORARIO ─────────────────────────────────────────────────────────
-// Antes de las 20:00 (hora Chile) el sistema se considera en el día anterior,
-// porque los calibradores ingresan la producción después de las 18-20 hrs.
-const HORA_CORTE = 20;
-function horaLocalChile() {
-  // Chile = America/Santiago. Usamos Intl para obtener la hora local real.
-  const ahora = new Date();
-  const partes = new Intl.DateTimeFormat('es-CL', {
-    timeZone: 'America/Santiago',
-    hour: 'numeric', hour12: false
-  }).formatToParts(ahora);
-  return parseInt(partes.find(p => p.type === 'hour').value);
-}
-function diaBaseISO() {
-  // Fecha local Chile como string YYYY-MM-DD
-  const ahora = new Date();
-  const fechaLocal = new Intl.DateTimeFormat('es-CL', {
-    timeZone: 'America/Santiago',
-    year: 'numeric', month: '2-digit', day: '2-digit'
-  }).format(ahora); // dd-mm-yyyy en es-CL
-  const [d, m, a] = fechaLocal.split('-');
-  const hoy = `${a}-${m}-${d}`;
-  if(horaLocalChile() < HORA_CORTE) {
-    // Restar un día usando componentes locales para evitar bugs UTC
-    const [ay, am, ad] = hoy.split('-').map(Number);
-    const dt = new Date(ay, am - 1, ad - 1); // midnight local
-    const yy = dt.getFullYear();
-    const mm = String(dt.getMonth() + 1).padStart(2, '0');
-    const dd = String(dt.getDate()).padStart(2, '0');
-    return `${yy}-${mm}-${dd}`;
-  }
-  return hoy;
-}
-function diaBase() {
-  // Retorna un objeto Date apuntando al mediodía de diaBaseISO (para compatibilidad)
-  return new Date(`${diaBaseISO()}T12:00:00`);
-}
 
 // ── FILTRO MES/AÑO ────────────────────────────────────────────────────────
 const hoy = new Date(); // hora real para UI (selector de mes, etc.)
@@ -3484,4 +3482,3 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
-
