@@ -1178,17 +1178,11 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
   // Meta acumulada hasta diaBase() — antes de las 20h usamos ayer, después usamos hoy
   const ayerISO = diaBaseISO();
   const hastaMetaAcum = hasta < ayerISO ? hasta : ayerISO;
-  console.log('[DEBUG metaAcum] desde:', desde, '| hasta:', hasta, '| ayerISO:', ayerISO, '| hastaMetaAcum:', hastaMetaAcum);
   let metaAcum = 0;
   lineasReales.forEach(lin => {
     if(!metasPorLinea[lin]) return;
-    const claves = Object.keys(metasPorLinea[lin].porDia).sort();
-    console.log('[DEBUG metaAcum] linea:', lin, '| claves porDia:', claves.slice(0,5), '| total keys:', claves.length);
-    Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{
-      if(f>=desde && f<=hastaMetaAcum) { metaAcum+=v; console.log('[DEBUG metaAcum] sumando', f, v); }
-    });
+    Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f>=desde && f<=hastaMetaAcum) metaAcum+=v; });
   });
-  console.log('[DEBUG metaAcum] TOTAL metaAcum:', metaAcum);
 
   const cumpl     = metaAcum>0 ? volTotal/metaAcum*100 : NaN;
   const falta     = Math.max(0, metaTotal-volTotal);
@@ -1270,13 +1264,16 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
       }
       // metaCaltoTotal está en miles (×1000 para m³)
       const metaCaltoTotal1000 = metaCaltoTotal * 1000;
-      // Meta acumulada CALTO hasta ayer
+      // Meta acumulada CALTO hasta diaBaseISO() — comparación por string YYYY-MM-DD sin ambigüedad de horas
       const [aC,mC] = mesStr.split('-').map(Number);
       const diasMesC = new Date(aC,mC,0).getDate();
-      const ayerC = diaBase();
-      const inicioMesC = new Date(aC,mC-1,1); const finMesC = new Date(aC,mC-1,diasMesC);
-      const ayerEfC = ayerC<inicioMesC?inicioMesC:(ayerC>finMesC?finMesC:ayerC);
-      const diasHastaAyerC = Math.max(0, Math.round((ayerEfC-inicioMesC)/86400000)+1);
+      const ayerISOC = diaBaseISO(); // '2026-11-01'
+      const inicioISOC = `${mesStr}-01`;
+      const finISOC = `${mesStr}-${String(diasMesC).padStart(2,'0')}`;
+      const ayerEfISOC = ayerISOC < inicioISOC ? inicioISOC : (ayerISOC > finISOC ? finISOC : ayerISOC);
+      // Contar días desde inicio del mes hasta ayerEfISOC inclusive (diff de fechas por string → número de día)
+      const diaNumC = parseInt(ayerEfISOC.split('-')[2], 10); // día del mes (1-based)
+      const diasHastaAyerC = Math.max(0, diaNumC);
       const metaCaltoAcum1000 = diasMesC>0 ? (metaCaltoTotal1000/diasMesC)*diasHastaAyerC : 0;
       const pctCalto = metaCaltoAcum1000>0 ? volTotal/metaCaltoAcum1000*100 : NaN;
       const pctCls2 = isNaN(pctCalto)?'':(pctCalto>=100?'ok':pctCalto>=85?'warn':'bad');
@@ -1570,11 +1567,13 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
         }
         const [a,m] = mesStr.split('-').map(Number);
         const diasMesC = new Date(a,m,0).getDate();
-        const hoy = diaBase(); const ayer = diaBase();
-        const inicioMes = new Date(a,m-1,1); const finMes = new Date(a,m-1,diasMesC);
         const mesTerminadoC = diaBaseISO() > `${mesStr}-${String(diasMesC).padStart(2,'0')}`;
-        const ayerEf = ayer<inicioMes?inicioMes:(ayer>finMes?finMes:ayer);
-        const diasHastaAyer = Math.max(0, Math.round((ayerEf-inicioMes)/86400000)+1);
+        // Usar strings ISO para evitar bugs de redondeo con horas (medianoche vs mediodía)
+        const ayerISOL = diaBaseISO();
+        const inicioISOL = `${mesStr}-01`;
+        const finISOL = `${mesStr}-${String(diasMesC).padStart(2,'0')}`;
+        const ayerEfISOL = ayerISOL < inicioISOL ? inicioISOL : (ayerISOL > finISOL ? finISOL : ayerISOL);
+        const diasHastaAyer = Math.max(0, parseInt(ayerEfISOL.split('-')[2], 10));
         const metaCaltoAcum = diasMesC>0 ? (metaCalto/diasMesC)*diasHastaAyer : 0;
         const volLinActual = volLin;
         const pctCumpl = metaCaltoAcum>0 ? volLinActual/(metaCaltoAcum*1000)*100 : NaN;
