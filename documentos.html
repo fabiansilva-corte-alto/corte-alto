@@ -3118,21 +3118,24 @@ function htmlSeguimientoAnexo(f){
   const opciones = `<option value=""${actual ? "" : " selected"}>Sin estado</option>` + Object.keys(ESTADOS_SEGUIMIENTO).map(clave =>
     `<option value="${clave}"${clave === actual ? " selected" : ""}>${escapeHtml(ESTADOS_SEGUIMIENTO[clave].label)}</option>`
   ).join("");
-  return `<select class="selector-seguimiento" style="color:${color};background:${bg};border-color:${color}" onchange="actualizarSeguimientoAnexo('${f.id}', this.value, this)">${opciones}</select>`;
+  return `<select class="selector-seguimiento" style="color:${color};background:${bg};border-color:${color}" onchange="actualizarSeguimientoAnexo('${f.claveFila}', this.value, this)">${opciones}</select>`;
 }
 
-window.actualizarSeguimientoAnexo = async function(trabajadorId, estado, selectEl){
+// claveFila identifica la FILA (no al trabajador): para un trabajador normal es igual a su id,
+// pero un "Rotativo" puede tener varias filas a la vez (una por cada fundo que le falte) — ver
+// fetchAnexosPendientes más abajo. Por eso el seguimiento se guarda por claveFila, no por id.
+window.actualizarSeguimientoAnexo = async function(claveFila, estado, selectEl){
   selectEl.disabled = true;
   try{
-    const fila = (anexosDatos || []).find(f => f.id === trabajadorId);
+    const fila = (anexosDatos || []).find(f => f.claveFila === claveFila);
     if(estado){
       const actualizadoPor = (usuarioActual && usuarioActual.nombre) || "—";
       const actualizadoEn = new Date().toISOString();
-      await setDoc(doc(db, "anexos_seguimiento", trabajadorId), { estado, actualizadoPor, actualizadoEn });
+      await setDoc(doc(db, "anexos_seguimiento", claveFila), { estado, actualizadoPor, actualizadoEn });
       if(fila) fila.seguimiento = { estado, actualizadoPor, actualizadoEn };
     }else{
       // "Sin estado" elegido de nuevo: borra el seguimiento guardado.
-      await deleteDoc(doc(db, "anexos_seguimiento", trabajadorId));
+      await deleteDoc(doc(db, "anexos_seguimiento", claveFila));
       if(fila) fila.seguimiento = null;
     }
     renderAnexosPendientes();
@@ -3228,6 +3231,9 @@ window.fetchAnexosPendientes = async function(forzar){
     Object.keys(ultimaCuadrillaPorTrabajador).forEach(id => {
       const t = dotPorId[id];
       if(!t || t.activo === false) return; // solo trabajadores activos y conocidos en Dotación
+      // Los "Rotativo" se manejan aparte más abajo: necesitan anexo de TODOS los fundos activos,
+      // no solo del que diga su última cuadrilla (pedido por Fabián 2 nov 2026).
+      if(t.centro === "ROTATIVO") return;
       const cuadrilla = ultimaCuadrillaPorTrabajador[id];
       const anexos = anexosVigentesPorTrabajador[id] || [];
       const contratos = contratosPorTrabajador[id] || [];
@@ -3252,7 +3258,7 @@ window.fetchAnexosPendientes = async function(forzar){
         }
       }
       filas.push({
-        id, trabajador: t,
+        id, claveFila: id, trabajador: t,
         fundoActual: cuadrilla.fundo, fechaCuadrilla: cuadrilla.fecha, jefeFaena: cuadrilla.jefeFaena,
         anexosVigentes: anexos,
         estado: alDia ? "al_dia" : "pendiente",
@@ -3261,12 +3267,46 @@ window.fetchAnexosPendientes = async function(forzar){
       });
     });
 
-    // Limpieza automática: si un trabajador tenía un estado de seguimiento guardado pero ya
-    // no figura "pendiente" (se subió el anexo y quedó vigente, o ya no tiene cuadrilla
-    // reciente), ese estado dejó de tener sentido — se borra solo, como pidió Fabián.
+    // Trabajadores "Rotativo" (pedido por Fabián 2 nov 2026): pueden trabajar en cualquier
+    // fundo activo, así que deben tener anexo de contrato VIGENTE de TODOS los fundos activos
+    // del catálogo — se les informe o no ese día en Cuadrilla diaria. Una fila por cada fundo
+    // activo que les falte (cada anexo es un documento físico separado, igual que el resto de
+    // esta pantalla). Si se crea un fundo nuevo, aparece acá solo con que quede activo en
+    // config_fundos — el sistema lo reconoce sin tocar nada más.
+    const fundosActivosRotativo = (FUNDOS_CATALOGO || []).filter(fu => fu.activo !== false);
+    Object.values(dotPorId).forEach(t => {
+      if(!t || t.activo === false || t.centro !== "ROTATIVO") return;
+      const id = t.id;
+      const anexos = anexosVigentesPorTrabajador[id] || [];
+      const contratos = contratosPorTrabajador[id] || [];
+      const todos = anexosTodosPorTrabajador[id] || [];
+      fundosActivosRotativo.forEach(fu => {
+        const contratoQueCubre = contratos.find(c => c.fundo && fundosCoinciden(c.fundo, fu.nombre)) || null;
+        const alDia = !!contratoQueCubre || anexos.some(anexo => fundosCoinciden(anexo.fundo, fu.nombre));
+        if(alDia) return; // ya tiene cubierto este fundo — no genera fila
+        const anexoSugerido = todos.find(a => !a.vigente && fundosCoinciden(a.fundo, fu.nombre)) || null;
+        const subEstado = anexoSugerido ? "tiene_no_vigente" : "sin_anexo";
+        const claveFila = `${id}__${fu.id}`;
+        filas.push({
+          id, claveFila, trabajador: t,
+          fundoActual: fu.nombre, fechaCuadrilla: null, jefeFaena: null,
+          anexosVigentes: anexos,
+          estado: "pendiente",
+          subEstado, anexoSugerido, diasEnFundo: 0, contratoPorConfirmar: null,
+          rotativo: true,
+          seguimiento: seguimientoPorTrabajador[claveFila] || null
+        });
+      });
+    });
+
+    // Limpieza automática: si una fila tenía un estado de seguimiento guardado pero ya no
+    // figura "pendiente" (se subió el anexo y quedó vigente, ya no tiene cuadrilla reciente, o
+    // —caso rotativo— ese fundo se desactivó o dejó de faltarle), ese estado dejó de tener
+    // sentido — se borra solo, como pidió Fabián. Clave por claveFila, no por id: un rotativo
+    // puede tener varias filas (una por fundo) vigentes a la vez.
     const idsConSeguimiento = Object.keys(seguimientoPorTrabajador);
     if(idsConSeguimiento.length){
-      const idsPendientes = new Set(filas.filter(f => f.estado === "pendiente").map(f => f.id));
+      const idsPendientes = new Set(filas.filter(f => f.estado === "pendiente").map(f => f.claveFila));
       idsConSeguimiento.forEach(id => {
         if(!idsPendientes.has(id)) deleteDoc(doc(db, "anexos_seguimiento", id)).catch(() => {});
       });
@@ -3328,7 +3368,7 @@ window.renderAnexosPendientes = function(){
         <span class="badge-inactivo">Pendiente</span>
         <div style="margin-top:4px;font-size:12px;color:var(--text3)">Ya tiene anexo de ${escapeHtml(f.anexoSugerido.fundo || f.fundoActual)}, falta marcarlo vigente</div>
         ${f.diasEnFundo >= 2 ? `<div style="margin-top:2px;font-size:11.5px;font-weight:700;color:var(--amber)">Lleva ${f.diasEnFundo} días informado en este fundo</div>` : ""}
-        <button class="btn-secondary" style="margin-top:4px;padding:4px 10px;font-size:12.5px" onclick="marcarVigenteDesdeAnexosPendientes('${f.anexoSugerido.id}', '${f.id}', this)">Marcar vigente</button>
+        <button class="btn-secondary" style="margin-top:4px;padding:4px 10px;font-size:12.5px" onclick="marcarVigenteDesdeAnexosPendientes('${f.anexoSugerido.id}', '${f.claveFila}', this)">Marcar vigente</button>
       `;
     }else{
       // No existe ningún anexo_fundo para el fundo actual: hay que generar uno nuevo y hacerlo firmar.
@@ -3343,8 +3383,8 @@ window.renderAnexosPendientes = function(){
             <select id="contrato-fundo-sel-${f.id}" class="field-input" style="height:32px;font-size:12.5px;width:auto;min-width:150px;margin-bottom:0">
               ${(FUNDOS_CATALOGO||[]).filter(fu => fu.activo !== false).map(fu => `<option value="${escapeHtml(fu.nombre)}"${fundosCoinciden(fu.nombre, f.fundoActual) ? " selected" : ""}>${escapeHtml(fu.nombre)}</option>`).join("")}
             </select>
-            <button class="btn-secondary" style="padding:4px 10px;font-size:12.5px" onclick="confirmarFundoContratoDesdeAnexosPendientes('${f.contratoPorConfirmar.id}', '${f.id}', 'contrato-fundo-sel-${f.id}', this)">Sí, confirmar</button>
-            <button class="btn-secondary" style="padding:4px 10px;font-size:12.5px;opacity:.75" onclick="marcarContratoSinFundoDesdeAnexosPendientes('${f.contratoPorConfirmar.id}', '${f.id}', this)">El contrato no indica fundo</button>
+            <button class="btn-secondary" style="padding:4px 10px;font-size:12.5px" onclick="confirmarFundoContratoDesdeAnexosPendientes('${f.contratoPorConfirmar.id}', '${f.claveFila}', 'contrato-fundo-sel-${f.id}', this)">Sí, confirmar</button>
+            <button class="btn-secondary" style="padding:4px 10px;font-size:12.5px;opacity:.75" onclick="marcarContratoSinFundoDesdeAnexosPendientes('${f.contratoPorConfirmar.id}', '${f.claveFila}', this)">El contrato no indica fundo</button>
           </div>
         </div>
       ` : "";
@@ -3362,7 +3402,7 @@ window.renderAnexosPendientes = function(){
           <div style="margin-top:4px"><button class="btn-secondary" style="padding:3px 8px;font-size:11.5px" onclick="irABovedaDesdeAnexos('${f.id}')" title="Ver los documentos de este trabajador en la Bóveda">Ver en Bóveda</button></div>
         </td>
         <td><span class="badge-centro${t.centro ? "" : " pendiente"}">${escapeHtml(etiquetaCentro)}</span></td>
-        <td>${escapeHtml(f.fundoActual || "—")} <span style="color:var(--text3)">· ${fechaLegibleAnexos(f.fechaCuadrilla)} (${escapeHtml(f.jefeFaena||"—")})</span></td>
+        <td>${escapeHtml(f.fundoActual || "—")} ${f.rotativo ? `<span style="color:var(--text3)">· Rotativo (todos los fundos)</span>` : `<span style="color:var(--text3)">· ${fechaLegibleAnexos(f.fechaCuadrilla)} (${escapeHtml(f.jefeFaena||"—")})</span>`}</td>
         <td>${anexoTxt}</td>
         <td>${estadoBadge}</td>
         <td>${f.estado === "pendiente" ? htmlSeguimientoAnexo(f) : ""}</td>
@@ -3390,7 +3430,7 @@ window.marcarVigenteDesdeAnexosPendientes = async function(docId, filaId, boton)
   try{
     await setDoc(doc(db, "documentos", docId), { vigente: true }, { merge: true });
     bovedaConteos = null;
-    const fila = (anexosDatos || []).find(f => f.id === filaId);
+    const fila = (anexosDatos || []).find(f => f.claveFila === filaId);
     if(fila){
       const anexoMarcado = (fila.anexoSugerido && fila.anexoSugerido.id === docId) ? fila.anexoSugerido : { id: docId, fundo: fila.fundoActual, fechaSubida: new Date().toISOString() };
       anexoMarcado.vigente = true;
@@ -3426,7 +3466,7 @@ window.confirmarFundoContratoDesdeAnexosPendientes = async function(contratoDocI
   try{
     await setDoc(doc(db, "documentos", contratoDocId), { fundo: fundoElegido }, { merge: true });
     bovedaConteos = null;
-    const fila = (anexosDatos || []).find(f => f.id === filaId);
+    const fila = (anexosDatos || []).find(f => f.claveFila === filaId);
     if(fila){
       fila.contratoPorConfirmar = null;
       if(fundosCoinciden(fundoElegido, fila.fundoActual)){
@@ -3453,7 +3493,7 @@ window.marcarContratoSinFundoDesdeAnexosPendientes = async function(contratoDocI
   boton.textContent = "Guardando…";
   try{
     await setDoc(doc(db, "documentos", contratoDocId), { fundoNoEspecificado: true }, { merge: true });
-    const fila = (anexosDatos || []).find(f => f.id === filaId);
+    const fila = (anexosDatos || []).find(f => f.claveFila === filaId);
     if(fila) fila.contratoPorConfirmar = null;
     renderAnexosPendientes();
   }catch(e){
