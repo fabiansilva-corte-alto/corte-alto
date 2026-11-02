@@ -1178,11 +1178,17 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
   // Meta acumulada hasta diaBase() — antes de las 20h usamos ayer, después usamos hoy
   const ayerISO = diaBaseISO();
   const hastaMetaAcum = hasta < ayerISO ? hasta : ayerISO;
+  console.log('[DEBUG metaAcum] desde:', desde, '| hasta:', hasta, '| ayerISO:', ayerISO, '| hastaMetaAcum:', hastaMetaAcum);
   let metaAcum = 0;
   lineasReales.forEach(lin => {
     if(!metasPorLinea[lin]) return;
-    Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{ if(f>=desde && f<=hastaMetaAcum) metaAcum+=v; });
+    const claves = Object.keys(metasPorLinea[lin].porDia).sort();
+    console.log('[DEBUG metaAcum] linea:', lin, '| claves porDia:', claves.slice(0,5), '| total keys:', claves.length);
+    Object.entries(metasPorLinea[lin].porDia).forEach(([f,v])=>{
+      if(f>=desde && f<=hastaMetaAcum) { metaAcum+=v; console.log('[DEBUG metaAcum] sumando', f, v); }
+    });
   });
+  console.log('[DEBUG metaAcum] TOTAL metaAcum:', metaAcum);
 
   const cumpl     = metaAcum>0 ? volTotal/metaAcum*100 : NaN;
   const falta     = Math.max(0, metaTotal-volTotal);
