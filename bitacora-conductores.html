@@ -179,6 +179,8 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
 /* FILAS EN MODO EDICIÓN GLOBAL */
 .fila-pendiente-guardar td{background:#fffde7 !important;}
 .fila-pendiente-guardar td:nth-child(4){color:#1a2e1a !important;font-style:normal !important;}
+.inp-error{border:1.5px solid #e53935 !important;background:#fff5f5 !important;}
+.lbl-error-fila{font-size:10px;color:#c62828;font-weight:600;display:block;margin-top:2px;}
 
 /* ÍCONO TODO EL DÍA (reloj) */
 .btn-todo-dia{background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s;}
@@ -377,6 +379,13 @@ main{max-width:1100px;margin:0 auto;padding:14px;display:flex;flex-direction:col
     <div class="form-grid">
       <div class="fg full"><label>Nombre conductor</label><input type="text" id="ec-nombre" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="fg full"><label>Móvil asignado fijo</label><select id="ec-patente"><option value="">— Sin asignación fija —</option></select></div>
+      <div class="fg full"><label>Jefe responsable</label>
+        <select id="ec-jefe">
+          <option value="">— Sin asignar —</option>
+          <option value="JOSÉ GIROZ">JOSÉ GIROZ</option>
+          <option value="PABLO GIROZ">PABLO GIROZ</option>
+        </select>
+      </div>
     </div>
     <div class="modal-acciones">
       <button class="btn-danger" id="ec-eliminar">Eliminar</button>
@@ -741,6 +750,15 @@ function onInputBorrador(pat){
   } else {
     delete borrador[pat];
   }
+  // Limpiar errores rosados al corregir
+  if(cond){
+    const ic=document.getElementById(`inp-cond-${pat}`);
+    if(ic){ic.classList.remove('inp-error');const lbl=ic.parentNode.querySelector('.lbl-error-fila');if(lbl)lbl.remove();}
+  }
+  if(ini){
+    const ii=document.getElementById(`inp-ini-${pat}`);
+    if(ii){ii.classList.remove('inp-error');const lbl=ii.parentNode.querySelector('.lbl-error-fila');if(lbl)lbl.remove();}
+  }
   actualizarBarraGuardar();
 }
 
@@ -790,6 +808,12 @@ function toggleTodoDia(pat){
     };
   }
 
+  // Si se activa todo el día, limpiar error de hora inicio
+  if(nuevoEstado){
+    const ii=document.getElementById(`inp-ini-${pat}`);
+    if(ii){ii.classList.remove('inp-error');const lbl=ii.parentNode.querySelector('.lbl-error-fila');if(lbl)lbl.remove();}
+  }
+
   // Actualizar celda H. inicio
   const tdIni=document.getElementById(`td-ini-${pat}`);
   const tdFin=document.getElementById(`td-fin-${pat}`);
@@ -827,22 +851,52 @@ document.getElementById('btn-cancelar-dia').addEventListener('click',()=>{
 async function guardarDia(){
   if(Object.keys(borrador).length===0){toast('No hay cambios para guardar',true);return;}
   const btn=document.getElementById('btn-guardar-dia');
+
+  // --- Validación previa: marcar campos incompletos en rosado ---
+  // Limpiar errores anteriores
+  document.querySelectorAll('.inp-error').forEach(el=>el.classList.remove('inp-error'));
+  document.querySelectorAll('.lbl-error-fila').forEach(el=>el.remove());
+
+  let errores=[];
+  for(const [pat,datos] of Object.entries(borrador)){
+    let faltaConductor=!datos.conductor;
+    let faltaHorario=!datos.todoDia&&!datos.horaIni;
+    if(faltaConductor){
+      const inp=document.getElementById(`inp-cond-${pat}`);
+      if(inp){
+        inp.classList.add('inp-error');
+        const lbl=document.createElement('span');
+        lbl.className='lbl-error-fila';lbl.textContent='⚠ Conductor requerido';
+        inp.parentNode.appendChild(lbl);
+      }
+      errores.push(`${pat}: falta conductor`);
+    }
+    if(faltaHorario){
+      const inp=document.getElementById(`inp-ini-${pat}`);
+      if(inp){
+        inp.classList.add('inp-error');
+        const lbl=document.createElement('span');
+        lbl.className='lbl-error-fila';lbl.textContent='⚠ Hora inicio requerida';
+        inp.parentNode.appendChild(lbl);
+      }
+      errores.push(`${pat}: falta hora inicio`);
+    }
+  }
+  if(errores.length>0){
+    const plural=errores.length>1?`${errores.length} móviles tienen`:'1 móvil tiene';
+    toast(`${plural} datos incompletos — revisa los campos en rosado`,true);
+    // Scroll al primer campo con error
+    const primero=document.querySelector('.inp-error');
+    if(primero)primero.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  // --- Fin validación ---
+
   btn.disabled=true;btn.textContent='Guardando...';
   try{
     const fecha=fechaActual;
     const batch=db.batch();
-    const ref=doc=>db.collection('bitacora_conductores').doc(fecha).collection('registros').doc();
     for(const [pat,datos] of Object.entries(borrador)){
-      if(!datos.conductor){
-        toast(`${pat}: el conductor es obligatorio`,true);
-        btn.disabled=false;btn.innerHTML='💾 Guardar día';
-        return;
-      }
-      if(!datos.todoDia&&!datos.horaIni){
-        toast(`${pat}: ingresa la hora inicio o marca "Todo el día"`,true);
-        btn.disabled=false;btn.innerHTML='💾 Guardar día';
-        return;
-      }
       // Cerrar turno anterior abierto si existe
       const prevSnap=await db.collection('bitacora_conductores').doc(fecha)
         .collection('registros').where('patente','==',pat).where('horaFin','==','').get();
@@ -1466,10 +1520,11 @@ async function cargarConductores(){
     <td>${c.patenteFija?`<span style="font-weight:600;">${c.patenteFija}</span> — ${flotaActual[c.patenteFija]?.tipo||''}`:
       '<span style="color:#bbb;">Sin fijo</span>'}</td>
     <td>${c.patenteFija?`<span class="punto-fijo"></span> Fijo`:'—'}</td>
-    <td><button class="btn-accion btn-edit" onclick="abrirEditCond('${c.id}','${escH(c.nombre)}','${c.patenteFija||''}')">✏️ Editar</button></td>
+    <td>${c.jefe?`<span style="font-weight:600;font-size:12px;">${escH(c.jefe)}</span>`:'<span style="color:#bbb;">—</span>'}</td>
+    <td><button class="btn-accion btn-edit" onclick="abrirEditCond('${c.id}','${escH(c.nombre)}','${c.patenteFija||''}','${escH(c.jefe||'')}')">✏️ Editar</button></td>
   </tr>`).join('');
   wrap.innerHTML=`<table class="tabla-cond">
-    <thead><tr><th>Nombre</th><th>Móvil fijo</th><th>Tipo asignación</th><th></th></tr></thead>
+    <thead><tr><th>Nombre</th><th>Móvil fijo</th><th>Tipo asignación</th><th>Jefe responsable</th><th></th></tr></thead>
     <tbody>${filas}</tbody>
   </table>`;
 }
@@ -1514,10 +1569,11 @@ document.getElementById('btn-add-movil').addEventListener('click',async()=>{
   verificarPatentesNuevas();
 });
 
-function abrirEditCond(id,nombre,patenteFija){
+function abrirEditCond(id,nombre,patenteFija,jefe){
   document.getElementById('ec-id').value=id;
   document.getElementById('ec-nombre').value=nombre;
   document.getElementById('ec-patente').value=patenteFija||'';
+  document.getElementById('ec-jefe').value=jefe||'';
   document.getElementById('modal-cond').classList.add('open');
 }
 document.getElementById('ec-cancelar').addEventListener('click',()=>document.getElementById('modal-cond').classList.remove('open'));
@@ -1525,8 +1581,9 @@ document.getElementById('ec-guardar').addEventListener('click',async()=>{
   const id=document.getElementById('ec-id').value;
   const nombre=document.getElementById('ec-nombre').value.trim();
   const patenteFija=document.getElementById('ec-patente').value;
+  const jefe=document.getElementById('ec-jefe').value;
   if(!nombre){toast('El nombre es obligatorio',true);return;}
-  await db.collection('config_conductores').doc(id).update({nombre,patenteFija:patenteFija||''});
+  await db.collection('config_conductores').doc(id).update({nombre,patenteFija:patenteFija||'',jefe:jefe||''});
   document.getElementById('modal-cond').classList.remove('open');
   toast('Conductor actualizado ✓');
   await cargarConductores();
