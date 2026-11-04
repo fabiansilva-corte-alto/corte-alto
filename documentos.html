@@ -4225,6 +4225,7 @@ window.cerrarModalFundo = function(){
 
 window.guardarFundo = async function(){
   const idField = document.getElementById("mf-id");
+  const esFundoNuevo = !idField.value; // "+ Nuevo fundo" (sin id) vs. editar uno existente
   const nombreInput = document.getElementById("mf-nombre");
   const nombre = nombreInput.value.trim();
   const aliasTxt = document.getElementById("mf-alias").value;
@@ -4246,6 +4247,19 @@ window.guardarFundo = async function(){
     // merge:true — este documento también es usado y editado por configuracion.html (rodales/VMA),
     // así que nunca se debe sobrescribir completo o se pierden esos campos.
     await setDoc(doc(db, "config_fundos", id), { nombre, alias, centros, activo }, { merge: true });
+    if(esFundoNuevo && activo){
+      // Aviso por correo de fundo nuevo (pedido por Fabián 2 nov 2026): recuerda que los
+      // Rotativo necesitan anexo de TODOS los fundos activos (ya se les agrega solo en Anexos
+      // pendientes) y sugiere preparar anexos para los centros que se marcaron arriba. Se
+      // guarda en una colección propia — no depende de si config_fundos ya existía antes por
+      // otro módulo (configuracion.html también escribe ahí) — así el aviso SIEMPRE se dispara
+      // al crear un fundo nuevo desde esta pantalla, sin importar ese historial previo.
+      setDoc(doc(collection(db, "fundos_nuevos")), {
+        fundoId: id, nombre, centros,
+        creadoPor: (usuarioActual && usuarioActual.nombre) || "—",
+        creadoEn: new Date().toISOString()
+      }).catch(() => {});
+    }
     await fetchFundosCatalogo();
     renderConfiguracionFundos();
     window.cerrarModalFundo();
