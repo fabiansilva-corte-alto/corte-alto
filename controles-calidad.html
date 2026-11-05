@@ -172,6 +172,7 @@ th{font-size:12px;color:var(--g);font-weight:600}
   <div class="nota" id="barraNota">
     <div><div class="muted">Nota</div><div class="n" id="notaN">—</div></div>
     <div style="flex:1"><span class="chip" id="notaChip"></span><div class="muted" id="notaPend"></div></div>
+    <button class="btn" id="btnLimpiar" onclick="limpiarTodo()" title="Descartar este control">🧹 Limpiar</button>
     <button class="btn p" id="btnGuardar" onclick="guardar()">Guardar</button>
   </div>
 </section>
@@ -797,6 +798,12 @@ function calcular() {
 function actualizar() {
   const c = calcular(), n = $('notaN'), ch = $('notaChip'), p = $('notaPend');
   if (!c) { n.textContent = '—'; n.dataset.pct = ''; n.style.color = ''; ch.textContent = ''; ch.className = 'chip'; p.textContent = ''; return; }
+  const total = (estado.tipo === 'tocones' || estado.tipo === 'largos') ? 10 : PAUTA[estado.tipo].items.length;
+  if (c.pend >= total && !c.incumpl) {
+    n.textContent = '—'; n.dataset.pct = c.nota; n.style.color = ''; ch.textContent = 'sin respuestas'; ch.className = 'chip';
+    p.textContent = c.eqFalta ? 'Falta elegir el equipo de volteo' : 'Faltan ' + c.pend + (estado.tipo === 'tocones' ? ' tocones' : estado.tipo === 'largos' ? ' trozos' : ' preguntas');
+    return;
+  }
   n.textContent = notaEscala(c.nota); n.dataset.pct = c.nota;
   const ok = notaNum(c.nota) >= NOTA_OK;
   n.style.color = ok ? 'var(--v)' : 'var(--r)';
@@ -946,6 +953,18 @@ function resetNuevoControl() {
   $('barraNota').style.display = ''; actualizar();
   LS.set('cc_borrador', null);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Botón "Limpiar": descarta el control que se está llenando (no toca los controles ya guardados).
+function limpiarTodo() {
+  if (estado.editId) {
+    if (confirm('¿Descartar los cambios de esta edición? El control guardado queda como estaba.')) cancelarEdicion();
+    return;
+  }
+  if (!estado.tipo && !val('sFundo') && !val('sCtrl')) { toast('No hay nada que limpiar.'); return; }
+  if (!confirm('¿Limpiar el formulario? Se borra lo que llevas ingresado en este control (los controles ya guardados no se tocan).')) return;
+  resetNuevoControl();
+  toast('Formulario limpio');
 }
 
 // ================= EDITAR UN CONTROL YA GUARDADO =================
