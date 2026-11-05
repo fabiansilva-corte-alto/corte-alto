@@ -63,6 +63,7 @@ input:disabled{background:#eef1ef;color:var(--g)}
 .notas button{height:44px;border:1px solid #b9c3c0;border-radius:8px;background:#fff;font-size:15px;font-weight:700;color:var(--tx);cursor:pointer;padding:0}
 .notas button.on{background:var(--v);border-color:var(--v);color:#fff}
 .extra{display:none;margin-top:8px}.extra.on{display:block}
+.fotobtns .fotobtn{margin-top:8px}
 .fotos{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .foto{position:relative}
 .foto img,.fotos>img{width:68px;height:68px;object-fit:cover;border-radius:6px;border:1px solid var(--bd);display:block}
@@ -615,7 +616,10 @@ function htmlItem(it) {
     <div class="extra ${bajo ? 'on' : ''}">
       <label class="l" for="o_${sid(id)}">Observación (obligatoria bajo 5)</label>
       <textarea id="o_${sid(id)}" rows="2" placeholder="¿Qué se encontró?" oninput="obs('${id}',this.value)">${esc(r.o || '')}</textarea>
-      <label class="fotobtn">📷 Agregar foto<input type="file" accept="image/*" multiple hidden onchange="addFotos('${id}',this)"></label>
+      <div class="g2 fotobtns">
+        <label class="fotobtn">📷 Tomar foto<input type="file" accept="image/*" capture="environment" hidden onchange="addFotos('${id}',this)"></label>
+        <label class="fotobtn">🖼️ Galería<input type="file" accept="image/*" multiple hidden onchange="addFotos('${id}',this)"></label>
+      </div>
       <div class="fotos" id="f_${sid(id)}">${htmlFotos(id)}</div>
     </div>
   </div>`;
@@ -934,7 +938,10 @@ function abrirAcc(id) {
     <div class="fotos">${(a.fotos || []).map(f => `<img src="${esc(f.url)}" alt="Evidencia" loading="lazy">`).join('')}</div>
     ${a.fotosPendientes > 0 ? `<p class="muted">${a.fotosPendientes} foto(s) por enviar.</p>` : ''}
     ${cerrada ? `<button class="btn o w" style="margin-top:10px" onclick="reabrirAcc('${id}')">Reabrir acción</button>` : `
-    <label class="fotobtn">📷 Agregar foto de evidencia<input type="file" accept="image/*" multiple hidden onchange="fotoAcc(this)"></label>
+    <div class="g2 fotobtns">
+      <label class="fotobtn">📷 Tomar foto<input type="file" accept="image/*" capture="environment" hidden onchange="fotoAcc(this)"></label>
+      <label class="fotobtn">🖼️ Galería<input type="file" accept="image/*" multiple hidden onchange="fotoAcc(this)"></label>
+    </div>
     <div class="fotos" id="mF"></div>
     <div class="fila-btn"><button class="btn o" onclick="guardarAcc('${id}',false)">Guardar cambios</button><button class="btn p" onclick="guardarAcc('${id}',true)">Cerrar acción</button></div>`}`;
   $('modal').classList.add('on');
