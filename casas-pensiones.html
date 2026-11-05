@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1b5e20">
+<title>Casas y Pensiones · Corte Alto</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{--v:#1b5e20;--vc:#e8f5e9;--r:#c62828;--rc:#ffebee;--ac:#fff8e1;--am:#6d4600;--g:#566a74;--bd:#dfe3e6;--bg:#f4f6f5;--tx:#1f2a24}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);font-size:15px}
+header{background:linear-gradient(135deg,#1b5e20,#2e7d32);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20;height:56px}
+header a{color:#fff;text-decoration:none;font-size:24px;line-height:1}
+header h1{font-size:17px;margin:0;font-weight:600}
+header small{display:block;font-size:11px;opacity:.9;font-weight:400}
+.banner{background:var(--r);color:#fff;padding:10px 14px;font-size:13px;display:none}
+.red{display:none;padding:8px 14px;font-size:13px;text-align:center;line-height:1.35}
+.red.off{display:block;background:#455a64;color:#fff}
+.red.pend{display:block;background:var(--ac);color:var(--am)}
+.red.ok{display:block;background:var(--vc);color:var(--v)}
+.tabs{display:flex;background:#fff;border-bottom:1px solid var(--bd);position:sticky;top:56px;z-index:19}
+.tabs button{flex:1;border:0;background:none;padding:13px 2px;font-size:14px;color:var(--g);border-bottom:3px solid transparent;cursor:pointer}
+.tabs button.on{color:var(--v);border-bottom-color:var(--v);font-weight:600}
+main{max-width:780px;margin:0 auto;padding:12px}
+.sec{display:none}.sec.on{display:block}
+.card{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+.card h2{font-size:15px;margin:0 0 10px;color:var(--v)}
+label.l{display:block;font-size:12px;color:var(--g);margin:10px 0 4px;font-weight:600}
+input,select,textarea{width:100%;padding:10px;border:1px solid #b9c3c0;border-radius:8px;font-size:15px;background:#fff;color:var(--tx);font-family:inherit;min-height:44px}
+input:disabled{background:#eef1ef;color:var(--g)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{border:0;border-radius:8px;padding:11px 14px;font-size:15px;cursor:pointer;background:#eceff1;color:var(--tx);min-height:44px}
+.btn.p{background:var(--v);color:#fff;font-weight:600}
+.btn.d{background:var(--rc);color:var(--r)}
+.btn.o{background:#fff;border:1px solid var(--v);color:var(--v);font-weight:600}
+.btn.w{width:100%}
+.btn:disabled{opacity:.6}
+.fila-btn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.muted{color:var(--g);font-size:13px;line-height:1.4}
+.err{outline:3px solid #f48fb1;outline-offset:2px}
+.eess{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) minmax(0,1fr) 40px 32px;gap:6px;align-items:center;margin-bottom:6px}
+.eess input{padding:8px 6px}
+.eess .h{font-size:11px;font-weight:600;color:var(--g)}
+.eess .t{font-weight:700;text-align:center}
+.ic{border:0;background:none;font-size:18px;cursor:pointer;padding:2px;min-height:40px;color:var(--r)}
+.prog{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.prog .top{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:600}
+.bar{height:8px;background:#e6eae8;border-radius:4px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--v)}
+.achips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.achips button{height:40px;border:1px solid #b9c3c0;background:#fff;border-radius:8px;font-size:14px;cursor:pointer;color:var(--tx)}
+.achips button.ok{background:var(--vc);border-color:#a5d6a7;color:var(--v);font-weight:600}
+.achips button.par{background:var(--ac);border-color:#e0a800;color:var(--am);font-weight:600}
+.achips button.act{outline:2px solid var(--v);outline-offset:1px}
+.ahead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}
+.ahead h2{font-size:18px;margin:0;line-height:1.25}
+.nchip{flex:0 0 auto;min-width:66px;padding:6px 8px;text-align:center;border-radius:8px}
+.nchip small{display:block;font-size:11px;font-weight:600}
+.nchip b{font-size:22px;line-height:1.1}
+.verde{background:#dff0e0;color:#14501a}.amarillo{background:#fff0bf;color:#5c4300}.rojo{background:#fbdcd8;color:#8e1c1c}.sin{background:#eceff1;color:var(--g)}
+.item{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:13px;margin-bottom:10px}
+.item .q{font-size:15px;font-weight:500;line-height:1.35}
+.pts{float:right;font-size:12px;color:var(--g);font-weight:600;margin-left:10px}
+.ay{font-size:12px;color:var(--g);margin:4px 0 0}
+.notas{display:grid;grid-template-columns:repeat(5,1fr) 1.2fr;gap:6px;margin-top:10px}
+.notas button{height:44px;border:1px solid #b9c3c0;border-radius:8px;background:#fff;font-size:15px;font-weight:700;color:var(--tx);cursor:pointer;padding:0}
+.notas button.on{background:var(--v);border-color:var(--v);color:#fff}
+.extra{display:none;margin-top:8px}.extra.on{display:block}
+.fotos{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.foto{position:relative}
+.foto img,.fotos>img{width:68px;height:68px;object-fit:cover;border-radius:6px;border:1px solid var(--bd);display:block}
+.foto button{position:absolute;top:-6px;right:-6px;width:26px;height:26px;border-radius:50%;border:0;background:#263238;color:#fff;font-size:13px;cursor:pointer;padding:0}
+.fotobtn{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;font-size:14px;font-weight:600;padding:8px 10px;margin-top:8px;border-radius:8px;background:#fff;color:var(--v);cursor:pointer;border:1px solid var(--v)}
+.res{border-radius:12px;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.res small{display:block;font-size:13px;font-weight:600}
+.res b{font-size:38px;line-height:1.1}
+.res .cl{grid-column:1/-1;font-weight:700;font-size:14px}
+.arow{padding:7px 0}
+.arow .t{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.arow .t b{flex:0 0 auto}
+.arow .m{font-size:12px;color:var(--g);margin-top:3px}
+.bar i.verde{background:#2e7d32}.bar i.amarillo{background:#e0a800}.bar i.rojo{background:#c62828}.bar i.sin{background:#b0bec5}
+.acc{border-top:1px solid var(--bd);padding:12px 0}
+.acc:first-of-type{border-top:0}
+.acc .tit{font-size:14px;font-weight:600;line-height:1.35}
+.chip{display:inline-block;font-size:12px;border-radius:6px;padding:3px 8px;font-weight:700}
+.filt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.filt button{min-height:44px;border:1px solid #b9c3c0;border-radius:8px;background:#fff;font-size:14px;font-weight:600;color:var(--tx);cursor:pointer}
+.filt button.on{background:var(--v);border-color:var(--v);color:#fff}
+.lista{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.lista>div:first-child{min-width:0;overflow-wrap:anywhere}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.modal.on{display:flex}
+.modal .box{background:#fff;width:100%;max-width:780px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.mhead h2{margin:0;font-size:17px;min-width:0;overflow-wrap:anywhere}
+.mhead button{border:0;background:#eceff1;border-radius:8px;width:44px;height:44px;font-size:16px;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#263238;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;display:none;z-index:60;max-width:90%;text-align:center}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:7px 5px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--g)}
+@media(min-width:700px){.achips{grid-template-columns:repeat(10,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <a href="sso.html" aria-label="Volver a SSO">←</a>
+  <div><h1>Casas y Pensiones</h1><small>Lista de verificación · Versión 4</small></div>
+</header>
+<div class="banner" id="banner"></div>
+<div class="red" id="estadoRed"></div>
+<nav class="tabs">
+  <button id="tb-rev" class="on" onclick="tab('rev')">Revisión</button>
+  <button id="tb-his" onclick="tab('his')">Historial</button>
+  <button id="tb-seg" onclick="tab('seg')">Seguimiento</button>
+  <button id="tb-cfg" onclick="tab('cfg')">Config.</button>
+</nav>
+<main>
+<section class="sec on" id="sec-rev">
+  <div id="v-datos">
+    <div class="card">
+      <h2>Datos de la instalación</h2>
+      <div class="g2">
+        <div><label class="l" for="numero">Inspección N°</label><input id="numero" disabled value="Automático"></div>
+        <div><label class="l" for="fecha">Fecha</label><input type="date" id="fecha" oninput="enc()"></div>
+      </div>
+      <label class="l" for="sInst">Instalación</label>
+      <select id="sInst" onchange="elegirInst()"></select>
+      <div id="nomOtro" style="display:none"><label class="l" for="nombre">Nombre de la instalación</label><input id="nombre" oninput="enc()" placeholder="Escribe el nombre"></div>
+      <div class="g2">
+        <div><label class="l" for="codigo">Código (opcional)</label><input id="codigo" oninput="enc()"></div>
+        <div><label class="l" for="comuna">Comuna</label><input id="comuna" oninput="enc()"></div>
+      </div>
+      <label class="l" for="direccion">Dirección (opcional)</label><input id="direccion" oninput="enc()">
+      <label class="l" for="propietario">Propietario o arrendador (nombre o razón social)</label><input id="propietario" oninput="enc()">
+      <label class="l" for="concesionario">Concesionario o prestador de servicios (opcional)</label><input id="concesionario" oninput="enc()">
+      <label class="l" for="ingeniero">Ingeniero de operaciones</label><input id="ingeniero" oninput="enc()">
+      <label class="l" for="sRev">Revisado por</label>
+      <select id="sRev" onchange="elegirRev()"></select>
+      <div id="revOtro" style="display:none"><label class="l" for="revisor">Nombre de quien revisa</label><input id="revisor" oninput="enc()" placeholder="Escribe el nombre"></div>
+      <label class="l" for="capacidad">Capacidad de la instalación (personas)</label><input id="capacidad" inputmode="numeric" oninput="enc();renderEess(true)">
+    </div>
+    <div class="card" id="cardEess">
+      <h2>Empresas o usuarios alojados</h2>
+      <div id="eessBox"></div>
+      <button type="button" class="btn o w" onclick="addEess()">+ Agregar empresa o usuario</button>
+    </div>
+    <button class="btn p w" onclick="comenzar()">Comenzar pauta</button>
+    <button class="btn w" style="margin-top:8px" onclick="descartar()">Descartar esta revisión</button>
+  </div>
+  <div id="v-pauta" style="display:none"></div>
+  <div id="v-res" style="display:none"></div>
+</section>
+<section class="sec" id="sec-his">
+  <div class="card">
+    <label class="l" for="buscar" style="margin-top:0">Buscar</label>
+    <input id="buscar" placeholder="Instalación, comuna, fecha o revisor" oninput="renderHis()">
+  </div>
+  <div id="hisLista"></div>
+</section>
+<section class="sec" id="sec-seg">
+  <div class="card">
+    <div class="filt" id="segFilt"></div>
+    <label class="l" for="segInst">Instalación</label>
+    <select id="segInst" onchange="renderSeg()"></select>
+  </div>
+  <div id="segLista"></div>
+</section>
+<section class="sec" id="sec-cfg"><div id="cfgBox"></div></section>
+</main>
+<div class="modal" id="modal" onclick="if(event.target===this)cerrarModal()"><div class="box" id="modalBox"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+// ================= FIREBASE =================
+const firebaseConfig = {
+  apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+  authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
+  projectId: "reporte-inicio-faena-forestal",
+  storageBucket: "reporte-inicio-faena-forestal.firebasestorage.app",
+  messagingSenderId: "962534414054",
+  appId: "1:962534414054:web:fa43371d31413fc0524d27"
+};
+let db = null, st = null;
+if (window.firebase) {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  // Misma versión (10.12.2) que los demás módulos con caché: comparten la base guardada en el celular.
+  db.enablePersistence().catch(e => { window.__sinCacheLocal = true; console.warn('Sin caché local de Firestore', e); });
+  try { st = firebase.storage(); st.setMaxUploadRetryTime(15000); st.setMaxOperationRetryTime(8000); } catch (e) { st = null; }
+} else {
+  const b = document.getElementById('banner');
+  b.textContent = '📴 Este módulo todavía no está disponible sin señal en este celular. Ábrelo una vez con señal para que quede guardado. Lo que escribas queda como borrador.';
+  b.style.display = 'block';
+}
+const COL = 'revisiones_casas', COL_ACC = 'acciones_casas', COL_INST = 'config_casas_instalaciones', COL_REV = 'config_casas_revisores', CLAVE_CFG = '1771';
+const LOGO_CA = { d: 'data:image/jpeg;base64,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', w: 360, h: 321 };
+
+// ================= UTILIDADES =================
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hoy = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const fmtF = f => f ? f.split('-').reverse().join('-') : '';
+const conTimeout = (p, ms) => Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms))]);
+const sid = id => String(id).replace(/\./g, '_');
+const uid = () => { const a = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; const r = crypto.getRandomValues(new Uint8Array(20)); r.forEach(x => s += a[x % a.length]); return s; };
+function toast(m, ms = 3500) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast._t); toast._t = setTimeout(() => t.style.display = 'none', ms); }
+const LS = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+const r1 = x => Math.round((x + 1e-9) * 10) / 10;
+const n1 = x => x === null || x === undefined ? '—' : r1(x).toFixed(1).replace('.', ',');
+const p1 = x => x === null || x === undefined ? '—' : (Math.round((x + 1e-9) * 10) / 10).toFixed(1).replace('.', ',') + ' %';
+// La clasificación manda por la nota (a un decimal), no por el porcentaje.
+const clase = n => n === null || n === undefined ? 'sin' : (r1(n) >= 4.5 ? 'verde' : (r1(n) >= 4 ? 'amarillo' : 'rojo'));
+const CLASE_TXT = { verde: 'Verde · Nota 4,5 a 5,0', amarillo: 'Amarilla · Nota 4,0 a 4,4', rojo: 'Roja · Nota 1,0 a 3,9', sin: 'Sin nota' };
+
+// ================= PAUTA V4 (23/06/2022) =================
+// [punto, ponderación %, texto, norma]
+const PAUTA_VERSION = 'V4';
+const AREAS = [
+  { id: 1, peso: 10, nombre: 'Saneamiento ambiental y tratamiento residuos', items: [
+    ['1.1', 15, 'Certificado control plagas emitido por empresa de servicio (desratización, desinsectación, desinfección)', 'DS 594 art. 11; D 977 art. 48; D 194 art.6'],
+    ['1.2', 10, 'Revestimiento exterior en buen estado (aleros, pilares, traslapos, techos etc).', ''],
+    ['1.3', 10, 'Limpieza area exterior (sin maleza y sin residuos)', ''],
+    ['1.4', 15, 'Animales domésticos con control sanitario (vigencia semestral)', 'Ley 21020'],
+    ['1.5', 15, 'Constancia de Retiro privado a vertedero o retiro municipal de residuos', 'Ley 21161'],
+    ['1.6', 10, 'Dependencia aislada y apta para depositar residuos domiciliarios (piso, zócalos, desagüe; llave agua, iluminación)', 'D 194, art. 19'],
+    ['1.7', 10, 'Bolsas cerradas en contenedores c/tapa', 'D 194, art. 18'],
+    ['1.8', 15, 'Sin presencia de residuos industriales o peligrosos (acreditar disposición final)', '']
+  ]},
+  { id: 2, peso: 15, nombre: 'Alcantarillado y agua consumo humano', items: [
+    ['2.1', 10, 'Sistema particular de agua potable con autorizada sanitaria o suministro por red pública', 'DFL 1 y DFL 725'],
+    ['2.2', 5, 'Estanque decantación o filtro en captación', ''],
+    ['2.3', 5, 'Traslado en pvc y subterráneo', ''],
+    ['2.4', 5, 'Estanque almacenamiento con tapa', ''],
+    ['2.5', 10, 'Filtros en almacenamiento, en buen estado y apropiados a la necesidad', ''],
+    ['2.6', 10, 'Condición de aseo (limpieza) estanque captación y almacenamiento', ''],
+    ['2.7', 5, 'Estado (limpieza) filtros captación y almacenamiento', ''],
+    ['2.8', 5, 'Medición de caudal o consumo de agua. Instrumento de medición operativo', ''],
+    ['2.9', 10, 'Análisis cloro libre residual; registro diario', 'NCH 409 y DS 594 art. 15'],
+    ['2.10', 5, 'Análisis de turbidez (registro mensual)', 'NCH 409'],
+    ['2.11', 5, 'Análisis microbiológico (registro mensual)', 'NCH 409'],
+    ['2.12', 5, 'Análisis físico-químico anual; registro o informe laboratorio', 'NCH 409'],
+    ['2.13', 5, 'Cañerías interiores en buen estado', ''],
+    ['2.14', 5, 'Desagües lavafondos/lavaplatos con evacuación eficaz; sin obstrucción; aptas para flujo residuos', ''],
+    ['2.15', 5, 'Registro de descarga de fosa séptica', ''],
+    ['2.16', 5, 'Drenes sin rebalse - fosas y cámaras limpias; sin rebalse', '']
+  ]},
+  { id: 3, peso: 10, nombre: 'Servicios higiénicos', items: [
+    ['3.1', 15, 'Agua caliente para duchas (calefon o termo)', 'DS 594, art 9'],
+    ['3.2', 15, 'Aseo y condiciones higiénicas', 'DS 594 art.9 y art 11'],
+    ['3.3', 5, 'Cortinas o shower door en duchas', ''],
+    ['3.4', 5, 'Dispensadores de jabón y papel cuenten con elementos', 'DS 594 art 22'],
+    ['3.5', 10, 'Papeleros en casetas sanitarias', 'DS 594 art 22'],
+    ['3.6', 10, 'Artefactos, Grifería, catalina o receptáculo de ducha en buen estado', 'DS 594 art 22'],
+    ['3.7', 10, 'Cantidad de artefactos de acuerdo a nº de usuarios', 'DS 594 art 23'],
+    ['3.8', 10, 'Revestimiento de baño en buen estado', ''],
+    ['3.9', 5, 'Calefón fuera del baño (ubicado en lugar exento de riesgos)', 'DS 594 art 21'],
+    ['3.10', 5, 'Caudal o presión de agua activa eficazmente cálefont instalado', ''],
+    ['3.11', 5, 'Baños cuentan con agua potable', 'DS 594, art 12 y 13'],
+    ['3.12', 5, 'Servicios higiénicos separados para hombres y mujeres, en caso de más de 10 residentes', 'DS 594, art 22']
+  ]},
+  { id: 4, peso: 5, nombre: 'Suministro y uso de energia', items: [
+    ['4.1', 15, 'Generador sistema de 3 fases, parada automática y sello verde o Serv. Red Pública/empalme', ''],
+    ['4.2', 10, 'Protección generador ; caseta aislada', ''],
+    ['4.3', 10, 'Tendido eléctrico y automáticos en buen estado', ''],
+    ['4.4', 20, 'Instalación eléctrica interior en buen estado - Con conexión a tierra', ''],
+    ['4.5', 10, 'Suministro de energía ininterrumpido', ''],
+    ['4.6', 15, 'Declaración SEC de instalación eléctrica (T1)', ''],
+    ['4.7', 10, 'Adecuado funcionamiento de los disyuntores (automáticos)', ''],
+    ['4.8', 10, 'Enchufes bien utilizados (no recargados)', '']
+  ]},
+  { id: 5, peso: 20, nombre: 'Cocina, elaboracion, almacenamiento y traslado alimentos', items: [
+    ['5.1', 4, 'Cocina con áreas sucia y limpia, separadas o evidencia de procesos "limpio" y "sucio" explicitados en Manual aprobado y bien ejecutados in situ.', 'DFL 725 - Regmto. Art 24'],
+    ['5.2', 4, 'Zona de preparación de alimentos separada de los recintos de alojamiento, servicios higiénicos, vestuarios y acopio de desechos. (DTO 977, art 26).', 'D 977 art. 26'],
+    ['5.3', 4, 'Revestim. Cocina en buen estado; muros lavables (hasta 1,8 m )', ''],
+    ['5.4', 4, 'Piso Cocina de material impermeable y antideslizante', 'D 977, art 25'],
+    ['5.5', 4, 'Cielo raso Cocina de material liso y lavable', ''],
+    ['5.6', 4, 'Campana extractora de aire (cocina y horno); con equipo extractor y filtros', ''],
+    ['5.7', 4, 'Cálefon o termo bien ubicado y en buen estado', ''],
+    ['5.8', 4, 'Lavaplatos y mesones en acero inoxidable o material con cubierta lavable; aseados', ''],
+    ['5.9', 4, 'Ventanas de Cocina con rejilla mosquitera, desmontables y aseables', 'D 977 art 25'],
+    ['5.10', 4, 'Baños separados para hombres y mujeres; en caso de más de trabajadores', 'DS 594, art 22'],
+    ['5.11', 4, 'Muebles y repisas con cubierta lavable', 'D 977 art 25'],
+    ['5.12', 4, 'Basureros con tapas activadas con el pié.', ''],
+    ['5.13', 4, 'Dispensador de jabón; toalla papel/insumos aseo - jabon/insumos suficientes', 'D 977 art 32 y art 33; DS 594 art 22'],
+    ['5.14', 4, 'Manipuladores de alimentos con exámenes al día', 'D 977 art 53'],
+    ['5.15', 4, 'Manipuladores con implementación adecuada', 'D 977 art 56'],
+    ['5.16', 4, 'Manipuladores con instrucción en manipulación higiénica e higiene personal', 'D 977 art 59'],
+    ['5.17', 4, 'Aseo e higiene adecuado de Despensa', 'D 977 art 56'],
+    ['5.18', 4, 'Carro para el traslado de líquidos caliente (carga superior a la permitida)', ''],
+    ['5.19', 4, 'Sistema de refrigeración apropiado y en buen funcionamiento, para alimentos que lo requieran', 'D 977 art 37'],
+    ['5.20', 4, 'Despensa (o bodega) paredes revestidas; aisladas y ventiladas', 'D 977 art 35'],
+    ['5.21', 4, 'Ventanas de Despensa con mosquiteros desmontables y aseables', ''],
+    ['5.22', 4, 'Despensa (bodega) con Repisas de material lavable.', ''],
+    ['5.23', 4, 'Aseo e higiene (bandejas plásticas para frutas y verdura, harina en envase hermético)', 'D 977 art 38, art 62'],
+    ['5.24', 4, 'Stock suficiente de alimentos, frutas y verduras', ''],
+    ['5.25', 4, 'Se hace traslado de alimentos perecibles (que lo requieran) en vehículo apto', '']
+  ]},
+  { id: 6, peso: 5, nombre: 'Comedor', items: [
+    ['6.1', 20, 'Revestimientos en buen estado', ''],
+    ['6.2', 10, 'Aseo e higiene adecuados', 'DS 594 art 28'],
+    ['6.3', 10, 'Mesas, sillas y mesones suficientes y en material lavable', 'DS 594 art 28'],
+    ['6.4', 10, 'Rejillas mosquiteras desmontables; aseables; buen estado', 'DS 594 art 28'],
+    ['6.5', 10, 'Minuta publicada y actualizada', ''],
+    ['6.6', 10, 'Basureros con tapa; por tipo de residuo generado', ''],
+    ['6.7', 20, 'Cumple con protocolos COVID u otros eventos similares', ''],
+    ['6.8', 10, 'Fichero actualizado (Políticas, instructivos)', '']
+  ]},
+  { id: 7, peso: 10, nombre: 'Dormitorio', items: [
+    ['7.1', 15, 'Espacio por persona, según norma Legal.', ''],
+    ['7.2', 10, 'Revestimientos en buen estado (paredes, techos que aislen de condiciones climáticas)', 'DS 594 art 9'],
+    ['7.3', 10, 'Orden y aseo adecuado', 'DS 594 art 9'],
+    ['7.4', 10, 'Literas con estructura firme o material resistente, en buen estado', 'DS 594 art 9'],
+    ['7.5', 10, 'Colchones y almohadas en buen estado de presentación y conservación', ''],
+    ['7.6', 10, 'Casilleros individuales con aldabas; llaves; en buen estado', ''],
+    ['7.7', 5, 'Papeleros', ''],
+    ['7.8', 10, 'Sistema de climatización (frío/calor) en buen estado', 'DS 594 art 9'],
+    ['7.9', 10, 'Sistema de ventilación', 'DS 594 art 9'],
+    ['7.10', 10, 'Estructura y terminaciones interiores en buen estado', '']
+  ]},
+  { id: 8, peso: 10, nombre: 'Prevencion incendios, accidentes, emergencias', items: [
+    ['8.1', 10, 'Red húmeda o tambor con agua y baldes (2).', ''],
+    ['8.2', 10, 'Red seca. 1 Extintor 10 kgs. c/150 m2. certificados y al día.', 'DS 594 art 45, 46 y DS44'],
+    ['8.3', 10, 'Red seca. En cocina 1 Extintor tipo K de 6 kgs. y 1 tipo ABC de 4 Kgs. certificados y al día.', 'DS 594 art 45, 46 y DS44'],
+    ['8.4', 5, 'Alarma de emergencias', ''],
+    ['8.5', 5, 'Luces de emergencia', 'DS 594 art 37'],
+    ['8.6', 5, 'Cortafuego: Faja de seguridad de un largo de árbol', ''],
+    ['8.7', 5, 'Cilindros de gas en compartim. cerrados y ventilados', ''],
+    ['8.8', 10, 'Instalación interior de gas con certificación SEC y sello verde vigente.', 'DS 66'],
+    ['8.9', 5, 'Protección de estufas interiores (al piso y paredes)', 'DS 594 art 44'],
+    ['8.10', 5, 'Plan de emergencia c/ plano de ubicación ; vías evacuación señalizadas', 'DS 594 art 37'],
+    ['8.11', 10, 'Botiquín de primeros auxilios con artículos vigentes.', 'D 594 art 11'],
+    ['8.12', 5, 'Equipo atención primaria emergencia cardiaca operativo (+ de 20 pers)', ''],
+    ['8.13', 5, 'Evidencia Capacitación Manejo equipo Emerg. Cardiaca (desfibrilador)', ''],
+    ['8.14', 5, 'Vías de escape habilitadas (puertas, escaleras de emergencia,etc)', 'DS 594 art 37'],
+    ['8.15', 5, 'Equipo de comunicaciones operativo', '']
+  ]},
+  { id: 9, peso: 5, nombre: 'Dependencias y servicios complementarios', items: [
+    ['9.1', 15, 'Dependencia para secar ropa en buen estado', ''],
+    ['9.2', 15, 'Casilleros para guardar ropa de trabajo en buen estado', ''],
+    ['9.3', 15, 'Repisas o casilleros para secar botas y zapatos', ''],
+    ['9.4', 10, 'Casillero en condiciones para personal aplicador de químicos', 'DS 594 art 327'],
+    ['9.5', 10, 'Equipamiento y/o medios para secar ropa en Dependencia', ''],
+    ['9.6', 10, 'Recinto Sala de lavado en buen estado', ''],
+    ['9.7', 15, 'Equipamiento suficiente en sala de lavado', ''],
+    ['9.8', 10, 'Repisas o mobiliario para ropa y enseres', '']
+  ]},
+  { id: 10, peso: 10, nombre: 'Registros y evidencia documental', items: [
+    ['10.1', 10, 'Libro de faena (sugerencias, reclamos, reconocimientos) (autocopiativo).', ''],
+    ['10.2', 10, 'Resolución sanitaria para elaboración de alimentación', 'DFL 1, pto 30; D 977 art 6; DS'],
+    ['10.3', 10, 'Resolución sanitaria para funcionamiento de hospedaje', 'D 194 art 2'],
+    ['10.4', 10, 'Patente comercial vigente', ''],
+    ['10.5', 20, 'Antecedentes Laborales, según pauta laboral para contratistas', ''],
+    ['10.6', 15, 'Carpeta Pautas de Terreno', ''],
+    ['10.7', 10, 'Control Asistencia trabajadores (registro) al día', ''],
+    ['10.8', 15, 'Trabajadores con exámenes pertinentes al dia (aptitud laboral, preventivos, acreditación)', '']
+  ]}
+];
+const PUNTOS = {}; AREAS.forEach(a => a.items.forEach(i => { PUNTOS[i[0]] = { id: i[0], peso: i[1], t: i[2], norma: i[3], area: a.id }; }));
+
+// ================= CÁLCULO =================
+// Nota del área = promedio ponderado de los puntos evaluados; los N/A salen y su peso se reparte entre los demás.
+// Un área completa en N/A sale de la nota final y su peso se reparte entre las otras áreas.
+function calcular(resp) {
+  let sA = 0, pA = 0, pend = 0;
+  const areas = AREAS.map(a => {
+    let s = 0, p = 0, faltan = 0, na = 0;
+    a.items.forEach(it => {
+      const v = (resp[it[0]] || {}).n;
+      if (v === 'NA') na++;
+      else if (typeof v === 'number') { s += it[1] * v; p += it[1]; }
+      else faltan++;
+    });
+    const nota = p ? s / p : null;
+    pend += faltan;
+    if (nota !== null) { sA += a.peso * nota; pA += a.peso; }
+    return { id: a.id, nombre: a.nombre, peso: a.peso, nota, faltan, na, total: a.items.length };
+  });
+  const final = pA ? sA / pA : null;
+  return { areas, pend, final, cumplimiento: final === null ? null : final / 5 * 100, clase: clase(final) };
+}
+
+// ================= SIN SEÑAL: FOTOS Y PENDIENTES =================
+const colaFotos = {
+  _db: null,
+  abrir() {
+    if (this._db) return Promise.resolve(this._db);
+    if (!window.indexedDB) return Promise.reject(new Error('Este navegador no permite guardar fotos sin señal'));
+    return new Promise((ok, no) => {
+      const rq = indexedDB.open('cp_offline', 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore('fotos', { keyPath: 'key' });
+      rq.onsuccess = () => { this._db = rq.result; ok(rq.result); };
+      rq.onerror = () => no(rq.error);
+    });
+  },
+  async tx(modo, fn) {
+    const d = await this.abrir();
+    return new Promise((ok, no) => { const t = d.transaction('fotos', modo); const r = fn(t.objectStore('fotos')); t.oncomplete = () => ok(r && r.result); t.onerror = () => no(t.error); });
+  },
+  poner(f) { return this.tx('readwrite', s => s.put(f)); },
+  todas() { return this.tx('readonly', s => s.getAll()); },
+  quitar(k) { return this.tx('readwrite', s => s.delete(k)); },
+  async contarCola() { try { return ((await this.todas()) || []).filter(f => f.estado === 'cola').length; } catch (e) { return 0; } }
+};
+const pendientes = {
+  lista() { return LS.get('cp_pend_docs') || []; },
+  agregar(p) { const l = this.lista(); if (!l.includes(p)) { l.push(p); LS.set('cp_pend_docs', l); } },
+  quitar(p) { LS.set('cp_pend_docs', this.lista().filter(x => x !== p)); actualizarEstadoRed(); }
+};
+let sincronizando = false;
+async function sincronizar() {
+  if (!db || !navigator.onLine || sincronizando) { actualizarEstadoRed(); return; }
+  sincronizando = true;
+  try {
+    for (const p of pendientes.lista()) {
+      try { const d = await conTimeout(db.doc(p).get({ source: 'server' }), 8000); if (d.exists) pendientes.quitar(p); } catch (e) { break; }
+    }
+    if (st) {
+      let cola = [];
+      try { cola = ((await colaFotos.todas()) || []).filter(f => f.estado === 'cola'); } catch (e) { cola = []; }
+      const espera = pendientes.lista();
+      for (const f of cola) {
+        if (espera.includes(f.col + '/' + f.docId)) continue; // primero debe llegar el documento
+        try {
+          const ref = st.ref(f.path);
+          await conTimeout(ref.put(f.blob, { contentType: 'image/jpeg' }), 20000);
+          const url = await conTimeout(ref.getDownloadURL(), 8000);
+          try {
+            await conTimeout(db.collection(f.col).doc(f.docId).update({
+              fotos: firebase.firestore.FieldValue.arrayUnion({ item: f.item, url, path: f.path }),
+              fotosPendientes: firebase.firestore.FieldValue.increment(-1)
+            }), 10000);
+          } catch (e) {
+            if (e && e.code === 'not-found') { try { await ref.delete(); } catch (e2) {} } else throw e;
+          }
+          await colaFotos.quitar(f.key);
+        } catch (e) { console.warn('Foto sigue en cola', e); break; }
+      }
+    }
+  } finally { sincronizando = false; actualizarEstadoRed(); }
+}
+async function actualizarEstadoRed() {
+  const el = $('estadoRed'); if (!el) return;
+  const nDocs = pendientes.lista().length, nFotos = await colaFotos.contarCola();
+  const partes = [];
+  if (nDocs) partes.push(nDocs + (nDocs === 1 ? ' registro' : ' registros'));
+  if (nFotos) partes.push(nFotos + (nFotos === 1 ? ' foto' : ' fotos'));
+  if (!navigator.onLine) {
+    el.className = 'red off';
+    el.textContent = '📴 Sin señal: puedes seguir revisando, todo queda guardado en el celular.' + (partes.length ? ' Pendientes: ' + partes.join(' y ') + '.' : '') + (window.__sinCacheLocal ? ' ⚠️ No cierres la app hasta que vuelva la señal.' : '');
+  } else if (partes.length) {
+    el.className = 'red pend'; el.textContent = '⏳ Enviando pendientes: ' + partes.join(' y ') + '…';
+  } else if (el.classList.contains('pend') || el.classList.contains('off')) {
+    el.className = 'red ok'; el.textContent = '✔ Todo enviado';
+    clearTimeout(actualizarEstadoRed._t); actualizarEstadoRed._t = setTimeout(() => { el.className = 'red'; }, 4000);
+  }
+}
+window.addEventListener('online', () => { actualizarEstadoRed(); setTimeout(sincronizar, 2000); });
+window.addEventListener('offline', actualizarEstadoRed);
+setInterval(sincronizar, 60000);
+
+function comprimir(file, max = 1280, q = 0.7) {
+  return new Promise(res => {
+    if (!file.type || !file.type.startsWith('image/')) return res(file);
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => { URL.revokeObjectURL(u); res(b || file); }, 'image/jpeg', q);
+    };
+    img.onerror = () => { URL.revokeObjectURL(u); res(file); };
+    img.src = u;
+  });
+}
+
+// ================= BORRADOR =================
+const CAMPOS = ['fecha', 'nombre', 'codigo', 'comuna', 'direccion', 'propietario', 'concesionario', 'ingeniero', 'revisor', 'capacidad'];
+function nuevo() {
+  const e = {}; CAMPOS.forEach(c => e[c] = ''); e.fecha = hoy();
+  return { id: uid(), enc: e, instId: '', revSel: '', eess: [{ n: '', r: '', m: '' }], resp: {}, plan: {}, extra: [], vista: 'datos', area: 0 };
+}
+let B = LS.get('cp_borrador') || nuevo();
+let FOTOS = {}; // punto -> [{key,url}]
+function guardarB() { clearTimeout(guardarB._t); guardarB._t = setTimeout(() => LS.set('cp_borrador', B), 200); }
+document.addEventListener('visibilitychange', () => { if (document.hidden) LS.set('cp_borrador', B); });
+function hayDatos(b) { return Object.keys(b.resp || {}).length > 0 || ['nombre', 'comuna', 'propietario', 'ingeniero'].some(c => b.enc[c]); }
+
+function pintarDatos() {
+  CAMPOS.forEach(c => { if ($(c)) $(c).value = B.enc[c] || ''; });
+  pintarSelects(); renderEess();
+}
+function enc() { CAMPOS.forEach(c => { if ($(c)) B.enc[c] = $(c).value; }); guardarB(); }
+function renderEess(soloTotales) {
+  const tot = B.eess.reduce((s, f) => s + (parseInt(f.r) || 0) + (parseInt(f.m) || 0), 0);
+  const cap = parseInt(B.enc.capacidad) || 0;
+  const aviso = cap && tot > cap ? `<div class="muted" style="color:var(--r)">⚠️ El total alojado (${tot}) supera la capacidad (${cap}).</div>` : '';
+  if (soloTotales && $('eessTot')) {
+    B.eess.forEach((f, i) => { const el = $('eT' + i); if (el) el.textContent = (parseInt(f.r) || 0) + (parseInt(f.m) || 0); });
+    $('eessTot').innerHTML = `<div class="muted" style="margin:4px 0 10px"><b>Total: ${tot}</b></div>${aviso}`;
+    return;
+  }
+  $('eessBox').innerHTML = `<div class="eess"><div class="h">EESS o usuario</div><div class="h">Residentes</div><div class="h">Moviliz.</div><div class="h">Total</div><div></div></div>` +
+    B.eess.map((f, i) => `<div class="eess">
+      <input id="eN${i}" aria-label="EESS o usuario" value="${esc(f.n)}" oninput="eessVal(${i},'n',this.value)">
+      <input id="eR${i}" aria-label="Residentes" inputmode="numeric" value="${esc(f.r)}" oninput="eessVal(${i},'r',this.value)">
+      <input id="eM${i}" aria-label="Movilizados" inputmode="numeric" value="${esc(f.m)}" oninput="eessVal(${i},'m',this.value)">
+      <div class="t" id="eT${i}">${(parseInt(f.r) || 0) + (parseInt(f.m) || 0)}</div>
+      ${B.eess.length > 1 ? `<button type="button" class="ic" aria-label="Quitar fila" onclick="delEess(${i})">🗑</button>` : '<div></div>'}
+    </div>`).join('') + `<div id="eessTot"><div class="muted" style="margin:4px 0 10px"><b>Total: ${tot}</b></div>${aviso}</div>`;
+}
+function eessVal(i, k, v) { B.eess[i][k] = v; guardarB(); renderEess(true); }
+function addEess() { B.eess.push({ n: '', r: '', m: '' }); guardarB(); renderEess(); }
+function delEess(i) { B.eess.splice(i, 1); guardarB(); renderEess(); }
+
+// ================= CONFIGURACIÓN COMPARTIDA =================
+let INST = LS.get('cp_inst') || [], REVS = LS.get('cp_revs') || [];
+const porNombre = (a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es');
+if (db) {
+  db.collection(COL_INST).onSnapshot(s => { INST = s.docs.map(d => ({ id: d.id, ...d.data() })).sort(porNombre); LS.set('cp_inst', INST); pintarSelects(); if ($('sec-cfg').classList.contains('on')) renderCfg(); }, e => console.warn(e));
+  db.collection(COL_REV).onSnapshot(s => { REVS = s.docs.map(d => ({ id: d.id, ...d.data() })).sort(porNombre); LS.set('cp_revs', REVS); pintarSelects(); if ($('sec-cfg').classList.contains('on')) renderCfg(); }, e => console.warn(e));
+}
+function pintarSelects() {
+  const sI = $('sInst'), sR = $('sRev');
+  sI.innerHTML = '<option value="">Elegir casa o pensión</option>' + INST.map(i => `<option value="${esc(i.id)}">${esc(i.nombre)}</option>`).join('') + '<option value="__otro">Otra (escribir)</option>';
+  sI.value = B.instId || (B.enc.nombre ? '__otro' : '');
+  if (sI.value === '' && B.enc.nombre) sI.value = '__otro';
+  $('nomOtro').style.display = sI.value === '__otro' ? 'block' : 'none';
+  sR.innerHTML = '<option value="">Elegir</option>' + REVS.map(r => `<option value="${esc(r.nombre)}">${esc(r.nombre)}</option>`).join('') + '<option value="__otro">Otro (escribir)</option>';
+  sR.value = B.revSel || '';
+  if (sR.value === '' && B.enc.revisor) { sR.value = REVS.some(r => r.nombre === B.enc.revisor) ? B.enc.revisor : '__otro'; }
+  $('revOtro').style.display = sR.value === '__otro' ? 'block' : 'none';
+}
+function elegirInst() {
+  const v = $('sInst').value; B.instId = v === '__otro' ? '' : v;
+  $('nomOtro').style.display = v === '__otro' ? 'block' : 'none';
+  const i = INST.find(x => x.id === v);
+  if (i) {
+    ['nombre', 'codigo', 'comuna', 'direccion', 'propietario', 'concesionario', 'ingeniero', 'capacidad'].forEach(c => { B.enc[c] = i[c] != null ? String(i[c]) : ''; if ($(c)) $(c).value = B.enc[c]; });
+    renderEess();
+  } else if (v !== '__otro') { B.enc.nombre = ''; $('nombre').value = ''; }
+  guardarB(); $('sInst').classList.remove('err');
+}
+function elegirRev() {
+  const v = $('sRev').value; B.revSel = v;
+  $('revOtro').style.display = v === '__otro' ? 'block' : 'none';
+  $('revisor').value = v === '__otro' ? '' : v;
+  B.enc.revisor = $('revisor').value;
+  guardarB(); $('sRev').classList.remove('err');
+}
+
+// ================= NAVEGACIÓN =================
+function tab(t) {
+  if (t === 'cfg' && !sessionStorage.getItem('cp_cfg_ok')) {
+    const k = prompt('Clave de Configuración');
+    if (k !== CLAVE_CFG) { if (k !== null) toast('Clave incorrecta'); return; }
+    try { sessionStorage.setItem('cp_cfg_ok', '1'); } catch (e) {}
+  }
+  ['rev', 'his', 'seg', 'cfg'].forEach(x => { $('sec-' + x).classList.toggle('on', x === t); $('tb-' + x).classList.toggle('on', x === t); });
+  if (t === 'his' || t === 'seg') escuchar();
+  if (t === 'his') renderHis();
+  if (t === 'seg') renderSeg();
+  if (t === 'cfg') renderCfg();
+  window.scrollTo(0, 0);
+}
+function ver(v) {
+  B.vista = v; guardarB();
+  ['datos', 'pauta', 'res'].forEach(x => $('v-' + x).style.display = x === v ? 'block' : 'none');
+  if (v === 'pauta') renderPauta();
+  if (v === 'res') renderRes();
+  window.scrollTo(0, 0);
+}
+function validarDatos() {
+  document.querySelectorAll('#v-datos .err').forEach(e => e.classList.remove('err'));
+  enc();
+  const errores = [], marcar = el => { el.classList.add('err'); errores.push(el); };
+  if (!B.enc.fecha) marcar($('fecha'));
+  if (!B.enc.nombre.trim()) marcar($('sInst').value === '__otro' ? $('nombre') : $('sInst'));
+  if (!B.enc.comuna.trim()) marcar($('comuna'));
+  if (!B.enc.propietario.trim()) marcar($('propietario'));
+  if (!B.enc.ingeniero.trim()) marcar($('ingeniero'));
+  if (!B.enc.revisor.trim()) marcar($('sRev').value === '__otro' ? $('revisor') : $('sRev'));
+  if (!(parseInt(B.enc.capacidad) > 0)) marcar($('capacidad'));
+  if (!B.eess.some(f => f.n.trim())) marcar($('eN0'));
+  if (errores.length) { errores[0].scrollIntoView({ behavior: 'smooth', block: 'center' }); toast('Faltan ' + errores.length + ' dato(s) por completar (marcados en rosado).'); return false; }
+  return true;
+}
+function comenzar() { if (validarDatos()) ver('pauta'); }
+async function descartar() {
+  if (hayDatos(B) && !confirm('¿Descartar esta revisión? Se borran las notas y fotos que no has guardado.')) return;
+  await borrarFotosBorrador();
+  B = nuevo(); FOTOS = {}; LS.del('cp_borrador'); pintarDatos(); ver('datos'); toast('Revisión en blanco');
+}
+async function borrarFotosBorrador() {
+  try { for (const f of ((await colaFotos.todas()) || [])) if (f.estado === 'borrador') await colaFotos.quitar(f.key); } catch (e) {}
+}
+
+// ================= PAUTA =================
+function renderPauta() {
+  const a = AREAS[B.area], c = calcular(B.resp), ca = c.areas[B.area];
+  const total = Object.keys(PUNTOS).length, hechos = total - c.pend;
+  $('v-pauta').innerHTML = `
+    <div class="prog">
+      <div class="top"><span>Área ${B.area + 1} de 10</span><span>${hechos} de ${total} puntos</span></div>
+      <div class="bar"><i style="width:${Math.round(hechos / total * 100)}%"></i></div>
+      <div class="achips" id="achips">${chips(c)}</div>
+    </div>
+    <div class="ahead"><div><h2>${a.id}. ${esc(a.nombre)}</h2><div class="muted">Pondera ${a.peso} % de la nota final</div></div>
+      <div class="nchip ${clase(ca.nota)}" id="aNota"><small>Nota área</small><b>${n1(ca.nota)}</b></div></div>
+    ${a.items.map(htmlItem).join('')}
+    <div class="fila-btn">
+      <button class="btn o" onclick="irArea(${B.area - 1})">${B.area ? 'Área anterior' : 'Volver a datos'}</button>
+      <button class="btn p" onclick="${B.area < 9 ? `irArea(${B.area + 1})` : 'verResultado()'}">${B.area < 9 ? 'Siguiente área' : 'Ver resultado'}</button>
+    </div>
+    ${B.area < 9 ? '<button class="btn w" style="margin-top:8px" onclick="verResultado()">Ver resultado</button>' : ''}`;
+}
+function chips(c) {
+  return c.areas.map((x, i) => `<button type="button" aria-label="Ir al área ${x.id}: ${esc(x.nombre)}" class="${x.faltan === 0 ? 'ok' : (x.faltan < x.total ? 'par' : '')} ${i === B.area ? 'act' : ''}" onclick="irArea(${i})">${x.id}</button>`).join('');
+}
+function htmlItem(it) {
+  const id = it[0], r = B.resp[id] || {}, bajo = typeof r.n === 'number' && r.n < 5;
+  return `<div class="item" id="it_${sid(id)}">
+    <div class="q"><span class="pts">${it[1]} %</span>${esc(id)} ${esc(it[2])}</div>
+    ${it[3] ? `<div class="ay">Norma: ${esc(it[3])}</div>` : ''}
+    <div class="notas">${[1, 2, 3, 4, 5, 'NA'].map(v => `<button type="button" class="${r.n === v ? 'on' : ''}" aria-pressed="${r.n === v}" aria-label="${v === 'NA' ? 'No aplica' : 'Nota ' + v}" onclick="poner('${id}',${v === 'NA' ? "'NA'" : v})">${v === 'NA' ? 'N/A' : v}</button>`).join('')}</div>
+    <div class="extra ${bajo ? 'on' : ''}">
+      <label class="l" for="o_${sid(id)}">Observación (obligatoria bajo 5)</label>
+      <textarea id="o_${sid(id)}" rows="2" placeholder="¿Qué se encontró?" oninput="obs('${id}',this.value)">${esc(r.o || '')}</textarea>
+      <label class="fotobtn">📷 Agregar foto<input type="file" accept="image/*" multiple hidden onchange="addFotos('${id}',this)"></label>
+      <div class="fotos" id="f_${sid(id)}">${htmlFotos(id)}</div>
+    </div>
+  </div>`;
+}
+function htmlFotos(id) { return (FOTOS[id] || []).map(f => `<div class="foto"><img src="${f.url}" alt="Foto del punto ${esc(id)}"><button type="button" aria-label="Quitar foto" onclick="delFoto('${id}','${f.key}')">✖</button></div>`).join(''); }
+function poner(id, v) {
+  B.resp[id] = Object.assign(B.resp[id] || {}, { n: v });
+  guardarB();
+  const it = AREAS[PUNTOS[id].area - 1].items.find(x => x[0] === id);
+  $('it_' + sid(id)).outerHTML = htmlItem(it);
+  const c = calcular(B.resp), ca = c.areas[B.area];
+  $('aNota').className = 'nchip ' + clase(ca.nota); $('aNota').querySelector('b').textContent = n1(ca.nota);
+  $('achips').innerHTML = chips(c);
+  const total = Object.keys(PUNTOS).length, hechos = total - c.pend;
+  document.querySelector('#v-pauta .top span:last-child').textContent = hechos + ' de ' + total + ' puntos';
+  document.querySelector('#v-pauta .bar i').style.width = Math.round(hechos / total * 100) + '%';
+}
+function obs(id, v) { B.resp[id] = Object.assign(B.resp[id] || {}, { o: v }); guardarB(); }
+function irArea(i) { if (i < 0) return ver('datos'); B.area = i; guardarB(); renderPauta(); window.scrollTo(0, 0); }
+async function addFotos(id, input) {
+  const files = [...input.files]; input.value = '';
+  for (const file of files) {
+    try {
+      const blob = await comprimir(file);
+      const key = `${B.id}_${id}_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
+      await colaFotos.poner({ key, rev: B.id, item: id, estado: 'borrador', blob });
+      (FOTOS[id] = FOTOS[id] || []).push({ key, url: URL.createObjectURL(blob) });
+    } catch (e) { console.warn(e); toast('No se pudo guardar la foto en este celular.'); }
+  }
+  const el = $('f_' + sid(id)); if (el) el.innerHTML = htmlFotos(id);
+}
+async function delFoto(id, key) {
+  try { await colaFotos.quitar(key); } catch (e) {}
+  FOTOS[id] = (FOTOS[id] || []).filter(f => f.key !== key);
+  const el = $('f_' + sid(id)); if (el) el.innerHTML = htmlFotos(id);
+}
+async function cargarFotosBorrador() {
+  try {
+    const l = ((await colaFotos.todas()) || []).filter(f => f.estado === 'borrador' && f.rev === B.id);
+    FOTOS = {};
+    l.forEach(f => (FOTOS[f.item] = FOTOS[f.item] || []).push({ key: f.key, url: URL.createObjectURL(f.blob) }));
+  } catch (e) { FOTOS = {}; }
+}
+function faltantes() {
+  const lista = [];
+  AREAS.forEach((a, ai) => a.items.forEach(it => {
+    const r = B.resp[it[0]] || {};
+    if (r.n === undefined || r.n === null) lista.push({ ai, id: it[0], el: 'it_' });
+    else if (typeof r.n === 'number' && r.n < 5 && !(r.o || '').trim()) lista.push({ ai, id: it[0], el: 'o_' });
+  }));
+  return lista;
+}
+function verResultado() {
+  const f = faltantes();
+  if (f.length) {
+    B.area = f[0].ai; ver('pauta');
+    f.filter(x => x.ai === f[0].ai).forEach(x => { const e = $(x.el + sid(x.id)); if (e) e.classList.add('err'); });
+    const e = $(f[0].el + sid(f[0].id)); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    toast('Faltan ' + f.length + ' punto(s) por completar (nota u observación).', 5000);
+    return;
+  }
+  if (calcular(B.resp).final === null) { toast('Todos los puntos están en N/A: no hay nota que calcular.'); return; }
+  ver('res');
+}
+
+// ================= RESULTADO Y PLAN =================
+const htmlBarras = areas => areas.map(a => {
+  const k = clase(a.nota);
+  return `<div class="arow"><div class="t"><span>${a.id}. ${esc(a.nombre)}</span><b>${n1(a.nota)}</b></div>
+    <div class="bar"><i class="${k}" style="width:${a.nota === null ? 0 : Math.round(a.nota * 20)}%"></i></div>
+    <div class="m">Pondera ${a.peso} %${a.na ? ' · ' + a.na + ' punto(s) N/A' : ''}${a.nota === null ? ' · Área fuera de la nota' : ''}</div></div>`;
+}).join('');
+function htmlNota(final, cump, k) {
+  return `<div class="res ${k}"><div><small>Nota final</small><b>${n1(final)}</b></div><div><small>Cumplimiento</small><b style="white-space:nowrap">${p1(cump)}</b></div><div class="cl">Clasificación ${CLASE_TXT[k]}</div></div>`;
+}
+function puntosBajos() { return Object.keys(PUNTOS).filter(id => { const v = (B.resp[id] || {}).n; return typeof v === 'number' && v < 5; }); }
+function renderRes() {
+  const c = calcular(B.resp), bajos = puntosBajos();
+  bajos.forEach(id => { if (!B.plan[id]) B.plan[id] = { on: true, accion: (B.resp[id].o || ''), resp: '', plazo: '' }; });
+  const activos = bajos.filter(id => B.plan[id].on), quitados = bajos.filter(id => !B.plan[id].on);
+  const dl = [B.enc.concesionario, B.enc.propietario].filter(Boolean);
+  $('v-res').innerHTML = `${htmlNota(c.final, c.cumplimiento, c.clase)}
+    <div class="card"><h2>Nota por área</h2>${htmlBarras(c.areas)}</div>
+    <div class="card" id="cardPlan"><h2>Plan de acción</h2>
+      <p class="muted" style="margin:0 0 8px">Los puntos con nota bajo 5 se proponen aquí. Completa quién responde y para cuándo.</p>
+      <datalist id="dlResp">${dl.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+      ${activos.length + B.extra.length > 1 ? `<div style="background:#f7f9f8;border:1px solid var(--bd);border-radius:8px;padding:10px;margin-bottom:8px">
+        <div style="font-weight:600;font-size:14px">Aplicar a todas</div>
+        <div class="g2"><div><label class="l" for="tResp">Responsable</label><input id="tResp" list="dlResp"></div><div><label class="l" for="tPlazo">Plazo</label><input type="date" id="tPlazo"></div></div>
+        <button type="button" class="btn o w" style="margin-top:8px" onclick="aplicarTodas()">Aplicar</button></div>` : ''}
+      ${activos.map(id => htmlAcc('p', id, `${id} ${PUNTOS[id].t}`, B.plan[id], `Nota ${B.resp[id].n}`)).join('')}
+      ${B.extra.map((x, i) => htmlAcc('x', i, 'Acción adicional', x, '')).join('')}
+      ${activos.length + B.extra.length === 0 ? '<p class="muted">No hay acciones en este plan.</p>' : ''}
+      <button type="button" class="btn o w" style="margin-top:8px" onclick="addExtra()">+ Agregar acción</button>
+      ${quitados.length ? `<div style="margin-top:10px"><div class="muted">Fuera del plan:</div>${quitados.map(id => `<button type="button" class="btn w" style="margin-top:6px;text-align:left" onclick="planOn('${id}',true)">↩ Volver a incluir ${esc(id)}</button>`).join('')}</div>` : ''}
+    </div>
+    <button class="btn p w" id="btnGuardar" onclick="guardar()">Guardar revisión</button>
+    <button class="btn o w" style="margin-top:8px" onclick="ver('pauta')">Volver a la pauta</button>`;
+}
+function htmlAcc(tipo, k, tit, x, sub) {
+  const pre = tipo + '_' + sid(k);
+  const quitar = tipo === 'p' ? `planOn('${k}',false)` : `delExtra(${k})`;
+  return `<div class="acc" id="acc_${pre}">
+    <div class="lista"><div class="tit">${esc(tit)}${sub ? ` <span class="muted">· ${esc(sub)}</span>` : ''}</div>
+    <button type="button" class="btn" style="flex:0 0 auto;padding:6px 10px;font-size:13px" onclick="${quitar}">Quitar</button></div>
+    <label class="l" for="aA_${pre}">Acción a realizar</label><textarea id="aA_${pre}" rows="2" oninput="accVal('${tipo}','${k}','accion',this.value)">${esc(x.accion)}</textarea>
+    <div class="g2">
+      <div><label class="l" for="aR_${pre}">Responsable</label><input id="aR_${pre}" list="dlResp" value="${esc(x.resp)}" oninput="accVal('${tipo}','${k}','resp',this.value)"></div>
+      <div><label class="l" for="aP_${pre}">Plazo</label><input type="date" id="aP_${pre}" value="${esc(x.plazo)}" oninput="accVal('${tipo}','${k}','plazo',this.value)"></div>
+    </div></div>`;
+}
+function accVal(tipo, k, c, v) { (tipo === 'p' ? B.plan[k] : B.extra[+k])[c] = v; guardarB(); }
+function planOn(id, on) { B.plan[id].on = on; guardarB(); renderRes(); }
+function addExtra() { B.extra.push({ accion: '', resp: '', plazo: '' }); guardarB(); renderRes(); }
+function delExtra(i) { B.extra.splice(i, 1); guardarB(); renderRes(); }
+function aplicarTodas() {
+  const r = $('tResp').value.trim(), p = $('tPlazo').value;
+  if (!r && !p) { toast('Escribe un responsable o un plazo.'); return; }
+  const vr = r, vp = p;
+  puntosBajos().filter(id => B.plan[id].on).forEach(id => { if (vr) B.plan[id].resp = vr; if (vp) B.plan[id].plazo = vp; });
+  B.extra.forEach(x => { if (vr) x.resp = vr; if (vp) x.plazo = vp; });
+  guardarB(); renderRes(); toast('Aplicado a todas las acciones.');
+}
+function validarPlan() {
+  document.querySelectorAll('#cardPlan .err').forEach(e => e.classList.remove('err'));
+  const errores = [];
+  const rev = (tipo, k, x) => {
+    const pre = tipo + '_' + sid(k);
+    if (!x.accion.trim()) errores.push($('aA_' + pre));
+    if (!x.resp.trim()) errores.push($('aR_' + pre));
+    if (!x.plazo) errores.push($('aP_' + pre));
+  };
+  puntosBajos().filter(id => B.plan[id].on).forEach(id => rev('p', id, B.plan[id]));
+  B.extra.forEach((x, i) => rev('x', i, x));
+  errores.forEach(e => e && e.classList.add('err'));
+  if (errores.length) { errores[0].scrollIntoView({ behavior: 'smooth', block: 'center' }); toast('Faltan ' + errores.length + ' dato(s) del plan (marcados en rosado).'); return false; }
+  return true;
+}
+
+// ================= GUARDAR =================
+function armarNumero() {
+  const base = (B.enc.codigo || 'CP').trim().replace(/\s+/g, '').toUpperCase();
+  return `${base}-${B.enc.fecha.replace(/-/g, '')}-${B.id.slice(0, 4).toUpperCase()}`;
+}
+async function guardar() {
+  if (!db) { toast('Sin conexión a la base todavía: abre el módulo una vez con señal. Tu revisión sigue como borrador.', 6000); return; }
+  if (faltantes().length) { verResultado(); return; }
+  if (!validarPlan()) return;
+  const c = calcular(B.resp);
+  const btn = $('btnGuardar'); btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    const numero = armarNumero();
+    // Fotos solo de puntos que siguen bajo 5
+    let fotosB = [];
+    try { fotosB = ((await colaFotos.todas()) || []).filter(f => f.estado === 'borrador' && f.rev === B.id); } catch (e) {}
+    const validas = fotosB.filter(f => { const v = (B.resp[f.item] || {}).n; return typeof v === 'number' && v < 5; });
+    const items = {};
+    Object.keys(PUNTOS).forEach(id => { const r = B.resp[id] || {}; const bajo = typeof r.n === 'number' && r.n < 5; items[sid(id)] = { id, n: r.n, o: bajo ? (r.o || '').trim() : '' }; });
+    const ser = firebase.firestore.FieldValue.serverTimestamp();
+    const ref = db.collection(COL).doc(B.id);
+    const eess = B.eess.filter(f => f.n.trim()).map(f => ({ nombre: f.n.trim(), residentes: parseInt(f.r) || 0, movilizados: parseInt(f.m) || 0 }));
+    const data = {
+      numero, pautaVersion: PAUTA_VERSION, fecha: B.enc.fecha, instalacionId: B.instId || '',
+      nombre: B.enc.nombre.trim(), codigo: B.enc.codigo.trim(), comuna: B.enc.comuna.trim(), direccion: B.enc.direccion.trim(),
+      propietario: B.enc.propietario.trim(), concesionario: B.enc.concesionario.trim(), ingeniero: B.enc.ingeniero.trim(), revisor: B.enc.revisor.trim(),
+      capacidad: parseInt(B.enc.capacidad) || 0, eess,
+      items, areas: c.areas.map(a => ({ id: a.id, nombre: a.nombre, peso: a.peso, nota: a.nota, na: a.na })),
+      notaFinal: c.final, cumplimiento: c.cumplimiento, clasificacion: c.clase,
+      fotos: [], fotosPendientes: validas.length, creadoEn: ser
+    };
+    const acciones = [];
+    puntosBajos().filter(id => B.plan[id].on).forEach(id => acciones.push({ punto: id, puntoTexto: PUNTOS[id].t, nota: B.resp[id].n, accion: B.plan[id].accion.trim(), responsable: B.plan[id].resp.trim(), plazo: B.plan[id].plazo }));
+    B.extra.forEach(x => acciones.push({ punto: '', puntoTexto: 'Acción adicional', nota: null, accion: x.accion.trim(), responsable: x.resp.trim(), plazo: x.plazo }));
+    const batch = db.batch();
+    batch.set(ref, data);
+    const pend = [COL + '/' + B.id], idsAcc = [];
+    acciones.forEach(a => {
+      const ra = db.collection(COL_ACC).doc();
+      batch.set(ra, Object.assign(a, { revisionId: B.id, numero, instalacion: data.nombre, fechaRevision: data.fecha, estado: 'abierta', cierreObs: '', cierreFecha: '', fotos: [], fotosPendientes: 0, creadoEn: ser }));
+      idsAcc.push(ra.id);
+    });
+    const w = batch.commit();
+    pendientes.agregar(pend[0]);
+    w.then(() => pendientes.quitar(pend[0])).catch(e => console.warn('Escritura rechazada', e));
+    let msg = 'Revisión guardada ✔ (nota ' + n1(c.final) + ')';
+    try { if (!navigator.onLine) throw new Error('timeout'); await conTimeout(w, 6000); }
+    catch (e) { if (e.message === 'timeout') msg = '📴 Sin señal: la revisión quedó guardada en el celular y se enviará sola al volver la señal.'; else { pendientes.quitar(pend[0]); throw e; } }
+    // Pasar fotos de borrador a la cola de envío
+    let n = 0;
+    for (const f of fotosB) {
+      const v = (B.resp[f.item] || {}).n;
+      if (typeof v === 'number' && v < 5) { n++; await colaFotos.poner(Object.assign(f, { estado: 'cola', col: COL, docId: B.id, path: `${COL}/${B.id}/${sid(f.item)}_${Date.now()}_${n}.jpg` })); }
+      else await colaFotos.quitar(f.key);
+    }
+    if (n) msg += ' ' + n + ' foto(s) se enviarán solas.';
+    const guardado = { id: B.id, ...data, _local: true };
+    ACC = ACC.filter(a => a.revisionId !== B.id).concat(acciones.map((a, i) => ({ id: idsAcc[i], ...a })));
+    REV = REV.filter(x => x.id !== B.id); REV.unshift(guardado);
+    B = nuevo(); FOTOS = {}; LS.del('cp_borrador'); LS.set('cp_borrador', B);
+    pintarDatos(); ver('datos'); tab('his');
+    toast(msg, 6000);
+    verDetalle(guardado.id);
+    actualizarEstadoRed(); setTimeout(sincronizar, 500);
+  } catch (e) {
+    console.error(e); toast('No se pudo guardar: ' + (e.code || e.message) + '. Tu revisión sigue como borrador.', 7000);
+  } finally { const b = $('btnGuardar'); if (b) { b.disabled = false; b.textContent = 'Guardar revisión'; } }
+}
+
+// ================= DATOS GUARDADOS =================
+let REV = [], ACC = [], escuchando = false;
+function escuchar() {
+  if (escuchando || !db) return;
+  escuchando = true;
+  db.collection(COL).orderBy('fecha', 'desc').limit(300).onSnapshot(s => {
+    REV = s.docs.map(d => ({ id: d.id, ...d.data() }));
+    if ($('sec-his').classList.contains('on')) renderHis();
+    refrescarSegInst();
+  }, e => console.warn(e));
+  db.collection(COL_ACC).onSnapshot(s => {
+    ACC = s.docs.map(d => ({ id: d.id, ...d.data() }));
+    if ($('sec-seg').classList.contains('on')) renderSeg();
+    if ($('sec-his').classList.contains('on')) renderHis();
+  }, e => console.warn(e));
+}
+const abiertas = revId => ACC.filter(a => a.revisionId === revId && a.estado !== 'cerrada').length;
+
+function renderHis() {
+  const q = ($('buscar').value || '').toLowerCase().trim();
+  const l = REV.filter(r => !q || [r.nombre, r.comuna, fmtF(r.fecha), r.revisor, r.numero].join(' ').toLowerCase().includes(q));
+  if (!l.length) { $('hisLista').innerHTML = `<p class="muted" style="text-align:center;padding:20px">${REV.length ? 'Sin resultados para esa búsqueda.' : 'Todavía no hay revisiones guardadas.'}</p>`; return; }
+  $('hisLista').innerHTML = l.map(r => {
+    const k = clase(r.notaFinal), n = abiertas(r.id);
+    return `<div class="card"><div class="lista">
+      <div><div style="font-weight:700;font-size:16px">${esc(r.nombre)}</div>
+        <div class="muted">${fmtF(r.fecha)} · ${esc(r.revisor)}</div>
+        <div class="muted">${esc(r.comuna)} · N° ${esc(r.numero)}</div>
+        <div class="muted">${n ? n + (n === 1 ? ' acción abierta' : ' acciones abiertas') : 'Sin acciones abiertas'}</div></div>
+      <div class="nchip ${k}" style="min-width:78px"><b>${n1(r.notaFinal)}</b><small>${p1(r.cumplimiento)}</small></div></div>
+      <div class="fila-btn"><button class="btn o" onclick="verDetalle('${r.id}')">Ver</button><button class="btn o" onclick="informePDF('${r.id}')">Compartir PDF</button></div></div>`;
+  }).join('');
+}
+function verDetalle(id) {
+  const r = REV.find(x => x.id === id); if (!r) return;
+  const bajos = Object.values(r.items || {}).filter(i => typeof i.n === 'number' && i.n < 5).sort((a, b) => ordenId(a.id) - ordenId(b.id));
+  const accs = ACC.filter(a => a.revisionId === id).sort((a, b) => ordenId(a.punto) - ordenId(b.punto));
+  const fotosDe = i => (r.fotos || []).filter(f => f.item === i).map(f => `<img src="${esc(f.url)}" alt="Foto del punto ${esc(i)}" loading="lazy">`).join('');
+  $('modalBox').innerHTML = `<div class="mhead"><h2>${esc(r.nombre)}</h2><button aria-label="Cerrar" onclick="cerrarModal()">✖</button></div>
+    <p class="muted" style="margin-top:0">N° ${esc(r.numero)} · ${fmtF(r.fecha)} · ${esc(r.revisor)}${r.fotosPendientes > 0 ? ` · ${r.fotosPendientes} foto(s) por enviar` : ''}</p>
+    ${htmlNota(r.notaFinal, r.cumplimiento, clase(r.notaFinal))}
+    <div class="card"><h2>Nota por área</h2>${htmlBarras(r.areas || [])}</div>
+    <div class="card"><h2>Puntos bajo 5 (${bajos.length})</h2>${bajos.length ? bajos.map(i => `<div class="acc"><div class="tit">${esc(i.id)} ${esc((PUNTOS[i.id] || {}).t || '')} <span class="chip ${clase(i.n)}">Nota ${i.n}</span></div>${i.o ? `<div class="muted" style="margin-top:4px">${esc(i.o)}</div>` : ''}<div class="fotos">${fotosDe(i.id)}</div></div>`).join('') : '<p class="muted">Ninguno.</p>'}</div>
+    <div class="card"><h2>Plan de acción (${accs.length})</h2>${accs.length ? accs.map(a => `<div class="acc"><div class="tit">${a.punto ? esc(a.punto) + ' ' : ''}${esc(a.accion)}</div><div class="muted">${esc(a.responsable)} · ${fmtF(a.plazo)} · ${a.estado === 'cerrada' ? 'Cerrada' : 'Abierta'}</div></div>`).join('') : '<p class="muted">Sin acciones.</p>'}</div>
+    <button class="btn p w" onclick="informePDF('${id}')">Compartir PDF</button>
+    <button class="btn d w" style="margin-top:8px" onclick="eliminarRev('${id}')">Eliminar revisión</button>`;
+  $('modal').classList.add('on');
+}
+const ordenId = id => { const m = String(id || '').match(/^(\d+)\.(\d+)/); return m ? +m[1] * 100 + +m[2] : 99999; };
+function cerrarModal() { $('modal').classList.remove('on'); }
+async function eliminarRev(id) {
+  const k = prompt('Clave para eliminar');
+  if (k !== CLAVE_CFG) { if (k !== null) toast('Clave incorrecta'); return; }
+  if (!confirm('¿Eliminar esta revisión y su plan de acción? No se puede deshacer.')) return;
+  const r = REV.find(x => x.id === id); if (!r) return;
+  try {
+    const accs = ACC.filter(a => a.revisionId === id);
+    const batch = db.batch();
+    batch.delete(db.collection(COL).doc(id));
+    accs.forEach(a => batch.delete(db.collection(COL_ACC).doc(a.id)));
+    batch.commit().catch(e => { console.warn(e); toast('No se pudo eliminar: ' + (e.code || e.message), 6000); });
+    pendientes.quitar(COL + '/' + id);
+    if (st) [r, ...accs].forEach(x => (x.fotos || []).forEach(f => { try { st.ref(f.path).delete().catch(() => {}); } catch (e) {} }));
+    try { for (const f of ((await colaFotos.todas()) || [])) if (f.docId === id || accs.some(a => a.id === f.docId)) await colaFotos.quitar(f.key); } catch (e) {}
+    REV = REV.filter(x => x.id !== id); ACC = ACC.filter(a => a.revisionId !== id);
+    cerrarModal(); renderHis(); toast('Revisión eliminada');
+  } catch (e) { toast('No se pudo eliminar: ' + (e.code || e.message), 6000); }
+}
+
+// ================= SEGUIMIENTO =================
+let segF = 'Abiertos';
+const estadoAcc = a => a.estado === 'cerrada' ? { t: 'Cerrada', k: 'verde' } : (a.plazo && a.plazo < hoy() ? { t: 'Vencida', k: 'rojo' } : { t: 'En plazo', k: 'amarillo' });
+function refrescarSegInst() {
+  const s = $('segInst'), v = s.value, nom = [...new Set(ACC.map(a => a.instalacion).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+  s.innerHTML = '<option value="">Todas</option>' + nom.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  s.value = nom.includes(v) ? v : '';
+}
+function renderSeg() {
+  refrescarSegInst();
+  $('segFilt').innerHTML = ['Abiertos', 'Cerrados', 'Todos'].map(f => `<button type="button" class="${f === segF ? 'on' : ''}" aria-pressed="${f === segF}" onclick="segF='${f}';renderSeg()">${f}</button>`).join('');
+  const inst = $('segInst').value;
+  const l = ACC.filter(a => (!inst || a.instalacion === inst) && (segF === 'Todos' || (segF === 'Cerrados') === (a.estado === 'cerrada')))
+    .sort((a, b) => (a.estado === 'cerrada') - (b.estado === 'cerrada') || String(a.plazo).localeCompare(String(b.plazo)));
+  $('segLista').innerHTML = l.length ? l.map(a => {
+    const e = estadoAcc(a);
+    return `<div class="card"><div class="lista"><div class="muted">${esc(a.instalacion)}${a.punto ? ' · Punto ' + esc(a.punto) : ''}</div><span class="chip ${e.k}" style="flex:0 0 auto">${e.t}</span></div>
+      <div style="font-weight:600;margin-top:6px;line-height:1.35">${esc(a.accion)}</div>
+      <div class="muted" style="margin-top:6px">Responsable: ${esc(a.responsable)}</div>
+      <div class="muted">Plazo: ${fmtF(a.plazo)}</div>
+      ${a.estado === 'cerrada' ? `<div class="muted">Cerrada el ${fmtF(a.cierreFecha)}: ${esc(a.cierreObs)}</div>` : ''}
+      <button class="btn o w" style="margin-top:10px" onclick="abrirAcc('${a.id}')">${a.estado === 'cerrada' ? 'Ver evidencia' : 'Cerrar o editar'}</button></div>`;
+  }).join('') : `<p class="muted" style="text-align:center;padding:20px">${ACC.length ? 'No hay acciones con este filtro.' : 'Todavía no hay acciones de planes.'}</p>`;
+}
+let accFotos = [];
+function abrirAcc(id) {
+  const a = ACC.find(x => x.id === id); if (!a) return;
+  accFotos = [];
+  const cerrada = a.estado === 'cerrada';
+  $('modalBox').innerHTML = `<div class="mhead"><h2>${a.punto ? 'Punto ' + esc(a.punto) : 'Acción adicional'}</h2><button aria-label="Cerrar" onclick="cerrarModal()">✖</button></div>
+    <p class="muted" style="margin-top:0">${esc(a.instalacion)} · N° ${esc(a.numero)}${a.puntoTexto && a.punto ? '<br>' + esc(a.puntoTexto) : ''}</p>
+    <label class="l" for="mA">Acción a realizar</label><textarea id="mA" rows="2" ${cerrada ? 'disabled' : ''}>${esc(a.accion)}</textarea>
+    <div class="g2">
+      <div><label class="l" for="mR">Responsable</label><input id="mR" value="${esc(a.responsable)}" ${cerrada ? 'disabled' : ''}></div>
+      <div><label class="l" for="mP">Plazo</label><input type="date" id="mP" value="${esc(a.plazo)}" ${cerrada ? 'disabled' : ''}></div>
+    </div>
+    <label class="l" for="mO">Evidencia de cierre</label><textarea id="mO" rows="2" placeholder="¿Qué se hizo para resolverlo?" ${cerrada ? 'disabled' : ''}>${esc(a.cierreObs)}</textarea>
+    <div class="fotos">${(a.fotos || []).map(f => `<img src="${esc(f.url)}" alt="Evidencia" loading="lazy">`).join('')}</div>
+    ${a.fotosPendientes > 0 ? `<p class="muted">${a.fotosPendientes} foto(s) por enviar.</p>` : ''}
+    ${cerrada ? `<button class="btn o w" style="margin-top:10px" onclick="reabrirAcc('${id}')">Reabrir acción</button>` : `
+    <label class="fotobtn">📷 Agregar foto de evidencia<input type="file" accept="image/*" multiple hidden onchange="fotoAcc(this)"></label>
+    <div class="fotos" id="mF"></div>
+    <div class="fila-btn"><button class="btn o" onclick="guardarAcc('${id}',false)">Guardar cambios</button><button class="btn p" onclick="guardarAcc('${id}',true)">Cerrar acción</button></div>`}`;
+  $('modal').classList.add('on');
+}
+async function fotoAcc(input) {
+  const files = [...input.files]; input.value = '';
+  for (const f of files) { const blob = await comprimir(f); accFotos.push(blob); }
+  $('mF').innerHTML = accFotos.map((b, i) => `<div class="foto"><img src="${URL.createObjectURL(b)}" alt="Evidencia"><button type="button" aria-label="Quitar foto" onclick="accFotos.splice(${i},1);fotoAcc({files:[],value:''})">✖</button></div>`).join('');
+}
+async function guardarAcc(id, cerrar) {
+  document.querySelectorAll('#modalBox .err').forEach(e => e.classList.remove('err'));
+  const errores = [];
+  if (!$('mA').value.trim()) errores.push($('mA'));
+  if (!$('mR').value.trim()) errores.push($('mR'));
+  if (!$('mP').value) errores.push($('mP'));
+  if (cerrar && !$('mO').value.trim()) errores.push($('mO'));
+  if (errores.length) { errores.forEach(e => e.classList.add('err')); errores[0].scrollIntoView({ behavior: 'smooth', block: 'center' }); toast(cerrar ? 'Para cerrar, completa los datos y la evidencia.' : 'Completa los datos marcados.'); return; }
+  const u = { accion: $('mA').value.trim(), responsable: $('mR').value.trim(), plazo: $('mP').value, cierreObs: $('mO').value.trim() };
+  if (cerrar) { u.estado = 'cerrada'; u.cierreFecha = hoy(); }
+  const n = accFotos.length;
+  if (n) u.fotosPendientes = firebase.firestore.FieldValue.increment(n);
+  const p = COL_ACC + '/' + id;
+  try {
+    const w = db.collection(COL_ACC).doc(id).update(u);
+    pendientes.agregar(p); w.then(() => pendientes.quitar(p)).catch(e => { console.warn(e); pendientes.quitar(p); });
+    for (let i = 0; i < n; i++) {
+      await colaFotos.poner({ key: `${id}_${Date.now()}_${i}`, estado: 'cola', col: COL_ACC, docId: id, item: 'cierre', path: `${COL_ACC}/${id}/cierre_${Date.now()}_${i}.jpg`, blob: accFotos[i] });
+    }
+    const a = ACC.find(x => x.id === id);
+    if (a) { const copia = Object.assign({}, u); delete copia.fotosPendientes; Object.assign(a, copia); }
+    cerrarModal(); renderSeg();
+    toast(cerrar ? 'Acción cerrada ✔' : 'Cambios guardados ✔');
+    actualizarEstadoRed(); setTimeout(sincronizar, 500);
+  } catch (e) { toast('No se pudo guardar: ' + (e.code || e.message), 6000); }
+}
+function reabrirAcc(id) {
+  if (!confirm('¿Reabrir esta acción?')) return;
+  db.collection(COL_ACC).doc(id).update({ estado: 'abierta', cierreFecha: '' }).catch(e => toast('No se pudo reabrir: ' + (e.code || e.message), 6000));
+  const a = ACC.find(x => x.id === id); if (a) { a.estado = 'abierta'; a.cierreFecha = ''; }
+  cerrarModal(); renderSeg(); toast('Acción reabierta');
+}
+
+// ================= CONFIGURACIÓN =================
+function renderCfg() {
+  $('cfgBox').innerHTML = `
+    <div class="card"><h2>Instalaciones</h2>
+      ${INST.length ? INST.map(i => `<div class="acc lista"><div><div style="font-weight:700">${esc(i.nombre)}</div><div class="muted">${[i.codigo, i.comuna, i.tipo].filter(Boolean).map(esc).join(' · ')}</div></div><button class="btn o" style="flex:0 0 auto" onclick="editInst('${i.id}')">Editar</button></div>`).join('') : '<p class="muted">Sin instalaciones. Agrégalas para no escribir los datos en cada revisión.</p>'}
+      <button class="btn o w" style="margin-top:8px" onclick="editInst('')">+ Agregar instalación</button></div>
+    <div class="card"><h2>Revisores</h2>
+      ${REVS.length ? REVS.map(r => `<div class="acc lista"><div style="font-weight:600;align-self:center">${esc(r.nombre)}</div><button class="btn d" style="flex:0 0 auto" onclick="delRevisor('${r.id}')">Eliminar</button></div>`).join('') : '<p class="muted">Sin revisores.</p>'}
+      <label class="l" for="nvRev">Nuevo revisor</label><input id="nvRev" placeholder="Nombre y apellido">
+      <button class="btn o w" style="margin-top:8px" onclick="addRevisor()">+ Agregar revisor</button></div>
+    <div class="card"><h2>Pauta</h2>
+      <div style="font-weight:700">Versión 4 · 23/06/2022</div>
+      <div class="muted">${AREAS.length} áreas · ${Object.keys(PUNTOS).length} puntos · Solo lectura</div>
+      <button class="btn o w" style="margin-top:8px" onclick="verPauta()">Ver pauta y ponderaciones</button></div>`;
+}
+function editInst(id) {
+  const i = INST.find(x => x.id === id) || {};
+  const f = (k, l, extra = '') => `<label class="l" for="ci_${k}">${l}</label><input id="ci_${k}" value="${esc(i[k] ?? '')}" ${extra}>`;
+  $('modalBox').innerHTML = `<div class="mhead"><h2>${id ? 'Editar' : 'Agregar'} instalación</h2><button aria-label="Cerrar" onclick="cerrarModal()">✖</button></div>
+    ${f('nombre', 'Nombre')}
+    <label class="l" for="ci_tipo">Tipo</label><select id="ci_tipo">${['Casa', 'Residencial', 'Pensión', 'Hospedería'].map(t => `<option ${i.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    <div class="g2"><div>${f('codigo', 'Código')}</div><div>${f('comuna', 'Comuna')}</div></div>
+    ${f('direccion', 'Dirección')}${f('propietario', 'Propietario o arrendador')}${f('concesionario', 'Concesionario o prestador')}${f('ingeniero', 'Ingeniero de operaciones')}${f('capacidad', 'Capacidad (personas)', 'inputmode="numeric"')}
+    <button class="btn p w" style="margin-top:12px" onclick="guardarInst('${id}')">Guardar</button>
+    ${id ? `<button class="btn d w" style="margin-top:8px" onclick="delInst('${id}')">Eliminar instalación</button>` : ''}`;
+  $('modal').classList.add('on');
+}
+function guardarInst(id) {
+  if (!db) { toast('Sin conexión a la base todavía.'); return; }
+  const v = k => $('ci_' + k).value.trim();
+  if (!v('nombre')) { $('ci_nombre').classList.add('err'); toast('Falta el nombre.'); return; }
+  const d = {}; ['nombre', 'tipo', 'codigo', 'comuna', 'direccion', 'propietario', 'concesionario', 'ingeniero'].forEach(k => d[k] = v(k));
+  d.capacidad = parseInt(v('capacidad')) || 0;
+  const ref = id ? db.collection(COL_INST).doc(id) : db.collection(COL_INST).doc();
+  ref.set(d).catch(e => toast('No se pudo guardar: ' + (e.code || e.message), 6000));
+  cerrarModal(); toast('Instalación guardada ✔');
+}
+function delInst(id) {
+  if (!confirm('¿Eliminar esta instalación? Las revisiones ya hechas no cambian.')) return;
+  db.collection(COL_INST).doc(id).delete().catch(e => toast('No se pudo eliminar: ' + (e.code || e.message), 6000));
+  cerrarModal(); toast('Instalación eliminada');
+}
+function addRevisor() {
+  if (!db) { toast('Sin conexión a la base todavía.'); return; }
+  const n = $('nvRev').value.trim(); if (!n) { $('nvRev').classList.add('err'); return; }
+  db.collection(COL_REV).add({ nombre: n }).catch(e => toast('No se pudo guardar: ' + (e.code || e.message), 6000));
+  toast('Revisor agregado ✔');
+}
+function delRevisor(id) {
+  if (!confirm('¿Eliminar este revisor?')) return;
+  db.collection(COL_REV).doc(id).delete().catch(e => toast('No se pudo eliminar: ' + (e.code || e.message), 6000));
+}
+function verPauta() {
+  $('modalBox').innerHTML = `<div class="mhead"><h2>Pauta V4</h2><button aria-label="Cerrar" onclick="cerrarModal()">✖</button></div>` +
+    AREAS.map(a => `<h3 style="font-size:15px;color:var(--v);margin:14px 0 6px">${a.id}. ${esc(a.nombre)} · ${a.peso} %</h3><table><thead><tr><th>Punto</th><th>Pond.</th></tr></thead><tbody>${a.items.map(i => `<tr><td>${esc(i[0])} ${esc(i[2])}${i[3] ? `<div class="ay">${esc(i[3])}</div>` : ''}</td><td>${i[1]} %</td></tr>`).join('')}</tbody></table>`).join('');
+  $('modal').classList.add('on');
+}
+
+// ================= COMPARTIR EL PDF =================
+async function compartirPDF(doc, nombre, titulo) {
+  let file = null;
+  try { file = new File([doc.output('blob')], nombre, { type: 'application/pdf' }); } catch (e) {}
+  const puede = file && navigator.canShare && navigator.share && (() => { try { return navigator.canShare({ files: [file] }); } catch (e) { return false; } })();
+  if (!puede) { doc.save(nombre); toast('Este dispositivo no permite compartir archivos directo; el informe se descargó ✔', 6000); return; }
+  try {
+    await navigator.share({ files: [file], title: titulo, text: titulo });
+    toast('Informe compartido ✔');
+  } catch (e) {
+    if (e && e.name === 'AbortError') { toast('Compartir cancelado'); return; }
+    window.__pdfPendiente = { file, titulo, doc, nombre };
+    $('modalBox').innerHTML = `<div class="mhead"><h2>Informe listo</h2><button aria-label="Cerrar" onclick="cerrarModal()">✖</button></div>
+      <p class="muted">${esc(nombre)}</p>
+      <button class="btn p w" onclick="compartirPendiente()">📤 Compartir (WhatsApp, correo…)</button>
+      <button class="btn w" style="margin-top:8px" onclick="descargarPendiente()">⬇️ Descargar</button>`;
+    $('modal').classList.add('on');
+  }
+}
+async function compartirPendiente() {
+  const p = window.__pdfPendiente; if (!p) return;
+  try { await navigator.share({ files: [p.file], title: p.titulo, text: p.titulo }); cerrarModal(); toast('Informe compartido ✔'); }
+  catch (e) { if (e && e.name === 'AbortError') return; descargarPendiente(); }
+}
+function descargarPendiente() { const p = window.__pdfPendiente; if (!p) return; p.doc.save(p.nombre); cerrarModal(); toast('Informe descargado ✔'); }
+
+// ================= INFORME PDF =================
+function aDataURL(blob) { return new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = no; fr.readAsDataURL(blob); }); }
+async function dimImg(d) { return new Promise(res => { const im = new Image(); im.onload = () => res({ w: im.naturalWidth, h: im.naturalHeight }); im.onerror = () => res(null); im.src = d; }); }
+async function imgDe(fuente, ms = 6000) {
+  try {
+    let blob = fuente;
+    if (typeof fuente === 'string') {
+      const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), ms);
+      const r = await fetch(fuente, { signal: ctrl.signal }); clearTimeout(t);
+      if (!r.ok) return null;
+      blob = await r.blob();
+    }
+    const d = await aDataURL(blob), dim = await dimImg(d);
+    return dim ? { d, ...dim } : null;
+  } catch (e) { return null; }
+}
+const L1 = t => String(t ?? '').replace(/[–—]/g, '-').replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/≤/g, '<=').replace(/≥/g, '>=').replace(/[^\x00-\xFF]/g, '');
+async function informePDF(id) {
+  const r = REV.find(x => x.id === id); if (!r) return;
+  if (!window.jspdf || !window.jspdf.jsPDF) { toast('No se pudo cargar el generador de PDF. Revisa la conexión.'); return; }
+  toast('Generando informe…', 8000);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, M = 14, CW = W - 2 * M;
+  const VERDE = [27, 94, 32], TXT = [33, 43, 38], GRIS = [86, 106, 116];
+  const COL_K = { verde: [[223, 240, 224], [20, 80, 26]], amarillo: [[255, 240, 191], [92, 67, 0]], rojo: [[251, 220, 216], [142, 28, 28]], sin: [[236, 239, 241], [86, 106, 116]] };
+  const set = (c, s, b) => { doc.setTextColor(...c); doc.setFontSize(s); doc.setFont('helvetica', b ? 'bold' : 'normal'); };
+  // Encabezado
+  try { const ar = LOGO_CA.h / LOGO_CA.w; doc.addImage(LOGO_CA.d, 'JPEG', M, 10, 18, 18 * ar); } catch (e) {}
+  set(VERDE, 13, true); doc.text('Lista de verificación para casas, residenciales,', M + 22, 16); doc.text('pensiones y hospederías', M + 22, 22);
+  set(GRIS, 9); doc.text(L1(`Pauta versión 4 · 23/06/2022 · Inspección N° ${r.numero}`), M + 22, 27);
+  let y = 33;
+  const ca = v => L1(v || '-');
+  doc.autoTable({
+    startY: y, margin: { left: M, right: M }, theme: 'grid', styles: { fontSize: 9, cellPadding: 1.8, textColor: TXT, lineColor: [210, 215, 212] },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 38 }, 2: { fontStyle: 'bold', cellWidth: 30 } },
+    body: [
+      ['Fecha', fmtF(r.fecha), 'Revisado por', ca(r.revisor)],
+      ['Instalación', ca(r.nombre), 'Código', ca(r.codigo)],
+      ['Comuna', ca(r.comuna), 'Dirección', ca(r.direccion)],
+      ['Propietario/arrendador', ca(r.propietario), 'Concesionario', ca(r.concesionario)],
+      ['Ingeniero operaciones', ca(r.ingeniero), 'Capacidad', String(r.capacidad ?? '-')]
+    ]
+  });
+  y = doc.lastAutoTable.finalY + 3;
+  const totR = (r.eess || []).reduce((s, f) => s + f.residentes, 0), totM = (r.eess || []).reduce((s, f) => s + f.movilizados, 0);
+  doc.autoTable({
+    startY: y, margin: { left: M, right: M }, theme: 'grid', styles: { fontSize: 9, cellPadding: 1.8, textColor: TXT, lineColor: [210, 215, 212] }, headStyles: { textColor: [255, 255, 255], fillColor: VERDE },
+    head: [['EESS/Usuarios', 'Residentes', 'Movilizados', 'Total']],
+    body: (r.eess || []).map(f => [L1(f.nombre), f.residentes, f.movilizados, f.residentes + f.movilizados]).concat([[{ content: 'Totales', styles: { fontStyle: 'bold' } }, totR, totM, totR + totM]])
+  });
+  y = doc.lastAutoTable.finalY + 4;
+  // Resultado
+  const k = clase(r.notaFinal), [fondo, tinta] = COL_K[k];
+  doc.setFillColor(...fondo); doc.roundedRect(M, y, CW, 20, 2, 2, 'F');
+  set(tinta, 9, true); doc.text('Nota final', M + 5, y + 6); doc.text('Cumplimiento', M + 50, y + 6); doc.text('Clasificación', M + 110, y + 6);
+  set(tinta, 18, true); doc.text(n1(r.notaFinal), M + 5, y + 15); doc.text(L1(p1(r.cumplimiento)), M + 50, y + 15);
+  set(tinta, 11, true); doc.text(L1(CLASE_TXT[k]), M + 110, y + 14);
+  y += 25;
+  // Puntos por área
+  AREAS.forEach(a => {
+    const ar = (r.areas || []).find(x => x.id === a.id) || {};
+    doc.autoTable({
+      startY: y, margin: { left: M, right: M }, theme: 'grid', rowPageBreak: 'avoid',
+      styles: { fontSize: 8, cellPadding: 1.5, textColor: TXT, lineColor: [210, 215, 212], overflow: 'linebreak' }, headStyles: { textColor: [255, 255, 255], fillColor: VERDE, fontSize: 9 },
+      columnStyles: { 1: { cellWidth: 34 }, 2: { cellWidth: 12, halign: 'center', fontStyle: 'bold' }, 3: { cellWidth: 12, halign: 'center' } },
+      head: [[`${a.id}. ${L1(a.nombre)} (pondera ${a.peso} %)`, 'Norma', 'Nota', 'Pond.']],
+      body: a.items.map(it => {
+        const x = (r.items || {})[sid(it[0])] || {};
+        return [L1(`${it[0]} ${it[2]}`) + (x.o ? L1(`\nObs.: ${x.o}`) : ''), L1(it[3]), x.n === 'NA' ? 'N/A' : (x.n ?? '-'), it[1] + ' %'];
+      }).concat([[{ content: 'Nota promedio', colSpan: 2, styles: { fontStyle: 'bold', halign: 'right' } }, { content: n1(ar.nota), styles: { fontStyle: 'bold' } }, '100 %']]),
+      didParseCell: d => { if (d.section === 'body' && d.column.index === 2 && d.row.index < a.items.length) { const v = d.cell.raw; if (typeof v === 'number' && v < 5) d.cell.styles.textColor = [142, 28, 28]; } }
+    });
+    y = doc.lastAutoTable.finalY + 3;
+  });
+  // Plan de acción
+  const accs = ACC.filter(a => a.revisionId === id).sort((a, b) => ordenId(a.punto) - ordenId(b.punto));
+  doc.autoTable({
+    startY: y, margin: { left: M, right: M }, theme: 'grid', rowPageBreak: 'avoid', styles: { fontSize: 8, cellPadding: 1.5, textColor: TXT, lineColor: [210, 215, 212] }, headStyles: { textColor: [255, 255, 255], fillColor: VERDE, fontSize: 9 },
+    columnStyles: { 0: { cellWidth: 12 }, 2: { cellWidth: 34 }, 3: { cellWidth: 20 }, 4: { cellWidth: 16 } },
+    head: [['Punto', 'Plan de acción', 'Responsable', 'Plazo', 'Estado']],
+    body: accs.length ? accs.map(a => [L1(a.punto || '-'), L1(a.accion), L1(a.responsable), fmtF(a.plazo), a.estado === 'cerrada' ? 'Cerrada' : 'Abierta']) : [[{ content: 'Sin acciones.', colSpan: 5 }]]
+  });
+  y = doc.lastAutoTable.finalY + 5;
+  // Fotos
+  let locales = [];
+  try { locales = ((await colaFotos.todas()) || []).filter(f => f.docId === id && f.estado === 'cola'); } catch (e) {}
+  const fuentes = (r.fotos || []).map(f => ({ item: f.item, src: f.url })).concat(locales.map(f => ({ item: f.item, src: f.blob })))
+    .sort((a, b) => ordenId(a.item) - ordenId(b.item));
+  if (fuentes.length) {
+    const imgs = await Promise.all(fuentes.map(f => imgDe(f.src)));
+    const ancho = (CW - 8) / 3, alto = ancho * .75;
+    const salto = h => { if (y + h > 285) { doc.addPage(); y = 16; } };
+    salto(14 + alto); set(VERDE, 12, true); doc.text('Evidencia fotográfica', M, y + 4); y += 8;
+    let col = 0;
+    imgs.forEach((im, i) => {
+      if (!im) return;
+      if (col === 0) salto(alto + 7);
+      const x = M + col * (ancho + 4), e = Math.min(ancho / im.w, alto / im.h);
+      try { doc.addImage(im.d, 'JPEG', x, y, im.w * e, im.h * e); } catch (err) {}
+      set(GRIS, 8); doc.text(L1(`Punto ${fuentes[i].item}`), x, y + alto + 3.5);
+      col++; if (col === 3) { col = 0; y += alto + 7; }
+    });
+  }
+  const pags = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pags; p++) { doc.setPage(p); set(GRIS, 8); doc.text(L1(`Forestal Corte Alto · ${r.nombre} · Página ${p} de ${pags}`), W / 2, 292, { align: 'center' }); }
+  const nombre = `Casas-Pensiones_${String(r.nombre).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-')}_${r.fecha}.pdf`;
+  await compartirPDF(doc, nombre, `Revisión ${r.nombre} ${fmtF(r.fecha)}`);
+}
+
+// ================= INICIO =================
+(async function () {
+  const habia = hayDatos(B);
+  await cargarFotosBorrador();
+  pintarDatos();
+  ver(B.vista || 'datos');
+  if (habia) toast('Se recuperó la revisión que estabas haciendo.', 5000);
+  actualizarEstadoRed();
+  setTimeout(sincronizar, 3000);
+})();
+</script>
+
+<script>
+// Service Worker: actualización automática (mismo bloque que index.html)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+      reg.addEventListener('updatefound', () => {
+        const nuevoWorker = reg.installing;
+        nuevoWorker.addEventListener('statechange', () => {
+          if (nuevoWorker.state === 'installed' && navigator.serviceWorker.controller) nuevoWorker.postMessage('SKIP_WAITING');
+        });
+      });
+      reg.update();
+    }).catch(() => {});
+    let yaRecargo = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (yaRecargo) return;
+      yaRecargo = true;
+      window.location.reload();
+    });
+  });
+}
+</script>
+</body>
+</html>
