@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Corte Alto">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta name="theme-color" content="#1a3a1a">
+<title>SSO · Corte Alto</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f5;--card:#ffffff;--border:#e0e0e0;
+  --text:#1a1a1a;--text2:#555;--text3:#888;
+  --green:#1a3a1a;--green2:#2d5a2d;--green-light:#EAF3DE;
+  --radius:14px;--font:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:480px;margin:0 auto;padding:0 0 2rem}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#1a3a1a 0%,#2d5a2d 100%);padding:1.25rem 1.25rem 1.5rem;color:#fff;position:relative;border-radius:0 0 20px 20px;margin-bottom:1.25rem}
+.header-top{font-size:10px;opacity:.65;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem}
+.header-brand{display:flex;align-items:center;gap:10px;margin-bottom:.3rem}
+.header-title{font-size:26px;font-weight:800}
+.header-sub{font-size:13px;opacity:.8;margin-left:2px}
+.btn-volver{position:absolute;top:50%;transform:translateY(-50%);right:14px;background:rgba(255,255,255,0.15);border:none;border-radius:20px;color:#fff;font-size:12px;font-weight:700;padding:6px 14px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:6px}
+
+/* SECTIONS */
+.section-wrap{padding:0 1rem}
+.section-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem;margin-top:1.25rem}
+
+/* GRID 2x2 */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.25rem}
+
+/* MODULE CARD */
+.mod-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;cursor:pointer;text-decoration:none;color:var(--text);display:flex;flex-direction:column;gap:10px;position:relative;-webkit-tap-highlight-color:transparent;transition:box-shadow .15s,transform .15s}
+.mod-card:active{transform:scale(.97);box-shadow:0 3px 12px rgba(0,0,0,.1)}
+.mod-card.disabled{opacity:.7;cursor:default;pointer-events:none}
+.mod-badge{position:absolute;top:10px;right:10px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em}
+.badge-activo{background:#EAF3DE;color:#2d5a2d}
+.badge-proximo{background:#f0f0f0;color:#888}
+.badge-prueba{background:#FEF3E2;color:#b45309}
+.mod-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.icon-green{background:#EAF3DE}
+.icon-blue{background:#E8F0FE}
+.icon-amber{background:#FEF3E2}
+.icon-purple{background:#F0EEFF}
+.mod-title{font-size:13px;font-weight:700;line-height:1.3}
+.mod-desc{font-size:11px;color:var(--text3);line-height:1.4}
+
+.footer{text-align:center;padding:1.5rem 1rem .5rem;font-size:11px;color:var(--text3)}
+
+/* ---- DESKTOP (>= 900px): layout ancho ---- */
+@media (min-width:900px){
+  .app{max-width:1200px}
+  .header{border-radius:0 0 24px 24px;padding:1.5rem 2rem 2rem}
+  .header-title{font-size:32px}
+  .section-wrap{padding:0 1.5rem}
+  .section-label{font-size:11px;margin-top:1.75rem;margin-bottom:1rem}
+  .grid2{grid-template-columns:repeat(4,1fr);gap:1rem}
+  .mod-title{font-size:14px}
+  .mod-desc{font-size:12px}
+  .mod-icon{width:48px;height:48px;font-size:24px}
+  .mod-card{padding:1.25rem}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-top">Seguridad y Salud Ocupacional</div>
+    <a href="index.html" class="btn-volver">← Volver</a>
+    <div class="header-brand">
+      <div>
+        <div class="header-title">🦺 SSO</div>
+        <div class="header-sub">Selecciona el módulo de seguridad</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-wrap">
+
+    <div class="section-label">Módulos</div>
+    <div class="grid2">
+
+      <a class="mod-card" href="huinche.html">
+        <span class="mod-badge badge-activo">Activo</span>
+        <div class="mod-icon icon-green">🔩</div>
+        <div>
+          <div class="mod-title">Revisión Huinches</div>
+          <div class="mod-desc">Control de aperos y estado de huinches de asistencia</div>
+        </div>
+      </a>
+
+      <div class="mod-card disabled">
+        <span class="mod-badge badge-proximo">Próximo</span>
+        <div class="mod-icon icon-amber">🏠</div>
+        <div>
+          <div class="mod-title">Revisión Casas y Pensiones</div>
+          <div class="mod-desc">Inspección de habitabilidad y condiciones</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="footer">Corte Alto · SSO</div>
+</div>
+</body>
+</html>
