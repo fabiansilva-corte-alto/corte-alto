@@ -546,8 +546,7 @@ function elegirInst() {
   $('nomOtro').style.display = v === '__otro' ? 'block' : 'none';
   const i = INST.find(x => x.id === v);
   if (i) {
-    ['nombre', 'codigo', 'comuna', 'direccion', 'propietario', 'concesionario', 'ingeniero', 'capacidad'].forEach(c => { B.enc[c] = i[c] != null ? String(i[c]) : ''; if ($(c)) $(c).value = B.enc[c]; });
-    renderEess();
+    ['nombre', 'comuna', 'direccion', 'concesionario'].forEach(c => { B.enc[c] = i[c] != null ? String(i[c]) : ''; if ($(c)) $(c).value = B.enc[c]; });
   } else if (v !== '__otro') { B.enc.nombre = ''; $('nombre').value = ''; }
   guardarB(); $('sInst').classList.remove('err');
 }
@@ -1001,7 +1000,7 @@ function reabrirAcc(id) {
 function renderCfg() {
   $('cfgBox').innerHTML = `
     <div class="card"><h2>Instalaciones</h2>
-      ${INST.length ? INST.map(i => `<div class="acc lista"><div><div style="font-weight:700">${esc(i.nombre)}</div><div class="muted">${[i.codigo, i.comuna, i.tipo].filter(Boolean).map(esc).join(' · ')}</div></div><button class="btn o" style="flex:0 0 auto" onclick="editInst('${i.id}')">Editar</button></div>`).join('') : '<p class="muted">Sin instalaciones. Agrégalas para no escribir los datos en cada revisión.</p>'}
+      ${INST.length ? INST.map(i => `<div class="acc lista"><div><div style="font-weight:700">${esc(i.nombre)}</div><div class="muted">${[i.comuna, i.direccion].filter(Boolean).map(esc).join(' · ')}</div></div><button class="btn o" style="flex:0 0 auto" onclick="editInst('${i.id}')">Editar</button></div>`).join('') : '<p class="muted">Sin instalaciones. Agrégalas para no escribir los datos en cada revisión.</p>'}
       <button class="btn o w" style="margin-top:8px" onclick="editInst('')">+ Agregar instalación</button></div>
     <div class="card"><h2>Revisores</h2>
       ${REVS.length ? REVS.map(r => `<div class="acc lista"><div style="font-weight:600;align-self:center">${esc(r.nombre)}</div><button class="btn d" style="flex:0 0 auto" onclick="delRevisor('${r.id}')">Eliminar</button></div>`).join('') : '<p class="muted">Sin revisores.</p>'}
@@ -1016,10 +1015,7 @@ function editInst(id) {
   const i = INST.find(x => x.id === id) || {};
   const f = (k, l, extra = '') => `<label class="l" for="ci_${k}">${l}</label><input id="ci_${k}" value="${esc(i[k] ?? '')}" ${extra}>`;
   $('modalBox').innerHTML = `<div class="mhead"><h2>${id ? 'Editar' : 'Agregar'} instalación</h2><button aria-label="Cerrar" onclick="cerrarModal()">✖</button></div>
-    ${f('nombre', 'Nombre')}
-    <label class="l" for="ci_tipo">Tipo</label><select id="ci_tipo">${['Casa', 'Residencial', 'Pensión', 'Hospedería'].map(t => `<option ${i.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
-    <div class="g2"><div>${f('codigo', 'Código')}</div><div>${f('comuna', 'Comuna')}</div></div>
-    ${f('direccion', 'Dirección')}${f('propietario', 'Propietario o arrendador')}${f('concesionario', 'Concesionario o prestador')}${f('ingeniero', 'Ingeniero de operaciones')}${f('capacidad', 'Capacidad (personas)', 'inputmode="numeric"')}
+    ${f('concesionario', 'Concesionario o prestador')}${f('comuna', 'Comuna')}${f('direccion', 'Dirección')}
     <button class="btn p w" style="margin-top:12px" onclick="guardarInst('${id}')">Guardar</button>
     ${id ? `<button class="btn d w" style="margin-top:8px" onclick="delInst('${id}')">Eliminar instalación</button>` : ''}`;
   $('modal').classList.add('on');
@@ -1027,9 +1023,9 @@ function editInst(id) {
 function guardarInst(id) {
   if (!db) { toast('Sin conexión a la base todavía.'); return; }
   const v = k => $('ci_' + k).value.trim();
-  if (!v('nombre')) { $('ci_nombre').classList.add('err'); toast('Falta el nombre.'); return; }
-  const d = {}; ['nombre', 'tipo', 'codigo', 'comuna', 'direccion', 'propietario', 'concesionario', 'ingeniero'].forEach(k => d[k] = v(k));
-  d.capacidad = parseInt(v('capacidad')) || 0;
+  if (!v('concesionario')) { $('ci_concesionario').classList.add('err'); toast('Falta el concesionario o prestador.'); return; }
+  // La instalación se identifica por su concesionario o prestador.
+  const d = { nombre: v('concesionario'), concesionario: v('concesionario'), comuna: v('comuna'), direccion: v('direccion') };
   const ref = id ? db.collection(COL_INST).doc(id) : db.collection(COL_INST).doc();
   ref.set(d).catch(e => toast('No se pudo guardar: ' + (e.code || e.message), 6000));
   cerrarModal(); toast('Instalación guardada ✔');
