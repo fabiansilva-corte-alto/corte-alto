@@ -1286,7 +1286,7 @@ function renderR() {
   $('rLista').innerHTML = `<div class="tw"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Fundo / Línea</th><th>Controlador</th><th>Nota</th><th>Inc.</th><th></th></tr></thead><tbody>
     ${F.map(r => `<tr><td>${fmtF(r.fecha)}</td><td>${NOMBRE_T[r.tipo] || esc(r.tipo)}${r.esDia ? `<br><span class="muted">${r.tandas.length} de ${PAUTA.largos.tandasDia} controles${r.cierre ? ' 🔒' : ''}</span>` : ''}</td><td>${esc(r.fundo)}<br><span class="muted">${esc(r.linea)}</span></td><td>${esc(r.controlador)}</td>
       <td><span class="chip ${notaFila(r) >= NOTA_OK ? 'ok' : 'bad'}">${nTxt(notaFila(r))}</span><br><span class="muted">${r.nota}%</span></td><td>${r.incumplimientos || 0}</td>
-      <td style="white-space:nowrap"><button class="ic" title="Ver detalle" onclick="verDetalle('${r.id}')">👁️</button><button class="ic" title="Informe PDF" onclick="informePDF('${r.id}')">📄</button><button class="ic" title="Editar" onclick="${r.esDia ? `editarDia('${r.id}')` : `editarControl('${r.id}')`}">✏️</button><button class="ic" title="Eliminar" onclick="eliminar('${r.id}')">🗑️</button></td></tr>`).join('')}
+      <td style="white-space:nowrap"><button class="ic" title="Ver detalle" onclick="verDetalle('${r.id}')">👁️</button><button class="ic" title="Compartir informe PDF" onclick="informePDF('${r.id}')">📤</button><button class="ic" title="Editar" onclick="${r.esDia ? `editarDia('${r.id}')` : `editarControl('${r.id}')`}">✏️</button><button class="ic" title="Eliminar" onclick="eliminar('${r.id}')">🗑️</button></td></tr>`).join('')}
     </tbody></table></div>`;
 }
 function fotosDe(r, item) {
@@ -1314,7 +1314,7 @@ function verDetalle(id) {
   $('modalBox').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:17px">${esc(r.tipoNombre || r.tipo)} · ${fmtF(r.fecha)}</h2><button class="ic" onclick="cerrarModal()">✖</button></div>
     <p style="font-size:30px;font-weight:700;margin:8px 0;color:${notaNum(r.nota) >= NOTA_OK ? 'var(--v)' : 'var(--r)'}">${notaEscala(r.nota)} <span class="chip ${notaNum(r.nota) >= NOTA_OK ? 'ok' : 'bad'}">${r.nota}% · nota de 1 a 5</span></p>
     <table>${fila('Fundo', r.fundo + (r.fundoCodigo ? ' (' + r.fundoCodigo + ')' : ''))}${fila('N° cancha', r.cancha)}${fila('Línea', r.linea)}${fila(r.tipo === 'largos' ? 'Calibrador' : 'Controlador', r.controlador)}${fila('Jefe de faena', r.jefeFaena)}${fila('Op. Volteo', r.opVolteo)}${fila('Op. Trozado', r.opTrozado)}${fila('Op. Clasificado', r.opClasificado)}${r.tipo === 'largos' ? '' : fila('Calibrador', r.calibrador)}${fila('GPS', r.gps ? r.gps.lat + ', ' + r.gps.lng : '')}${fila('Observación', r.observacion)}</table>
-    <button class="btn p w" style="margin-top:12px" onclick="informePDF('${r.id}')">📄 Descargar informe PDF</button>
+    <button class="btn p w" style="margin-top:12px" onclick="informePDF('${r.id}')">📤 Compartir informe PDF</button>
     <button class="btn w" style="margin-top:8px" onclick="editarControl('${r.id}')">✏️ Editar este control</button>
     ${r.fotosPendientes > 0 ? `<div class="chip w" style="margin-top:10px">📷 ${r.fotosPendientes} foto(s) aún en el celular del controlador, se enviarán con señal</div>` : ''}
     <div style="margin-top:12px">${cuerpo}</div>`;
@@ -1327,7 +1327,7 @@ function verDia(id) {
     <p style="font-size:30px;font-weight:700;margin:8px 0">${notaD.toFixed(1).replace('.', ',')} <span class="chip ${notaD >= NOTA_OK ? 'ok' : 'bad'}">nota del día</span> <span class="chip ${d.tandas.length >= meta ? 'ok' : 'w'}">${d.tandas.length} de ${meta} controles</span></p>
     <table><tr><td class="muted">Fundo</td><td>${esc(d.fundo)}</td></tr><tr><td class="muted">Línea</td><td>${esc(d.linea)}</td></tr><tr><td class="muted">Calibrador</td><td>${esc(d.controlador)}</td></tr></table>
     ${d.cierre ? `<div class="info" style="margin-top:8px">🔒 Día terminado con ${d.cierre.controlesHechos} de ${d.cierre.controlesMeta} controles · ${esc(d.cierre.motivo)}${d.cierre.detalle ? ' · ' + esc(d.cierre.detalle) : ''}</div>` : ''}
-    <button class="btn p w" style="margin-top:12px" onclick="informePDF('${id}')">📄 Descargar informe del día</button>
+    <button class="btn p w" style="margin-top:12px" onclick="informePDF('${id}')">📤 Compartir informe del día</button>
     ${d.tandas.map((t, k) => `<div class="card" style="margin-top:12px;padding:10px">
       <div style="display:flex;justify-content:space-between;align-items:center"><b>Control N° ${k + 1} · ${esc(t.hora || '')} hrs</b><span class="chip ${notaNum(t.nota) >= NOTA_OK ? 'ok' : 'bad'}">nota ${notaEscala(t.nota)}</span></div>
       <div class="muted" style="margin:4px 0 6px">Trozador ${esc(t.opTrozado || '-')} · Cancha ${esc(t.cancha || '-')}</div>
@@ -1352,6 +1352,35 @@ function detalleLargosHTML(r, sinCierre) {
   </tbody></table></div>`;
 }
 function cerrarModal() { $('modal').classList.remove('on'); }
+
+// ================= COMPARTIR EL PDF =================
+// Abre el menú "Compartir" del celular (WhatsApp, correo, etc.) con el PDF adjunto.
+// Si el navegador no permite compartir archivos (algunos computadores), lo descarga.
+async function compartirPDF(doc, nombre, titulo) {
+  let file = null;
+  try { file = new File([doc.output('blob')], nombre, { type: 'application/pdf' }); } catch (e) {}
+  const puede = file && navigator.canShare && navigator.share && (() => { try { return navigator.canShare({ files: [file] }); } catch (e) { return false; } })();
+  if (!puede) { doc.save(nombre); toast('Este dispositivo no permite compartir archivos directo; el informe se descargó ✔', 6000); return; }
+  try {
+    await navigator.share({ files: [file], title: titulo, text: titulo });
+    toast('Informe compartido ✔');
+  } catch (e) {
+    if (e && e.name === 'AbortError') { toast('Compartir cancelado'); return; }
+    // Si el informe tardó en generarse, el navegador pide que se toque de nuevo para compartir.
+    window.__pdfPendiente = { file, titulo, doc, nombre };
+    $('modalBox').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:17px">Informe listo</h2><button class="ic" onclick="cerrarModal()">✖</button></div>
+      <p class="muted">${esc(nombre)}</p>
+      <button class="btn p w" style="margin-top:8px" onclick="compartirPendiente()">📤 Compartir (WhatsApp, correo…)</button>
+      <button class="btn w" style="margin-top:8px" onclick="descargarPendiente()">⬇️ Descargar</button>`;
+    $('modal').classList.add('on');
+  }
+}
+async function compartirPendiente() {
+  const p = window.__pdfPendiente; if (!p) return;
+  try { await navigator.share({ files: [p.file], title: p.titulo, text: p.titulo }); cerrarModal(); toast('Informe compartido ✔'); }
+  catch (e) { if (e && e.name === 'AbortError') return; descargarPendiente(); }
+}
+function descargarPendiente() { const p = window.__pdfPendiente; if (!p) return; p.doc.save(p.nombre); cerrarModal(); toast('Informe descargado ✔'); }
 
 // ================= INFORME PDF =================
 function aDataURL(blob) { return new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = no; fr.readAsDataURL(blob); }); }
@@ -1524,8 +1553,7 @@ async function informePDF(id) {
     doc.text('Página ' + i + ' de ' + n, W - M, 290.5, { align: 'right' });
   }
   const nombre = 'Control_' + (r.tipoNombre || r.tipo).replace(/\s+/g, '_') + '_' + (r.fundo || '').replace(/\s+/g, '_') + '_' + r.fecha + '.pdf';
-  doc.save(nombre);
-  toast('Informe descargado ✔');
+  await compartirPDF(doc, nombre, 'Informe ' + (r.tipoNombre || r.tipo) + ' · ' + (r.fundo || '') + ' · ' + fmtF(r.fecha));
 }
 
 async function informeLargosDia(r0) {
@@ -1549,15 +1577,15 @@ async function informeLargosDia(r0) {
   const totalTrozos = grupo.reduce((a, r) => a + (r.trozos || []).length, 0), fuera = grupo.reduce((a, r) => a + (r.trozos || []).filter(z => !z.ok).length, 0);
   const meta = PAUTA.largos.tandasDia;
   const cierre = CIERRES.find(c => c.fecha === r0.fecha && c.controlador === r0.controlador && c.fundo === r0.fundo);
-  // encabezado
-  doc.setFillColor(...VERDE); doc.rect(0, 0, W, 34, 'F'); doc.setFillColor(...VERDE2); doc.rect(0, 34, W, 1.5, 'F');
-  set([255, 255, 255], 18, true); doc.text('Informe de Control de Largos', M, 15);
-  set([200, 230, 201], 11, false); doc.text('Control de largos en trozado  |  Control interno', M, 23);
-  set([200, 230, 201], 9, false); doc.text('Fecha del control: ' + fmtF(r0.fecha), M, 29);
-  const LH = 20, LW = LH * LOGO_CA.w / LOGO_CA.h, LY = (34 - LH - 3) / 2;
-  doc.setFillColor(255, 255, 255); doc.roundedRect(W - M - LW - 3, LY, LW + 3, LH + 3, 2, 2, 'F');
-  try { doc.addImage(LOGO_CA.d, 'JPEG', W - M - LW - 1.5, LY + 1.5, LW, LH); } catch (e) {}
-  y = 44;
+  // encabezado angosto
+  const HH = 22;
+  doc.setFillColor(...VERDE); doc.rect(0, 0, W, HH, 'F'); doc.setFillColor(...VERDE2); doc.rect(0, HH, W, 1, 'F');
+  set([255, 255, 255], 14, true); doc.text('Informe de Control de Largos', M, 10);
+  set([200, 230, 201], 8.5, false); doc.text('Control de largos en trozado  |  Control interno  |  Fecha del control: ' + fmtF(r0.fecha), M, 16.5);
+  const LH = 15, LW = LH * LOGO_CA.w / LOGO_CA.h, LY = (HH - LH - 2) / 2;
+  doc.setFillColor(255, 255, 255); doc.roundedRect(W - M - LW - 2, LY, LW + 2, LH + 2, 1.5, 1.5, 'F');
+  try { doc.addImage(LOGO_CA.d, 'JPEG', W - M - LW - 1, LY + 1, LW, LH); } catch (e) {}
+  y = HH + 6;
   // tarjetas
   const cards = [
     { t: 'NOTA DEL DÍA (1 a 5)', v: notaDia.toFixed(1).replace('.', ','), c: okDia ? VERDE : ROJO, bg: okDia ? VCLARO : RCLARO },
@@ -1565,59 +1593,61 @@ async function informeLargosDia(r0) {
     { t: 'TROZOS FUERA DE TOLERANCIA', v: fuera + ' de ' + totalTrozos, c: fuera ? ROJO : VERDE, bg: GCLARO }
   ];
   const cw = (CW - 8) / 3;
-  cards.forEach((k, i) => { const x = M + i * (cw + 4); doc.setFillColor(...k.bg); doc.roundedRect(x, y, cw, 22, 2.5, 2.5, 'F'); set(GRIS, 7.5, true); doc.text(L1(k.t), x + cw / 2, y + 6.5, { align: 'center' }); set(k.c, 18, true); doc.text(k.v, x + cw / 2, y + 16.5, { align: 'center' }); });
-  y += 26;
-  doc.setFillColor(230, 233, 231); doc.roundedRect(M, y, CW, 3, 1.5, 1.5, 'F');
-  doc.setFillColor(...(okDia ? VERDE2 : ROJO)); doc.roundedRect(M, y, Math.max(3, CW * Math.min(5, notaDia) / 5), 3, 1.5, 1.5, 'F');
-  y += 9;
-  // datos y esquema
-  const ultimo = grupo[grupo.length - 1] || r0;
-  const bloque = (x, w, titulo, filas) => {
-    const h = 9 + filas.length * 5.6;
-    doc.setFillColor(...GCLARO); doc.roundedRect(x, y, w, h, 2.5, 2.5, 'F');
-    set(VERDE, 9.5, true); doc.text(titulo, x + 4, y + 6.5);
-    filas.forEach((f, i) => { const yy = y + 12.5 + i * 5.6; set(GRIS, 8.5, true); doc.text(L1(f[0]), x + 4, yy); set(TXT, 9, false); doc.text(doc.splitTextToSize(L1(f[1] || '-'), w - 34)[0], x + 30, yy); });
-    return h;
-  };
-  const bw = (CW - 4) / 2;
+  cards.forEach((k, i) => { const x = M + i * (cw + 4); doc.setFillColor(...k.bg); doc.roundedRect(x, y, cw, 15, 2, 2, 'F'); set(GRIS, 6.8, true); doc.text(L1(k.t), x + cw / 2, y + 5, { align: 'center' }); set(k.c, 13, true); doc.text(k.v, x + cw / 2, y + 12, { align: 'center' }); });
+  y += 18;
+  doc.setFillColor(230, 233, 231); doc.roundedRect(M, y, CW, 2.2, 1.1, 1.1, 'F');
+  doc.setFillColor(...(okDia ? VERDE2 : ROJO)); doc.roundedRect(M, y, Math.max(2.2, CW * Math.min(5, notaDia) / 5), 2.2, 1.1, 1.1, 'F');
+  y += 5;
+  // datos del día en una franja a lo ancho
   const jefe = (grupo.find(g => g.jefeFaena) || {}).jefeFaena || '';
-  const h1 = bloque(M, bw, 'Datos del día', [['Fundo', r0.fundo + (r0.fundoCodigo ? ' (' + r0.fundoCodigo + ')' : '')], ['Línea', r0.linea], ['Calibrador', r0.controlador], ['Jefe de faena', jefe]]);
-  const cortes = [...new Set(grupo.flatMap(g => (g.trozos || []).map(z => z.largoCorte || z.producto)).filter(Boolean))];
-  const h2 = bloque(M + bw + 4, bw, 'Criterio', [['Tolerancia', '+/- ' + fmtPts(ultimo.tolCm ?? 3) + ' cm del largo a cortar'], ['Largo variable', 'cumple dentro del rango'], ['Largos a cortar', cortes.join('  |  ')], ['Trozos/control', String((ultimo.trozos || []).length || 10)]]);
-  y += Math.max(h1, h2) + 8;
-  // tandas
-  const base = { margin: { left: M, right: M }, theme: 'plain', styles: { fontSize: 8.4, cellPadding: { top: 1.7, bottom: 1.7, left: 1.6, right: 1.6 }, textColor: TXT, valign: 'middle', halign: 'center', lineColor: [225, 229, 227], lineWidth: { bottom: 0.2 } },
-    headStyles: { fillColor: VERDE, textColor: 255, fontStyle: 'bold', fontSize: 8.2, halign: 'center' }, alternateRowStyles: { fillColor: [250, 251, 250] } };
+  const datos = [['Fundo', r0.fundo + (r0.fundoCodigo ? ' (' + r0.fundoCodigo + ')' : '')], ['Línea', r0.linea], ['Calibrador', r0.controlador], ['Jefe de faena', jefe]];
+  doc.setFillColor(...GCLARO); doc.roundedRect(M, y, CW, 11, 2, 2, 'F');
+  const dw = CW / datos.length;
+  datos.forEach((d, i) => { const x = M + 4 + i * dw; set(GRIS, 6.8, true); doc.text(L1(d[0]).toUpperCase(), x, y + 4.3); set(TXT, 8.5, true); doc.text(doc.splitTextToSize(L1(d[1] || '-'), dw - 6)[0], x, y + 8.6); });
+  y += 15;
+  // controles: de a dos por fila, como en la hoja de papel
+  const GAP = 6, colW = (CW - GAP) / 2;
+  const base = { theme: 'plain', tableWidth: colW, styles: { fontSize: 8, cellPadding: { top: 1.35, bottom: 1.35, left: 1, right: 1 }, textColor: TXT, valign: 'middle', halign: 'center', lineColor: [225, 229, 227], lineWidth: { bottom: 0.2 } },
+    headStyles: { fillColor: VERDE, textColor: 255, fontStyle: 'bold', fontSize: 7.2, halign: 'center' }, alternateRowStyles: { fillColor: [250, 251, 250] } };
   const pill = (d, ok, txt) => {
-    const cx = d.cell.x + d.cell.width / 2, cy = d.cell.y + d.cell.height / 2, pw = Math.min(d.cell.width - 3, 22);
-    doc.setFillColor(...(ok ? VCLARO : RCLARO)); doc.roundedRect(cx - pw / 2, cy - 2.6, pw, 5.2, 2.6, 2.6, 'F');
-    set(ok ? VERDE : ROJO, 7.8, true); doc.text(txt, cx, cy + 1, { align: 'center' });
+    const cx = d.cell.x + d.cell.width / 2, cy = d.cell.y + d.cell.height / 2, pw = Math.min(d.cell.width - 2, 17);
+    doc.setFillColor(...(ok ? VCLARO : RCLARO)); doc.roundedRect(cx - pw / 2, cy - 2, pw, 4, 2, 2, 'F');
+    set(ok ? VERDE : ROJO, 6.8, true); doc.text(txt, cx, cy + 0.9, { align: 'center' });
   };
-  grupo.forEach((r, k) => {
+  const bloqueControl = (r, k, x, y0) => {
     const okT = notaNum(r.nota) >= NOTA_OK;
-    espacio(30);
-    seccion('Control N° ' + (k + 1) + '  |  ' + (r.hora || '') + ' hrs');
-    doc.setFillColor(...(okT ? VCLARO : RCLARO)); doc.roundedRect(W - M - 30, y - 10.5, 30, 7, 2, 2, 'F');
-    set(okT ? VERDE : ROJO, 9, true); doc.text('Nota ' + notaEscala(r.nota), W - M - 15, y - 5.6, { align: 'center' });
-    set(GRIS, 8.5, false);
-    doc.text(L1('Trozador: ' + (r.opTrozado || '-') + '   |   N° cancha: ' + (r.cancha || '-') + '   |   Camino: ' + (r.camino || '-') + '   |   ' + (r.puntosObtenidos ?? 0) + ' de ' + (r.puntosAplicables ?? 10) + ' trozos en tolerancia'), M, y); y += 3;
+    doc.setFillColor(...VERDE2); doc.rect(x, y0, 1.3, 5, 'F');
+    set(VERDE, 9.5, true); doc.text('Control N° ' + (k + 1) + '  |  ' + (r.hora || '') + ' hrs', x + 3, y0 + 3.9);
+    doc.setFillColor(...(okT ? VCLARO : RCLARO)); doc.roundedRect(x + colW - 20, y0, 20, 5.2, 1.5, 1.5, 'F');
+    set(okT ? VERDE : ROJO, 7.8, true); doc.text('Nota ' + notaEscala(r.nota), x + colW - 10, y0 + 3.7, { align: 'center' });
+    set(GRIS, 7, false);
+    doc.text(doc.splitTextToSize(L1('Trozador: ' + (r.opTrozado || '-') + '  |  Cancha: ' + (r.cancha || '-') + '  |  Camino: ' + (r.camino || '-') + '  |  ' + (r.puntosObtenidos ?? 0) + '/' + (r.puntosAplicables ?? 10) + ' en tolerancia'), colW)[0], x, y0 + 8.6);
     const tz = r.trozos || [];
-    doc.autoTable({ ...base, startY: y,
-      head: [['#', 'Largo a cortar', 'Medido', 'Dif. (cm)', 'Diám.', 'Resultado', 'Observación']],
-      body: tz.map(z => [z.n, (z.largoCorte || (z.variable ? cmTxt(z.min) + '-' + cmTxt(z.max) : cmTxt(z.corte))) + ' m', cmTxt(z.medido) + ' m', z.variable ? 'rango' : (z.dif > 0 ? '+' : '') + fmtPts(z.dif), z.diametro ?? '-', z.ok ? 'Cumple' : 'Fuera', L1(z.obs || '')]),
-      columnStyles: { 0: { cellWidth: 7, textColor: GRIS }, 1: { cellWidth: 30 }, 2: { cellWidth: 22 }, 3: { cellWidth: 18 }, 4: { cellWidth: 14 }, 5: { cellWidth: 22 }, 6: { halign: 'left' } },
+    doc.autoTable({ ...base, startY: y0 + 10.2, margin: { left: x, right: W - x - colW },
+      head: [['#', 'Largo a cortar', 'Medido', 'Dif. cm', 'Diám.', 'Resultado']],
+      body: tz.map(z => [z.n, (z.largoCorte || (z.variable ? cmTxt(z.min) + '-' + cmTxt(z.max) : cmTxt(z.corte))), cmTxt(z.medido), z.variable ? 'rango' : (z.dif > 0 ? '+' : '') + fmtPts(z.dif), z.diametro ?? '-', z.ok ? 'Cumple' : 'Fuera']),
+      columnStyles: { 0: { cellWidth: 6, textColor: GRIS }, 1: { cellWidth: 20 }, 2: { cellWidth: 14 }, 3: { cellWidth: 13 }, 4: { cellWidth: 11 } },
       didParseCell: d => { if (d.section === 'body' && d.column.index === 3 && !tz[d.row.index].ok) { d.cell.styles.textColor = ROJO; d.cell.styles.fontStyle = 'bold'; } },
       willDrawCell: d => { if (d.section === 'body' && d.column.index === 5) d.cell.text = []; },
       didDrawCell: d => { if (d.section === 'body' && d.column.index === 5) pill(d, tz[d.row.index].ok, tz[d.row.index].ok ? 'Cumple' : 'Fuera'); } });
-    y = doc.lastAutoTable.finalY + 4;
-    if (r.observacion) { set(TXT, 8.5, false); const ls = doc.splitTextToSize(L1('Obs.: ' + r.observacion), CW); espacio(ls.length * 4 + 2); doc.text(ls, M, y + 2); y += ls.length * 4 + 2; }
-    y += 4;
-  });
+    let yy = doc.lastAutoTable.finalY + 2.5;
+    const obs = tz.filter(z => z.obs).map(z => 'Trozo ' + z.n + ': ' + z.obs);
+    if (r.observacion) obs.push('Obs.: ' + r.observacion);
+    if (obs.length) { set(TXT, 6.8, false); const ls = doc.splitTextToSize(L1(obs.join('  |  ')), colW); doc.text(ls, x, yy + 1); yy += ls.length * 3 + 1.5; }
+    return yy;
+  };
+  for (let k = 0; k < grupo.length; k += 2) {
+    if (y + 72 > 282) nuevaPagina();
+    const fin1 = bloqueControl(grupo[k], k, M, y);
+    const fin2 = grupo[k + 1] ? bloqueControl(grupo[k + 1], k + 1, M + colW + GAP, y) : fin1;
+    y = Math.max(fin1, fin2) + 5;
+  }
   if (grupo.length < meta) {
     const txt = cierre ? 'Día terminado con ' + grupo.length + ' de ' + meta + ' controles. Motivo: ' + cierre.motivo + (cierre.detalle ? ' (' + cierre.detalle + ')' : '') + '.'
                        : 'Faltan ' + (meta - grupo.length) + ' control(es) para completar los ' + meta + ' del día.';
-    const ls = doc.splitTextToSize(L1(txt), CW - 8), h = ls.length * 4.6 + 4;
-    espacio(h + 2); doc.setFillColor(...ACLARO); doc.roundedRect(M, y, CW, h, 2, 2, 'F'); set([141, 90, 0], 9, true); doc.text(ls, M + 4, y + 5.3); y += h + 4;
+    set([141, 90, 0], 8.5, true);
+    const ls = doc.splitTextToSize(L1(txt), CW - 8), h = ls.length * 4 + 3.5;
+    espacio(h + 2); doc.setFillColor(...ACLARO); doc.roundedRect(M, y, CW, h, 2, 2, 'F'); set([141, 90, 0], 8.5, true); doc.text(ls, M + 4, y + 4.8); y += h + 4;
   }
   const n = doc.getNumberOfPages();
   for (let i = 1; i <= n; i++) {
@@ -1626,8 +1656,8 @@ async function informeLargosDia(r0) {
     doc.text('Forestal Corte Alto Ltda.  |  Control de largos en trozado  |  Generado ' + new Date().toLocaleString('es-CL'), M, 290.5);
     doc.text('Página ' + i + ' de ' + n, W - M, 290.5, { align: 'right' });
   }
-  doc.save('Control_Largos_' + (r0.fundo || '').replace(/\s+/g, '_') + '_' + r0.fecha + '_' + (r0.controlador || '').replace(/\s+/g, '_') + '.pdf');
-  toast('Informe del día descargado ✔');
+  await compartirPDF(doc, 'Control_Largos_' + (r0.fundo || '').replace(/\s+/g, '_') + '_' + r0.fecha + '_' + (r0.controlador || '').replace(/\s+/g, '_') + '.pdf',
+    'Control de largos · ' + (r0.fundo || '') + ' · ' + fmtF(r0.fecha) + ' · ' + (r0.controlador || ''));
 }
 
 async function eliminar(id) {
