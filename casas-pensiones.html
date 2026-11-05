@@ -525,14 +525,15 @@ function delEess(i) { B.eess.splice(i, 1); guardarB(); renderEess(); }
 
 // ================= CONFIGURACIÓN COMPARTIDA =================
 let INST = LS.get('cp_inst') || [], REVS = LS.get('cp_revs') || [];
-const porNombre = (a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es');
+const etiqueta = x => [x.nombre, x.comuna, x.direccion].filter(Boolean).join(' · ');
+const porNombre = (a, b) => etiqueta(a).localeCompare(etiqueta(b), 'es');
 if (db) {
   db.collection(COL_INST).onSnapshot(s => { INST = s.docs.map(d => ({ id: d.id, ...d.data() })).sort(porNombre); LS.set('cp_inst', INST); pintarSelects(); if ($('sec-cfg').classList.contains('on')) renderCfg(); }, e => console.warn(e));
   db.collection(COL_REV).onSnapshot(s => { REVS = s.docs.map(d => ({ id: d.id, ...d.data() })).sort(porNombre); LS.set('cp_revs', REVS); pintarSelects(); if ($('sec-cfg').classList.contains('on')) renderCfg(); }, e => console.warn(e));
 }
 function pintarSelects() {
   const sI = $('sInst'), sR = $('sRev');
-  sI.innerHTML = '<option value="">Elegir casa o pensión</option>' + INST.map(i => `<option value="${esc(i.id)}">${esc(i.nombre)}</option>`).join('') + '<option value="__otro">Otra (escribir)</option>';
+  sI.innerHTML = '<option value="">Elegir casa o pensión</option>' + INST.map(i => `<option value="${esc(i.id)}">${esc(etiqueta(i))}</option>`).join('') + '<option value="__otro">Otra (escribir)</option>';
   sI.value = B.instId || (B.enc.nombre ? '__otro' : '');
   if (sI.value === '' && B.enc.nombre) sI.value = '__otro';
   $('nomOtro').style.display = sI.value === '__otro' ? 'block' : 'none';
@@ -814,7 +815,7 @@ async function guardar() {
     const pend = [COL + '/' + B.id], idsAcc = [];
     acciones.forEach(a => {
       const ra = db.collection(COL_ACC).doc();
-      batch.set(ra, Object.assign(a, { revisionId: B.id, numero, instalacion: data.nombre, fechaRevision: data.fecha, estado: 'abierta', cierreObs: '', cierreFecha: '', fotos: [], fotosPendientes: 0, creadoEn: ser }));
+      batch.set(ra, Object.assign(a, { revisionId: B.id, numero, instalacion: etiqueta(data), fechaRevision: data.fecha, estado: 'abierta', cierreObs: '', cierreFecha: '', fotos: [], fotosPendientes: 0, creadoEn: ser }));
       idsAcc.push(ra.id);
     });
     const w = batch.commit();
@@ -864,14 +865,15 @@ const abiertas = revId => ACC.filter(a => a.revisionId === revId && a.estado !==
 
 function renderHis() {
   const q = ($('buscar').value || '').toLowerCase().trim();
-  const l = REV.filter(r => !q || [r.nombre, r.comuna, fmtF(r.fecha), r.revisor, r.numero].join(' ').toLowerCase().includes(q));
+  const l = REV.filter(r => !q || [r.nombre, r.comuna, r.direccion, fmtF(r.fecha), r.revisor, r.numero].join(' ').toLowerCase().includes(q));
   if (!l.length) { $('hisLista').innerHTML = `<p class="muted" style="text-align:center;padding:20px">${REV.length ? 'Sin resultados para esa búsqueda.' : 'Todavía no hay revisiones guardadas.'}</p>`; return; }
   $('hisLista').innerHTML = l.map(r => {
     const k = clase(r.notaFinal), n = abiertas(r.id);
     return `<div class="card"><div class="lista">
       <div><div style="font-weight:700;font-size:16px">${esc(r.nombre)}</div>
         <div class="muted">${fmtF(r.fecha)} · ${esc(r.revisor)}</div>
-        <div class="muted">${esc(r.comuna)} · N° ${esc(r.numero)}</div>
+        <div class="muted">${[r.comuna, r.direccion].filter(Boolean).map(esc).join(' · ')}</div>
+        <div class="muted">N° ${esc(r.numero)}</div>
         <div class="muted">${n ? n + (n === 1 ? ' acción abierta' : ' acciones abiertas') : 'Sin acciones abiertas'}</div></div>
       <div class="nchip ${k}" style="min-width:78px"><b>${n1(r.notaFinal)}</b><small>${p1(r.cumplimiento)}</small></div></div>
       <div class="fila-btn"><button class="btn o" onclick="verDetalle('${r.id}')">Ver</button><button class="btn o" onclick="informePDF('${r.id}')">Compartir PDF</button></div></div>`;
@@ -883,7 +885,7 @@ function verDetalle(id) {
   const accs = ACC.filter(a => a.revisionId === id).sort((a, b) => ordenId(a.punto) - ordenId(b.punto));
   const fotosDe = i => (r.fotos || []).filter(f => f.item === i).map(f => `<img src="${esc(f.url)}" alt="Foto del punto ${esc(i)}" loading="lazy">`).join('');
   $('modalBox').innerHTML = `<div class="mhead"><h2>${esc(r.nombre)}</h2><button aria-label="Cerrar" onclick="cerrarModal()">✖</button></div>
-    <p class="muted" style="margin-top:0">N° ${esc(r.numero)} · ${fmtF(r.fecha)} · ${esc(r.revisor)}${r.fotosPendientes > 0 ? ` · ${r.fotosPendientes} foto(s) por enviar` : ''}</p>
+    <p class="muted" style="margin-top:0">${[r.comuna, r.direccion].filter(Boolean).map(esc).join(' · ')}<br>N° ${esc(r.numero)} · ${fmtF(r.fecha)} · ${esc(r.revisor)}${r.fotosPendientes > 0 ? ` · ${r.fotosPendientes} foto(s) por enviar` : ''}</p>
     ${htmlNota(r.notaFinal, r.cumplimiento, clase(r.notaFinal))}
     <div class="card"><h2>Nota por área</h2>${htmlBarras(r.areas || [])}</div>
     <div class="card"><h2>Puntos bajo 5 (${bajos.length})</h2>${bajos.length ? bajos.map(i => `<div class="acc"><div class="tit">${esc(i.id)} ${esc((PUNTOS[i.id] || {}).t || '')} <span class="chip ${clase(i.n)}">Nota ${i.n}</span></div>${i.o ? `<div class="muted" style="margin-top:4px">${esc(i.o)}</div>` : ''}<div class="fotos">${fotosDe(i.id)}</div></div>`).join('') : '<p class="muted">Ninguno.</p>'}</div>
@@ -915,9 +917,10 @@ async function eliminarRev(id) {
 
 // ================= SEGUIMIENTO =================
 let segF = 'Abiertos';
+const accLugar = a => { const r = REV.find(x => x.id === a.revisionId); return r ? etiqueta(r) : a.instalacion; };
 const estadoAcc = a => a.estado === 'cerrada' ? { t: 'Cerrada', k: 'verde' } : (a.plazo && a.plazo < hoy() ? { t: 'Vencida', k: 'rojo' } : { t: 'En plazo', k: 'amarillo' });
 function refrescarSegInst() {
-  const s = $('segInst'), v = s.value, nom = [...new Set(ACC.map(a => a.instalacion).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+  const s = $('segInst'), v = s.value, nom = [...new Set(ACC.map(accLugar).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
   s.innerHTML = '<option value="">Todas</option>' + nom.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
   s.value = nom.includes(v) ? v : '';
 }
@@ -925,11 +928,11 @@ function renderSeg() {
   refrescarSegInst();
   $('segFilt').innerHTML = ['Abiertos', 'Cerrados', 'Todos'].map(f => `<button type="button" class="${f === segF ? 'on' : ''}" aria-pressed="${f === segF}" onclick="segF='${f}';renderSeg()">${f}</button>`).join('');
   const inst = $('segInst').value;
-  const l = ACC.filter(a => (!inst || a.instalacion === inst) && (segF === 'Todos' || (segF === 'Cerrados') === (a.estado === 'cerrada')))
+  const l = ACC.filter(a => (!inst || accLugar(a) === inst) && (segF === 'Todos' || (segF === 'Cerrados') === (a.estado === 'cerrada')))
     .sort((a, b) => (a.estado === 'cerrada') - (b.estado === 'cerrada') || String(a.plazo).localeCompare(String(b.plazo)));
   $('segLista').innerHTML = l.length ? l.map(a => {
     const e = estadoAcc(a);
-    return `<div class="card"><div class="lista"><div class="muted">${esc(a.instalacion)}${a.punto ? ' · Punto ' + esc(a.punto) : ''}</div><span class="chip ${e.k}" style="flex:0 0 auto">${e.t}</span></div>
+    return `<div class="card"><div class="lista"><div class="muted">${esc(accLugar(a))}${a.punto ? ' · Punto ' + esc(a.punto) : ''}</div><span class="chip ${e.k}" style="flex:0 0 auto">${e.t}</span></div>
       <div style="font-weight:600;margin-top:6px;line-height:1.35">${esc(a.accion)}</div>
       <div class="muted" style="margin-top:6px">Responsable: ${esc(a.responsable)}</div>
       <div class="muted">Plazo: ${fmtF(a.plazo)}</div>
@@ -943,7 +946,7 @@ function abrirAcc(id) {
   accFotos = [];
   const cerrada = a.estado === 'cerrada';
   $('modalBox').innerHTML = `<div class="mhead"><h2>${a.punto ? 'Punto ' + esc(a.punto) : 'Acción adicional'}</h2><button aria-label="Cerrar" onclick="cerrarModal()">✖</button></div>
-    <p class="muted" style="margin-top:0">${esc(a.instalacion)} · N° ${esc(a.numero)}${a.puntoTexto && a.punto ? '<br>' + esc(a.puntoTexto) : ''}</p>
+    <p class="muted" style="margin-top:0">${esc(accLugar(a))} · N° ${esc(a.numero)}${a.puntoTexto && a.punto ? '<br>' + esc(a.puntoTexto) : ''}</p>
     <label class="l" for="mA">Acción a realizar</label><textarea id="mA" rows="2" ${cerrada ? 'disabled' : ''}>${esc(a.accion)}</textarea>
     <div class="g2">
       <div><label class="l" for="mR">Responsable</label><input id="mR" value="${esc(a.responsable)}" ${cerrada ? 'disabled' : ''}></div>
@@ -1182,9 +1185,9 @@ async function informePDF(id) {
     });
   }
   const pags = doc.internal.getNumberOfPages();
-  for (let p = 1; p <= pags; p++) { doc.setPage(p); set(GRIS, 8); doc.text(L1(`Forestal Corte Alto · ${r.nombre} · Página ${p} de ${pags}`), W / 2, 292, { align: 'center' }); }
-  const nombre = `Casas-Pensiones_${String(r.nombre).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-')}_${r.fecha}.pdf`;
-  await compartirPDF(doc, nombre, `Revisión ${r.nombre} ${fmtF(r.fecha)}`);
+  for (let p = 1; p <= pags; p++) { doc.setPage(p); set(GRIS, 8); doc.text(L1(`Forestal Corte Alto · ${etiqueta(r)} · Página ${p} de ${pags}`), W / 2, 292, { align: 'center' }); }
+  const nombre = `Casas-Pensiones_${String(etiqueta(r)).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-')}_${r.fecha}.pdf`;
+  await compartirPDF(doc, nombre, `Revisión ${etiqueta(r)} ${fmtF(r.fecha)}`);
 }
 
 // ================= INICIO =================
