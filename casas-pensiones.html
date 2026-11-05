@@ -39,10 +39,6 @@ input:disabled{background:#eef1ef;color:var(--g)}
 .fila-btn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .muted{color:var(--g);font-size:13px;line-height:1.4}
 .err{outline:3px solid #f48fb1;outline-offset:2px}
-.eess{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) minmax(0,1fr) 40px 32px;gap:6px;align-items:center;margin-bottom:6px}
-.eess input{padding:8px 6px}
-.eess .h{font-size:11px;font-weight:600;color:var(--g)}
-.eess .t{font-weight:700;text-align:center}
 .ic{border:0;background:none;font-size:18px;cursor:pointer;padding:2px;min-height:40px;color:var(--r)}
 .prog{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:12px}
 .prog .top{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:600}
@@ -128,23 +124,21 @@ th{font-size:12px;color:var(--g)}
       <label class="l" for="sInst">Instalación</label>
       <select id="sInst" onchange="elegirInst()"></select>
       <div id="nomOtro" style="display:none"><label class="l" for="nombre">Nombre de la instalación</label><input id="nombre" oninput="enc()" placeholder="Escribe el nombre"></div>
-      <div class="g2">
-        <div><label class="l" for="codigo">Código (opcional)</label><input id="codigo" oninput="enc()"></div>
-        <div><label class="l" for="comuna">Comuna</label><input id="comuna" oninput="enc()"></div>
-      </div>
+      <label class="l" for="comuna">Comuna</label><input id="comuna" oninput="enc()">
       <label class="l" for="direccion">Dirección (opcional)</label><input id="direccion" oninput="enc()">
-      <label class="l" for="propietario">Propietario o arrendador (nombre o razón social)</label><input id="propietario" oninput="enc()">
       <label class="l" for="concesionario">Concesionario o prestador de servicios (opcional)</label><input id="concesionario" oninput="enc()">
-      <label class="l" for="ingeniero">Ingeniero de operaciones</label><input id="ingeniero" oninput="enc()">
       <label class="l" for="sRev">Revisado por</label>
       <select id="sRev" onchange="elegirRev()"></select>
       <div id="revOtro" style="display:none"><label class="l" for="revisor">Nombre de quien revisa</label><input id="revisor" oninput="enc()" placeholder="Escribe el nombre"></div>
-      <label class="l" for="capacidad">Capacidad de la instalación (personas)</label><input id="capacidad" inputmode="numeric" oninput="enc();renderEess(true)">
+      <label class="l" for="capacidad">Capacidad de la instalación (personas)</label><input id="capacidad" inputmode="numeric" oninput="enc();renderAloj()">
     </div>
     <div class="card" id="cardEess">
-      <h2>Empresas o usuarios alojados</h2>
-      <div id="eessBox"></div>
-      <button type="button" class="btn o w" onclick="addEess()">+ Agregar empresa o usuario</button>
+      <h2>Empresas o usuarios alojados <span class="muted" style="font-weight:600">(AL MOMENTO DE LA REVISIÓN)</span></h2>
+      <div class="g2">
+        <div><label class="l" for="aCA">F. CORTE ALTO LTDA</label><input id="aCA" inputmode="numeric" oninput="alojVal('ca',this)"></div>
+        <div><label class="l" for="aCO">CONSESIONARIA</label><input id="aCO" inputmode="numeric" oninput="alojVal('co',this)"></div>
+      </div>
+      <div id="alojTot" style="margin-top:10px"></div>
     </div>
     <button class="btn p w" onclick="comenzar()">Comenzar pauta</button>
     <button class="btn w" style="margin-top:8px" onclick="descartar()">Descartar esta revisión</button>
@@ -485,43 +479,29 @@ function comprimir(file, max = 1280, q = 0.7) {
 }
 
 // ================= BORRADOR =================
-const CAMPOS = ['fecha', 'nombre', 'codigo', 'comuna', 'direccion', 'propietario', 'concesionario', 'ingeniero', 'revisor', 'capacidad'];
+const CAMPOS = ['fecha', 'nombre', 'comuna', 'direccion', 'concesionario', 'revisor', 'capacidad'];
 function nuevo() {
   const e = {}; CAMPOS.forEach(c => e[c] = ''); e.fecha = hoy();
-  return { id: uid(), enc: e, instId: '', revSel: '', eess: [{ n: '', r: '', m: '' }], resp: {}, plan: {}, extra: [], vista: 'datos', area: 0 };
+  return { id: uid(), enc: e, instId: '', revSel: '', aloj: { ca: '', co: '' }, resp: {}, plan: {}, extra: [], vista: 'datos', area: 0 };
 }
 let B = LS.get('cp_borrador') || nuevo();
+if (!B.aloj) B.aloj = { ca: '', co: '' }; // borradores anteriores a este cambio
 let FOTOS = {}; // punto -> [{key,url}]
 function guardarB() { clearTimeout(guardarB._t); guardarB._t = setTimeout(() => LS.set('cp_borrador', B), 200); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) LS.set('cp_borrador', B); });
-function hayDatos(b) { return Object.keys(b.resp || {}).length > 0 || ['nombre', 'comuna', 'propietario', 'ingeniero'].some(c => b.enc[c]); }
+function hayDatos(b) { return Object.keys(b.resp || {}).length > 0 || ['nombre', 'comuna', 'direccion'].some(c => b.enc[c]); }
 
 function pintarDatos() {
   CAMPOS.forEach(c => { if ($(c)) $(c).value = B.enc[c] || ''; });
-  pintarSelects(); renderEess();
+  pintarSelects();
+  $('aCA').value = B.aloj.ca; $('aCO').value = B.aloj.co; renderAloj();
 }
 function enc() { CAMPOS.forEach(c => { if ($(c)) B.enc[c] = $(c).value; }); guardarB(); }
-function renderEess(soloTotales) {
-  const tot = B.eess.reduce((s, f) => s + (parseInt(f.r) || 0) + (parseInt(f.m) || 0), 0);
-  const cap = parseInt(B.enc.capacidad) || 0;
-  const aviso = cap && tot > cap ? `<div class="muted" style="color:var(--r)">⚠️ El total alojado (${tot}) supera la capacidad (${cap}).</div>` : '';
-  if (soloTotales && $('eessTot')) {
-    B.eess.forEach((f, i) => { const el = $('eT' + i); if (el) el.textContent = (parseInt(f.r) || 0) + (parseInt(f.m) || 0); });
-    $('eessTot').innerHTML = `<div class="muted" style="margin:4px 0 10px"><b>Total: ${tot}</b></div>${aviso}`;
-    return;
-  }
-  $('eessBox').innerHTML = `<div class="eess"><div class="h">EESS o usuario</div><div class="h">Residentes</div><div class="h">Moviliz.</div><div class="h">Total</div><div></div></div>` +
-    B.eess.map((f, i) => `<div class="eess">
-      <input id="eN${i}" aria-label="EESS o usuario" value="${esc(f.n)}" oninput="eessVal(${i},'n',this.value)">
-      <input id="eR${i}" aria-label="Residentes" inputmode="numeric" value="${esc(f.r)}" oninput="eessVal(${i},'r',this.value)">
-      <input id="eM${i}" aria-label="Movilizados" inputmode="numeric" value="${esc(f.m)}" oninput="eessVal(${i},'m',this.value)">
-      <div class="t" id="eT${i}">${(parseInt(f.r) || 0) + (parseInt(f.m) || 0)}</div>
-      ${B.eess.length > 1 ? `<button type="button" class="ic" aria-label="Quitar fila" onclick="delEess(${i})">🗑</button>` : '<div></div>'}
-    </div>`).join('') + `<div id="eessTot"><div class="muted" style="margin:4px 0 10px"><b>Total: ${tot}</b></div>${aviso}</div>`;
+function renderAloj() {
+  const tot = (parseInt(B.aloj.ca) || 0) + (parseInt(B.aloj.co) || 0), cap = parseInt(B.enc.capacidad) || 0;
+  $('alojTot').innerHTML = `<b>Total: ${tot}</b>` + (cap && tot > cap ? `<div class="muted" style="color:var(--r)">⚠️ El total alojado (${tot}) supera la capacidad (${cap}).</div>` : '');
 }
-function eessVal(i, k, v) { B.eess[i][k] = v; guardarB(); renderEess(true); }
-function addEess() { B.eess.push({ n: '', r: '', m: '' }); guardarB(); renderEess(); }
-function delEess(i) { B.eess.splice(i, 1); guardarB(); renderEess(); }
+function alojVal(k, el) { el.value = el.value.replace(/\D/g, ''); B.aloj[k] = el.value; el.classList.remove('err'); guardarB(); renderAloj(); }
 
 // ================= CONFIGURACIÓN COMPARTIDA =================
 let INST = LS.get('cp_inst') || [], REVS = LS.get('cp_revs') || [];
@@ -587,11 +567,10 @@ function validarDatos() {
   if (!B.enc.fecha) marcar($('fecha'));
   if (!B.enc.nombre.trim()) marcar($('sInst').value === '__otro' ? $('nombre') : $('sInst'));
   if (!B.enc.comuna.trim()) marcar($('comuna'));
-  if (!B.enc.propietario.trim()) marcar($('propietario'));
-  if (!B.enc.ingeniero.trim()) marcar($('ingeniero'));
   if (!B.enc.revisor.trim()) marcar($('sRev').value === '__otro' ? $('revisor') : $('sRev'));
   if (!(parseInt(B.enc.capacidad) > 0)) marcar($('capacidad'));
-  if (!B.eess.some(f => f.n.trim())) marcar($('eN0'));
+  if (B.aloj.ca === '') marcar($('aCA'));
+  if (B.aloj.co === '') marcar($('aCO'));
   if (errores.length) { errores[0].scrollIntoView({ behavior: 'smooth', block: 'center' }); toast('Faltan ' + errores.length + ' dato(s) por completar (marcados en rosado).'); return false; }
   return true;
 }
@@ -717,7 +696,7 @@ function renderRes() {
   const c = calcular(B.resp), bajos = puntosBajos();
   bajos.forEach(id => { if (!B.plan[id]) B.plan[id] = { on: true, accion: (B.resp[id].o || ''), resp: '', plazo: '' }; });
   const activos = bajos.filter(id => B.plan[id].on), quitados = bajos.filter(id => !B.plan[id].on);
-  const dl = [B.enc.concesionario, B.enc.propietario].filter(Boolean);
+  const dl = [B.enc.concesionario].filter(Boolean);
   $('v-res').innerHTML = `${htmlNota(c.final, c.cumplimiento, c.clase)}
     <div class="card"><h2>Nota por área</h2>${htmlBarras(c.areas)}</div>
     <div class="card" id="cardPlan"><h2>Plan de acción</h2>
@@ -778,8 +757,7 @@ function validarPlan() {
 
 // ================= GUARDAR =================
 function armarNumero() {
-  const base = (B.enc.codigo || 'CP').trim().replace(/\s+/g, '').toUpperCase();
-  return `${base}-${B.enc.fecha.replace(/-/g, '')}-${B.id.slice(0, 4).toUpperCase()}`;
+  return `CP-${B.enc.fecha.replace(/-/g, '')}-${B.id.slice(0, 4).toUpperCase()}`;
 }
 async function guardar() {
   if (!db) { toast('Sin conexión a la base todavía: abre el módulo una vez con señal. Tu revisión sigue como borrador.', 6000); return; }
@@ -797,12 +775,12 @@ async function guardar() {
     Object.keys(PUNTOS).forEach(id => { const r = B.resp[id] || {}; const bajo = typeof r.n === 'number' && r.n < 5; items[sid(id)] = { id, n: r.n, o: bajo ? (r.o || '').trim() : '' }; });
     const ser = firebase.firestore.FieldValue.serverTimestamp();
     const ref = db.collection(COL).doc(B.id);
-    const eess = B.eess.filter(f => f.n.trim()).map(f => ({ nombre: f.n.trim(), residentes: parseInt(f.r) || 0, movilizados: parseInt(f.m) || 0 }));
+    const alojados = { corteAlto: parseInt(B.aloj.ca) || 0, concesionaria: parseInt(B.aloj.co) || 0 };
     const data = {
       numero, pautaVersion: PAUTA_VERSION, fecha: B.enc.fecha, instalacionId: B.instId || '',
-      nombre: B.enc.nombre.trim(), codigo: B.enc.codigo.trim(), comuna: B.enc.comuna.trim(), direccion: B.enc.direccion.trim(),
-      propietario: B.enc.propietario.trim(), concesionario: B.enc.concesionario.trim(), ingeniero: B.enc.ingeniero.trim(), revisor: B.enc.revisor.trim(),
-      capacidad: parseInt(B.enc.capacidad) || 0, eess,
+      nombre: B.enc.nombre.trim(), comuna: B.enc.comuna.trim(), direccion: B.enc.direccion.trim(),
+      concesionario: B.enc.concesionario.trim(), revisor: B.enc.revisor.trim(),
+      capacidad: parseInt(B.enc.capacidad) || 0, alojados,
       items, areas: c.areas.map(a => ({ id: a.id, nombre: a.nombre, peso: a.peso, nota: a.nota, na: a.na })),
       notaFinal: c.final, cumplimiento: c.cumplimiento, clasificacion: c.clase,
       fotos: [], fotosPendientes: validas.length, creadoEn: ser
@@ -1118,18 +1096,17 @@ async function informePDF(id) {
     columnStyles: { 0: { fontStyle: 'bold', cellWidth: 38 }, 2: { fontStyle: 'bold', cellWidth: 30 } },
     body: [
       ['Fecha', fmtF(r.fecha), 'Revisado por', ca(r.revisor)],
-      ['Instalación', ca(r.nombre), 'Código', ca(r.codigo)],
+      ['Instalación', ca(r.nombre), 'Concesionario', ca(r.concesionario)],
       ['Comuna', ca(r.comuna), 'Dirección', ca(r.direccion)],
-      ['Propietario/arrendador', ca(r.propietario), 'Concesionario', ca(r.concesionario)],
-      ['Ingeniero operaciones', ca(r.ingeniero), 'Capacidad', String(r.capacidad ?? '-')]
+      ['Capacidad', String(r.capacidad ?? '-'), '', '']
     ]
   });
   y = doc.lastAutoTable.finalY + 3;
-  const totR = (r.eess || []).reduce((s, f) => s + f.residentes, 0), totM = (r.eess || []).reduce((s, f) => s + f.movilizados, 0);
+  const al = r.alojados || { corteAlto: 0, concesionaria: 0 };
   doc.autoTable({
     startY: y, margin: { left: M, right: M }, theme: 'grid', styles: { fontSize: 9, cellPadding: 1.8, textColor: TXT, lineColor: [210, 215, 212] }, headStyles: { textColor: [255, 255, 255], fillColor: VERDE },
-    head: [['EESS/Usuarios', 'Residentes', 'Movilizados', 'Total']],
-    body: (r.eess || []).map(f => [L1(f.nombre), f.residentes, f.movilizados, f.residentes + f.movilizados]).concat([[{ content: 'Totales', styles: { fontStyle: 'bold' } }, totR, totM, totR + totM]])
+    head: [['Alojados al momento de la revisión', 'F. Corte Alto Ltda', 'Concesionaria', 'Total']],
+    body: [['Personas', al.corteAlto, al.concesionaria, al.corteAlto + al.concesionaria]]
   });
   y = doc.lastAutoTable.finalY + 4;
   // Resultado
