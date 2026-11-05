@@ -382,8 +382,12 @@ function elegirTipo(t) {
 }
 
 
+// Dos formas de agregar foto: sacarla en el momento con la cámara, o elegir una ya tomada (galería/archivos).
 function bloqueFotos(id, txt) {
-  return `<label class="fotobtn">📷 ${txt}<input type="file" accept="image/*" multiple hidden onchange="addFotos('${id}',this)"></label><div class="fotos" id="f_${id}"></div>`;
+  return `${txt && txt !== 'Agregar foto' ? `<div class="muted" style="margin-bottom:4px">${esc(txt)}</div>` : ''}<div style="display:flex;gap:6px;flex-wrap:wrap">
+    <label class="fotobtn">📷 Tomar foto<input type="file" accept="image/*" capture="environment" hidden onchange="addFotos('${id}',this)"></label>
+    <label class="fotobtn">🖼️ Desde galería<input type="file" accept="image/*" multiple hidden onchange="addFotos('${id}',this)"></label>
+  </div><div class="fotos" id="f_${id}"></div>`;
 }
 const nRumasTxt = n => n + (n === 1 ? ' ruma' : ' rumas');
 function ayudaSim(it) { return it.ay.replace('{N}', nRumasTxt((estado.rumas || [{}]).length)); }
