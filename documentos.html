@@ -37,6 +37,12 @@ a{color:inherit}
 .msg-error{background:var(--red-bg);color:var(--red);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:14px;display:none}
 .msg-error.show{display:block}
 .chk-row{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--text2);margin-bottom:16px;font-weight:600}
+.cargos-check-box{border:1px solid var(--border);border-radius:10px;padding:12px 14px;max-height:190px;overflow-y:auto;margin-bottom:14px;background:#fbfbfb}
+.cargos-check-box .chk-row{margin-bottom:8px}
+.cargos-check-box .chk-row:last-child{margin-bottom:0}
+.cargos-check-box .chk-vacio{font-size:12.5px;color:var(--text3)}
+.cargo-chip{display:inline-block;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--blue-bg);color:var(--blue);white-space:nowrap;margin:0 4px 4px 0}
+.cargo-chip.inactivo{background:#f0f0f0;color:var(--text3)}
 
 /* ---------- Pantalla: LOGIN (pantalla completa, dos paneles) ---------- */
 #pantalla-login{min-height:100vh;display:flex;flex-wrap:wrap}
@@ -738,10 +744,8 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
     <label class="field-label" for="mt-rutempresa">Rut empresa</label>
     <input class="field-input" id="mt-rutempresa" type="text" placeholder="Se completa solo al elegir la empresa" readonly style="background:#f7f7f7;color:var(--text3)">
 
-    <label class="field-label" for="mt-cargo">Cargo</label>
-    <select class="field-input" id="mt-cargo">
-      <option value="">— Elige un cargo —</option>
-    </select>
+    <label class="field-label">Cargo(s)</label>
+    <div id="mt-cargos-checks" class="cargos-check-box"></div>
 
     <label class="field-label" for="mt-fecha-ingreso">Fecha de ingreso</label>
     <input class="field-input" id="mt-fecha-ingreso" type="date">
@@ -770,7 +774,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
     <div class="modal-titulo">Importar CSV</div>
     <div class="status-note" style="margin:0 0 12px;text-align:left">
       Columnas esperadas, con encabezado: <strong>rut,nombre,centro,subarea,activo,empresa,rutempresa,cargo,fechaingreso</strong><br>
-      Centro debe ser exactamente uno de: FORMIN 1, FORMIN 2, FORMIN 3, TALLER_COIHUE, ROTATIVO, o vacío (trabajador pendiente de asignar). Las columnas empresa, rutempresa, cargo y fechaingreso son opcionales. Si viene cargo, debe coincidir con un cargo ya cargado en Configuración → Cargos. Fechaingreso debe tener formato AAAA-MM-DD.
+      Centro debe ser exactamente uno de: FORMIN 1, FORMIN 2, FORMIN 3, TALLER_COIHUE, ROTATIVO, o vacío (trabajador pendiente de asignar). Las columnas empresa, rutempresa, cargo y fechaingreso son opcionales. Si viene cargo, cada uno debe coincidir con un cargo ya cargado en Configuración → Cargos — si el trabajador tiene más de uno, se separan con punto y coma dentro de la misma celda (ej: Mecánico;Operador Torre). Fechaingreso debe tener formato AAAA-MM-DD.
     </div>
 
     <label class="field-label" for="mi-archivo">Selecciona el archivo .csv</label>
@@ -923,8 +927,11 @@ const NOMBRES_CENTRO = { "FORMIN 1": "FORMIN 1", "FORMIN 2": "FORMIN 2", "FORMIN
 let EMPRESAS_CATALOGO = []; // [{id, nombre, rut, centroSugerido, principal, activo}]
 let empresasCatalogoCargado = false;
 // Catálogo de cargos (colección config_cargos) — pedido por Fabián 6 nov 2026 para el
-// módulo HSE (EPP/capacitaciones), que lee dotacion.cargo en solo lectura desde otro
-// módulo. Mismo patrón que EMPRESAS_CATALOGO — ver fetchCargosCatalogo().
+// módulo HSE (EPP/capacitaciones), que lee dotacion.cargos (lista — un trabajador puede
+// ejercer más de una función, ej. Carlos Armuna: Mecánico + Operador Torre) en solo lectura
+// desde otro módulo. Mismo patrón que EMPRESAS_CATALOGO — ver fetchCargosCatalogo().
+// Compatibilidad: los trabajadores guardados antes del 9 nov 2026 pueden tener el campo
+// viejo dotacion.cargo (un solo texto) en vez de dotacion.cargos — ver cargosDeTrabajador().
 let CARGOS_CATALOGO = []; // [{id, nombre, activo}]
 let cargosCatalogoCargado = false;
 // Semilla: mismos nombre/RUT que ya estaban escritos a mano en el código, para que al
@@ -1557,31 +1564,53 @@ function generarSlugCargo(nombre, idsReservados){
   return slug;
 }
 
-// Llena el <select> de cargo del modal de trabajador con el catálogo actual (solo los
-// activos), conservando la selección si sigue existiendo. Igual que renderOpcionesEmpresaModal,
-// si el trabajador que se está editando tiene un cargo que después quedó inactivo en el
-// catálogo, se sigue mostrando esa opción (marcada como inactiva) para no perder el dato.
-function renderOpcionesCargoModal(){
-  const sel = document.getElementById("mt-cargo");
-  if(!sel) return;
-  const actual = sel.value;
+// Llena la lista de casillas de Cargo(s) del modal de trabajador con el catálogo actual
+// (solo los activos), permitiendo marcar más de uno — un trabajador puede ejercer varias
+// funciones (ej. Carlos Armuna: Mecánico + Operador Torre). Si se pasa idsSeleccionados
+// (al abrir el modal) se usa esa selección; si no (ej. se agregó un cargo nuevo desde este
+// mismo modal estando abierto), se conserva lo que ya estaba marcado. Igual que
+// renderOpcionesEmpresaModal, si el trabajador tiene un cargo que después quedó inactivo en
+// el catálogo, se sigue mostrando esa casilla (marcada, como inactiva) para no perder el dato.
+function renderOpcionesCargoModal(idsSeleccionados){
+  const cont = document.getElementById("mt-cargos-checks");
+  if(!cont) return;
+  const seleccionados = new Set(idsSeleccionados
+    ? idsSeleccionados
+    : Array.from(cont.querySelectorAll("input[type=checkbox]:checked")).map(i => i.value));
   let opciones = CARGOS_CATALOGO.filter(c => c.activo !== false);
-  if(actual && !opciones.some(c => c.id === actual)){
-    const inactivo = CARGOS_CATALOGO.find(c => c.id === actual);
-    if(inactivo) opciones = [...opciones, inactivo];
+  seleccionados.forEach(id => {
+    if(!opciones.some(c => c.id === id)){
+      const inactivo = CARGOS_CATALOGO.find(c => c.id === id);
+      if(inactivo) opciones = [...opciones, inactivo];
+    }
+  });
+  if(!opciones.length){
+    cont.innerHTML = '<div class="chk-vacio">No hay cargos cargados todavía — agrégalos en Configuración → Cargos.</div>';
+    return;
   }
-  sel.innerHTML = '<option value="">— Elige un cargo —</option>' +
-    opciones.map(c => `<option value="${c.id}">${escapeHtml(c.nombre)}${c.activo === false ? " (inactivo)" : ""}</option>`).join("");
-  sel.value = actual;
+  cont.innerHTML = opciones.map(c => `
+    <label class="chk-row"><input type="checkbox" value="${c.id}" ${seleccionados.has(c.id) ? "checked" : ""}> ${escapeHtml(c.nombre)}${c.activo === false ? " (inactivo)" : ""}</label>
+  `).join("");
 }
 
-// Devuelve el cargo del catálogo que corresponde a este trabajador, comparando el texto
-// EXACTO guardado en dotacion.cargo (a diferencia de empresaDeTrabajador, acá no hace falta
-// comparación difusa: cargo es un campo nuevo, siempre se completa eligiendo de la lista,
-// nunca hay texto libre histórico con el que pueda no calzar).
-function cargoDeTrabajador(t){
-  if(!t || !t.cargo) return null;
-  return CARGOS_CATALOGO.find(c => c.nombre === t.cargo) || null;
+// Devuelve los cargos del catálogo que corresponden a este trabajador, comparando el texto
+// EXACTO guardado en dotacion.cargos (lista) — con compatibilidad hacia atrás con el formato
+// anterior, dotacion.cargo (un solo texto), para los trabajadores que se guardaron antes de
+// este cambio y todavía no se han vuelto a editar. A diferencia de empresaDeTrabajador, acá no
+// hace falta comparación difusa: cargo siempre se completa eligiendo de la lista, nunca hay
+// texto libre histórico con el que pueda no calzar.
+function cargosDeTrabajador(t){
+  if(!t) return [];
+  const nombres = Array.isArray(t.cargos) ? t.cargos : (t.cargo ? [t.cargo] : []);
+  return nombres.map(n => CARGOS_CATALOGO.find(c => c.nombre === n)).filter(Boolean);
+}
+
+// "Pastillas" de Cargo(s) para la fila de Dotación — una por cada cargo del trabajador,
+// marcando aparte los que quedaron inactivos en el catálogo (sin perder el dato).
+function renderCargosChips(t){
+  const cargos = cargosDeTrabajador(t);
+  if(!cargos.length) return '<span style="color:var(--text3)">—</span>';
+  return cargos.map(c => `<span class="cargo-chip${c.activo === false ? ' inactivo' : ''}">${escapeHtml(c.nombre)}${c.activo === false ? ' (inactivo)' : ''}</span>`).join("");
 }
 
 // Devuelve la empresa del catálogo que corresponde a este trabajador (comparando el texto
@@ -1710,7 +1739,7 @@ window.renderTablaDotacion = function(){
       <td class="nombre-cell">${escapeHtml(t.nombre || "—")}</td>
       <td>${escapeHtml(formatRut(t.rut) || "—")}</td>
       <td><span class="badge-centro${pendiente ? ' pendiente' : ''}">${escapeHtml(etiquetaCentro)}</span></td>
-      <td>${t.cargo ? escapeHtml(t.cargo) : '<span style="color:var(--text3)">—</span>'}</td>
+      <td>${renderCargosChips(t)}</td>
       <td class="empresa-cell">${escapeHtml(t.empresa || "—")}</td>
       <td>${(t.subarea && normalizar(t.subarea) !== normalizar(NOMBRES_CENTRO[t.centro]||"")) ? escapeHtml(t.subarea) : "—"}</td>
       <td>${t.activo === false ? '<span class="badge-inactivo">Inactivo</span>' : '<span style="color:var(--green2);font-weight:700;font-size:12.5px">Activo</span>'}</td>
@@ -1730,7 +1759,7 @@ window.renderTablaDotacion = function(){
 function actualizarIndicadorCargoPendientes(){
   const span = document.getElementById("dot-cargo-pendientes");
   if(!span) return;
-  const total = (dotDatosTodos || []).filter(t => t.activo !== false && !t.cargo).length;
+  const total = (dotDatosTodos || []).filter(t => t.activo !== false && !cargosDeTrabajador(t).length).length;
   span.classList.toggle("hidden", total === 0);
   span.textContent = total === 1 ? "⚠ 1 activo sin cargo asignado" : `⚠ ${total} activos sin cargo asignado`;
 }
@@ -1794,7 +1823,6 @@ window.abrirModalTrabajador = function(id, nombreSugerido, alGuardar){
   document.getElementById("modal-trabajador-error").classList.remove("show");
   trabajadorRecienCreadoCallback = alGuardar || null;
   renderOpcionesEmpresaModal();
-  renderOpcionesCargoModal();
   const empresaOriginalField = document.getElementById("mt-empresa-original");
   const rutEmpresaOriginalField = document.getElementById("mt-rutempresa-original");
   if(id){
@@ -1813,8 +1841,7 @@ window.abrirModalTrabajador = function(id, nombreSugerido, alGuardar){
     // solo por no haber tocado el selector de arriba.
     empresaOriginalField.value = t.empresa || "";
     rutEmpresaOriginalField.value = t.rutEmpresa || "";
-    const cargoMatch = cargoDeTrabajador(t);
-    document.getElementById("mt-cargo").value = cargoMatch ? cargoMatch.id : "";
+    renderOpcionesCargoModal(cargosDeTrabajador(t).map(c => c.id));
     document.getElementById("mt-fecha-ingreso").value = t.fechaIngreso || "";
     document.getElementById("mt-fecha-desvinculacion").value = t.fechaDesvinculacion || "";
     document.getElementById("mt-fecha-desvinculacion-wrap").classList.toggle("hidden", t.activo !== false);
@@ -1842,7 +1869,7 @@ window.abrirModalTrabajador = function(id, nombreSugerido, alGuardar){
       document.getElementById("mt-rutempresa").value = "";
       document.getElementById("mt-centro").value = "";
     }
-    document.getElementById("mt-cargo").value = "";
+    renderOpcionesCargoModal([]);
     document.getElementById("mt-fecha-ingreso").value = "";
     document.getElementById("mt-fecha-desvinculacion").value = "";
     document.getElementById("mt-fecha-desvinculacion-wrap").classList.add("hidden");
@@ -1871,7 +1898,7 @@ window.guardarTrabajador = async function(){
   const rutInput = document.getElementById("mt-rut").value.trim();
   const centro = document.getElementById("mt-centro").value;
   const empresaSelId = document.getElementById("mt-empresa").value;
-  const cargoSelId = document.getElementById("mt-cargo").value;
+  const cargoSelIds = Array.from(document.querySelectorAll("#mt-cargos-checks input[type=checkbox]:checked")).map(i => i.value);
   const fechaIngreso = document.getElementById("mt-fecha-ingreso").value || "";
   let fechaDesvinculacion = document.getElementById("mt-fecha-desvinculacion").value || "";
   const subarea = document.getElementById("mt-subarea").value.trim();
@@ -1891,7 +1918,7 @@ window.guardarTrabajador = async function(){
   }
   if(activo) fechaDesvinculacion = ""; // defensivo: activo nunca guarda fecha de desvinculación
 
-  const cargo = cargoSelId ? ((CARGOS_CATALOGO.find(c => c.id === cargoSelId) || {}).nombre || "") : "";
+  const cargos = cargoSelIds.map(id => (CARGOS_CATALOGO.find(c => c.id === id) || {}).nombre).filter(Boolean);
 
   let empresa, rutEmpresa;
   if(empresaSelId){
@@ -1911,7 +1938,7 @@ window.guardarTrabajador = async function(){
   const callbackPendiente = trabajadorRecienCreadoCallback; // cerrarModales() lo limpia, por eso se guarda antes
 
   try{
-    await setDoc(doc(db, "dotacion", idDoc), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo, cargo, fechaIngreso, fechaDesvinculacion }, { merge: true });
+    await setDoc(doc(db, "dotacion", idDoc), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo, cargos, fechaIngreso, fechaDesvinculacion }, { merge: true });
     cerrarModales();
     dotDatosTodos = null;
     await fetchDotacionTodos();
@@ -2005,11 +2032,13 @@ window.importarCSV = async function(){
     const activo = idxActivo > -1 ? (cols[idxActivo] || "true").toLowerCase() !== "false" : true;
     const empresa = idxEmpresa > -1 ? (cols[idxEmpresa] || "") : "";
     const rutEmpresa = idxRutEmpresa > -1 ? (cols[idxRutEmpresa] || "") : "";
-    const cargoTexto = idxCargo > -1 ? (cols[idxCargo] || "") : "";
+    // Más de un cargo en la misma celda se separan con punto y coma (la coma ya la usa el
+    // CSV para separar columnas) — ej. "Mecánico;Operador Torre".
+    const cargoTextos = idxCargo > -1 ? (cols[idxCargo] || "").split(";").map(c => c.trim()).filter(Boolean) : [];
     const fechaIngreso = idxFechaIngreso > -1 ? (cols[idxFechaIngreso] || "") : "";
 
-    const cargoMatch = cargoTexto ? CARGOS_CATALOGO.find(c => normalizar(c.nombre) === normalizar(cargoTexto)) : null;
-    const cargoInvalido = !!cargoTexto && !cargoMatch;
+    const cargoMatches = cargoTextos.map(texto => CARGOS_CATALOGO.find(c => normalizar(c.nombre) === normalizar(texto)));
+    const cargoInvalido = cargoMatches.some(m => !m);
     const fechaIngresoInvalida = !!fechaIngreso && !/^\d{4}-\d{2}-\d{2}$/.test(fechaIngreso);
 
     if(!rut || !nombre || !CENTROS_VALIDOS.includes(centro) || cargoInvalido || fechaIngresoInvalida){
@@ -2018,10 +2047,11 @@ window.importarCSV = async function(){
       continue;
     }
 
-    const cargo = cargoMatch ? cargoMatch.nombre : "";
+    // Dedupe por si el mismo cargo viene repetido dentro de la misma celda.
+    const cargos = [...new Set(cargoMatches.map(m => m.nombre))];
     const rutLimpio = limpiarRut(rut);
     try{
-      await setDoc(doc(db, "dotacion", rutLimpio), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo, cargo, fechaIngreso }, { merge: true });
+      await setDoc(doc(db, "dotacion", rutLimpio), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo, cargos, fechaIngreso }, { merge: true });
       ok++;
     }catch(e){
       conError++;
@@ -4633,7 +4663,7 @@ window.eliminarEmpresa = async function(id){
 };
 
 // ---- Configuración → Cargos (catálogo leído en solo lectura por el módulo HSE vía
-// dotacion.cargo — pedido por Fabián 6 nov 2026). Mismo patrón que Empresas, salvo que un
+// dotacion.cargos — pedido por Fabián 6 nov 2026). Mismo patrón que Empresas, salvo que un
 // cargo nunca se elimina, solo se desactiva (puede haber trabajadores con ese cargo). ----
 
 function renderConfiguracionCargos(){
