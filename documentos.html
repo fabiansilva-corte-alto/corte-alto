@@ -773,15 +773,15 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
   <div class="modal-box">
     <div class="modal-titulo">Importar CSV</div>
     <div class="status-note" style="margin:0 0 12px;text-align:left">
-      Columnas esperadas, con encabezado: <strong>rut,nombre,centro,subarea,activo,empresa,rutempresa,cargo,fechaingreso</strong><br>
-      Centro debe ser exactamente uno de: FORMIN 1, FORMIN 2, FORMIN 3, TALLER_COIHUE, ROTATIVO, o vacío (trabajador pendiente de asignar). Las columnas empresa, rutempresa, cargo y fechaingreso son opcionales. Si viene cargo, cada uno debe coincidir con un cargo ya cargado en Configuración → Cargos — si el trabajador tiene más de uno, se separan con punto y coma dentro de la misma celda (ej: Mecánico;Operador Torre). Fechaingreso debe tener formato AAAA-MM-DD.
+      Columnas esperadas, con encabezado: <strong>rut,nombre,centro,subarea,activo,empresa,rutempresa,cargo,fechaingreso,fechadesvinculacion</strong><br>
+      Centro debe ser exactamente uno de: FORMIN 1, FORMIN 2, FORMIN 3, TALLER_COIHUE, ROTATIVO, o vacío (trabajador pendiente de asignar). Las columnas empresa, rutempresa, cargo, fechaingreso y fechadesvinculacion son opcionales. Si viene cargo, cada uno debe coincidir con un cargo ya cargado en Configuración → Cargos — si el trabajador tiene más de uno, se separan con punto y coma dentro de la misma celda (ej: Mecánico;Operador Torre). Fechaingreso y fechadesvinculacion deben tener formato AAAA-MM-DD; si una fila trae activo=false, fechadesvinculacion es obligatoria. Si cargo o fechaingreso vienen vacíos (o la columna no está), no se borra lo que el trabajador ya tenía guardado.
     </div>
 
     <label class="field-label" for="mi-archivo">Selecciona el archivo .csv</label>
     <input class="field-input" id="mi-archivo" type="file" accept=".csv,text/csv" style="height:auto;padding:9px 12px" onchange="cargarArchivoCSV(event)">
 
     <div class="field-label" style="margin-top:14px">O pega el contenido aquí</div>
-    <textarea id="mi-csv" class="field-input" style="height:160px;padding:10px;resize:vertical;font-family:monospace;font-size:12.5px" placeholder="rut,nombre,centro,subarea,activo,cargo,fechaingreso"></textarea>
+    <textarea id="mi-csv" class="field-input" style="height:160px;padding:10px;resize:vertical;font-family:monospace;font-size:12.5px" placeholder="rut,nombre,centro,subarea,activo,cargo,fechaingreso,fechadesvinculacion"></textarea>
     <div class="msg-error" id="modal-importar-error"></div>
     <div class="status-note" id="modal-importar-resultado" style="margin-top:4px"></div>
     <button class="btn-primary full" id="mi-btn-importar" style="margin-top:10px" onclick="importarCSV()">Importar</button>
@@ -2009,6 +2009,7 @@ window.importarCSV = async function(){
   const idxRutEmpresa = encabezado.indexOf("rutempresa");
   const idxCargo = encabezado.indexOf("cargo");
   const idxFechaIngreso = encabezado.indexOf("fechaingreso");
+  const idxFechaDesvinculacion = encabezado.indexOf("fechadesvinculacion");
 
   if(idxRut === -1 || idxNombre === -1 || idxCentro === -1){
     errorBox.textContent = "El encabezado debe incluir al menos: rut,nombre,centro";
@@ -2034,24 +2035,50 @@ window.importarCSV = async function(){
     const rutEmpresa = idxRutEmpresa > -1 ? (cols[idxRutEmpresa] || "") : "";
     // Más de un cargo en la misma celda se separan con punto y coma (la coma ya la usa el
     // CSV para separar columnas) — ej. "Mecánico;Operador Torre".
-    const cargoTextos = idxCargo > -1 ? (cols[idxCargo] || "").split(";").map(c => c.trim()).filter(Boolean) : [];
-    const fechaIngreso = idxFechaIngreso > -1 ? (cols[idxFechaIngreso] || "") : "";
+    const cargoCelda = idxCargo > -1 ? (cols[idxCargo] || "").trim() : "";
+    const cargoTextos = cargoCelda ? cargoCelda.split(";").map(c => c.trim()).filter(Boolean) : [];
+    const fechaIngreso = idxFechaIngreso > -1 ? (cols[idxFechaIngreso] || "").trim() : "";
+    const fechaDesvinculacion = idxFechaDesvinculacion > -1 ? (cols[idxFechaDesvinculacion] || "").trim() : "";
 
     const cargoMatches = cargoTextos.map(texto => CARGOS_CATALOGO.find(c => normalizar(c.nombre) === normalizar(texto)));
     const cargoInvalido = cargoMatches.some(m => !m);
     const fechaIngresoInvalida = !!fechaIngreso && !/^\d{4}-\d{2}-\d{2}$/.test(fechaIngreso);
+    const fechaDesvinculacionInvalida = !!fechaDesvinculacion && !/^\d{4}-\d{2}-\d{2}$/.test(fechaDesvinculacion);
+    // Igual que en el modal: si la fila queda inactiva, la fecha de desvinculación es obligatoria.
+    const faltaFechaDesvinculacion = !activo && !fechaDesvinculacion;
 
-    if(!rut || !nombre || !CENTROS_VALIDOS.includes(centro) || cargoInvalido || fechaIngresoInvalida){
+    if(!rut || !nombre || !CENTROS_VALIDOS.includes(centro) || cargoInvalido || fechaIngresoInvalida || fechaDesvinculacionInvalida || faltaFechaDesvinculacion){
       conError++;
       invalidos.push(lineas[i]);
       continue;
     }
 
-    // Dedupe por si el mismo cargo viene repetido dentro de la misma celda.
-    const cargos = [...new Set(cargoMatches.map(m => m.nombre))];
     const rutLimpio = limpiarRut(rut);
+    const datosFila = { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo };
+    // IMPORTANTE (bug reportado 9 nov 2026): como setDoc usa merge:true, cualquier campo que
+    // se incluya acá SIEMPRE pisa lo que ya estaba guardado, aunque venga vacío — por eso
+    // "cargos" y "fechaIngreso" solo se agregan al objeto cuando la columna existe en ESTE CSV
+    // Y la celda trae algo. Así, reimportar un CSV viejo (rut,nombre,centro nada más) para
+    // actualizar otra cosa ya NO borra los cargos ni la fecha de ingreso que un trabajador
+    // tenía guardados desde el modal o una importación anterior.
+    if(cargoTextos.length){
+      // Dedupe por si el mismo cargo viene repetido dentro de la misma celda.
+      datosFila.cargos = [...new Set(cargoMatches.map(m => m.nombre))];
+    }
+    if(fechaIngreso){
+      datosFila.fechaIngreso = fechaIngreso;
+    }
+    // La fecha de desvinculación solo se toca cuando la columna "activo" viene explícita en
+    // ESTE CSV — si no viene, "activo" cae en su valor por defecto (true) y no hay que asumir
+    // que se está reactivando a nadie. Cuando sí viene, sigue siempre al estado de la fila
+    // (igual que el modal: activo nunca guarda fecha de desvinculación, y se borra sola si el
+    // trabajador se reactiva por CSV).
+    if(idxActivo > -1){
+      datosFila.fechaDesvinculacion = activo ? "" : fechaDesvinculacion;
+    }
+
     try{
-      await setDoc(doc(db, "dotacion", rutLimpio), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo, cargos, fechaIngreso }, { merge: true });
+      await setDoc(doc(db, "dotacion", rutLimpio), datosFila, { merge: true });
       ok++;
     }catch(e){
       conError++;
