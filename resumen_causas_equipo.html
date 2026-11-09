@@ -60,10 +60,10 @@
   .resultados { max-width: 100%; margin: 0 auto; padding: 0 24px 40px; display: none; }
   .resumen-titulo { background: var(--azul-oscuro); color: white; text-align: center; font-size: 15px; font-weight: 800; letter-spacing: .04em; padding: 12px 20px; border-radius: 10px 10px 0 0; text-transform: uppercase; }
 
-  .resumen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--borde); border-top: none; border-radius: 0 0 10px 10px; overflow: hidden; background: white; }
-  /* solo desktop — sin adaptación móvil */
+  .resumen-grid { border: 1px solid var(--borde); border-top: none; border-radius: 0 0 10px 10px; overflow: hidden; background: white; }
 
-  .panel-izquierdo { border-right: 1px solid var(--borde); }
+
+  .panel-izquierdo { }
 
   /* ── DETALLE CAUSAS ── */
   .detalle-header { background: var(--azul-oscuro); color: white; padding: 8px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
@@ -82,8 +82,8 @@
   .pct-cell { text-align: right; color: #64748b; font-size: 11px; }
   .totales-row td { background: #f1f5f9; font-weight: 700; border-top: 2px solid var(--borde); }
 
-  /* ── PANEL DERECHO ── */
-  .panel-derecho { padding: 14px; }
+
+
 
   /* KPIs 2x2 */
   .kpis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
@@ -103,23 +103,7 @@
   .barra-legend span { font-size: 10px; color: #64748b; display: flex; align-items: center; gap: 4px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 
-  /* Chart barras */
-  .mini-resumen-titulo { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
-  .causas-chart { margin-top: 4px; }
-  .causal-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 11px; }
-  .causal-bar-label { width: 160px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #475569; }
-  .causal-bar-track { flex: 1; background: #e2e8f0; border-radius: 4px; height: 8px; overflow: hidden; }
-  .causal-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
-  .causal-bar-val { width: 44px; text-align: right; font-weight: 600; color: var(--texto); }
 
-  /* Mini tabla ≤/>1.5h */
-  .mini-tabla { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
-  .mini-tabla th { background: #f1f5f9; padding: 5px 8px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; }
-  .mini-tabla td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
-  .mini-tabla td:nth-child(3), .mini-tabla td:nth-child(4) { text-align: right; }
-  .mini-tabla th:nth-child(3), .mini-tabla th:nth-child(4) { text-align: right; }
-  .alerta { color: #dc2626; font-weight: 700; }
-  .causal-nombre { font-size: 10px; color: #94a3b8; display: block; line-height: 1.3; }
 
   .footer-info { padding: 10px 14px; background: #f8fafc; border-top: 1px solid var(--borde); font-size: 11px; color: #94a3b8; }
   .footer-info span { font-weight: 700; color: #64748b; }
@@ -265,7 +249,7 @@
     </div>
   </div>
 
-  <!-- FILA 3: Tabla causas | Chart + mini-tabla -->
+  <!-- FILA 3: Tabla causas -->
   <div class="resumen-grid">
     <div class="panel-izquierdo">
       <div class="detalle-header">Detalle de Causas</div>
@@ -284,13 +268,6 @@
       <div class="nota-formin-eess">* FORMIN y EESS son el desglose del Total Perdido. No se suman al total.</div>
     </div>
 
-    <div class="panel-derecho">
-      <div class="mini-resumen-titulo">Top causas por horas (agrupado por nombre)</div>
-      <div class="causas-chart" id="causas-chart"></div>
-
-      <div class="mini-resumen-titulo" style="margin-top:16px;">Causal ≤1.5h vs &gt;1.5h ⚠</div>
-      <table class="mini-tabla" id="mini-tabla"></table>
-    </div>
   </div>
 
   <div class="footer-info" id="footer-info"></div>
@@ -301,202 +278,66 @@
 // CONFIGURACIÓN DE COLUMNAS POR TIPO DE HOJA
 // ═══════════════════════════════════════════════
 const SHEET_CONFIG = {
-  // Columnas verificadas directamente del Excel BAJADA_M3 (0-indexed)
   'Torre(1)': {
-    col_fecha: 1, col_equipo: 13, col_prog: 35, col_toc: 48, col_tob: 49,
-    // F codes: col 50-74
-    F: { F1:50,F2:51,F3:52,F4:53,F5:54,F6:55,F7:56,F8:57,F9:58,
-         F10:59,F11:60,F12:61,F13:62,F14:63,F15:64,F16:65,F17:66,
-         F18:67,F19:68,F20:69,F21:70,F22:71,F23:72,F26:73,F99:74 },
-    // E codes: col 76-100
-    E: { E1:76,E2:77,E3:78,E4:79,E5:80,E6:81,E7:82,E8:83,E9:84,
-         E10:85,E11:86,E12:87,E13:88,E14:89,E15:90,E16:91,E17:92,
-         E18:93,E19:94,E20:95,E21:96,E22:97,E23:98,E26:99,E99:100 },
+    col_fecha: 1, col_equipo: 13, col_prog: 35, col_hop: 38, col_toc: 48, col_tob: 49,
+    F: { F4: 53, F5: 54 },
+    E: { E1:76,E2:77,E3:78,E4:79,E5:80,E6:81,E7:82,E8:83,E9:84,E10:85,E11:86,
+         E12:87,E13:88,E14:89,E15:90,E16:91,E17:92,E18:93,E19:94,E20:95,E21:96,
+         E23:98,E26:99,E99:100 },
     equipo_labels: { 1:'Alpine-3', 4:'Alpine-1', 7:'Alpine-2' },
     tipo: 'Torre(1)'
   },
   'Procesador_Torre_Skidder(90)': {
-    col_fecha: 1, col_equipo: 13, col_prog: 29, col_toc: 37, col_tob: 38,
-    // F codes: col 39-60
-    F: { F1:39,F2:40,F3:41,F4:42,F5:43,F6:44,F7:45,F8:46,F9:47,
-         F10:48,F11:49,F12:50,F13:51,F14:52,F15:53,F16:54,F17:55,
-         F24:56,F25:57,F26:58,F27:59,F99:60 },
-    // E codes: col 62-83
-    E: { E1:62,E2:63,E3:64,E4:65,E5:66,E6:67,E7:68,E8:69,E9:70,
-         E10:71,E11:72,E12:73,E13:74,E14:75,E15:76,E16:77,E17:78,
-         E24:79,E25:80,E26:81,E27:82,E99:83 },
+    col_fecha: 1, col_equipo: 13, col_prog: 29, col_hop: 32, col_toc: 37, col_tob: 38,
+    F: { F4: 42, F5: 43 },
+    E: { E1:62,E2:63,E3:64,E4:65,E5:66,E6:67,E7:68,E8:69,E9:70,E10:71,E11:72,
+         E12:73,E13:74,E14:75,E15:76,E16:77,E17:78,E24:79,E25:80,E26:81,E27:82,E99:83 },
     equipo_labels: { 3:'Proc L3', 15:'Proc L1', 16:'Proc L2' },
     tipo: 'Procesador_Torre_Skidder(90)'
   },
   'Skidder_Torre(93)': {
-    col_fecha: 1, col_equipo: 13, col_prog: 32, col_toc: 49, col_tob: 50,
-    // F codes: col 51-71
-    F: { F1:51,F2:52,F3:53,F4:54,F5:55,F6:56,F7:57,F8:58,F9:59,
-         F10:60,F11:61,F12:62,F13:63,F14:64,F15:65,F16:66,F17:67,
-         F23:68,F24:69,F31:70,F99:71 },
-    // E codes: col 73-93
-    E: { E1:73,E2:74,E3:75,E4:76,E5:77,E6:78,E7:79,E8:80,E9:81,
-         E10:82,E11:83,E12:84,E13:85,E14:86,E15:87,E16:88,E17:89,
-         E23:90,E24:91,E31:92,E99:93 },
+    col_fecha: 1, col_equipo: 13, col_prog: 32, col_hop: 35, col_toc: 49, col_tob: 50,
+    F: { F4: 54, F5: 55 },
+    E: { E1:73,E2:74,E3:75,E4:76,E5:77,E6:78,E7:79,E8:80,E9:81,E10:82,E11:83,
+         E12:84,E13:85,E14:86,E15:87,E16:88,E17:89,E23:90,E24:91,E31:92,E99:93 },
     equipo_labels: { 2:'SK625N3', 14:'SK625N1', 15:'SK625N2' },
     tipo: 'Skidder_Torre(93)'
   }
 };
 
-// Causales por tipo de equipo (verificado contra Excel real)
-// Torre tiene códigos propios distintos de Procesador y Skidder
-const CAUSALES_TORRE = {
-  F1: { resp:'FORMIN', nombre:'MONITOREO Y/O PARALIZACIÓN FORMIN' },
-  F2: { resp:'FORMIN', nombre:'DETENIDO POR PASO DE VEHÍCULOS' },
-  F3: { resp:'FORMIN', nombre:'DETENIDO POR CARGUÍO DE CAMIONES' },
+// Códigos y nombres de causales
+const CAUSALES = {
   F4: { resp:'FORMIN', nombre:'CLIMA Y/O INCENDIO DETIENE OPERACIÓN' },
   F5: { resp:'FORMIN', nombre:'ATOCHAMIENTO EN CANCHA' },
-  F6: { resp:'FORMIN', nombre:'ATRASO INICIO O SALIDA TEMPRANA DE FAENA' },
-  F7: { resp:'FORMIN', nombre:'CONTROL A FAENA' },
-  F8: { resp:'FORMIN', nombre:'FALTA DE PERSONAL' },
-  F9: { resp:'FORMIN', nombre:'CHARLA, CAPACITACIONES O REUNIONES' },
-  F10:{ resp:'FORMIN', nombre:'PUESTA EN MARCHA' },
-  F11:{ resp:'FORMIN', nombre:'BAÑO OPERADOR' },
-  F12:{ resp:'FORMIN', nombre:'MANTENCIÓN PROGRAMADA' },
-  F13:{ resp:'FORMIN', nombre:'CARGA COMBUSTIBLE O ACEITE' },
-  F14:{ resp:'FORMIN', nombre:'FALLA EQUIPO' },
-  F15:{ resp:'FORMIN', nombre:'TRASLADO DE FUNDO' },
-  F16:{ resp:'FORMIN', nombre:'DETENIDO POR FALTA DE VOLTEO' },
-  F17:{ resp:'FORMIN', nombre:'DETENIDO POR FALTA DE ORDENAMIENTO' },
-  F18:{ resp:'FORMIN', nombre:'REVISIÓN DE INSTALACIÓN' },
-  F19:{ resp:'FORMIN', nombre:'FALLA DE CARRO' },
-  F20:{ resp:'FORMIN', nombre:'ARREGLAR EL SOPORTE INTERMEDIO' },
-  F21:{ resp:'FORMIN', nombre:'ARREGLAR ANCLAJE DE COLA' },
-  F22:{ resp:'FORMIN', nombre:'ATOCHAMIENTO EN LA VÍA DE SACA' },
-  F23:{ resp:'FORMIN', nombre:'FALLA Y/O COLCHADO DE CABLE' },
-  F26:{ resp:'FORMIN', nombre:'TRASLADO DE FAENA' },
-  F99:{ resp:'FORMIN', nombre:'OTROS' },
-  E1: { resp:'EESS', nombre:'MONITOREO Y/O PARALIZACIÓN FORMIN' },
-  E2: { resp:'EESS', nombre:'DETENIDO POR PASO DE VEHÍCULOS' },
-  E3: { resp:'EESS', nombre:'DETENIDO POR CARGUÍO DE CAMIONES' },
-  E4: { resp:'EESS', nombre:'CLIMA Y/O INCENDIO DETIENE OPERACIÓN' },
-  E5: { resp:'EESS', nombre:'ATOCHAMIENTO EN CANCHA' },
-  E6: { resp:'EESS', nombre:'ATRASO INICIO O SALIDA TEMPRANA DE FAENA' },
-  E7: { resp:'EESS', nombre:'CONTROL A FAENA' },
-  E8: { resp:'EESS', nombre:'FALTA DE PERSONAL' },
-  E9: { resp:'EESS', nombre:'CHARLA, CAPACITACIONES O REUNIONES' },
-  E10:{ resp:'EESS', nombre:'PUESTA EN MARCHA' },
-  E11:{ resp:'EESS', nombre:'BAÑO OPERADOR' },
-  E12:{ resp:'EESS', nombre:'MANTENCIÓN PROGRAMADA' },
-  E13:{ resp:'EESS', nombre:'CARGA COMBUSTIBLE O ACEITE' },
-  E14:{ resp:'EESS', nombre:'FALLA EQUIPO' },
-  E15:{ resp:'EESS', nombre:'TRASLADO DE FUNDO' },
-  E16:{ resp:'EESS', nombre:'DETENIDO POR FALTA DE VOLTEO' },
-  E17:{ resp:'EESS', nombre:'DETENIDO POR FALTA DE ORDENAMIENTO' },
-  E18:{ resp:'EESS', nombre:'REVISIÓN DE INSTALACIÓN' },
-  E19:{ resp:'EESS', nombre:'FALLA DE CARRO' },
-  E20:{ resp:'EESS', nombre:'ARREGLAR EL SOPORTE INTERMEDIO' },
-  E21:{ resp:'EESS', nombre:'ARREGLAR ANCLAJE DE COLA' },
-  E22:{ resp:'EESS', nombre:'ATOCHAMIENTO EN LA VÍA DE SACA' },
-  E23:{ resp:'EESS', nombre:'FALLA Y/O COLCHADO DE CABLE' },
-  E26:{ resp:'EESS', nombre:'TRASLADO DE FAENA' },
-  E99:{ resp:'EESS', nombre:'OTROS' }
+  E1: { resp:'EESS',   nombre:'MONITOREO Y/O PARALIZACIÓN FORMIN' },
+  E2: { resp:'EESS',   nombre:'DETENIDO POR PASO DE VEHÍCULOS' },
+  E3: { resp:'EESS',   nombre:'DETENIDO POR CARGUÍO DE CAMIONES' },
+  E4: { resp:'EESS',   nombre:'CLIMA Y/O INCENDIO DETIENE OPERACIÓN' },
+  E5: { resp:'EESS',   nombre:'ATOCHAMIENTO EN CANCHA' },
+  E6: { resp:'EESS',   nombre:'ATRASO INICIO O SALIDA TEMPRANA DE FAENA' },
+  E7: { resp:'EESS',   nombre:'CONTROL A FAENA' },
+  E8: { resp:'EESS',   nombre:'FALTA DE PERSONAL' },
+  E9: { resp:'EESS',   nombre:'CHARLA, CAPACITACIONES O REUNIONES' },
+  E10:{ resp:'EESS',   nombre:'PUESTA EN MARCHA' },
+  E11:{ resp:'EESS',   nombre:'BAÑO OPERADOR' },
+  E12:{ resp:'EESS',   nombre:'MANTENCIÓN PROGRAMADA' },
+  E13:{ resp:'EESS',   nombre:'CARGA COMBUSTIBLE O ACEITE' },
+  E14:{ resp:'EESS',   nombre:'FALLA EQUIPO' },
+  E15:{ resp:'EESS',   nombre:'TRASLADO DE FUNDO' },
+  E16:{ resp:'EESS',   nombre:'DETENIDO POR FALTA DE VOLTEO' },
+  E17:{ resp:'EESS',   nombre:'DETENIDO POR FALTA DE ORDENAMIENTO' },
+  E18:{ resp:'EESS',   nombre:'REVISIÓN DE INSTALACIÓN' },
+  E19:{ resp:'EESS',   nombre:'FALLA DE CARRO' },
+  E20:{ resp:'EESS',   nombre:'ARREGLAR EL SOPORTE INTERMEDIO' },
+  E21:{ resp:'EESS',   nombre:'ARREGLAR ANCLAJE DE COLA' },
+  E23:{ resp:'EESS',   nombre:'FALLA Y COLCHADO DE CABLE' },
+  E24:{ resp:'EESS',   nombre:'TRASLADO DENTRO FAENA' },
+  E25:{ resp:'EESS',   nombre:'DETENIDO POR FALTA DE MADEREO' },
+  E26:{ resp:'EESS',   nombre:'CAMBIO DE CADENA O ESPADA' },
+  E27:{ resp:'EESS',   nombre:'MEDICIÓN DE LARGO DE TROZOS' },
+  E31:{ resp:'EESS',   nombre:'HABILITACIÓN DE HUELLAS DE MADEREO Y/O CANCHA' },
+  E99:{ resp:'EESS',   nombre:'OTROS' }
 };
-
-const CAUSALES_PTS = {
-  F1: { resp:'FORMIN', nombre:'MONITOREO Y/O PARALIZACIÓN FORMIN' },
-  F2: { resp:'FORMIN', nombre:'DETENIDO POR PASO DE VEHÍCULOS' },
-  F3: { resp:'FORMIN', nombre:'DETENIDO POR CARGUÍO DE CAMIONES' },
-  F4: { resp:'FORMIN', nombre:'CLIMA Y/O INCENDIO DETIENE OPERACIÓN' },
-  F5: { resp:'FORMIN', nombre:'ATOCHAMIENTO EN CANCHA' },
-  F6: { resp:'FORMIN', nombre:'ATRASO INICIO O SALIDA TEMPRANA DE FAENA' },
-  F7: { resp:'FORMIN', nombre:'CONTROL A FAENA' },
-  F8: { resp:'FORMIN', nombre:'FALTA DE PERSONAL' },
-  F9: { resp:'FORMIN', nombre:'CHARLA, CAPACITACIONES O REUNIONES' },
-  F10:{ resp:'FORMIN', nombre:'PUESTA EN MARCHA' },
-  F11:{ resp:'FORMIN', nombre:'BAÑO OPERADOR' },
-  F12:{ resp:'FORMIN', nombre:'MANTENCIÓN PROGRAMADA' },
-  F13:{ resp:'FORMIN', nombre:'CARGA COMBUSTIBLE O ACEITE' },
-  F14:{ resp:'FORMIN', nombre:'FALLA EQUIPO' },
-  F15:{ resp:'FORMIN', nombre:'TRASLADO DE FUNDO' },
-  F16:{ resp:'FORMIN', nombre:'DETENIDO POR FALTA DE VOLTEO' },
-  F17:{ resp:'FORMIN', nombre:'DETENIDO POR FALTA DE ORDENAMIENTO' },
-  F24:{ resp:'FORMIN', nombre:'TRASLADO DENTRO FAENA' },
-  F25:{ resp:'FORMIN', nombre:'DETENIDO POR FALTA DE MADEREO' },
-  F26:{ resp:'FORMIN', nombre:'CAMBIO DE CADENA O ESPADA' },
-  F27:{ resp:'FORMIN', nombre:'MEDICIÓN DE LARGO DE TROZOS' },
-  F99:{ resp:'FORMIN', nombre:'OTROS' },
-  E1: { resp:'EESS', nombre:'MONITOREO Y/O PARALIZACIÓN FORMIN' },
-  E2: { resp:'EESS', nombre:'DETENIDO POR PASO DE VEHÍCULOS' },
-  E3: { resp:'EESS', nombre:'DETENIDO POR CARGUÍO DE CAMIONES' },
-  E4: { resp:'EESS', nombre:'CLIMA Y/O INCENDIO DETIENE OPERACIÓN' },
-  E5: { resp:'EESS', nombre:'ATOCHAMIENTO EN CANCHA' },
-  E6: { resp:'EESS', nombre:'ATRASO INICIO O SALIDA TEMPRANA DE FAENA' },
-  E7: { resp:'EESS', nombre:'CONTROL A FAENA' },
-  E8: { resp:'EESS', nombre:'FALTA DE PERSONAL' },
-  E9: { resp:'EESS', nombre:'CHARLA, CAPACITACIONES O REUNIONES' },
-  E10:{ resp:'EESS', nombre:'PUESTA EN MARCHA' },
-  E11:{ resp:'EESS', nombre:'BAÑO OPERADOR' },
-  E12:{ resp:'EESS', nombre:'MANTENCIÓN PROGRAMADA' },
-  E13:{ resp:'EESS', nombre:'CARGA COMBUSTIBLE O ACEITE' },
-  E14:{ resp:'EESS', nombre:'FALLA EQUIPO' },
-  E15:{ resp:'EESS', nombre:'TRASLADO DE FUNDO' },
-  E16:{ resp:'EESS', nombre:'DETENIDO POR FALTA DE VOLTEO' },
-  E17:{ resp:'EESS', nombre:'DETENIDO POR FALTA DE ORDENAMIENTO' },
-  E24:{ resp:'EESS', nombre:'TRASLADO DENTRO FAENA' },
-  E25:{ resp:'EESS', nombre:'DETENIDO POR FALTA DE MADEREO' },
-  E26:{ resp:'EESS', nombre:'CAMBIO DE CADENA O ESPADA' },
-  E27:{ resp:'EESS', nombre:'MEDICIÓN DE LARGO DE TROZOS' },
-  E99:{ resp:'EESS', nombre:'OTROS' }
-};
-
-const CAUSALES_SKIDDER = {
-  F1: { resp:'FORMIN', nombre:'MONITOREO Y/O PARALIZACIÓN FORMIN' },
-  F2: { resp:'FORMIN', nombre:'DETENIDO POR PASO DE VEHÍCULOS' },
-  F3: { resp:'FORMIN', nombre:'DETENIDO POR CARGUÍO DE CAMIONES' },
-  F4: { resp:'FORMIN', nombre:'CLIMA Y/O INCENDIO DETIENE OPERACIÓN' },
-  F5: { resp:'FORMIN', nombre:'ATOCHAMIENTO EN CANCHA' },
-  F6: { resp:'FORMIN', nombre:'ATRASO INICIO O SALIDA TEMPRANA DE FAENA' },
-  F7: { resp:'FORMIN', nombre:'CONTROL A FAENA' },
-  F8: { resp:'FORMIN', nombre:'FALTA DE PERSONAL' },
-  F9: { resp:'FORMIN', nombre:'CHARLA, CAPACITACIONES O REUNIONES' },
-  F10:{ resp:'FORMIN', nombre:'PUESTA EN MARCHA' },
-  F11:{ resp:'FORMIN', nombre:'BAÑO OPERADOR' },
-  F12:{ resp:'FORMIN', nombre:'MANTENCIÓN PROGRAMADA' },
-  F13:{ resp:'FORMIN', nombre:'CARGA COMBUSTIBLE O ACEITE' },
-  F14:{ resp:'FORMIN', nombre:'FALLA EQUIPO' },
-  F15:{ resp:'FORMIN', nombre:'TRASLADO DE FUNDO' },
-  F16:{ resp:'FORMIN', nombre:'DETENIDO POR FALTA DE VOLTEO' },
-  F17:{ resp:'FORMIN', nombre:'DETENIDO POR FALTA DE ORDENAMIENTO' },
-  F23:{ resp:'FORMIN', nombre:'FALLA Y/O COLCHADO DE CABLE' },
-  F24:{ resp:'FORMIN', nombre:'TRASLADO DENTRO FAENA' },
-  F31:{ resp:'FORMIN', nombre:'HABILITACIÓN DE HUELLAS DE MADEREO Y/O CANCHA' },
-  F99:{ resp:'FORMIN', nombre:'OTROS' },
-  E1: { resp:'EESS', nombre:'MONITOREO Y/O PARALIZACIÓN FORMIN' },
-  E2: { resp:'EESS', nombre:'DETENIDO POR PASO DE VEHÍCULOS' },
-  E3: { resp:'EESS', nombre:'DETENIDO POR CARGUÍO DE CAMIONES' },
-  E4: { resp:'EESS', nombre:'CLIMA Y/O INCENDIO DETIENE OPERACIÓN' },
-  E5: { resp:'EESS', nombre:'ATOCHAMIENTO EN CANCHA' },
-  E6: { resp:'EESS', nombre:'ATRASO INICIO O SALIDA TEMPRANA DE FAENA' },
-  E7: { resp:'EESS', nombre:'CONTROL A FAENA' },
-  E8: { resp:'EESS', nombre:'FALTA DE PERSONAL' },
-  E9: { resp:'EESS', nombre:'CHARLA, CAPACITACIONES O REUNIONES' },
-  E10:{ resp:'EESS', nombre:'PUESTA EN MARCHA' },
-  E11:{ resp:'EESS', nombre:'BAÑO OPERADOR' },
-  E12:{ resp:'EESS', nombre:'MANTENCIÓN PROGRAMADA' },
-  E13:{ resp:'EESS', nombre:'CARGA COMBUSTIBLE O ACEITE' },
-  E14:{ resp:'EESS', nombre:'FALLA EQUIPO' },
-  E15:{ resp:'EESS', nombre:'TRASLADO DE FUNDO' },
-  E16:{ resp:'EESS', nombre:'DETENIDO POR FALTA DE VOLTEO' },
-  E17:{ resp:'EESS', nombre:'DETENIDO POR FALTA DE ORDENAMIENTO' },
-  E23:{ resp:'EESS', nombre:'FALLA Y/O COLCHADO DE CABLE' },
-  E24:{ resp:'EESS', nombre:'TRASLADO DENTRO FAENA' },
-  E31:{ resp:'EESS', nombre:'HABILITACIÓN DE HUELLAS DE MADEREO Y/O CANCHA' },
-  E99:{ resp:'EESS', nombre:'OTROS' }
-};
-
-// Función para obtener el diccionario correcto según el tipo de hoja
-function getCausales(sheetTipo) {
-  if (sheetTipo === 'Torre(1)') return CAUSALES_TORRE;
-  if (sheetTipo === 'Procesador_Torre_Skidder(90)') return CAUSALES_PTS;
-  if (sheetTipo === 'Skidder_Torre(93)') return CAUSALES_SKIDDER;
-  return CAUSALES_TORRE;
-}
 
 // ═══════════════════════════════════════════════
 // CALCULAR HRS PROGRAMADAS SEGÚN REGLA DE DÍA
@@ -617,7 +458,7 @@ function extraerDatos(wb) {
       const label = `${sheetName} | ${equipoNombre}`;
       const n = v => { const x = parseFloat(String(v).replace(',','.')); return isNaN(x) ? 0 : x; };
 
-      const reg = { fecha, sheetTipo: sheetName, toc: n(row[cfg.col_toc]), tob: n(row[cfg.col_tob]) };
+      const reg = { fecha, toc: n(row[cfg.col_toc]), tob: n(row[cfg.col_tob]) };
       for (const [code, colIdx] of Object.entries(cfg.F)) reg[code] = n(row[colIdx]);
       for (const [code, colIdx] of Object.entries(cfg.E)) reg[code] = n(row[colIdx]);
 
@@ -672,18 +513,14 @@ function calcularYMostrar() {
   const efect = Math.max(0, prog - toc - tob);
   const totalPerdido = toc + tob;
 
-  // Causales — usar diccionario correcto según tipo de equipo
-  const sheetTipo = filas[0].sheetTipo;
-  const CAUSALES = getCausales(sheetTipo);
+  // Causales
   const causasResultado = {};
   for (const code of Object.keys(CAUSALES)) causasResultado[code] = sum(code);
 
-  renderCausasTable(causasResultado, totalPerdido, prog, toc, tob, CAUSALES);
+  renderCausasTable(causasResultado, totalPerdido, prog, toc, tob);
   renderKPIs(prog, efect, toc, tob);
   renderBarraDist(prog, efect, toc, tob);
-  renderRespTOB(causasResultado, totalPerdido, CAUSALES);
-  renderCausasChart(causasResultado, CAUSALES);
-  renderMiniTabla(causasResultado, CAUSALES);
+  renderRespTOB(causasResultado, totalPerdido);
   renderDiasSinReporte(equipo, desde, hasta, filas);
   renderFooter(equipo, filas.length, desde, hasta);
 
@@ -695,7 +532,7 @@ function fmt(n) { return n === 0 ? '0,00' : n.toFixed(2).replace('.',','); }
 function pct(n, total) { if (!total) return '0,0%'; return (n/total*100).toFixed(1)+'%'; }
 
 // ── 3. Tabla de causas: solo mostrar causales con horas > 0
-function renderCausasTable(causas, totalPerdido, prog, toc, tob, CAUSALES) {
+function renderCausasTable(causas, totalPerdido, prog, toc, tob) {
   const tbody = document.getElementById('causas-tbody');
   tbody.innerHTML = '';
   const orden = ['F4','F5','E1','E2','E3','E4','E5','E6','E7','E8','E9','E10','E11',
@@ -758,7 +595,7 @@ function renderKPIs(prog, efect, toc, tob) {
 }
 
 // ── Responsabilidad TOB: FORMIN (F*) vs EESS (E*)
-function renderRespTOB(causas, totalPerdido, CAUSALES) {
+function renderRespTOB(causas, totalPerdido) {
   let hrsFormin = 0, hrsEESS = 0;
   for (const [code, val] of Object.entries(causas)) {
     if (!val || val === 0) continue;
@@ -802,67 +639,7 @@ function renderBarraDist(prog, efect, toc, tob) {
     <div class="barra-tob"   style="width:${tbP}%" title="TOB ${fmt(tob)}h (${tbP}%)"></div>`;
 }
 
-// ── 4. Gráfico: agrupar causales por NOMBRE (sumar F4+E4, F5+E5, etc.)
-function renderCausasChart(causas, CAUSALES) {
-  // Agrupar por nombre de causal
-  const porNombre = {};
-  for (const [code, horas] of Object.entries(causas)) {
-    if (!horas || horas === 0) continue;
-    const def = CAUSALES[code];
-    if (!def) continue;
-    const key = def.nombre;
-    porNombre[key] = (porNombre[key] || 0) + horas;
-  }
-  const items = Object.entries(porNombre).sort((a,b) => b[1]-a[1]).slice(0,10);
 
-  const chart = document.getElementById('causas-chart');
-  if (items.length === 0) {
-    chart.innerHTML = '<p style="font-size:12px;color:#94a3b8">Sin horas perdidas en el período.</p>';
-    return;
-  }
-  const max = items[0][1];
-  chart.innerHTML = '';
-  for (const [nombre, val] of items) {
-    const pctW = (val/max*100).toFixed(1);
-    chart.innerHTML += `
-      <div class="causal-bar-row">
-        <div class="causal-bar-label" title="${nombre}">${nombre}</div>
-        <div class="causal-bar-track">
-          <div class="causal-bar-fill" style="width:${pctW}%;background:#2563a8"></div>
-        </div>
-        <div class="causal-bar-val">${fmt(val)}</div>
-      </div>`;
-  }
-}
-
-// ── 5. Mini-tabla ≤/>1.5h: mostrar nombre completo de la causal
-function renderMiniTabla(causas, CAUSALES) {
-  // Todas las causales con horas > 0, ordenadas desc
-  const filas = Object.entries(causas)
-    .filter(([,v]) => v > 0)
-    .map(([code, val]) => ({ code, val, def: CAUSALES[code] }))
-    .sort((a,b) => b.val - a.val);
-
-  if (filas.length === 0) {
-    document.getElementById('mini-tabla').innerHTML = '<tr><td colspan="4" style="font-size:12px;color:#94a3b8;padding:8px">Sin horas perdidas</td></tr>';
-    return;
-  }
-  let html = `<thead><tr><th>Cód.</th><th>Causal de Pérdida</th><th>≤1.5h</th><th>&gt;1.5h ⚠</th></tr></thead><tbody>`;
-  for (const { code, val, def } of filas) {
-    const leq = val <= 1.5 ? val : 0;
-    const gt  = val > 1.5  ? val : 0;
-    const alrt = gt > 0 ? ' class="alerta"' : '';
-    const nombre = def ? def.nombre : code;
-    html += `<tr>
-      <td class="codigo-cell">${code}</td>
-      <td>${nombre}</td>
-      <td style="text-align:right">${leq > 0 ? fmt(leq) : '—'}</td>
-      <td style="text-align:right"${alrt}>${gt > 0 ? fmt(gt) : '—'}</td>
-    </tr>`;
-  }
-  html += '</tbody>';
-  document.getElementById('mini-tabla').innerHTML = html;
-}
 
 function renderDiasSinReporte(equipo, desde, hasta, filas) {
   const panel = document.getElementById('dias-panel');
