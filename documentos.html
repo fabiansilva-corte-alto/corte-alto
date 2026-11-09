@@ -475,11 +475,11 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
         <button class="btn-primary" onclick="abrirModalTrabajador()">+ Agregar trabajador(a)</button>
       </div>
 
-      <div class="contador-desktop" id="dot-contador">Cargando…</div>
+      <div class="contador-desktop" id="dot-contador">Cargando… <span id="dot-cargo-pendientes" class="hidden" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--amber);background:var(--amber-bg);padding:5px 11px;border-radius:20px;margin-left:10px;text-transform:none;letter-spacing:normal"></span></div>
       <div class="tabla-wrap">
         <table class="tabla">
           <thead>
-            <tr><th>Trabajador</th><th>RUT</th><th>Centro</th><th>Empresa</th><th>Subárea</th><th>Estado</th><th></th></tr>
+            <tr><th>Trabajador</th><th>RUT</th><th>Centro</th><th>Cargo</th><th>Empresa</th><th>Subárea</th><th>Estado</th><th></th></tr>
           </thead>
           <tbody id="dot-tabla-body"></tbody>
         </table>
@@ -592,6 +592,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
         <button class="tab active" data-tab="tipos" onclick="cambiarTabConfiguracion('tipos')">Tipos de documento</button>
         <button class="tab" data-tab="fundos" onclick="cambiarTabConfiguracion('fundos')">Fundos</button>
         <button class="tab" data-tab="empresas" onclick="cambiarTabConfiguracion('empresas')">Empresas</button>
+        <button class="tab" data-tab="cargos" onclick="cambiarTabConfiguracion('cargos')">Cargos</button>
       </div>
 
       <div id="config-tab-tipos">
@@ -666,6 +667,37 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
         </div>
         <p style="font-size:12px;color:var(--text3);margin-top:10px;max-width:620px">Cada empresa del catálogo es una pestaña en Dotación de personal, y aparece como opción al agregar o editar un trabajador (el RUT se completa solo al elegirla). Escribe el nombre exacto como debe quedar guardado — si un trabajador ya tiene un nombre de empresa que no está acá (ej. texto antiguo con otra forma de escritura), se ve en la pestaña "Sin empresa / otras" de Dotación hasta que lo corrijas.</p>
       </div>
+
+      <div id="config-tab-cargos" class="hidden">
+        <div class="contenido-header">
+          <div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-secondary" onclick="abrirPegadoCargos()">Cargar varios de una vez</button>
+            <button class="btn-primary" onclick="abrirModalCargo()">+ Nuevo cargo</button>
+          </div>
+        </div>
+        <div class="tabla-wrap" style="max-width:620px">
+          <table class="tabla">
+            <thead>
+              <tr><th>Cargo</th><th>Estado</th><th></th></tr>
+            </thead>
+            <tbody id="config-cargos-tabla-body"></tbody>
+          </table>
+        </div>
+        <p style="font-size:12px;color:var(--text3);margin-top:10px;max-width:560px">Cada cargo aparece como opción al editar un trabajador en Dotación de personal — el módulo HSE lo usa para saber qué EPP y capacitaciones le corresponden a cada uno. No se puede eliminar un cargo (puede haber trabajadores con ese cargo asignado), solo desactivarlo: un cargo inactivo deja de ofrecerse como opción nueva, pero si alguien ya lo tiene asignado se sigue viendo igual.</p>
+
+        <div id="cargos-pegado-panel" class="hidden" style="margin-top:16px;border:1px solid var(--border);border-radius:10px;padding:14px;max-width:560px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div class="contenido-titulo" style="font-size:15px">Cargar varios cargos de una vez</div>
+            <button class="btn-secondary" onclick="cerrarPegadoCargos()">Cerrar</button>
+          </div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Pega la lista completa, un cargo por línea. Las líneas vacías se ignoran, y los que ya existan en el catálogo (sin importar mayúsculas o tildes) se omiten solos.</p>
+          <textarea id="cargos-pegado-texto" class="field-input" style="height:160px;padding:10px;resize:vertical;font-family:monospace;font-size:12.5px" placeholder="Jefe de Faena&#10;Motosierrista&#10;Operador de Grúa Huinche&#10;..."></textarea>
+          <div class="msg-error" id="cargos-pegado-error"></div>
+          <button class="btn-primary full" id="cargos-pegado-btn" style="margin-top:4px" onclick="cargarCargosPegados()">Cargar cargos</button>
+          <div class="status-note" id="cargos-pegado-resultado" style="margin-top:8px"></div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -706,10 +738,23 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
     <label class="field-label" for="mt-rutempresa">Rut empresa</label>
     <input class="field-input" id="mt-rutempresa" type="text" placeholder="Se completa solo al elegir la empresa" readonly style="background:#f7f7f7;color:var(--text3)">
 
+    <label class="field-label" for="mt-cargo">Cargo</label>
+    <select class="field-input" id="mt-cargo">
+      <option value="">— Elige un cargo —</option>
+    </select>
+
+    <label class="field-label" for="mt-fecha-ingreso">Fecha de ingreso</label>
+    <input class="field-input" id="mt-fecha-ingreso" type="date">
+
     <label class="field-label" for="mt-subarea">Subárea (opcional, uso interno de RRHH)</label>
     <input class="field-input" id="mt-subarea" type="text" placeholder="Ej: FORMIN 1, Taller 2...">
 
-    <label class="chk-row"><input type="checkbox" id="mt-activo" checked> Activo</label>
+    <label class="chk-row"><input type="checkbox" id="mt-activo" checked onchange="onCambiarActivoTrabajador()"> Activo</label>
+
+    <div id="mt-fecha-desvinculacion-wrap" class="hidden">
+      <label class="field-label" for="mt-fecha-desvinculacion">Fecha de desvinculación</label>
+      <input class="field-input" id="mt-fecha-desvinculacion" type="date">
+    </div>
 
     <div class="msg-error" id="modal-trabajador-error"></div>
 
@@ -724,15 +769,15 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
   <div class="modal-box">
     <div class="modal-titulo">Importar CSV</div>
     <div class="status-note" style="margin:0 0 12px;text-align:left">
-      Columnas esperadas, con encabezado: <strong>rut,nombre,centro,subarea,activo,empresa,rutempresa</strong><br>
-      Centro debe ser exactamente uno de: FORMIN 1, FORMIN 2, FORMIN 3, TALLER_COIHUE, ROTATIVO, o vacío (trabajador pendiente de asignar). Las columnas empresa y rutempresa son opcionales.
+      Columnas esperadas, con encabezado: <strong>rut,nombre,centro,subarea,activo,empresa,rutempresa,cargo,fechaingreso</strong><br>
+      Centro debe ser exactamente uno de: FORMIN 1, FORMIN 2, FORMIN 3, TALLER_COIHUE, ROTATIVO, o vacío (trabajador pendiente de asignar). Las columnas empresa, rutempresa, cargo y fechaingreso son opcionales. Si viene cargo, debe coincidir con un cargo ya cargado en Configuración → Cargos. Fechaingreso debe tener formato AAAA-MM-DD.
     </div>
 
     <label class="field-label" for="mi-archivo">Selecciona el archivo .csv</label>
     <input class="field-input" id="mi-archivo" type="file" accept=".csv,text/csv" style="height:auto;padding:9px 12px" onchange="cargarArchivoCSV(event)">
 
     <div class="field-label" style="margin-top:14px">O pega el contenido aquí</div>
-    <textarea id="mi-csv" class="field-input" style="height:160px;padding:10px;resize:vertical;font-family:monospace;font-size:12.5px" placeholder="rut,nombre,centro,subarea,activo"></textarea>
+    <textarea id="mi-csv" class="field-input" style="height:160px;padding:10px;resize:vertical;font-family:monospace;font-size:12.5px" placeholder="rut,nombre,centro,subarea,activo,cargo,fechaingreso"></textarea>
     <div class="msg-error" id="modal-importar-error"></div>
     <div class="status-note" id="modal-importar-resultado" style="margin-top:4px"></div>
     <button class="btn-primary full" id="mi-btn-importar" style="margin-top:10px" onclick="importarCSV()">Importar</button>
@@ -806,6 +851,21 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
   </div>
 </div>
 
+<!-- ===== MODAL: NUEVO / EDITAR CARGO (catálogo usado por el módulo HSE vía dotación) ===== -->
+<div id="modal-cargo" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-titulo" id="mc-titulo">Nuevo cargo</div>
+    <input type="hidden" id="mc-id">
+    <label class="field-label" for="mc-nombre">Nombre del cargo (exacto — así queda guardado en cada trabajador)</label>
+    <input class="field-input" id="mc-nombre" type="text" placeholder="Ej: Jefe de Faena">
+    <label class="chk-row"><input type="checkbox" id="mc-activo" checked> Activo (aparece como opción al editar un trabajador)</label>
+    <p class="status-note" style="margin-top:-4px;margin-bottom:14px">Un cargo nunca se elimina (puede haber trabajadores con ese cargo asignado) — si ya no se usa, desactívalo.</p>
+    <div class="msg-error" id="modal-cargo-error"></div>
+    <button class="btn-primary full" id="mc-guardar" onclick="guardarCargo()">Guardar</button>
+    <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModalCargo()">Cancelar</button>
+  </div>
+</div>
+
 <!-- ===== MODAL: TRABAJADORES INFORMADOS ESE DÍA (desde Cumplimiento de jefes) ===== -->
 <div id="modal-cumplimiento-dia" class="modal-overlay hidden">
   <div class="modal-box">
@@ -862,6 +922,11 @@ const NOMBRES_CENTRO = { "FORMIN 1": "FORMIN 1", "FORMIN 2": "FORMIN 2", "FORMIN
 // tocar código — ver fetchEmpresasCatalogo().
 let EMPRESAS_CATALOGO = []; // [{id, nombre, rut, centroSugerido, principal, activo}]
 let empresasCatalogoCargado = false;
+// Catálogo de cargos (colección config_cargos) — pedido por Fabián 6 nov 2026 para el
+// módulo HSE (EPP/capacitaciones), que lee dotacion.cargo en solo lectura desde otro
+// módulo. Mismo patrón que EMPRESAS_CATALOGO — ver fetchCargosCatalogo().
+let CARGOS_CATALOGO = []; // [{id, nombre, activo}]
+let cargosCatalogoCargado = false;
 // Semilla: mismos nombre/RUT que ya estaban escritos a mano en el código, para que al
 // desplegar esta versión Dotación siga mostrando a todos exactamente donde están hoy.
 const EMPRESAS_SEMILLA = [
@@ -932,6 +997,11 @@ window.mostrarSeccion = function(id){
     // desde Bandeja o desde "Mover a otro trabajador" en la Bóveda) tenga opciones.
     fetchEmpresasCatalogo().then(renderOpcionesEmpresaModal).catch(()=>{});
   }
+  if((id === "bandeja" || id === "boveda") && !cargosCatalogoCargado){
+    // Mismo motivo que empresas: el selector de Cargo del modal de trabajador necesita el
+    // catálogo cargado antes de abrirse.
+    fetchCargosCatalogo().then(renderOpcionesCargoModal).catch(()=>{});
+  }
   if(id === "boveda"){
     // entrar a la Bóveda (incluso re-hacer clic estando ya adentro) siempre vuelve a la lista completa
     bovedaTrabajadorSeleccionado = null;
@@ -975,6 +1045,7 @@ window.cambiarTabConfiguracion = function(tab){
   document.getElementById("config-tab-tipos").classList.toggle("hidden", tab !== "tipos");
   document.getElementById("config-tab-fundos").classList.toggle("hidden", tab !== "fundos");
   document.getElementById("config-tab-empresas").classList.toggle("hidden", tab !== "empresas");
+  document.getElementById("config-tab-cargos").classList.toggle("hidden", tab !== "cargos");
   if(tab === "fundos"){
     if(!fundosCatalogoCargados){
       fetchFundosCatalogo().then(renderConfiguracionFundos).catch(()=>renderConfiguracionFundos());
@@ -987,6 +1058,13 @@ window.cambiarTabConfiguracion = function(tab){
       fetchEmpresasCatalogo().then(renderConfiguracionEmpresas).catch(()=>renderConfiguracionEmpresas());
     }else{
       renderConfiguracionEmpresas();
+    }
+  }
+  if(tab === "cargos"){
+    if(!cargosCatalogoCargado){
+      fetchCargosCatalogo().then(renderConfiguracionCargos).catch(()=>renderConfiguracionCargos());
+    }else{
+      renderConfiguracionCargos();
     }
   }
 };
@@ -1451,6 +1529,61 @@ function generarSlugEmpresa(nombre){
   return slug;
 }
 
+async function fetchCargosCatalogo(){
+  const snap = await getDocs(collection(db, "config_cargos"));
+  const datos = [];
+  snap.forEach(d => datos.push({
+    id: d.id,
+    nombre: d.data().nombre || d.id,
+    activo: d.data().activo !== false
+  }));
+  CARGOS_CATALOGO = datos;
+  CARGOS_CATALOGO.sort((a,b) => a.nombre.localeCompare(b.nombre, "es"));
+  cargosCatalogoCargado = true;
+}
+
+// idsReservados (opcional): set de ids ya usados EN ESTA MISMA TANDA, para que al pegar
+// varios cargos de una vez dos líneas que generen el mismo slug no se pisen entre sí antes
+// de que CARGOS_CATALOGO se vuelva a cargar desde Firestore.
+function generarSlugCargo(nombre, idsReservados){
+  let base = normalizar(nombre).replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  if(!base) base = "cargo";
+  let slug = base;
+  let i = 2;
+  while(CARGOS_CATALOGO.some(c => c.id === slug) || (idsReservados && idsReservados.has(slug))){
+    slug = `${base}_${i}`;
+    i++;
+  }
+  return slug;
+}
+
+// Llena el <select> de cargo del modal de trabajador con el catálogo actual (solo los
+// activos), conservando la selección si sigue existiendo. Igual que renderOpcionesEmpresaModal,
+// si el trabajador que se está editando tiene un cargo que después quedó inactivo en el
+// catálogo, se sigue mostrando esa opción (marcada como inactiva) para no perder el dato.
+function renderOpcionesCargoModal(){
+  const sel = document.getElementById("mt-cargo");
+  if(!sel) return;
+  const actual = sel.value;
+  let opciones = CARGOS_CATALOGO.filter(c => c.activo !== false);
+  if(actual && !opciones.some(c => c.id === actual)){
+    const inactivo = CARGOS_CATALOGO.find(c => c.id === actual);
+    if(inactivo) opciones = [...opciones, inactivo];
+  }
+  sel.innerHTML = '<option value="">— Elige un cargo —</option>' +
+    opciones.map(c => `<option value="${c.id}">${escapeHtml(c.nombre)}${c.activo === false ? " (inactivo)" : ""}</option>`).join("");
+  sel.value = actual;
+}
+
+// Devuelve el cargo del catálogo que corresponde a este trabajador, comparando el texto
+// EXACTO guardado en dotacion.cargo (a diferencia de empresaDeTrabajador, acá no hace falta
+// comparación difusa: cargo es un campo nuevo, siempre se completa eligiendo de la lista,
+// nunca hay texto libre histórico con el que pueda no calzar).
+function cargoDeTrabajador(t){
+  if(!t || !t.cargo) return null;
+  return CARGOS_CATALOGO.find(c => c.nombre === t.cargo) || null;
+}
+
 // Devuelve la empresa del catálogo que corresponde a este trabajador (comparando el texto
 // guardado en dotacion.empresa contra el nombre canónico de cada empresa). Reemplaza el
 // antiguo esEmpresaEmco(), que comparaba contra un único string fijo ("emco ltda.") y por eso
@@ -1486,7 +1619,7 @@ function renderTabsDotacion(){
 
 window.cambiarTabDotacion = async function(tab){
   if(tab) dotTabActual = tab;
-  if(dotDatosTodos === null || !empresasCatalogoCargado){
+  if(dotDatosTodos === null || !empresasCatalogoCargado || !cargosCatalogoCargado){
     document.getElementById("dot-tabla-body").innerHTML = "";
     document.getElementById("dot-contador").textContent = "Cargando…";
     // Tope de 12 segundos: si la carga nunca resuelve ni falla (ej. problema de red), antes
@@ -1497,12 +1630,13 @@ window.cambiarTabDotacion = async function(tab){
       await Promise.race([
         (async () => {
           if(!empresasCatalogoCargado) await fetchEmpresasCatalogo();
+          if(!cargosCatalogoCargado) await fetchCargosCatalogo();
           if(dotDatosTodos === null) await fetchDotacionTodos();
         })(),
         tope
       ]);
     }catch(e){
-      console.error("[Dotación] Error al cargar catálogo de empresas o dotación:", e);
+      console.error("[Dotación] Error al cargar catálogos o dotación:", e);
       document.getElementById("dot-contador").textContent = e && e.message === "TIMEOUT_12S"
         ? "Se demoró demasiado en cargar. Revisa tu conexión e intenta de nuevo."
         : "No se pudo cargar.";
@@ -1558,11 +1692,12 @@ window.renderTablaDotacion = function(){
   });
   filtrados.sort((a,b) => String(a.nombre||"").localeCompare(String(b.nombre||""), "es"));
 
-  document.getElementById("dot-contador").textContent = filtrados.length + (filtrados.length === 1 ? " trabajador" : " trabajadores");
+  document.getElementById("dot-contador").firstChild.textContent = filtrados.length + (filtrados.length === 1 ? " trabajador " : " trabajadores ");
+  actualizarIndicadorCargoPendientes();
 
   const cuerpo = document.getElementById("dot-tabla-body");
   if(filtrados.length === 0){
-    cuerpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">No hay trabajadores para mostrar.</td></tr>';
+    cuerpo.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:2rem">No hay trabajadores para mostrar.</td></tr>';
     actualizarBadgePendientes();
     return;
   }
@@ -1575,6 +1710,7 @@ window.renderTablaDotacion = function(){
       <td class="nombre-cell">${escapeHtml(t.nombre || "—")}</td>
       <td>${escapeHtml(formatRut(t.rut) || "—")}</td>
       <td><span class="badge-centro${pendiente ? ' pendiente' : ''}">${escapeHtml(etiquetaCentro)}</span></td>
+      <td>${t.cargo ? escapeHtml(t.cargo) : '<span style="color:var(--text3)">—</span>'}</td>
       <td class="empresa-cell">${escapeHtml(t.empresa || "—")}</td>
       <td>${(t.subarea && normalizar(t.subarea) !== normalizar(NOMBRES_CENTRO[t.centro]||"")) ? escapeHtml(t.subarea) : "—"}</td>
       <td>${t.activo === false ? '<span class="badge-inactivo">Inactivo</span>' : '<span style="color:var(--green2);font-weight:700;font-size:12.5px">Activo</span>'}</td>
@@ -1585,6 +1721,19 @@ window.renderTablaDotacion = function(){
 
   actualizarBadgePendientes();
 };
+
+// Cuántos trabajadores ACTIVOS (en toda la dotación, no solo la pestaña/filtro actual —
+// mismo criterio que el globito de "pendientes de asignar centro" del menú lateral) todavía
+// no tienen cargo asignado. El módulo HSE necesita el cargo de cada trabajador para saber
+// qué EPP y capacitaciones le corresponden, así que esto ayuda a RRHH a ver cuánto falta
+// por completar.
+function actualizarIndicadorCargoPendientes(){
+  const span = document.getElementById("dot-cargo-pendientes");
+  if(!span) return;
+  const total = (dotDatosTodos || []).filter(t => t.activo !== false && !t.cargo).length;
+  span.classList.toggle("hidden", total === 0);
+  span.textContent = total === 1 ? "⚠ 1 activo sin cargo asignado" : `⚠ ${total} activos sin cargo asignado`;
+}
 
 window.cerrarModales = function(){
   document.getElementById("modal-trabajador").classList.add("hidden");
@@ -1645,6 +1794,7 @@ window.abrirModalTrabajador = function(id, nombreSugerido, alGuardar){
   document.getElementById("modal-trabajador-error").classList.remove("show");
   trabajadorRecienCreadoCallback = alGuardar || null;
   renderOpcionesEmpresaModal();
+  renderOpcionesCargoModal();
   const empresaOriginalField = document.getElementById("mt-empresa-original");
   const rutEmpresaOriginalField = document.getElementById("mt-rutempresa-original");
   if(id){
@@ -1663,6 +1813,11 @@ window.abrirModalTrabajador = function(id, nombreSugerido, alGuardar){
     // solo por no haber tocado el selector de arriba.
     empresaOriginalField.value = t.empresa || "";
     rutEmpresaOriginalField.value = t.rutEmpresa || "";
+    const cargoMatch = cargoDeTrabajador(t);
+    document.getElementById("mt-cargo").value = cargoMatch ? cargoMatch.id : "";
+    document.getElementById("mt-fecha-ingreso").value = t.fechaIngreso || "";
+    document.getElementById("mt-fecha-desvinculacion").value = t.fechaDesvinculacion || "";
+    document.getElementById("mt-fecha-desvinculacion-wrap").classList.toggle("hidden", t.activo !== false);
     document.getElementById("mt-subarea").value = t.subarea || "";
     document.getElementById("mt-activo").checked = t.activo !== false;
   }else{
@@ -1687,10 +1842,25 @@ window.abrirModalTrabajador = function(id, nombreSugerido, alGuardar){
       document.getElementById("mt-rutempresa").value = "";
       document.getElementById("mt-centro").value = "";
     }
+    document.getElementById("mt-cargo").value = "";
+    document.getElementById("mt-fecha-ingreso").value = "";
+    document.getElementById("mt-fecha-desvinculacion").value = "";
+    document.getElementById("mt-fecha-desvinculacion-wrap").classList.add("hidden");
     document.getElementById("mt-subarea").value = "";
     document.getElementById("mt-activo").checked = true;
   }
   document.getElementById("modal-trabajador").classList.remove("hidden");
+};
+
+// Muestra/oculta "Fecha de desvinculación" según el checkbox "Activo", y si se vuelve a
+// marcar Activo limpia cualquier fecha que hubiera quedado puesta (pedido explícito de
+// Fabián: "se borra si el trabajador se reactiva").
+window.onCambiarActivoTrabajador = function(){
+  const activo = document.getElementById("mt-activo").checked;
+  document.getElementById("mt-fecha-desvinculacion-wrap").classList.toggle("hidden", activo);
+  if(activo){
+    document.getElementById("mt-fecha-desvinculacion").value = "";
+  }
 };
 
 window.guardarTrabajador = async function(){
@@ -1701,6 +1871,9 @@ window.guardarTrabajador = async function(){
   const rutInput = document.getElementById("mt-rut").value.trim();
   const centro = document.getElementById("mt-centro").value;
   const empresaSelId = document.getElementById("mt-empresa").value;
+  const cargoSelId = document.getElementById("mt-cargo").value;
+  const fechaIngreso = document.getElementById("mt-fecha-ingreso").value || "";
+  let fechaDesvinculacion = document.getElementById("mt-fecha-desvinculacion").value || "";
   const subarea = document.getElementById("mt-subarea").value.trim();
   const activo = document.getElementById("mt-activo").checked;
   const idExistente = document.getElementById("mt-id").value;
@@ -1710,6 +1883,15 @@ window.guardarTrabajador = async function(){
     errorBox.classList.add("show");
     return;
   }
+
+  if(!activo && !fechaDesvinculacion){
+    errorBox.textContent = "Ingresa la fecha de desvinculación.";
+    errorBox.classList.add("show");
+    return;
+  }
+  if(activo) fechaDesvinculacion = ""; // defensivo: activo nunca guarda fecha de desvinculación
+
+  const cargo = cargoSelId ? ((CARGOS_CATALOGO.find(c => c.id === cargoSelId) || {}).nombre || "") : "";
 
   let empresa, rutEmpresa;
   if(empresaSelId){
@@ -1729,7 +1911,7 @@ window.guardarTrabajador = async function(){
   const callbackPendiente = trabajadorRecienCreadoCallback; // cerrarModales() lo limpia, por eso se guarda antes
 
   try{
-    await setDoc(doc(db, "dotacion", idDoc), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo }, { merge: true });
+    await setDoc(doc(db, "dotacion", idDoc), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo, cargo, fechaIngreso, fechaDesvinculacion }, { merge: true });
     cerrarModales();
     dotDatosTodos = null;
     await fetchDotacionTodos();
@@ -1798,6 +1980,8 @@ window.importarCSV = async function(){
   const idxActivo = encabezado.indexOf("activo");
   const idxEmpresa = encabezado.indexOf("empresa");
   const idxRutEmpresa = encabezado.indexOf("rutempresa");
+  const idxCargo = encabezado.indexOf("cargo");
+  const idxFechaIngreso = encabezado.indexOf("fechaingreso");
 
   if(idxRut === -1 || idxNombre === -1 || idxCentro === -1){
     errorBox.textContent = "El encabezado debe incluir al menos: rut,nombre,centro";
@@ -1821,16 +2005,23 @@ window.importarCSV = async function(){
     const activo = idxActivo > -1 ? (cols[idxActivo] || "true").toLowerCase() !== "false" : true;
     const empresa = idxEmpresa > -1 ? (cols[idxEmpresa] || "") : "";
     const rutEmpresa = idxRutEmpresa > -1 ? (cols[idxRutEmpresa] || "") : "";
+    const cargoTexto = idxCargo > -1 ? (cols[idxCargo] || "") : "";
+    const fechaIngreso = idxFechaIngreso > -1 ? (cols[idxFechaIngreso] || "") : "";
 
-    if(!rut || !nombre || !CENTROS_VALIDOS.includes(centro)){
+    const cargoMatch = cargoTexto ? CARGOS_CATALOGO.find(c => normalizar(c.nombre) === normalizar(cargoTexto)) : null;
+    const cargoInvalido = !!cargoTexto && !cargoMatch;
+    const fechaIngresoInvalida = !!fechaIngreso && !/^\d{4}-\d{2}-\d{2}$/.test(fechaIngreso);
+
+    if(!rut || !nombre || !CENTROS_VALIDOS.includes(centro) || cargoInvalido || fechaIngresoInvalida){
       conError++;
       invalidos.push(lineas[i]);
       continue;
     }
 
+    const cargo = cargoMatch ? cargoMatch.nombre : "";
     const rutLimpio = limpiarRut(rut);
     try{
-      await setDoc(doc(db, "dotacion", rutLimpio), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo }, { merge: true });
+      await setDoc(doc(db, "dotacion", rutLimpio), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo, cargo, fechaIngreso }, { merge: true });
       ok++;
     }catch(e){
       conError++;
@@ -4439,6 +4630,167 @@ window.eliminarEmpresa = async function(id){
   }catch(err){
     alert("No se pudo eliminar. Intenta de nuevo.");
   }
+};
+
+// ---- Configuración → Cargos (catálogo leído en solo lectura por el módulo HSE vía
+// dotacion.cargo — pedido por Fabián 6 nov 2026). Mismo patrón que Empresas, salvo que un
+// cargo nunca se elimina, solo se desactiva (puede haber trabajadores con ese cargo). ----
+
+function renderConfiguracionCargos(){
+  const cont = document.getElementById("config-cargos-tabla-body");
+  if(!cont) return;
+  if(!CARGOS_CATALOGO.length){
+    cont.innerHTML = `<tr><td colspan="3" style="color:var(--text3)">No hay cargos cargados todavía.</td></tr>`;
+    return;
+  }
+  cont.innerHTML = CARGOS_CATALOGO.map(c => {
+    const activo = c.activo !== false;
+    return `
+    <tr>
+      <td class="nombre-cell">${escapeHtml(c.nombre)}</td>
+      <td style="white-space:nowrap">
+        <span class="badge-centro" style="${activo ? "" : "background:#f0f0f0;color:var(--text3)"}">${activo ? "Activo" : "Inactivo"}</span>
+        <button class="accion-editar" style="margin-left:6px;font-size:11.5px;padding:2px 6px" onclick="toggleActivoCargo('${c.id}')">${activo ? "Desactivar" : "Activar"}</button>
+      </td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="accion-editar" title="Editar" onclick="abrirModalCargo('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+      </td>
+    </tr>
+  `;
+  }).join("");
+}
+
+window.abrirModalCargo = function(id){
+  const idField = document.getElementById("mc-id");
+  const nombre = document.getElementById("mc-nombre");
+  const activo = document.getElementById("mc-activo");
+  document.getElementById("modal-cargo-error").textContent = "";
+  if(id){
+    const c = CARGOS_CATALOGO.find(x => x.id === id);
+    document.getElementById("mc-titulo").textContent = "Editar cargo";
+    idField.value = id;
+    nombre.value = c ? c.nombre : "";
+    activo.checked = c ? c.activo !== false : true;
+  }else{
+    document.getElementById("mc-titulo").textContent = "Nuevo cargo";
+    idField.value = "";
+    nombre.value = "";
+    activo.checked = true;
+  }
+  document.getElementById("modal-cargo").classList.remove("hidden");
+  nombre.focus();
+};
+
+window.cerrarModalCargo = function(){
+  document.getElementById("modal-cargo").classList.add("hidden");
+};
+
+window.guardarCargo = async function(){
+  const idField = document.getElementById("mc-id");
+  const nombreInput = document.getElementById("mc-nombre");
+  const nombre = nombreInput.value.trim();
+  const activo = document.getElementById("mc-activo").checked;
+  const errorBox = document.getElementById("modal-cargo-error");
+  errorBox.textContent = "";
+  if(!nombre){
+    errorBox.textContent = "Ingresa el nombre del cargo.";
+    nombreInput.focus();
+    return;
+  }
+  const idExistente = idField.value;
+  // Evitar duplicados sin importar mayúsculas/tildes (salvo que sea el mismo que se edita).
+  const yaExiste = CARGOS_CATALOGO.some(c => c.id !== idExistente && normalizar(c.nombre) === normalizar(nombre));
+  if(yaExiste){
+    errorBox.textContent = "Ya existe un cargo con ese nombre.";
+    return;
+  }
+  const boton = document.getElementById("mc-guardar");
+  boton.disabled = true;
+  boton.textContent = "Guardando…";
+  try{
+    const id = idExistente || generarSlugCargo(nombre);
+    await setDoc(doc(db, "config_cargos", id), { nombre, activo }, { merge: true });
+    await fetchCargosCatalogo();
+    renderConfiguracionCargos();
+    renderOpcionesCargoModal();
+    window.cerrarModalCargo();
+  }catch(err){
+    errorBox.textContent = "No se pudo guardar. Intenta de nuevo.";
+  }finally{
+    boton.disabled = false;
+    boton.textContent = "Guardar";
+  }
+};
+
+window.toggleActivoCargo = async function(id){
+  const cargo = CARGOS_CATALOGO.find(x => x.id === id);
+  if(!cargo) return;
+  const nuevoActivo = !(cargo.activo !== false);
+  try{
+    await setDoc(doc(db, "config_cargos", id), { activo: nuevoActivo }, { merge: true });
+    await fetchCargosCatalogo();
+    renderConfiguracionCargos();
+    renderOpcionesCargoModal();
+  }catch(err){
+    alert("No se pudo cambiar el estado. Intenta de nuevo.");
+  }
+};
+
+window.abrirPegadoCargos = function(){
+  document.getElementById("cargos-pegado-texto").value = "";
+  document.getElementById("cargos-pegado-error").textContent = "";
+  document.getElementById("cargos-pegado-resultado").textContent = "";
+  document.getElementById("cargos-pegado-panel").classList.remove("hidden");
+};
+
+window.cerrarPegadoCargos = function(){
+  document.getElementById("cargos-pegado-panel").classList.add("hidden");
+};
+
+window.cargarCargosPegados = async function(){
+  const errorBox = document.getElementById("cargos-pegado-error");
+  const resultBox = document.getElementById("cargos-pegado-resultado");
+  errorBox.textContent = "";
+  resultBox.textContent = "";
+  const texto = document.getElementById("cargos-pegado-texto").value;
+  const lineas = texto.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  if(!lineas.length){
+    errorBox.textContent = "Pega al menos un cargo, uno por línea.";
+    return;
+  }
+  const boton = document.getElementById("cargos-pegado-btn");
+  boton.disabled = true;
+  boton.textContent = "Cargando…";
+
+  // Dedupe sin mayúsculas/tildes, contra el catálogo existente Y entre las líneas recién
+  // pegadas (para que una lista con el mismo cargo repetido dos veces no genere dos docs).
+  const existentesNorm = new Set(CARGOS_CATALOGO.map(c => normalizar(c.nombre)));
+  const vistosEnEstaTanda = new Set();
+  const idsReservadosEnEstaTanda = new Set();
+  let agregados = 0, omitidos = 0;
+  for(const linea of lineas){
+    const norm = normalizar(linea);
+    if(!norm || existentesNorm.has(norm) || vistosEnEstaTanda.has(norm)){
+      omitidos++;
+      continue;
+    }
+    vistosEnEstaTanda.add(norm);
+    try{
+      const id = generarSlugCargo(linea, idsReservadosEnEstaTanda);
+      idsReservadosEnEstaTanda.add(id);
+      await setDoc(doc(db, "config_cargos", id), { nombre: linea, activo: true }, { merge: true });
+      agregados++;
+    }catch(e){
+      omitidos++;
+    }
+  }
+
+  await fetchCargosCatalogo();
+  renderConfiguracionCargos();
+  renderOpcionesCargoModal();
+  resultBox.textContent = `${agregados} agregado${agregados === 1 ? "" : "s"}` + (omitidos ? ` · ${omitidos} ya existían, se omitieron.` : ".");
+  boton.disabled = false;
+  boton.textContent = "Cargar cargos";
 };
 
 // ---- Marcar vigente masivo (por centros asociados a un fundo) ----
