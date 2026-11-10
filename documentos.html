@@ -774,7 +774,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
     <div class="modal-titulo">Importar CSV</div>
     <div class="status-note" style="margin:0 0 12px;text-align:left">
       Columnas esperadas, con encabezado: <strong>rut,nombre,centro,subarea,activo,empresa,rutempresa,cargo,fechaingreso,fechadesvinculacion</strong><br>
-      Centro debe ser exactamente uno de: FORMIN 1, FORMIN 2, FORMIN 3, TALLER_COIHUE, ROTATIVO, o vacío (trabajador pendiente de asignar). Las columnas empresa, rutempresa, cargo, fechaingreso y fechadesvinculacion son opcionales. Si viene cargo, cada uno debe coincidir con un cargo ya cargado en Configuración → Cargos — si el trabajador tiene más de uno, se separan con punto y coma dentro de la misma celda (ej: Mecánico;Operador Torre). Fechaingreso y fechadesvinculacion deben tener formato AAAA-MM-DD; si una fila trae activo=false, fechadesvinculacion es obligatoria. Si cargo o fechaingreso vienen vacíos (o la columna no está), no se borra lo que el trabajador ya tenía guardado.
+      Centro debe ser exactamente uno de: FORMIN 1, FORMIN 2, FORMIN 3, TALLER_COIHUE, ROTATIVO, o vacío (trabajador pendiente de asignar). Las columnas empresa, rutempresa, cargo, fechaingreso y fechadesvinculacion son opcionales. Si viene cargo, cada uno debe coincidir con un cargo ya cargado en Configuración → Cargos — si el trabajador tiene más de uno, se separan con punto y coma dentro de la misma celda (ej: Mecánico;Operador Torre). Fechaingreso y fechadesvinculacion deben tener formato AAAA-MM-DD; si una fila trae activo=false, fechadesvinculacion es obligatoria. Si cargo o fechaingreso vienen vacíos (o la columna no está), no se borra lo que el trabajador ya tenía guardado. Lo mismo con activo: si el CSV no trae esa columna, no se cambia el estado de los trabajadores que ya existen (los nuevos quedan activos).
     </div>
 
     <label class="field-label" for="mi-archivo">Selecciona el archivo .csv</label>
@@ -2054,7 +2054,18 @@ window.importarCSV = async function(){
     }
 
     const rutLimpio = limpiarRut(rut);
-    const datosFila = { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo };
+    const datosFila = { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea };
+    // Mismo problema que cargos/fechaIngreso (reportado 10 nov 2026): si el CSV no trae la
+    // columna "activo", escribir activo:true por defecto reactivaría a un trabajador ya
+    // desvinculado al reimportar un CSV viejo. Por eso "activo" solo se escribe cuando la
+    // columna existe en ESTE CSV; la única excepción es un trabajador NUEVO (que todavía no
+    // existe en dotacion), que sí queda activo por defecto. Si la dotación aún no está
+    // cargada en memoria no se asume nada (omitir activo es inofensivo: se lee como activo).
+    if(idxActivo > -1){
+      datosFila.activo = activo;
+    }else if(Array.isArray(dotDatosTodos) && !dotDatosTodos.some(t => t.id === rutLimpio)){
+      datosFila.activo = true;
+    }
     // IMPORTANTE (bug reportado 9 nov 2026): como setDoc usa merge:true, cualquier campo que
     // se incluya acá SIEMPRE pisa lo que ya estaba guardado, aunque venga vacío — por eso
     // "cargos" y "fechaIngreso" solo se agregan al objeto cuando la columna existe en ESTE CSV
