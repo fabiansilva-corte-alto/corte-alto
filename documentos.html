@@ -482,11 +482,11 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
         <button class="btn-primary" onclick="abrirModalTrabajador()">+ Agregar trabajador(a)</button>
       </div>
 
-      <div class="contador-desktop" id="dot-contador">Cargando… <span id="dot-cargo-pendientes" class="hidden" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--amber);background:var(--amber-bg);padding:5px 11px;border-radius:20px;margin-left:10px;text-transform:none;letter-spacing:normal"></span></div>
+      <div class="contador-desktop" id="dot-contador">Cargando… <span id="dot-cargo-pendientes" class="hidden" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--amber);background:var(--amber-bg);padding:5px 11px;border-radius:20px;margin-left:10px;text-transform:none;letter-spacing:normal"></span><span id="dot-correo-pendientes" class="hidden" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--amber);background:var(--amber-bg);padding:5px 11px;border-radius:20px;margin-left:10px;text-transform:none;letter-spacing:normal"></span></div>
       <div class="tabla-wrap">
         <table class="tabla">
           <thead>
-            <tr><th>Trabajador</th><th>RUT</th><th>Centro</th><th>Cargo</th><th>Empresa</th><th>Subárea</th><th>Estado</th><th></th></tr>
+            <tr><th>Trabajador</th><th>RUT</th><th>Centro</th><th>Cargo</th><th>Correo</th><th>Empresa</th><th>Subárea</th><th>Estado</th><th></th></tr>
           </thead>
           <tbody id="dot-tabla-body"></tbody>
         </table>
@@ -751,6 +751,13 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
     <label class="field-label" for="mt-fecha-ingreso">Fecha de ingreso</label>
     <input class="field-input" id="mt-fecha-ingreso" type="date">
 
+    <label class="field-label" for="mt-correo">Correo (opcional)</label>
+    <input class="field-input" id="mt-correo" type="text" inputmode="email" autocomplete="off" placeholder="Ej: nombre@gmail.com">
+
+    <label class="field-label" for="mt-telefono">Teléfono (opcional)</label>
+    <input class="field-input" id="mt-telefono" type="text" inputmode="tel" autocomplete="off" placeholder="Ej: 912345678">
+    <p class="status-note" style="margin:-8px 0 14px;text-align:left">Se guarda como +569XXXXXXXX (si escribes 9XXXXXXXX o 569XXXXXXXX se corrige solo).</p>
+
     <label class="field-label" for="mt-subarea">Subárea (opcional, uso interno de RRHH)</label>
     <input class="field-input" id="mt-subarea" type="text" placeholder="Ej: FORMIN 1, Taller 2...">
 
@@ -774,17 +781,20 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
   <div class="modal-box">
     <div class="modal-titulo">Importar CSV</div>
     <div class="status-note" style="margin:0 0 12px;text-align:left">
-      Columnas esperadas, con encabezado: <strong>rut,nombre,centro,subarea,activo,empresa,rutempresa,cargo,fechaingreso,fechadesvinculacion</strong><br>
-      Centro debe ser exactamente uno de: FORMIN 1, FORMIN 2, FORMIN 3, TALLER_COIHUE, ROTATIVO, o vacío (trabajador pendiente de asignar). Las columnas empresa, rutempresa, cargo, fechaingreso y fechadesvinculacion son opcionales. Si viene cargo, cada uno debe coincidir con un cargo ya cargado en Configuración → Cargos — si el trabajador tiene más de uno, se separan con punto y coma dentro de la misma celda (ej: Mecánico;Operador Torre). Fechaingreso y fechadesvinculacion deben tener formato AAAA-MM-DD; si una fila trae activo=false, fechadesvinculacion es obligatoria. Si cargo o fechaingreso vienen vacíos (o la columna no está), no se borra lo que el trabajador ya tenía guardado. Lo mismo con activo: si el CSV no trae esa columna, no se cambia el estado de los trabajadores que ya existen (los nuevos quedan activos).
+      <strong>Modo completo</strong> — columnas con encabezado: <strong>rut,nombre,centro,subarea,activo,empresa,rutempresa,cargo,fechaingreso,fechadesvinculacion,correo,telefono</strong><br>
+      Centro debe ser exactamente uno de: FORMIN 1, FORMIN 2, FORMIN 3, TALLER_COIHUE, ROTATIVO, o vacío (trabajador pendiente de asignar). Son opcionales: empresa, rutempresa, subarea, cargo, fechaingreso, fechadesvinculacion, correo y telefono. Si viene cargo, cada uno debe coincidir con un cargo ya cargado en Configuración → Cargos — si el trabajador tiene más de uno, se separan con punto y coma dentro de la misma celda (ej: Mecánico;Operador Torre). Fechaingreso y fechadesvinculacion deben tener formato AAAA-MM-DD; si una fila trae activo=false, fechadesvinculacion es obligatoria. Correo debe ser tipo nombre@dominio.cl; telefono se guarda como +569XXXXXXXX (acepta 9XXXXXXXX o 569XXXXXXXX).<br>
+      <strong>Regla anti-borrado:</strong> si una celda viene vacía (o la columna no está), NO se borra lo que el trabajador ya tenía guardado en empresa, rutempresa, subarea, cargo, fechaingreso, correo ni telefono. Lo mismo con activo: si el CSV no trae esa columna, no se cambia el estado de los trabajadores que ya existen (los nuevos quedan activos).<br>
+      <strong>Modo actualización parcial</strong> — si el encabezado trae <strong>rut</strong> pero NO trae nombre ni centro (ej: <strong>rut,correo,telefono</strong>), solo se actualizan correo y/o teléfono de trabajadores que ya existen. No se crean trabajadores nuevos: los RUT que no existan se listan al final como "RUT no encontrado".
     </div>
 
     <label class="field-label" for="mi-archivo">Selecciona el archivo .csv</label>
     <input class="field-input" id="mi-archivo" type="file" accept=".csv,text/csv" style="height:auto;padding:9px 12px" onchange="cargarArchivoCSV(event)">
 
     <div class="field-label" style="margin-top:14px">O pega el contenido aquí</div>
-    <textarea id="mi-csv" class="field-input" style="height:160px;padding:10px;resize:vertical;font-family:monospace;font-size:12.5px" placeholder="rut,nombre,centro,subarea,activo,cargo,fechaingreso,fechadesvinculacion"></textarea>
+    <textarea id="mi-csv" class="field-input" style="height:160px;padding:10px;resize:vertical;font-family:monospace;font-size:12.5px" placeholder="rut,nombre,centro,subarea,activo,cargo,fechaingreso,fechadesvinculacion,correo,telefono&#10;&#10;o, para solo actualizar contactos:&#10;rut,correo,telefono"></textarea>
     <div class="msg-error" id="modal-importar-error"></div>
     <div class="status-note" id="modal-importar-resultado" style="margin-top:4px"></div>
+    <div id="modal-importar-detalle" class="hidden" style="margin-top:8px;max-height:180px;overflow-y:auto;white-space:pre-wrap;user-select:text;background:#fafafa;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:monospace;font-size:12px;color:var(--text)"></div>
     <button class="btn-primary full" id="mi-btn-importar" style="margin-top:10px" onclick="importarCSV()">Importar</button>
     <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModales()">Cerrar</button>
   </div>
@@ -1724,10 +1734,11 @@ window.renderTablaDotacion = function(){
 
   document.getElementById("dot-contador").firstChild.textContent = filtrados.length + (filtrados.length === 1 ? " trabajador " : " trabajadores ");
   actualizarIndicadorCargoPendientes();
+  actualizarIndicadorCorreoPendientes();
 
   const cuerpo = document.getElementById("dot-tabla-body");
   if(filtrados.length === 0){
-    cuerpo.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:2rem">No hay trabajadores para mostrar.</td></tr>';
+    cuerpo.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:2rem">No hay trabajadores para mostrar.</td></tr>';
     actualizarBadgePendientes();
     return;
   }
@@ -1741,6 +1752,7 @@ window.renderTablaDotacion = function(){
       <td>${escapeHtml(formatRut(t.rut) || "—")}</td>
       <td><span class="badge-centro${pendiente ? ' pendiente' : ''}">${escapeHtml(etiquetaCentro)}</span></td>
       <td>${renderCargosChips(t)}</td>
+      <td style="font-size:12.5px">${t.correo ? escapeHtml(t.correo) : '<span style="color:var(--text3)">—</span>'}</td>
       <td class="empresa-cell">${escapeHtml(t.empresa || "—")}</td>
       <td>${(t.subarea && normalizar(t.subarea) !== normalizar(NOMBRES_CENTRO[t.centro]||"")) ? escapeHtml(t.subarea) : "—"}</td>
       <td>${t.activo === false ? '<span class="badge-inactivo">Inactivo</span>' : '<span style="color:var(--green2);font-weight:700;font-size:12.5px">Activo</span>'}</td>
@@ -1769,7 +1781,7 @@ function actualizarIndicadorCargoPendientes(){
 // Baja a TODOS los trabajadores ACTIVOS de TODAS las empresas (Corte Alto, Emco, etc.), sin
 // importar la pestaña ni los filtros de la pantalla, en un solo archivo .xlsx ordenado por
 // empresa y nombre. Usa SheetJS, que se carga recién al hacer clic (no pesa al abrir la página).
-const EXPORT_DOTACION_ENCABEZADO = ["Nombre", "RUT", "Empresa", "RUT empresa", "Centro", "Cargo(s)", "Fecha de ingreso", "Subárea"];
+const EXPORT_DOTACION_ENCABEZADO = ["Nombre", "RUT", "Empresa", "RUT empresa", "Centro", "Cargo(s)", "Correo", "Teléfono", "Fecha de ingreso", "Subárea"];
 
 function nombresCargosTrabajador(t){
   // Se leen los nombres tal cual están guardados (sin pasar por el catálogo) para que un cargo
@@ -1795,6 +1807,8 @@ function armarFilasExportDotacion(trabajadores){
     t.rutEmpresa || "",
     t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente de asignar",
     nombresCargosTrabajador(t).join("; "),
+    t.correo || "",
+    t.telefono || "",
     fechaParaExcel(t.fechaIngreso),
     t.subarea || "",
   ]);
@@ -1825,7 +1839,7 @@ window.exportarDotacion = async function(){
     }
     const XLSX = await cargarSheetJS();
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = [{wch:34},{wch:14},{wch:24},{wch:14},{wch:20},{wch:34},{wch:16},{wch:18}];
+    ws["!cols"] = [{wch:34},{wch:14},{wch:24},{wch:14},{wch:20},{wch:34},{wch:30},{wch:14},{wch:16},{wch:18}];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Dotación");
     const hoy = new Date();
@@ -1838,6 +1852,32 @@ window.exportarDotacion = async function(){
     boton.textContent = "Exportar Excel";
   }
 };
+
+// Correo y teléfono del trabajador (pedido por Fabián 10 nov 2026): los usa el módulo HSE
+// para mandar comprobantes de EPP/capacitaciones, pero el dato vive acá en dotacion.
+// Ambos devuelven "" si viene vacío, el valor normalizado si es válido, o null si es inválido.
+function normalizarCorreo(valor){
+  const c = String(valor || "").replace(/\s+/g, "").toLowerCase();
+  if(!c) return "";
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(c) ? c : null;
+}
+function normalizarTelefono(valor){
+  const t = String(valor || "").replace(/[\s\-().]/g, "");
+  if(!t) return "";
+  if(/^\+569\d{8}$/.test(t)) return t;
+  if(/^569\d{8}$/.test(t)) return "+" + t;
+  if(/^9\d{8}$/.test(t)) return "+56" + t;
+  return null;
+}
+
+// Cuántos trabajadores ACTIVOS (en toda la dotación) no tienen correo todavía.
+function actualizarIndicadorCorreoPendientes(){
+  const span = document.getElementById("dot-correo-pendientes");
+  if(!span) return;
+  const total = (dotDatosTodos || []).filter(t => t.activo !== false && !t.correo).length;
+  span.classList.toggle("hidden", total === 0);
+  span.textContent = total === 1 ? "⚠ 1 activo sin correo" : `⚠ ${total} activos sin correo`;
+}
 
 window.cerrarModales = function(){
   document.getElementById("modal-trabajador").classList.add("hidden");
@@ -1920,6 +1960,8 @@ window.abrirModalTrabajador = function(id, nombreSugerido, alGuardar){
     document.getElementById("mt-fecha-ingreso").value = t.fechaIngreso || "";
     document.getElementById("mt-fecha-desvinculacion").value = t.fechaDesvinculacion || "";
     document.getElementById("mt-fecha-desvinculacion-wrap").classList.toggle("hidden", t.activo !== false);
+    document.getElementById("mt-correo").value = t.correo || "";
+    document.getElementById("mt-telefono").value = t.telefono || "";
     document.getElementById("mt-subarea").value = t.subarea || "";
     document.getElementById("mt-activo").checked = t.activo !== false;
   }else{
@@ -1948,6 +1990,8 @@ window.abrirModalTrabajador = function(id, nombreSugerido, alGuardar){
     document.getElementById("mt-fecha-ingreso").value = "";
     document.getElementById("mt-fecha-desvinculacion").value = "";
     document.getElementById("mt-fecha-desvinculacion-wrap").classList.add("hidden");
+    document.getElementById("mt-correo").value = "";
+    document.getElementById("mt-telefono").value = "";
     document.getElementById("mt-subarea").value = "";
     document.getElementById("mt-activo").checked = true;
   }
@@ -1979,6 +2023,8 @@ window.guardarTrabajador = async function(){
   const subarea = document.getElementById("mt-subarea").value.trim();
   const activo = document.getElementById("mt-activo").checked;
   const idExistente = document.getElementById("mt-id").value;
+  const correo = normalizarCorreo(document.getElementById("mt-correo").value);
+  const telefono = normalizarTelefono(document.getElementById("mt-telefono").value);
 
   if(!nombre || !rutInput){
     errorBox.textContent = "Completa nombre y RUT.";
@@ -1992,6 +2038,17 @@ window.guardarTrabajador = async function(){
     return;
   }
   if(activo) fechaDesvinculacion = ""; // defensivo: activo nunca guarda fecha de desvinculación
+
+  if(correo === null){
+    errorBox.textContent = "Ingresa un correo válido (ej: nombre@dominio.cl) o déjalo vacío.";
+    errorBox.classList.add("show");
+    return;
+  }
+  if(telefono === null){
+    errorBox.textContent = "Ingresa un teléfono válido (ej: 912345678 o +56912345678) o déjalo vacío.";
+    errorBox.classList.add("show");
+    return;
+  }
 
   const cargos = cargoSelIds.map(id => (CARGOS_CATALOGO.find(c => c.id === id) || {}).nombre).filter(Boolean);
 
@@ -2013,7 +2070,7 @@ window.guardarTrabajador = async function(){
   const callbackPendiente = trabajadorRecienCreadoCallback; // cerrarModales() lo limpia, por eso se guarda antes
 
   try{
-    await setDoc(doc(db, "dotacion", idDoc), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo, cargos, fechaIngreso, fechaDesvinculacion }, { merge: true });
+    await setDoc(doc(db, "dotacion", idDoc), { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea, activo, cargos, fechaIngreso, fechaDesvinculacion, correo, telefono }, { merge: true });
     cerrarModales();
     dotDatosTodos = null;
     await fetchDotacionTodos();
@@ -2032,6 +2089,8 @@ window.guardarTrabajador = async function(){
 window.abrirModalImportar = function(){
   document.getElementById("modal-importar-error").classList.remove("show");
   document.getElementById("modal-importar-resultado").textContent = "";
+  document.getElementById("modal-importar-detalle").textContent = "";
+  document.getElementById("modal-importar-detalle").classList.add("hidden");
   document.getElementById("mi-csv").value = "";
   document.getElementById("mi-archivo").value = "";
   document.getElementById("modal-importar").classList.remove("hidden");
@@ -2053,11 +2112,96 @@ window.cargarArchivoCSV = function(event){
   lector.readAsText(archivo, "UTF-8");
 };
 
+// Modo "actualización parcial" (pedido por Fabián 10 nov 2026): un CSV que trae rut pero NO trae
+// nombre ni centro (ej. rut,correo,telefono) solo actualiza correo/teléfono en trabajadores que
+// YA existen en dotacion — no crea trabajadores incompletos y no toca nombre, centro, cargos,
+// empresa, activo ni ningún otro campo. Los RUT que no existen se listan completos al final.
+async function importarCSVParcial(lineas, encabezado, boton){
+  const resultBox = document.getElementById("modal-importar-resultado");
+  const detalleBox = document.getElementById("modal-importar-detalle");
+  const idxRut = encabezado.indexOf("rut");
+  const idxCorreo = encabezado.indexOf("correo");
+  const idxTelefono = encabezado.indexOf("telefono");
+
+  if(!Array.isArray(dotDatosTodos)) await fetchDotacionTodos();
+  // Se compara el RUT normalizado (sin puntos, mayúsculas) y sin guion, para que 12.345.678-K,
+  // 12345678-k y 12345678K encuentren al mismo trabajador.
+  const clave = r => limpiarRut(r).replace(/-/g, "");
+  const porClave = new Map();
+  dotDatosTodos.forEach(t => {
+    porClave.set(clave(t.id), t.id);
+    if(t.rut) porClave.set(clave(t.rut), t.id);
+  });
+
+  let actualizados = 0, sinCambios = 0, conError = 0;
+  const noEncontrados = [];
+  const invalidos = [];
+
+  for(let i = 1; i < lineas.length; i++){
+    const cols = lineas[i].split(",").map(c => c.trim());
+    const rutCrudo = cols[idxRut] || "";
+    if(!rutCrudo){
+      conError++;
+      invalidos.push(lineas[i] + "  (sin RUT)");
+      continue;
+    }
+    const id = porClave.get(clave(rutCrudo));
+    if(!id){
+      conError++;
+      noEncontrados.push(limpiarRut(rutCrudo));
+      continue;
+    }
+    const correo = normalizarCorreo(idxCorreo > -1 ? cols[idxCorreo] : "");
+    const telefono = normalizarTelefono(idxTelefono > -1 ? cols[idxTelefono] : "");
+    if(correo === null || telefono === null){
+      conError++;
+      invalidos.push(lineas[i] + (correo === null ? "  (correo inválido)" : "  (teléfono inválido)"));
+      continue;
+    }
+    // Misma regla anti-borrado: celda vacía = no se toca lo que ya estaba guardado.
+    const datos = {};
+    if(correo) datos.correo = correo;
+    if(telefono) datos.telefono = telefono;
+    if(!Object.keys(datos).length){
+      sinCambios++;
+      continue;
+    }
+    try{
+      await setDoc(doc(db, "dotacion", id), datos, { merge: true });
+      actualizados++;
+    }catch(e){
+      conError++;
+      invalidos.push(lineas[i] + "  (no se pudo guardar)");
+    }
+  }
+
+  const ignoradas = encabezado.filter(h => h && !["rut", "correo", "telefono"].includes(h));
+  resultBox.textContent = `Modo actualización parcial — Actualizados: ${actualizados}. Con error: ${conError}.` +
+    (sinCambios ? ` Sin correo ni teléfono para actualizar: ${sinCambios}.` : "") +
+    (ignoradas.length ? ` Columnas ignoradas en este modo: ${ignoradas.join(", ")}.` : "");
+  const partes = [];
+  if(noEncontrados.length) partes.push(`RUT no encontrados (${noEncontrados.length}):\n` + noEncontrados.join("\n"));
+  if(invalidos.length) partes.push(`Filas con error (${invalidos.length}):\n` + invalidos.join("\n"));
+  if(partes.length){
+    detalleBox.textContent = partes.join("\n\n");
+    detalleBox.classList.remove("hidden");
+  }
+
+  boton.disabled = false;
+  boton.textContent = "Importar";
+  dotDatosTodos = null;
+  await fetchDotacionTodos();
+  renderTablaDotacion();
+}
+
 window.importarCSV = async function(){
   const errorBox = document.getElementById("modal-importar-error");
   const resultBox = document.getElementById("modal-importar-resultado");
+  const detalleBox = document.getElementById("modal-importar-detalle");
   errorBox.classList.remove("show");
   resultBox.textContent = "";
+  detalleBox.textContent = "";
+  detalleBox.classList.add("hidden");
 
   const CENTROS_VALIDOS = ["FORMIN 1","FORMIN 2","FORMIN 3","TALLER_COIHUE","ROTATIVO",""];
   const texto = document.getElementById("mi-csv").value.trim();
@@ -2085,9 +2229,25 @@ window.importarCSV = async function(){
   const idxCargo = encabezado.indexOf("cargo");
   const idxFechaIngreso = encabezado.indexOf("fechaingreso");
   const idxFechaDesvinculacion = encabezado.indexOf("fechadesvinculacion");
+  const idxCorreo = encabezado.indexOf("correo");
+  const idxTelefono = encabezado.indexOf("telefono");
+
+  // Actualización parcial: trae rut pero ni nombre ni centro (ej. rut,correo,telefono).
+  if(idxRut > -1 && idxNombre === -1 && idxCentro === -1){
+    if(idxCorreo === -1 && idxTelefono === -1){
+      errorBox.textContent = "Para actualizar solo datos de contacto, el CSV debe traer rut y al menos correo o telefono.";
+      errorBox.classList.add("show");
+      return;
+    }
+    const botonParcial = document.getElementById("mi-btn-importar");
+    botonParcial.disabled = true;
+    botonParcial.textContent = "Importando…";
+    await importarCSVParcial(lineas, encabezado, botonParcial);
+    return;
+  }
 
   if(idxRut === -1 || idxNombre === -1 || idxCentro === -1){
-    errorBox.textContent = "El encabezado debe incluir al menos: rut,nombre,centro";
+    errorBox.textContent = "El encabezado debe incluir al menos: rut,nombre,centro (o solo rut,correo,telefono para actualizar correos y teléfonos).";
     errorBox.classList.add("show");
     return;
   }
@@ -2114,6 +2274,8 @@ window.importarCSV = async function(){
     const cargoTextos = cargoCelda ? cargoCelda.split(";").map(c => c.trim()).filter(Boolean) : [];
     const fechaIngreso = idxFechaIngreso > -1 ? (cols[idxFechaIngreso] || "").trim() : "";
     const fechaDesvinculacion = idxFechaDesvinculacion > -1 ? (cols[idxFechaDesvinculacion] || "").trim() : "";
+    const correo = normalizarCorreo(idxCorreo > -1 ? cols[idxCorreo] : "");
+    const telefono = normalizarTelefono(idxTelefono > -1 ? cols[idxTelefono] : "");
 
     const cargoMatches = cargoTextos.map(texto => CARGOS_CATALOGO.find(c => normalizar(c.nombre) === normalizar(texto)));
     const cargoInvalido = cargoMatches.some(m => !m);
@@ -2121,32 +2283,36 @@ window.importarCSV = async function(){
     const fechaDesvinculacionInvalida = !!fechaDesvinculacion && !/^\d{4}-\d{2}-\d{2}$/.test(fechaDesvinculacion);
     // Igual que en el modal: si la fila queda inactiva, la fecha de desvinculación es obligatoria.
     const faltaFechaDesvinculacion = !activo && !fechaDesvinculacion;
+    const contactoInvalido = correo === null || telefono === null;
 
-    if(!rut || !nombre || !CENTROS_VALIDOS.includes(centro) || cargoInvalido || fechaIngresoInvalida || fechaDesvinculacionInvalida || faltaFechaDesvinculacion){
+    if(!rut || !nombre || !CENTROS_VALIDOS.includes(centro) || cargoInvalido || fechaIngresoInvalida || fechaDesvinculacionInvalida || faltaFechaDesvinculacion || contactoInvalido){
       conError++;
       invalidos.push(lineas[i]);
       continue;
     }
 
     const rutLimpio = limpiarRut(rut);
-    const datosFila = { nombre, rut: rutLimpio, centro, empresa, rutEmpresa, subarea };
-    // Mismo problema que cargos/fechaIngreso (reportado 10 nov 2026): si el CSV no trae la
-    // columna "activo", escribir activo:true por defecto reactivaría a un trabajador ya
-    // desvinculado al reimportar un CSV viejo. Por eso "activo" solo se escribe cuando la
-    // columna existe en ESTE CSV; la única excepción es un trabajador NUEVO (que todavía no
-    // existe en dotacion), que sí queda activo por defecto. Si la dotación aún no está
-    // cargada en memoria no se asume nada (omitir activo es inofensivo: se lee como activo).
+    // Trabajador NUEVO = todavía no existe en dotacion. Si la dotación aún no está cargada en
+    // memoria no se asume nada (omitir campos es inofensivo).
+    const esNuevo = Array.isArray(dotDatosTodos) && !dotDatosTodos.some(t => t.id === rutLimpio);
+    // nombre y centro son el corazón de una importación completa: siempre se escriben.
+    const datosFila = { nombre, rut: rutLimpio, centro };
+    // REGLA ANTI-BORRADO (bugs reportados 9 y 10 nov 2026): como setDoc usa merge:true, cualquier
+    // campo que se incluya acá SIEMPRE pisa lo que ya estaba guardado, aunque venga vacío. Por eso
+    // empresa, rutEmpresa, subarea, cargos, fechaIngreso, correo y telefono solo se escriben
+    // cuando la columna existe en ESTE CSV Y la celda trae algo (así reimportar un CSV viejo,
+    // ej. rut,nombre,centro,correo, ya no vacía la empresa ni la subárea de nadie). Única
+    // excepción: un trabajador NUEVO parte con empresa/rutEmpresa/subarea vacías, como siempre.
+    if(empresa || esNuevo) datosFila.empresa = empresa;
+    if(rutEmpresa || esNuevo) datosFila.rutEmpresa = rutEmpresa;
+    if(subarea || esNuevo) datosFila.subarea = subarea;
+    // "activo" solo se escribe cuando la columna viene en este CSV; sin columna, un trabajador
+    // nuevo queda activo por defecto y uno existente conserva su estado (no se reactiva a nadie).
     if(idxActivo > -1){
       datosFila.activo = activo;
-    }else if(Array.isArray(dotDatosTodos) && !dotDatosTodos.some(t => t.id === rutLimpio)){
+    }else if(esNuevo){
       datosFila.activo = true;
     }
-    // IMPORTANTE (bug reportado 9 nov 2026): como setDoc usa merge:true, cualquier campo que
-    // se incluya acá SIEMPRE pisa lo que ya estaba guardado, aunque venga vacío — por eso
-    // "cargos" y "fechaIngreso" solo se agregan al objeto cuando la columna existe en ESTE CSV
-    // Y la celda trae algo. Así, reimportar un CSV viejo (rut,nombre,centro nada más) para
-    // actualizar otra cosa ya NO borra los cargos ni la fecha de ingreso que un trabajador
-    // tenía guardados desde el modal o una importación anterior.
     if(cargoTextos.length){
       // Dedupe por si el mismo cargo viene repetido dentro de la misma celda.
       datosFila.cargos = [...new Set(cargoMatches.map(m => m.nombre))];
@@ -2154,11 +2320,15 @@ window.importarCSV = async function(){
     if(fechaIngreso){
       datosFila.fechaIngreso = fechaIngreso;
     }
+    if(correo){
+      datosFila.correo = correo;
+    }
+    if(telefono){
+      datosFila.telefono = telefono;
+    }
     // La fecha de desvinculación solo se toca cuando la columna "activo" viene explícita en
-    // ESTE CSV — si no viene, "activo" cae en su valor por defecto (true) y no hay que asumir
-    // que se está reactivando a nadie. Cuando sí viene, sigue siempre al estado de la fila
-    // (igual que el modal: activo nunca guarda fecha de desvinculación, y se borra sola si el
-    // trabajador se reactiva por CSV).
+    // ESTE CSV. Cuando sí viene, sigue siempre al estado de la fila (igual que el modal: activo
+    // nunca guarda fecha de desvinculación, y se borra sola si el trabajador se reactiva).
     if(idxActivo > -1){
       datosFila.fechaDesvinculacion = activo ? "" : fechaDesvinculacion;
     }
