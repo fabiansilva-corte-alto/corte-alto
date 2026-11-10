@@ -477,6 +477,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
           <option value="__PENDIENTE__">Pendiente de asignar</option>
         </select>
         <span style="flex:1"></span>
+        <button class="btn-secondary" id="dot-btn-exportar" onclick="exportarDotacion()">Exportar Excel</button>
         <button class="btn-secondary" onclick="abrirModalImportar()">Importar CSV</button>
         <button class="btn-primary" onclick="abrirModalTrabajador()">+ Agregar trabajador(a)</button>
       </div>
@@ -1763,6 +1764,80 @@ function actualizarIndicadorCargoPendientes(){
   span.classList.toggle("hidden", total === 0);
   span.textContent = total === 1 ? "⚠ 1 activo sin cargo asignado" : `⚠ ${total} activos sin cargo asignado`;
 }
+
+// ---- Exportar dotación a Excel (pedido por Fabián 10 nov 2026) ----
+// Baja a TODOS los trabajadores ACTIVOS de TODAS las empresas (Corte Alto, Emco, etc.), sin
+// importar la pestaña ni los filtros de la pantalla, en un solo archivo .xlsx ordenado por
+// empresa y nombre. Usa SheetJS, que se carga recién al hacer clic (no pesa al abrir la página).
+const EXPORT_DOTACION_ENCABEZADO = ["Nombre", "RUT", "Empresa", "RUT empresa", "Centro", "Cargo(s)", "Fecha de ingreso", "Subárea"];
+
+function nombresCargosTrabajador(t){
+  // Se leen los nombres tal cual están guardados (sin pasar por el catálogo) para que un cargo
+  // que después quedó inactivo igual salga en el archivo. Compatible con el formato viejo (cargo).
+  return Array.isArray(t.cargos) ? t.cargos : (t.cargo ? [t.cargo] : []);
+}
+
+function fechaParaExcel(iso){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : (iso || "");
+}
+
+// Devuelve [encabezado, ...filas] (solo trabajadores activos, ordenados por empresa y nombre).
+function armarFilasExportDotacion(trabajadores){
+  const activos = (trabajadores || []).filter(t => t.activo !== false);
+  activos.sort((a, b) =>
+    (a.empresa || "").localeCompare(b.empresa || "", "es") ||
+    (a.nombre || "").localeCompare(b.nombre || "", "es"));
+  const filas = activos.map(t => [
+    t.nombre || "",
+    formatRut(t.rut) || "",
+    t.empresa || "",
+    t.rutEmpresa || "",
+    t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente de asignar",
+    nombresCargosTrabajador(t).join("; "),
+    fechaParaExcel(t.fechaIngreso),
+    t.subarea || "",
+  ]);
+  return [EXPORT_DOTACION_ENCABEZADO, ...filas];
+}
+
+function cargarSheetJS(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload = () => window.XLSX ? resolve(window.XLSX) : reject(new Error("SheetJS no disponible"));
+    s.onerror = () => reject(new Error("No se pudo cargar SheetJS"));
+    document.head.appendChild(s);
+  });
+}
+
+window.exportarDotacion = async function(){
+  const boton = document.getElementById("dot-btn-exportar");
+  boton.disabled = true;
+  boton.textContent = "Preparando…";
+  try{
+    if(!Array.isArray(dotDatosTodos)) await fetchDotacionTodos();
+    const aoa = armarFilasExportDotacion(dotDatosTodos);
+    if(aoa.length < 2){
+      alert("No hay trabajadores activos para exportar.");
+      return;
+    }
+    const XLSX = await cargarSheetJS();
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [{wch:34},{wch:14},{wch:24},{wch:14},{wch:20},{wch:34},{wch:16},{wch:18}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Dotación");
+    const hoy = new Date();
+    const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,"0")}-${String(hoy.getDate()).padStart(2,"0")}`;
+    XLSX.writeFile(wb, `dotacion_${fecha}.xlsx`);
+  }catch(e){
+    alert("No se pudo generar el archivo. Revisa tu conexión e intenta de nuevo.");
+  }finally{
+    boton.disabled = false;
+    boton.textContent = "Exportar Excel";
+  }
+};
 
 window.cerrarModales = function(){
   document.getElementById("modal-trabajador").classList.add("hidden");
