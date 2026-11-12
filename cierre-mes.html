@@ -3529,7 +3529,7 @@ function renderFilasSec(secKey, filas) {
           title="${f.excluido ? 'Reactivar en el cierre' : 'Excluir del cierre (ej: licencia médica)'}"
           style="pointer-events:auto;">${f.excluido ? '✕' : '○'}</button>
         <span class="nombre-trabajador">${f.nombre}</span>
-        ${(f._cuadrillaMes || f._esRotativo) ? (() => {
+        ${f._cuadrillaMes ? (() => {
           // Badge de distribución de días del rotativo por línea/jefe
           const entradas = Object.entries(f._cuadrillaMes)
             .sort((a, b) => b[1] - a[1]);
@@ -3552,7 +3552,7 @@ function renderFilasSec(secKey, filas) {
             <span style="font-size:9px;color:#6d28d9;font-weight:600;">🔄 Rotativo</span>
             <div style="display:flex;gap:3px;flex-wrap:wrap;">${pills}</div>
           </div>`;
-        })() : (f._esRotativo ? '<span style="font-size:9px;color:#9ca3af;margin-top:2px;">🔄 sin cuadrilla registrada</span>' : '')}
+        })() : (f._esRotativo ? '<span style="font-size:9px;color:#9ca3af;margin-top:3px;display:block;">🔄 Rotativo · sin cuadrilla este mes</span>' : '')}
       </td>
       <td class="td-cargo">
         <div>${f.funcionActiva || f.cargo}</div>
