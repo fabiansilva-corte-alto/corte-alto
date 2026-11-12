@@ -3285,7 +3285,8 @@ const SECCIONES_ORDEN = [
 
 function clasificarCargo(cargo) {
   const c = (cargo || '').toUpperCase();
-  if (c.includes('ESTROBERO') || c.includes('ORDENAMIENTO')) return 'ESTROBERO';
+  if (c.includes('ESTROBERO')) return 'ESTROBERO';
+  if (c.includes('ORDENAMIENTO')) return 'TORRE'; // Op. Ordenamiento va con la torre
   if (c.includes('MOTOSIERR')) return 'MOTOSIERRISTA';
   if (c.includes('TORRE')) return 'TORRE';
   if (c.includes('PROCESADOR') || c.includes('CLASIFICADO') || c.includes('TROZADO')) return 'PROCESADOR';
