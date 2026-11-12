@@ -2797,14 +2797,9 @@ function construirFilasCierre(trabajadores, prodTotal, prodTorre, vma) {
     const cm = _buscarCuadrilla(t);
     if (!cm) return false; // sin registro en cuadrilla → no mostrar en ninguna línea
     const claves = Object.keys(cm);
-    // ¿Las claves son líneas conocidas (con mapeo)?
-    const tieneClavesConLinea = claves.some(k => LINEAS_CONOCIDAS.has(k));
-    if (tieneClavesConLinea) {
-      // Filtrar: solo mostrar si tiene días en esta línea
-      return claves.some(k => k === lineaSeleccionada);
-    }
-    // Sin mapeo de línea (claves = nombres de jefes) → mostrar en todas las líneas con aviso
-    return true;
+    // Solo mostrar si tiene al menos una clave que sea FORMIN conocido y coincida con la línea
+    // Si todas las claves son nombres de jefes (sin lineaJefe) → no mostrar en ninguna línea
+    return claves.some(k => k === lineaSeleccionada);
   });
 
   return [
