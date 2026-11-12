@@ -9,7 +9,7 @@
    alguien abre la app.
    ============================================================ */
 
-const CACHE_VERSION = 'v27.1';
+const CACHE_VERSION = 'v27.2';
 const CACHE_NAME = `corte-alto-${CACHE_VERSION}`;
 
 /* Archivos que se guardan para que la app funcione más rápido
