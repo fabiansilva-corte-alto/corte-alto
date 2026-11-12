@@ -2633,28 +2633,38 @@ async function cargarCierre() {
 
     // También necesitamos saber qué jefeFaena corresponde a cada línea.
     // Intentamos cargar config_jefes_faena (si existe) para el mapeo nombre→línea.
-    let jefesLinea = {}; // { nombreJefe_norm: 'LÍNEA T1' }
+    // Mapeo fundo → línea (igual que CENTRO_A_LINEA, que usa los mismos valores)
+    const FUNDO_A_LINEA = {
+      'FORMIN 1': 'LÍNEA T1', 'FORMIN1': 'LÍNEA T1',
+      'FORMIN 2': 'LÍNEA T2', 'FORMIN2': 'LÍNEA T2',
+      'FORMIN 3': 'LÍNEA T3', 'FORMIN3': 'LÍNEA T3',
+    };
+    // config_jefes_faena: { nombre, fundo } → mapea jefe → línea via fundo
+    let jefesLinea = {}; // { 'JUAN SUAREZ': 'LÍNEA T1', ... }
     try {
       const jefesSnap = await db.collection('config_jefes_faena').get();
       jefesSnap.forEach(d => {
         const dat = d.data();
         const nombre = (dat.nombre || d.id || '').trim().toUpperCase();
-        const lineaJ = (dat.linea || '').trim().toUpperCase();
-        if (nombre && lineaJ) jefesLinea[nombre] = lineaJ;
+        const fundo  = (dat.fundo  || '').trim().toUpperCase();
+        const linea  = FUNDO_A_LINEA[fundo] || null;
+        if (nombre && linea) jefesLinea[nombre] = linea;
       });
     } catch(_) { /* colección opcional — continuar sin ella */ }
 
     cuadrillaSnap.forEach(d => {
       const dat = d.data();
       const jefe = (dat.jefeFaena || '').trim().toUpperCase();
-      const lineaJefe = jefesLinea[jefe] || null; // null si no encontramos el mapeo
+      // Mapear jefe → línea via config_jefes_faena (fundo → LÍNEA Tx)
+      const lineaJefe = jefesLinea[jefe] || null;
       (dat.trabajadorIds || []).forEach(id => {
         if (!cuadrillaMes[id]) cuadrillaMes[id] = {};
-        const clave = lineaJefe || jefe || '?'; // usar nombre jefe si no hay mapeo de línea
+        const clave = lineaJefe || jefe || '?'; // usar nombre jefe si no hay mapeo
         cuadrillaMes[id][clave] = (cuadrillaMes[id][clave] || 0) + 1;
       });
     });
     state.cuadrillaMes = cuadrillaMes;
+    state.jefesLinea = jefesLinea; // { 'JUAN SUAREZ': 'LÍNEA T1', ... } — para filtrar rotativos
 
     // 6. ¿Existe ya un cierre guardado?
     const cierreSnap = await db.collection('cierre_mes').doc(docId).get();
@@ -2785,9 +2795,25 @@ function construirFilasCierre(trabajadores, prodTotal, prodTorre, vma) {
     if (rut && cm[rut]) return cm[rut];
     return null;
   };
+  // Filtrar rotativos: solo incluir si tiene días en la línea activa este mes
+  const LINEAS_CONOCIDAS = new Set(['LÍNEA T1','LÍNEA T2','LÍNEA T3','LINEA T1','LINEA T2','LINEA T3']);
+  const rotativosFiltrados = rotativos.filter(({ t }) => {
+    const cm = _buscarCuadrilla(t);
+    if (!cm) return false; // sin registro en cuadrilla → no mostrar en ninguna línea
+    const claves = Object.keys(cm);
+    // ¿Las claves son líneas conocidas (con mapeo)?
+    const tieneClavesConLinea = claves.some(k => LINEAS_CONOCIDAS.has(k));
+    if (tieneClavesConLinea) {
+      // Filtrar: solo mostrar si tiene días en esta línea
+      return claves.some(k => k === lineaSeleccionada);
+    }
+    // Sin mapeo de línea (claves = nombres de jefes) → mostrar en todas las líneas con aviso
+    return true;
+  });
+
   return [
     ...deLinea.map(({ t, dot }) => _buildFila(t, dot, prodTotal, prodTorre, null)),
-    ...rotativos.map(({ t, dot }) => {
+    ...rotativosFiltrados.map(({ t, dot }) => {
       const fila = _buildFila(t, dot, prodTotal, prodTorre, null);
       fila._cuadrillaMes = _buscarCuadrilla(t);
       fila._esRotativo = true; // flag explícito para el render
@@ -3534,6 +3560,7 @@ function renderFilasSec(secKey, filas) {
           const entradas = Object.entries(f._cuadrillaMes)
             .sort((a, b) => b[1] - a[1]);
           const total = entradas.reduce((s, [,n]) => s + n, 0);
+          const esMult = entradas.length > 1; // trabajó en más de una línea este mes
           // Colores por línea conocida
           const COLOR_LINEA = {
             'LÍNEA T1': '#1d4ed8', 'LINEA T1': '#1d4ed8',
@@ -3542,15 +3569,32 @@ function renderFilasSec(secKey, filas) {
           };
           const titulo = entradas.map(([k,n]) => `${k}: ${n} día${n>1?'s':''}`).join(' · ');
           const pills = entradas.map(([k, n]) => {
-            const pct = Math.round(n / total * 100);
             const color = COLOR_LINEA[k.toUpperCase()] || '#6d28d9';
             const lbl = k.replace(/LÍNEA\s*/i,'T').replace(/LINEA\s*/i,'T'); // "LÍNEA T1" → "T1"
             return `<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:9px;background:${color}22;color:${color};border:1px solid ${color}55;">${lbl} ${n}d</span>`;
           }).join(' ');
+          // Si trabajó en múltiples líneas → mostrar selector para elegir dónde se contabiliza
+          const selectorLinea = esMult ? (() => {
+            const lineaActual = f._lineaAsignada || state.lineaSeleccionada || '';
+            const opts = entradas.map(([k, n]) => {
+              const lbl = k.replace(/LÍNEA\s*/i,'Línea ').replace(/LINEA\s*/i,'Línea ');
+              return `<option value="${k}" ${k===lineaActual?'selected':''}>${lbl} (${n}d)</option>`;
+            }).join('');
+            return `<div style="margin-top:3px;">
+              <span style="font-size:9px;color:#b45309;font-weight:700;">⚠ Multilinea — asignar a:</span>
+              <select style="font-size:9px;padding:1px 4px;border:1px solid #d97706;border-radius:5px;background:#fffbeb;color:#92400e;margin-top:1px;width:100%;"
+                onchange="asignarLineaRotativo(${f._idx}, this.value)">
+                ${opts}
+              </select>
+            </div>`;
+          })() : '';
           return `<div title="Cuadrilla diaria este mes · ${total} jornadas: ${titulo}"
             style="display:flex;flex-direction:column;gap:1px;margin-top:2px;line-height:1.2;">
-            <span style="font-size:9px;color:#6d28d9;font-weight:600;">🔄 Rotativo</span>
-            <div style="display:flex;gap:3px;flex-wrap:wrap;">${pills}</div>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:9px;color:#6d28d9;font-weight:600;">🔄 Rotativo</span>
+              <div style="display:flex;gap:3px;flex-wrap:wrap;">${pills}</div>
+            </div>
+            ${selectorLinea}
           </div>`;
         })() : (f._esRotativo ? '<span style="font-size:9px;color:#9ca3af;margin-top:3px;display:block;">🔄 Rotativo · sin cuadrilla este mes</span>' : '')}
       </td>
@@ -3771,6 +3815,17 @@ function actualizarPrecioDia(idx, input) {
 function actualizarNoAccidentes(idx, valor) {
   state.filasCierre[idx].noAccidentesX = parseInt(valor) || 1;
   recalcularFila(idx);
+}
+
+// Rotativo multilinea: Ignacio elige en qué línea contabilizar la producción
+function asignarLineaRotativo(idx, lineaElegida) {
+  const fila = state.filasCierre[idx];
+  if (!fila) return;
+  fila._lineaAsignada = lineaElegida;
+  // La producción de referencia ya está calculada al construir la fila; aquí solo guardamos
+  // la elección para el PDF y para que al re-guardar quede registrada la línea correcta.
+  // Re-renderizar solo la fila para actualizar el badge sin recargar todo
+  renderFilasCierre();
 }
 
 function actualizarObs(idx, obs) {
