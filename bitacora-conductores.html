@@ -1236,9 +1236,8 @@ function renderTablaConBorrador(fecha,porPat,borradorPre){
           onchange="onInputBorrador('${pat}')"></td>
       </tr>`;
 
-      if(conductoresFijos[pat]&&!bd){
-        borrador[pat]={conductor:conductoresFijos[pat],horaIni:'',horaFin:'',comentario:'',todoDia:false};
-      }
+      // No pre-llenar borrador con conductor fijo: el input ya muestra el nombre por defecto
+      // pero el borrador solo se llena cuando el usuario ingresa un horario o activa Todo el día
     }
   });
 
