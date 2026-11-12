@@ -2655,8 +2655,10 @@ async function cargarCierre() {
     cuadrillaSnap.forEach(d => {
       const dat = d.data();
       const jefe = (dat.jefeFaena || '').trim().toUpperCase();
-      // Mapear jefe → línea via config_jefes_faena (fundo → LÍNEA Tx)
-      const lineaJefe = jefesLinea[jefe] || null;
+      // lineaJefe del doc (ej: "FORMIN 3") → convertir a "LÍNEA T3" via FUNDO_A_LINEA
+      const lineaDoc = FUNDO_A_LINEA[(dat.lineaJefe || '').trim().toUpperCase()] || null;
+      // Fallback: mapeo via config_jefes_faena
+      const lineaJefe = lineaDoc || jefesLinea[jefe] || null;
       (dat.trabajadorIds || []).forEach(id => {
         if (!cuadrillaMes[id]) cuadrillaMes[id] = {};
         const clave = lineaJefe || jefe || '?'; // usar nombre jefe si no hay mapeo
