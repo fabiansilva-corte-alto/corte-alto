@@ -1804,7 +1804,8 @@ const CENTRO_A_LINEA = {
   'FORMIN 1': 'LÍNEA T1',
   'FORMIN 2': 'LÍNEA T2',
   'FORMIN 3': 'LÍNEA T3',
-  'Rotativo': 'ROTATIVO',
+  'ROTATIVO': 'ROTATIVO',
+  'Rotativo': 'ROTATIVO', // alias por si acaso
 };
 const CENTROS_EXCLUIDOS = ['Taller Coihue', 'Taller coihue', 'Pendiente de asignar'];
 
@@ -2758,8 +2759,9 @@ function construirFilasCierre(trabajadores, prodTotal, prodTorre, vma) {
       sinAsignacion.push({ t, dot });
       return;
     }
-    const lineaCentro = CENTRO_A_LINEA[centro];
-    if (lineaCentro === 'ROTATIVO') {
+    // Lookup case-insensitive: 'ROTATIVO', 'Rotativo', etc.
+    const lineaCentro = CENTRO_A_LINEA[centro] || CENTRO_A_LINEA[centro.toUpperCase()] || CENTRO_A_LINEA[centro.charAt(0).toUpperCase() + centro.slice(1).toLowerCase()];
+    if (lineaCentro === 'ROTATIVO' || centro.toUpperCase() === 'ROTATIVO') {
       rotativos.push({ t, dot });
     } else if (lineaCentro === lineaSeleccionada) {
       deLinea.push({ t, dot });
@@ -2772,11 +2774,23 @@ function construirFilasCierre(trabajadores, prodTotal, prodTorre, vma) {
 
   // Combinar: trabajadores de la línea + rotativos
   // Para rotativos, adjuntar datos de cuadrilla del mes (días por línea/jefe)
+  // cuadrillaMes está indexado por RUT (como guardado en cuadrilla_diaria → trabajadorIds)
+  // t.id puede ser el doc ID de Firestore; buscar también por rut normalizado
+  const _buscarCuadrilla = (t) => {
+    const cm = state.cuadrillaMes || {};
+    // Intentar por t.id directo
+    if (cm[t.id]) return cm[t.id];
+    // Intentar por rut normalizado (sin puntos, con guión)
+    const rut = (t.rut || '').replace(/\./g,'').replace(/k$/i,'K').trim();
+    if (rut && cm[rut]) return cm[rut];
+    return null;
+  };
   return [
     ...deLinea.map(({ t, dot }) => _buildFila(t, dot, prodTotal, prodTorre, null)),
     ...rotativos.map(({ t, dot }) => {
       const fila = _buildFila(t, dot, prodTotal, prodTorre, null);
-      fila._cuadrillaMes = (state.cuadrillaMes || {})[t.id] || null;
+      fila._cuadrillaMes = _buscarCuadrilla(t);
+      fila._esRotativo = true; // flag explícito para el render
       return fila;
     }),
   ];
@@ -3515,7 +3529,7 @@ function renderFilasSec(secKey, filas) {
           title="${f.excluido ? 'Reactivar en el cierre' : 'Excluir del cierre (ej: licencia médica)'}"
           style="pointer-events:auto;">${f.excluido ? '✕' : '○'}</button>
         <span class="nombre-trabajador">${f.nombre}</span>
-        ${f._cuadrillaMes ? (() => {
+        ${(f._cuadrillaMes || f._esRotativo) ? (() => {
           // Badge de distribución de días del rotativo por línea/jefe
           const entradas = Object.entries(f._cuadrillaMes)
             .sort((a, b) => b[1] - a[1]);
@@ -3538,7 +3552,7 @@ function renderFilasSec(secKey, filas) {
             <span style="font-size:9px;color:#6d28d9;font-weight:600;">🔄 Rotativo</span>
             <div style="display:flex;gap:3px;flex-wrap:wrap;">${pills}</div>
           </div>`;
-        })() : (f.centro === 'ROTATIVO' ? '<span style="font-size:9px;color:#9ca3af;margin-top:2px;">🔄 sin cuadrilla registrada</span>' : '')}
+        })() : (f._esRotativo ? '<span style="font-size:9px;color:#9ca3af;margin-top:2px;">🔄 sin cuadrilla registrada</span>' : '')}
       </td>
       <td class="td-cargo">
         <div>${f.funcionActiva || f.cargo}</div>
