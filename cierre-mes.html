@@ -2525,14 +2525,21 @@ async function cargarCierre() {
       .get();
     trabSnap.forEach(d => trabajadores.push({ id: d.id, ...d.data() }));
 
-    // 4. Controles Mininco del mes → determinar bono de jefes y calibradores
-    //    Lógica igual a controles-mininco: nota promedio >= 4.5 → gana bono
+    // 4. Controles del mes → determinar bono de jefes, calibradores y operadores
+    //    Fuentes: controles_mininco (Mininco/checklistfácil) +
+    //             controles_calidad (internos: tocones → Op. Shovel)
     const ctrlDesde = `${anio}-${String(mes).padStart(2,'0')}-01`;
     const ctrlHasta = `${anio}-${String(mes).padStart(2,'0')}-31`;
-    const ctrlSnap  = await db.collection('controles_mininco')
-      .where('fecha', '>=', ctrlDesde)
-      .where('fecha', '<=', ctrlHasta)
-      .get();
+    const [ctrlSnap, ctrlCalidadSnap] = await Promise.all([
+      db.collection('controles_mininco')
+        .where('fecha', '>=', ctrlDesde)
+        .where('fecha', '<=', ctrlHasta)
+        .get(),
+      db.collection('controles_calidad')
+        .where('fecha', '>=', ctrlDesde)
+        .where('fecha', '<=', ctrlHasta)
+        .get(),
+    ]);
 
     // Acumular notas por persona (nombre normalizado) separado por rol
     const notasJefe        = {};  // { nombre_norm: [notas...] }
@@ -2541,48 +2548,58 @@ async function cargarCierre() {
     const notasVolteo      = {};  // Op. Shovel     → campo opVolteo
     const notasClasificado = {};  // Op. Clasificado/Garra → campo opClasificado
 
+    function _acum(mapa, nombre, nota) {
+      const k = (nombre || '').trim().toUpperCase();
+      if (!k || isNaN(nota)) return;
+      if (!mapa[k]) mapa[k] = [];
+      mapa[k].push(nota);
+    }
+
+    // ── Controles Mininco ───────────────────────────────────────
     ctrlSnap.forEach(d => {
       const r = d.data();
       // Filtrar por línea si el control tiene lineaNombre
       if (r.lineaNombre) {
         const lineaCtrl = (r.lineaNombre || '').toUpperCase();
         const lineaSel  = (linea || '').toUpperCase();
-        // "LINEA 1", "T1", "F.CORTE ALTO T1" → extraer número
         const numCtrl = (lineaCtrl.match(/\d+/) || [''])[0];
         const numSel  = (lineaSel.match(/\d+/)  || [''])[0];
-        if (numCtrl && numSel && numCtrl !== numSel) return; // otra línea
+        if (numCtrl && numSel && numCtrl !== numSel) return;
       }
       const nota = typeof r.nota === 'number' ? r.nota : parseFloat(r.nota);
       if (isNaN(nota)) return;
-      // bono tri-estado: si es 'na' no aplica al promedio
       const estadoB = r.bono === 'na' ? 'na' : (r.bono === 'si' || r.bono === true ? 'si' : 'no');
       if (estadoB === 'na') return;
 
-      function _acum(mapa, nombre) {
-        const k = (nombre || '').trim().toUpperCase();
-        if (!k) return;
-        if (!mapa[k]) mapa[k] = [];
-        mapa[k].push(nota);
-      }
-
-      // Jefes de Faena → SOLO acumular desde Pautas de Supervisión
-      // (no desde controles de calidad donde jefeFaena es solo el supervisor)
       const tipoLbl = (r.tipoLabel || '').toUpperCase();
-      const esPauta = tipoLbl.includes('PAUTA');
-      if (esPauta) {
-        _acum(notasJefe, r.jefeFaena);
-      }
-      // Calibradores → solo controles Arrumado Pino (donde se evalúa al calibrador)
+      const esPauta    = tipoLbl.includes('PAUTA');
       const esArrumado = tipoLbl.includes('ARRUMADO') || tipoLbl.includes('CLASIFICADO');
-      if (esArrumado) {
-        _acum(notasCalibradores, r.calibrador);
+      const esTrozado  = tipoLbl.includes('TROZADO');
+      const esTocones  = tipoLbl.includes('TOCONES') || tipoLbl.includes('VOLTEO');
+
+      if (esPauta)    _acum(notasJefe,         r.jefeFaena,    nota);
+      if (esArrumado) _acum(notasCalibradores,  r.calibrador,   nota);
+      if (esTrozado)  _acum(notasTrozado,       r.opTrozado,    nota);
+      if (esTocones)  _acum(notasVolteo,        r.opVolteo,     nota);
+      if (esArrumado) _acum(notasClasificado,   r.opClasificado,nota);
+    });
+
+    // ── Controles de calidad internos (tocones → Op. Shovel) ───
+    // La nota interna se guarda como porcentaje 0-100; convertir a escala 1-5 (÷20)
+    ctrlCalidadSnap.forEach(d => {
+      const r = d.data();
+      if (r.tipo !== 'tocones') return; // solo tocones evalúan al Shovel
+      if (!r.opVolteo) return;
+      // Filtrar por línea
+      if (r.lineaNombre) {
+        const numCtrl = ((r.lineaNombre || '').match(/\d+/) || [''])[0];
+        const numSel  = ((linea || '').match(/\d+/)         || [''])[0];
+        if (numCtrl && numSel && numCtrl !== numSel) return;
       }
-      // Operadores → solo los controles que aplican a cada rol
-      const esTrozado    = tipoLbl.includes('TROZADO');
-      const esTocones    = tipoLbl.includes('TOCONES') || tipoLbl.includes('VOLTEO');
-      if (esTrozado)  _acum(notasTrozado,     r.opTrozado);
-      if (esTocones)  _acum(notasVolteo,      r.opVolteo);
-      if (esArrumado) _acum(notasClasificado, r.opClasificado);
+      const pct  = typeof r.nota === 'number' ? r.nota : parseFloat(r.nota);
+      if (isNaN(pct)) return;
+      const nota5 = Math.max(1, Math.round(pct / 20 * 10) / 10); // 90% → 4.5
+      _acum(notasVolteo, r.opVolteo, nota5);
     });
 
     // Calcular quién gana bono (promedio >= 4.5)
@@ -2600,7 +2617,45 @@ async function cargarCierre() {
     state.bonoControlVolteo      = _promGanaBono(notasVolteo);
     state.bonoControlClasificado = _promGanaBono(notasClasificado);
 
-    // 5. ¿Existe ya un cierre guardado?
+    // 5. Cuadrilla diaria del mes → resumen de días por línea para rotativos
+    //    Permite a Ignacio ver en qué líneas trabajó cada rotativo y decidir asignación.
+    const cuadrillaSnap = await db.collection('cuadrilla_diaria')
+      .where('fecha', '>=', fechaDesde)
+      .where('fecha', '<=', fechaHasta)
+      .get();
+
+    // Mapa: trabajadorId → { 'LÍNEA T1': n, 'LÍNEA T2': n, 'LÍNEA T3': n }
+    // El "jefeFaena" del documento indica en qué línea/cuadrilla estuvo el trabajador.
+    // Para mapear jefeFaena → línea usamos config_jefes_faena si existe, o inferimos desde
+    // la selección de línea activa. Por ahora lo guardamos por jefeFaena para render.
+    const cuadrillaMes = {}; // { trabajadorId: { jefeFaena: diasCount } }
+
+    // También necesitamos saber qué jefeFaena corresponde a cada línea.
+    // Intentamos cargar config_jefes_faena (si existe) para el mapeo nombre→línea.
+    let jefesLinea = {}; // { nombreJefe_norm: 'LÍNEA T1' }
+    try {
+      const jefesSnap = await db.collection('config_jefes_faena').get();
+      jefesSnap.forEach(d => {
+        const dat = d.data();
+        const nombre = (dat.nombre || d.id || '').trim().toUpperCase();
+        const lineaJ = (dat.linea || '').trim().toUpperCase();
+        if (nombre && lineaJ) jefesLinea[nombre] = lineaJ;
+      });
+    } catch(_) { /* colección opcional — continuar sin ella */ }
+
+    cuadrillaSnap.forEach(d => {
+      const dat = d.data();
+      const jefe = (dat.jefeFaena || '').trim().toUpperCase();
+      const lineaJefe = jefesLinea[jefe] || null; // null si no encontramos el mapeo
+      (dat.trabajadorIds || []).forEach(id => {
+        if (!cuadrillaMes[id]) cuadrillaMes[id] = {};
+        const clave = lineaJefe || jefe || '?'; // usar nombre jefe si no hay mapeo de línea
+        cuadrillaMes[id][clave] = (cuadrillaMes[id][clave] || 0) + 1;
+      });
+    });
+    state.cuadrillaMes = cuadrillaMes;
+
+    // 6. ¿Existe ya un cierre guardado?
     const cierreSnap = await db.collection('cierre_mes').doc(docId).get();
     let cierreGuardado = null;
     if (cierreSnap.exists) cierreGuardado = cierreSnap.data();
@@ -2716,9 +2771,15 @@ function construirFilasCierre(trabajadores, prodTotal, prodTorre, vma) {
   state._sinAsignacion = sinAsignacion.map(({ t, dot }) => _buildFila(t, dot, prodTotal, prodTorre, 'sin-asignacion'));
 
   // Combinar: trabajadores de la línea + rotativos
-  return [...deLinea, ...rotativos].map(({ t, dot }) =>
-    _buildFila(t, dot, prodTotal, prodTorre, null)
-  );
+  // Para rotativos, adjuntar datos de cuadrilla del mes (días por línea/jefe)
+  return [
+    ...deLinea.map(({ t, dot }) => _buildFila(t, dot, prodTotal, prodTorre, null)),
+    ...rotativos.map(({ t, dot }) => {
+      const fila = _buildFila(t, dot, prodTotal, prodTorre, null);
+      fila._cuadrillaMes = (state.cuadrillaMes || {})[t.id] || null;
+      return fila;
+    }),
+  ];
 }
 
 function _dotKey(d) {
@@ -3210,19 +3271,23 @@ function cambiarBaseProd(base) {
 
 // ── RENDER SECCIONES ──────────────────────────────────────────
 const SECCIONES_ORDEN = [
-  { key: 'TORRE',      label: 'Torre Alpine',        icono: '🌲' },
-  { key: 'PROCESADOR', label: 'Procesador / Trozado', icono: '⚙️' },
-  { key: 'SKIDDER',    label: 'Skidder Grappel',     icono: '🚜' },
-  { key: 'SHOVEL',     label: 'Shovel',               icono: '🏗' },
-  { key: 'JEFE',       label: 'Jefes de Faena',      icono: '👷' },
-  { key: 'CALIBRADOR', label: 'Calibradores',         icono: '📏' },
-  { key: 'SUPERVISOR', label: 'Supervisor',            icono: '🎯' },
-  { key: 'OTRO',       label: 'Otros',                icono: '👤' },
+  { key: 'TORRE',         label: 'Torre Alpine',        icono: '🌲' },
+  { key: 'ESTROBERO',     label: 'Estroberos',          icono: '🪢' },
+  { key: 'PROCESADOR',    label: 'Procesador / Trozado', icono: '⚙️' },
+  { key: 'SKIDDER',       label: 'Skidder Grappel',     icono: '🚜' },
+  { key: 'SHOVEL',        label: 'Shovel',               icono: '🏗' },
+  { key: 'MOTOSIERRISTA', label: 'Motosierristas',       icono: '🪚' },
+  { key: 'JEFE',          label: 'Jefes de Faena',      icono: '👷' },
+  { key: 'CALIBRADOR',    label: 'Calibradores',         icono: '📏' },
+  { key: 'SUPERVISOR',    label: 'Supervisor',            icono: '🎯' },
+  { key: 'OTRO',          label: 'Otros',                icono: '👤' },
 ];
 
 function clasificarCargo(cargo) {
   const c = (cargo || '').toUpperCase();
-  if (c.includes('TORRE') || c.includes('ESTROBERO') || c.includes('ORDENAMIENTO') || c.includes('MOTOSERRISTA')) return 'TORRE';
+  if (c.includes('ESTROBERO') || c.includes('ORDENAMIENTO')) return 'ESTROBERO';
+  if (c.includes('MOTOSIERR')) return 'MOTOSIERRISTA';
+  if (c.includes('TORRE')) return 'TORRE';
   if (c.includes('PROCESADOR') || c.includes('CLASIFICADO') || c.includes('TROZADO')) return 'PROCESADOR';
   if (c.includes('SKIDDER') || c.includes('SK ') || c.includes('GRAPPEL')) return 'SKIDDER';
   if (c.includes('SHOVEL')) return 'SHOVEL';
@@ -3237,7 +3302,8 @@ function renderSecciones(vma, prodTotal, prodTorre) {
   cont.innerHTML = '';
 
   // Definir qué secciones usan prod torre vs faena
-  const SEC_TORRE = new Set(['TORRE']); // Torre Alpine usa prodTorre
+  // Estroberos comparten la producción de torre (van en la cuadrilla de la torre)
+  const SEC_TORRE = new Set(['TORRE', 'ESTROBERO']);
   const modoLabel = state.modoVma === 'alto'
     ? '🌲 VMA Tramo 1 — mayor o igual a 0,56 m³/árbol'
     : state.modoVma === 'medio'
@@ -3448,6 +3514,30 @@ function renderFilasSec(secKey, filas) {
           title="${f.excluido ? 'Reactivar en el cierre' : 'Excluir del cierre (ej: licencia médica)'}"
           style="pointer-events:auto;">${f.excluido ? '✕' : '○'}</button>
         <span class="nombre-trabajador">${f.nombre}</span>
+        ${f._cuadrillaMes ? (() => {
+          // Badge de distribución de días del rotativo por línea/jefe
+          const entradas = Object.entries(f._cuadrillaMes)
+            .sort((a, b) => b[1] - a[1]);
+          const total = entradas.reduce((s, [,n]) => s + n, 0);
+          // Colores por línea conocida
+          const COLOR_LINEA = {
+            'LÍNEA T1': '#1d4ed8', 'LINEA T1': '#1d4ed8',
+            'LÍNEA T2': '#166534', 'LINEA T2': '#166534',
+            'LÍNEA T3': '#854d0e', 'LINEA T3': '#854d0e',
+          };
+          const titulo = entradas.map(([k,n]) => `${k}: ${n} día${n>1?'s':''}`).join(' · ');
+          const pills = entradas.map(([k, n]) => {
+            const pct = Math.round(n / total * 100);
+            const color = COLOR_LINEA[k.toUpperCase()] || '#6d28d9';
+            const lbl = k.replace(/LÍNEA\s*/i,'T').replace(/LINEA\s*/i,'T'); // "LÍNEA T1" → "T1"
+            return `<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:9px;background:${color}22;color:${color};border:1px solid ${color}55;">${lbl} ${n}d</span>`;
+          }).join(' ');
+          return `<div title="Cuadrilla diaria este mes · ${total} jornadas: ${titulo}"
+            style="display:flex;flex-direction:column;gap:1px;margin-top:2px;line-height:1.2;">
+            <span style="font-size:9px;color:#6d28d9;font-weight:600;">🔄 Rotativo</span>
+            <div style="display:flex;gap:3px;flex-wrap:wrap;">${pills}</div>
+          </div>`;
+        })() : (f.centro === 'ROTATIVO' ? '<span style="font-size:9px;color:#9ca3af;margin-top:2px;">🔄 sin cuadrilla registrada</span>' : '')}
       </td>
       <td class="td-cargo">
         <div>${f.funcionActiva || f.cargo}</div>
@@ -3855,6 +3945,12 @@ function exportarPDF() {
     td{padding:4px 8px;border-bottom:1px solid #eee;font-size:11px}
     .total-row{background:#EAF3DE;font-weight:bold}
     .text-right{text-align:right}
+    .obs-ausencia{color:#b45309;font-weight:700}
+    .aviso-rrhh-inline{font-size:10px;color:#b45309;display:block;margin-top:2px}
+    .bloque-rrhh{border:2px solid #f59e0b;background:#fffbeb;border-radius:6px;padding:12px 14px;margin-top:20px;page-break-inside:avoid}
+    .bloque-rrhh h3{font-size:13px;color:#92400e;margin:0 0 8px}
+    .bloque-rrhh table th{background:#92400e}
+    .bloque-rrhh p{font-size:11px;color:#78350f;margin:8px 0 0}
     @media print{button{display:none}}
   </style></head><body>
   <h1>Cierre de Mes — ${MESES[mes]} ${anio} — ${linea}</h1>
@@ -3864,6 +3960,9 @@ function exportarPDF() {
   SECCIONES_ORDEN.forEach(s => grupos[s.key] = []);
   state.filasCierre.forEach(f => grupos[clasificarCargo(f.cargo)].push(f));
 
+  const OBS_AUSENCIA = new Set(['VACACIONES', 'LICENCIA', 'PROPORCIONAL']);
+  const casosRRHH = []; // acumula trabajadores que requieren revisión proporcional
+
   SECCIONES_ORDEN.forEach(sec => {
     const filas = grupos[sec.key];
     if (!filas.length) return;
@@ -3871,22 +3970,66 @@ function exportarPDF() {
     html += `<h2>${sec.label}</h2><table>
       <thead><tr><th>Nombre</th><th>RUT</th><th>Cargo</th><th>Prod. ref.</th><th>Bono prod.</th><th>Bonos fijos</th><th>Obs</th><th class="text-right">Total</th></tr></thead>
       <tbody>
-        ${filas.map(f=>`<tr>
-          <td>${f.nombre}</td><td>${f.rut||'—'}</td><td>${f.cargo}</td>
-          <td>${fmtM3(f.prodRef)}</td>
-          <td class="text-right">${fmtMoney(f.bonoProduccion)}</td>
-          <td>${(f.bonosFijosCalc||[]).filter(b=>b.aplica).map(b=>`${b.nombre}: ${fmtMoney(b.monto)}`).join('<br>')}</td>
-          <td>${f.obs||'—'}</td>
-          <td class="text-right"><b>${fmtMoney(f.totalBono)}</b></td>
-        </tr>`).join('')}
+        ${filas.map(f => {
+          const esAusencia = OBS_AUSENCIA.has(f.obs);
+          if (esAusencia) casosRRHH.push(f);
+          const obsCell = esAusencia
+            ? `<span class="obs-ausencia">${f.obs}</span><span class="aviso-rrhh-inline">⚠ Revisar proporcional</span>`
+            : (f.obs || '—');
+          return `<tr>
+            <td>${f.nombre}</td><td>${f.rut||'—'}</td><td>${f.cargo}</td>
+            <td>${fmtM3(f.prodRef)}</td>
+            <td class="text-right">${fmtMoney(f.bonoProduccion)}</td>
+            <td>${[
+              ...(f.bonosFijosCalc||[]).filter(b=>b.aplica).map(b=>`${b.nombre}: ${fmtMoney(b.monto)}`),
+              ...(f.bonoControlMininco > 0 && f.infoControlMininco ? [
+                (() => {
+                  const ic = f.infoControlMininco;
+                  const lbl = ic.rol === 'jefe' ? '📋 Pauta Supervisión'
+                    : ic.rol === 'calibrador' ? '📋 Control Calidad'
+                    : ic.rol === 'trozado'    ? '✅ Calidad (trozado)'
+                    : ic.rol === 'volteo'     ? '✅ Calidad (tocones)'
+                    : ic.rol === 'clasificado'? '✅ Calidad (arrumado)'
+                    : '📋 Control Mininco';
+                  const detalle = ic.esDefault ? 'sin control (defecto)' : `nota ${ic.prom}`;
+                  return `${lbl} [${detalle}]: ${fmtMoney(f.bonoControlMininco)}`;
+                })()
+              ] : []),
+            ].join('<br>') || '—'}</td>
+            <td>${obsCell}</td>
+            <td class="text-right"><b>${fmtMoney(f.totalBono)}</b></td>
+          </tr>`;
+        }).join('')}
         <tr class="total-row"><td colspan="7">SUBTOTAL ${sec.label}</td><td class="text-right">${fmtMoney(totalSec)}</td></tr>
       </tbody></table>`;
   });
 
   const totalGen = state.filasCierre.reduce((s, f) => s + (f.totalBono || 0), 0);
   html += `<p style="margin-top:16px;font-size:14px;font-weight:bold;color:#1a3a1a">
-    TOTAL GENERAL A PAGAR: ${fmtMoney(totalGen)}</p>
-  <script>window.onload=function(){window.print()}<\/script></body></html>`;
+    TOTAL GENERAL A PAGAR: ${fmtMoney(totalGen)}</p>`;
+
+  // Bloque de alerta para RRHH si hay ausencias que requieren revisión proporcional
+  if (casosRRHH.length) {
+    html += `<div class="bloque-rrhh">
+      <h3>⚠️ ATENCIÓN RRHH — Casos con posible proporcional</h3>
+      <p>Los siguientes trabajadores registran ausencias este mes. Verificar si corresponde pagar bonos en forma proporcional a los días efectivamente trabajados.</p>
+      <table style="margin-top:10px">
+        <thead><tr><th>Nombre</th><th>RUT</th><th>Cargo</th><th>Situación</th><th class="text-right">Monto liquidado</th></tr></thead>
+        <tbody>
+          ${casosRRHH.map(f=>`<tr>
+            <td><b>${f.nombre}</b></td>
+            <td>${f.rut||'—'}</td>
+            <td>${f.cargo}</td>
+            <td><b>${f.obs}</b></td>
+            <td class="text-right">${fmtMoney(f.totalBono)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <p><b>Acción requerida:</b> revisar días trabajados en el mes y ajustar el monto de bonos si corresponde aplicar proporcionalidad.</p>
+    </div>`;
+  }
+
+  html += `<script>window.onload=function(){window.print()}<\/script></body></html>`;
 
   const win = window.open('', '_blank');
   win.document.write(html);
