@@ -951,9 +951,9 @@
       <div style="display:flex; flex-direction:column; gap:1px;">
         <span style="font-size:9px; font-weight:700; color:#888; text-transform:uppercase;">Línea</span>
         <select id="sel-linea" style="font-size:12px; padding:3px 6px; border:1px solid #ddd; border-radius:6px; background:#f9faf9;">
-          <option value="LÍNEA T1">Línea 1</option>
-          <option value="LÍNEA T2">Línea 2</option>
-          <option value="LÍNEA T3">Línea 3</option>
+          <option value="FORMIN 1">FORMIN 1</option>
+          <option value="FORMIN 2">FORMIN 2</option>
+          <option value="FORMIN 3">FORMIN 3</option>
         </select>
       </div>
     </div>
@@ -1096,9 +1096,9 @@
         <label>Línea</label>
         <select id="hist-linea">
           <option value="">Todas</option>
-          <option value="LÍNEA T1">Línea 1</option>
-          <option value="LÍNEA T2">Línea 2</option>
-          <option value="LÍNEA T3">Línea 3</option>
+          <option value="FORMIN 1">FORMIN 1</option>
+          <option value="FORMIN 2">FORMIN 2</option>
+          <option value="FORMIN 3">FORMIN 3</option>
         </select>
       </div>
       <div class="form-group" style="justify-content:flex-end">
@@ -1801,9 +1801,9 @@ const LINEAS_CONFIG = ['Línea 1','Línea 2','Línea 3','Flotante'];
 
 // Mapeo centro Firestore → selector línea UI
 const CENTRO_A_LINEA = {
-  'FORMIN 1': 'LÍNEA T1',
-  'FORMIN 2': 'LÍNEA T2',
-  'FORMIN 3': 'LÍNEA T3',
+  'FORMIN 1': 'FORMIN 1',
+  'FORMIN 2': 'FORMIN 2',
+  'FORMIN 3': 'FORMIN 3',
   'ROTATIVO': 'ROTATIVO',
   'Rotativo': 'ROTATIVO', // alias por si acaso
 };
@@ -2625,7 +2625,7 @@ async function cargarCierre() {
       .where('fecha', '<=', fechaHasta)
       .get();
 
-    // Mapa: trabajadorId → { 'LÍNEA T1': n, 'LÍNEA T2': n, 'LÍNEA T3': n }
+    // Mapa: trabajadorId → { 'FORMIN 1': n, 'FORMIN 2': n, 'FORMIN 3': n }
     // El "jefeFaena" del documento indica en qué línea/cuadrilla estuvo el trabajador.
     // Para mapear jefeFaena → línea usamos config_jefes_faena si existe, o inferimos desde
     // la selección de línea activa. Por ahora lo guardamos por jefeFaena para render.
@@ -2634,30 +2634,24 @@ async function cargarCierre() {
     // También necesitamos saber qué jefeFaena corresponde a cada línea.
     // Intentamos cargar config_jefes_faena (si existe) para el mapeo nombre→línea.
     // Mapeo fundo → línea (igual que CENTRO_A_LINEA, que usa los mismos valores)
-    const FUNDO_A_LINEA = {
-      'FORMIN 1': 'LÍNEA T1', 'FORMIN1': 'LÍNEA T1',
-      'FORMIN 2': 'LÍNEA T2', 'FORMIN2': 'LÍNEA T2',
-      'FORMIN 3': 'LÍNEA T3', 'FORMIN3': 'LÍNEA T3',
-    };
-    // config_jefes_faena: { nombre, fundo } → mapea jefe → línea via fundo
-    let jefesLinea = {}; // { 'JUAN SUAREZ': 'LÍNEA T1', ... }
+    // config_jefes_faena: { nombre, fundo } → mapea jefe → FORMIN como fallback
+    let jefesLinea = {}; // { 'JUAN SUAREZ': 'FORMIN 2', ... }
     try {
       const jefesSnap = await db.collection('config_jefes_faena').get();
       jefesSnap.forEach(d => {
         const dat = d.data();
         const nombre = (dat.nombre || d.id || '').trim().toUpperCase();
-        const fundo  = (dat.fundo  || '').trim().toUpperCase();
-        const linea  = FUNDO_A_LINEA[fundo] || null;
-        if (nombre && linea) jefesLinea[nombre] = linea;
+        const fundo  = (dat.fundo  || '').trim().toUpperCase(); // ej: "FORMIN 1"
+        if (nombre && fundo) jefesLinea[nombre] = fundo;
       });
     } catch(_) { /* colección opcional — continuar sin ella */ }
 
     cuadrillaSnap.forEach(d => {
       const dat = d.data();
       const jefe = (dat.jefeFaena || '').trim().toUpperCase();
-      // lineaJefe del doc (ej: "FORMIN 3") → convertir a "LÍNEA T3" via FUNDO_A_LINEA
-      const lineaDoc = FUNDO_A_LINEA[(dat.lineaJefe || '').trim().toUpperCase()] || null;
-      // Fallback: mapeo via config_jefes_faena
+      // lineaJefe del doc ya viene como "FORMIN 1/2/3" — usar directo
+      const lineaDoc = (dat.lineaJefe || '').trim().toUpperCase() || null;
+      // Fallback: fundo del jefe en config_jefes_faena
       const lineaJefe = lineaDoc || jefesLinea[jefe] || null;
       (dat.trabajadorIds || []).forEach(id => {
         if (!cuadrillaMes[id]) cuadrillaMes[id] = {};
@@ -2666,7 +2660,7 @@ async function cargarCierre() {
       });
     });
     state.cuadrillaMes = cuadrillaMes;
-    state.jefesLinea = jefesLinea; // { 'JUAN SUAREZ': 'LÍNEA T1', ... } — para filtrar rotativos
+    state.jefesLinea = jefesLinea;
 
     // 6. ¿Existe ya un cierre guardado?
     const cierreSnap = await db.collection('cierre_mes').doc(docId).get();
@@ -2798,7 +2792,7 @@ function construirFilasCierre(trabajadores, prodTotal, prodTorre, vma) {
     return null;
   };
   // Filtrar rotativos: solo incluir si tiene días en la línea activa este mes
-  const LINEAS_CONOCIDAS = new Set(['LÍNEA T1','LÍNEA T2','LÍNEA T3','LINEA T1','LINEA T2','LINEA T3']);
+  const LINEAS_CONOCIDAS = new Set(['FORMIN 1','FORMIN 2','FORMIN 3','FORMIN1','FORMIN2','FORMIN3']);
   const rotativosFiltrados = rotativos.filter(({ t }) => {
     const cm = _buscarCuadrilla(t);
     if (!cm) return false; // sin registro en cuadrilla → no mostrar en ninguna línea
@@ -3565,14 +3559,14 @@ function renderFilasSec(secKey, filas) {
           const esMult = entradas.length > 1; // trabajó en más de una línea este mes
           // Colores por línea conocida
           const COLOR_LINEA = {
-            'LÍNEA T1': '#1d4ed8', 'LINEA T1': '#1d4ed8',
-            'LÍNEA T2': '#166534', 'LINEA T2': '#166534',
-            'LÍNEA T3': '#854d0e', 'LINEA T3': '#854d0e',
+            'FORMIN 1': '#1d4ed8', 'FORMIN1': '#1d4ed8',
+            'FORMIN 2': '#166534', 'FORMIN2': '#166534',
+            'FORMIN 3': '#854d0e', 'FORMIN3': '#854d0e',
           };
           const titulo = entradas.map(([k,n]) => `${k}: ${n} día${n>1?'s':''}`).join(' · ');
           const pills = entradas.map(([k, n]) => {
             const color = COLOR_LINEA[k.toUpperCase()] || '#6d28d9';
-            const lbl = k.replace(/LÍNEA\s*/i,'T').replace(/LINEA\s*/i,'T'); // "LÍNEA T1" → "T1"
+            const lbl = k.replace(/FORMIN\s*/i,'F'); // "FORMIN 1" → "F1"
             return `<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:9px;background:${color}22;color:${color};border:1px solid ${color}55;">${lbl} ${n}d</span>`;
           }).join(' ');
           // Si trabajó en múltiples líneas → mostrar selector para elegir dónde se contabiliza
