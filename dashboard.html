@@ -224,6 +224,14 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
 
 /* GRÁFICO */
 .chart-wrap{position:relative;width:100%;height:220px}
+/* Botones filtro gráfico */
+.chart-filter-btns{display:flex;gap:5px;flex-shrink:0}
+.chart-filter-btn{font-size:11px;font-weight:600;font-family:var(--font);padding:4px 10px;border-radius:20px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.chart-filter-btn:hover{border-color:var(--text2);color:var(--text)}
+.chart-filter-btn.active[data-linea="todas"]{background:var(--text);border-color:var(--text);color:#fff}
+.chart-filter-btn.active[data-linea="T1"]{background:#E07040;border-color:#E07040;color:#fff}
+.chart-filter-btn.active[data-linea="T2"]{background:#3B6D11;border-color:#3B6D11;color:#fff}
+.chart-filter-btn.active[data-linea="T3"]{background:#1D5FAD;border-color:#1D5FAD;color:#fff}
 
 /* OEE NÚMEROS */
 .oee-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem}
@@ -608,15 +616,31 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
     <div id="ultimos3-wrap"></div>
   </div>
 
-  <!-- ═══ 3. GRÁFICO PRODUCCIÓN DIARIA VS. META ═══ -->
+  <!-- ═══ 3. GRÁFICO DIFERENCIA ACUMULADA POR LÍNEA ═══ -->
   <div class="section">
-    <div class="section-title"><i class="ti ti-chart-bar"></i> Producción diaria vs. meta</div>
-    <div class="chart-wrap" id="chart-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem">
+      <div class="section-title" style="margin-bottom:0"><i class="ti ti-chart-line"></i> Diferencia m³ acumulada vs. meta — por línea</div>
+      <div class="chart-filter-btns" id="chart-filter-btns">
+        <button class="chart-filter-btn active" data-linea="todas">Todas</button>
+        <button class="chart-filter-btn" data-linea="T1">T1</button>
+        <button class="chart-filter-btn" data-linea="T2">T2</button>
+        <button class="chart-filter-btn" data-linea="T3">T3</button>
+      </div>
+    </div>
+    <div class="chart-wrap" id="chart-wrap" style="height:260px">
       <canvas id="chart-prod"></canvas>
     </div>
     <div id="chart-empty" class="empty-state" style="display:none">
       <i class="ti ti-chart-bar-off" style="font-size:26px;display:block;margin-bottom:.5rem"></i>
       Sin datos de producción para el período
+    </div>
+  </div>
+
+  <!-- ═══ 3b. GRÁFICO ACUMULADO: REAL vs META CALTO vs META FORMIN ═══ -->
+  <div class="section" id="seccion-acumulado" style="display:none">
+    <div class="section-title"><i class="ti ti-trending-up"></i> Producción acumulada vs. metas — total faena</div>
+    <div class="chart-wrap" id="chart-acum-wrap" style="height:260px">
+      <canvas id="chart-acum"></canvas>
     </div>
   </div>
 
@@ -1001,6 +1025,7 @@ function getEqmFiltro()   { return MS_SEL.eqm; }
 // ── ESTADO GLOBAL ─────────────────────────────────────────────────────────
 let G = { prod:[], jefe:[], meta:{}, inicio:[], desde:'', hasta:'' };
 let chartInst = null;
+let _chartGraficoData = null; // guarda datos para re-filtrar sin re-consultar
 let VMA_MININCO = {};
 
 // ── CONSULTAR ─────────────────────────────────────────────────────────────
@@ -1174,6 +1199,8 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
       metaTotal += ml.total;
     }
   }
+  // Exponer al scope global para que renderGrafico pueda usar metas por línea
+  window._metasPorLinea = metasPorLinea;
 
   // Meta acumulada hasta diaBase() — antes de las 20h usamos ayer, después usamos hoy
   const ayerISO = diaBaseISO();
@@ -1244,7 +1271,7 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
 
   // ── Carga CALTO consolidado async ─────────────────────────────────────
   if(mesStr) {
-    (async () => {
+    await (async () => {
       const lineasT2T3 = lineasReales; // todas las líneas
       if(!lineasT2T3.length) return;
       let metaCaltoTotal = 0;
@@ -1264,6 +1291,7 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
       }
       // metaCaltoTotal está en miles (×1000 para m³)
       const metaCaltoTotal1000 = metaCaltoTotal * 1000;
+      window._metaCaltoTotal1000 = metaCaltoTotal1000; // para gráfico acumulado
       // Meta acumulada CALTO hasta diaBaseISO() — comparación por string YYYY-MM-DD sin ambigüedad de horas
       const [aC,mC] = mesStr.split('-').map(Number);
       const diasMesC = new Date(aC,mC,0).getDate();
@@ -1615,6 +1643,13 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
 
   // ── Últimos 3 días ────────────────────────────────────────────────────────
   await renderUltimos3(prodHistorico || prodTodo, metasPorLinea);
+
+  // ── Re-dibujar gráfico acumulado ahora que _metaCaltoTotal1000 está listo ──
+  // renderEjecutivo termina después de renderProduccion, así que el gráfico 2
+  // se re-dibuja aquí con el valor correcto de Meta CALTO.
+  if(window._prodGlobal && window._metaGlobal && window._desdeGlobal && window._hastaGlobal) {
+    renderGraficoAcumulado(window._prodGlobal, window._metaGlobal, window._desdeGlobal, window._hastaGlobal);
+  }
 }
 
 // ── ÚLTIMOS 3 DÍAS POR LÍNEA ──────────────────────────────────────────────
@@ -1736,6 +1771,7 @@ function mostrarLoaders() {
   document.getElementById('rend-wrap').innerHTML = loaderHTML;
   document.getElementById('chart-wrap').style.display = 'none';
   document.getElementById('chart-empty').style.display = 'none';
+  document.getElementById('seccion-acumulado').style.display = 'none';
 }
 
 // ── POBLAR SELECTOR PROCESADORES ──────────────────────────────────────────
@@ -1759,6 +1795,11 @@ function poblarProcesadores(jefe) {
 // ══════════════════════════════════════════════════════════════════════════
 function renderProduccion() {
   const { prod, prodEqm, meta, inicio, desde, hasta } = G;
+  // Guardar globales para que renderEjecutivo pueda re-dibujar gráfico 2
+  window._prodGlobal  = prod;
+  window._metaGlobal  = meta;
+  window._desdeGlobal = desde;
+  window._hastaGlobal = hasta;
 
   // ── KPI cards: volReal desde prodEqm (filtro Eq.Madereo) para que cuadre con tabla ──
   // Suma volumen solo de cartolas de equipos seleccionados
@@ -1795,7 +1836,12 @@ function renderProduccion() {
     </div>`;
 
   // ── Gráfico ──
+  // Resetear filtro a "Todas" al nueva consulta
+  document.querySelectorAll('.chart-filter-btn').forEach(b => b.classList.remove('active'));
+  const btnTodas = document.querySelector('.chart-filter-btn[data-linea="todas"]');
+  if(btnTodas) btnTodas.classList.add('active');
   renderGrafico(prod, meta, desde, hasta);
+  renderGraficoAcumulado(prod, meta, desde, hasta);
 }
 
 // ── TABLA DIARIA (filtro EQ.MADEREO) ────────────────────────────────────
@@ -2120,51 +2166,250 @@ function renderRodalesFundoEqm(jefeLinea) {
      <div style="margin-top:4px">${fundoHTML}</div>`;
 }
 
-// ── GRÁFICO ───────────────────────────────────────────────────────────────
+// ── GRÁFICO: DIFERENCIA ACUMULADA POR LÍNEA ──────────────────────────────
+// Replica el gráfico de gestión de Pablo Giroz:
+// muestra la diferencia acumulada (real − meta) por línea T1/T2/T3 día a día.
 function renderGrafico(prod, meta, desde, hasta) {
-  const prodPorFecha = {};
+  // Colores por línea (igual al Excel de Pablo)
+  const LINEA_COLORS = {
+    'LÍNEA T1': { border:'#E07040', bg:'rgba(224,112,64,.12)' },
+    'LÍNEA T2': { border:'#3B6D11', bg:'rgba(59,109,17,.10)' },
+    'LÍNEA T3': { border:'#1D5FAD', bg:'rgba(29,95,173,.10)' },
+  };
+
+  // Producción real por línea y fecha
+  const prodLinFecha = {}; // { 'LÍNEA T1': { '2026-11-01': 500, ... }, ... }
   prod.forEach(d => {
-    prodPorFecha[d.fecha] = (prodPorFecha[d.fecha]||0) + (parseFloat(d.totalGlobal)||0);
+    const lin = d.linea || d.codLinea || '';
+    const f   = d.fecha || '';
+    if(!lin || !f) return;
+    if(!prodLinFecha[lin]) prodLinFecha[lin] = {};
+    prodLinFecha[lin][f] = (prodLinFecha[lin][f]||0) + (parseFloat(d.totalGlobal)||0);
   });
-  const labels=[], reales=[], metas=[];
+
+  // Meta por línea y fecha — se reconstruye desde G.metasPorLinea si existe,
+  // si no, prorratea la meta total entre las líneas con producción
+  const lineas = Object.keys(prodLinFecha).sort();
+  const metaLinFecha = {}; // { 'LÍNEA T1': { '2026-11-01': 383, ... }, ... }
+
+  if(window._metasPorLinea && Object.keys(window._metasPorLinea).length) {
+    // Usar metas reales por línea cargadas por renderEjecutivo
+    lineas.forEach(lin => {
+      metaLinFecha[lin] = {};
+      const ml = window._metasPorLinea[lin];
+      if(ml && ml.porDia) Object.assign(metaLinFecha[lin], ml.porDia);
+    });
+  } else {
+    // Fallback: prorratear meta total equitativamente entre líneas
+    const nLin = lineas.length || 1;
+    lineas.forEach(lin => {
+      metaLinFecha[lin] = {};
+      Object.entries(meta).forEach(([f,v]) => { metaLinFecha[lin][f] = v/nLin; });
+    });
+  }
+
+  // Construir eje X (días del período)
+  const labels = [], fechas = [];
   let cur = new Date(desde+'T12:00:00');
   const fin = new Date(hasta+'T12:00:00');
-  while(cur<=fin) {
+  while(cur <= fin) {
     const f = toISO(cur);
+    fechas.push(f);
     labels.push(`${String(cur.getDate()).padStart(2,'0')}/${String(cur.getMonth()+1).padStart(2,'0')}`);
-    reales.push(parseFloat(((prodPorFecha[f]||0)).toFixed(2)));
-    metas.push(parseFloat(((meta[f]||0)).toFixed(2)));
     cur.setDate(cur.getDate()+1);
   }
-  const hayDatos = reales.some(v=>v>0)||metas.some(v=>v>0);
+
+  // Calcular diferencia acumulada por línea
+  const datasets = lineas.map(lin => {
+    const color = LINEA_COLORS[lin] || { border:'#888', bg:'rgba(136,136,136,.1)' };
+    let acum = 0;
+    const data = fechas.map(f => {
+      const real = prodLinFecha[lin]?.[f] || 0;
+      const met  = metaLinFecha[lin]?.[f] || 0;
+      acum += (real - met);
+      return parseFloat(acum.toFixed(1));
+    });
+    return {
+      label: `Dif. acum. ${lin}`,
+      data,
+      borderColor: color.border,
+      backgroundColor: color.bg,
+      borderWidth: 2,
+      pointRadius: fechas.length <= 15 ? 3 : 2,
+      pointBackgroundColor: color.border,
+      tension: 0.2,
+      fill: false,
+    };
+  });
+
+  // Línea de referencia en 0
+  datasets.push({
+    label: 'Meta (0)',
+    data: fechas.map(()=>0),
+    borderColor: 'rgba(0,0,0,.25)',
+    borderWidth: 1,
+    borderDash: [4,3],
+    pointRadius: 0,
+    fill: false,
+    tooltip: { enabled: false },
+  });
+
+  const hayDatos = lineas.length > 0 && fechas.length > 0;
   document.getElementById('chart-wrap').style.display = hayDatos?'block':'none';
   document.getElementById('chart-empty').style.display = hayDatos?'none':'block';
   if(!hayDatos) return;
+
+  // Guardar datos para re-filtrar sin re-consultar Firestore
+  _chartGraficoData = { labels, datasets, lineas };
+
+  _dibujarGrafico(labels, datasets, 'todas');
+}
+
+function _dibujarGrafico(labels, datasets, filtro) {
+  // Filtrar datasets según selección (siempre incluir línea de referencia 0)
+  let dsVisible;
+  if(filtro === 'todas') {
+    dsVisible = datasets;
+  } else {
+    dsVisible = datasets.filter(d =>
+      d.label === 'Meta (0)' || d.label.includes(filtro)
+    );
+  }
+
   if(chartInst) chartInst.destroy();
   const ctx = document.getElementById('chart-prod').getContext('2d');
   chartInst = new Chart(ctx, {
-    data:{
+    type: 'line',
+    data: { labels, datasets: dsVisible },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: {
+          position:'bottom',
+          labels:{ font:{size:11}, boxWidth:14, padding:12,
+            filter: item => item.text !== 'Meta (0)' }
+        },
+        tooltip: {
+          callbacks: {
+            label: c => c.dataset.label === 'Meta (0)' ? null
+              : ` ${c.dataset.label}: ${c.parsed.y >= 0 ? '+' : ''}${fmt0(c.parsed.y)} m³`
+          },
+          filter: item => item.dataset.label !== 'Meta (0)'
+        }
+      },
+      scales: {
+        x: { grid:{display:false}, ticks:{font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:16} },
+        y: {
+          grid: { color:'#f0f0f0' },
+          ticks: { font:{size:10}, callback: v => (v>=0?'+':'')+fmt0(v) },
+          // Línea de 0 más visible
+          afterDataLimits: scale => {
+            const ext = Math.max(Math.abs(scale.min), Math.abs(scale.max));
+            scale.min = -ext; scale.max = ext;
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── GRÁFICO ACUMULADO: Real vs Meta CALTO vs Meta Formin ─────────────────
+// Muestra 3 curvas que suben día a día para ver desde cuándo se separó la real.
+let chartAcumInst = null;
+function renderGraficoAcumulado(prod, meta, desde, hasta) {
+  const sec = document.getElementById('seccion-acumulado');
+
+  // Producción real total por fecha (todas las líneas sumadas)
+  const prodPorFecha = {};
+  prod.forEach(d => {
+    const f = d.fecha||'';
+    if(f) prodPorFecha[f] = (prodPorFecha[f]||0) + (parseFloat(d.totalGlobal)||0);
+  });
+
+  // Meta Formin por fecha (ya viene sumada de todas las líneas en `meta`)
+  // Meta CALTO lineal: metaCaltoTotal / diasMes por día
+  // Obtenemos metaCaltoTotal de window._metaCaltoTotal si fue expuesto
+  const metaCaltoTotal1000 = window._metaCaltoTotal1000 || 0;
+
+  // Construir eje X
+  const labels = [], fechas = [];
+  let cur = new Date(desde+'T12:00:00');
+  const fin = new Date(hasta+'T12:00:00');
+  while(cur <= fin) {
+    const f = toISO(cur);
+    fechas.push(f);
+    labels.push(`${String(cur.getDate()).padStart(2,'0')}/${String(cur.getMonth()+1).padStart(2,'0')}`);
+    cur.setDate(cur.getDate()+1);
+  }
+
+  if(!fechas.length) { sec.style.display='none'; return; }
+
+  // Días del mes (usar el mes de `desde`)
+  const [ay, am] = desde.split('-').map(Number);
+  const diasMes = new Date(ay, am, 0).getDate();
+  const metaDiariaCalto = metaCaltoTotal1000 > 0 ? metaCaltoTotal1000 / diasMes : 0;
+
+  // Acumular día a día
+  let acumReal=0, acumFormin=0, acumCalto=0;
+  const dataReal=[], dataFormin=[], dataCalto=[];
+
+  fechas.forEach((f, i) => {
+    acumReal   += prodPorFecha[f] || 0;
+    acumFormin += meta[f] || 0;
+    // CALTO: acumular por número de día del mes (no por índice del array)
+    const diaNum = parseInt(f.split('-')[2], 10);
+    acumCalto = metaDiariaCalto * diaNum;
+
+    dataReal.push(parseFloat(acumReal.toFixed(1)));
+    dataFormin.push(parseFloat(acumFormin.toFixed(1)));
+    dataCalto.push(metaCaltoTotal1000 > 0 ? parseFloat(acumCalto.toFixed(1)) : null);
+  });
+
+  const hayDatos = dataReal.some(v=>v>0) || dataFormin.some(v=>v>0);
+  sec.style.display = hayDatos ? '' : 'none';
+  if(!hayDatos) return;
+
+  if(chartAcumInst) chartAcumInst.destroy();
+  const ctx = document.getElementById('chart-acum').getContext('2d');
+  chartAcumInst = new Chart(ctx, {
+    type: 'line',
+    data: {
       labels,
-      datasets:[
-        {type:'bar',label:'Real (m³)',data:reales,
-         backgroundColor:reales.map((v,i)=>
-           metas[i]>0?(v>=metas[i]?'rgba(59,109,17,.75)':'rgba(163,45,45,.7)'):'rgba(100,100,100,.45)'
-         ),borderRadius:3,order:2},
-        {type:'line',label:'Meta (m³)',data:metas,
-         borderColor:'#854F0B',backgroundColor:'transparent',
-         borderWidth:2,borderDash:[5,3],pointRadius:2,
-         pointBackgroundColor:'#854F0B',tension:.2,order:1}
+      datasets: [
+        // Real acumulada — línea sólida azul oscuro
+        { label:'Real acumulada',
+          data: dataReal,
+          borderColor:'#1D5FAD', backgroundColor:'rgba(29,95,173,.08)',
+          borderWidth:2.5, pointRadius: fechas.length<=15?3:2,
+          pointBackgroundColor:'#1D5FAD', tension:.2, fill:true, order:1 },
+        // Meta Formin acumulada — punteada verde
+        { label:'Meta Formin acum.',
+          data: dataFormin,
+          borderColor:'#3B6D11', backgroundColor:'transparent',
+          borderWidth:2, borderDash:[5,3],
+          pointRadius: fechas.length<=15?2:1,
+          pointBackgroundColor:'#3B6D11', tension:.2, fill:false, order:2 },
+        // Meta CALTO lineal — punteada naranja (solo si hay dato)
+        ...(metaCaltoTotal1000 > 0 ? [{
+          label:'Meta CALTO acum.',
+          data: dataCalto,
+          borderColor:'#E07040', backgroundColor:'transparent',
+          borderWidth:2, borderDash:[8,4],
+          pointRadius:0, tension:.0, fill:false, order:3
+        }] : [])
       ]
     },
-    options:{
-      responsive:true,maintainAspectRatio:false,
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
       plugins:{
-        legend:{position:'bottom',labels:{font:{size:11},boxWidth:14,padding:12}},
-        tooltip:{mode:'index',intersect:false,callbacks:{label:c=>` ${c.dataset.label}: ${fmt0(c.parsed.y)} m³`}}
+        legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:14, padding:12 } },
+        tooltip:{ callbacks:{ label: c => ` ${c.dataset.label}: ${fmt0(c.parsed.y)} m³` } }
       },
       scales:{
-        x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:15}},
-        y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10},callback:v=>fmt0(v)}}
+        x:{ grid:{display:false}, ticks:{font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:16} },
+        y:{ grid:{color:'#f0f0f0'}, ticks:{font:{size:10}, callback:v=>fmt0(v)+'m³'} }
       }
     }
   });
@@ -3254,7 +3499,21 @@ window.renderComparadorOperadores = function() {
   result.innerHTML=tablaComparativa(nombres,opAcc,getIndicadores(tipo_eq,volOp),color,volOp,`👤 Operadores de ${eqNombre}`);
 };
 
-window.addEventListener('DOMContentLoaded', () => consultar());
+window.addEventListener('DOMContentLoaded', () => {
+  consultar();
+
+  // Botones filtro gráfico 1
+  document.getElementById('chart-filter-btns').addEventListener('click', e => {
+    const btn = e.target.closest('.chart-filter-btn');
+    if(!btn || !_chartGraficoData) return;
+    // Marcar activo
+    document.querySelectorAll('.chart-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // Re-dibujar con filtro
+    const filtro = btn.dataset.linea;
+    _dibujarGrafico(_chartGraficoData.labels, _chartGraficoData.datasets, filtro);
+  });
+});
 
 // ── META CALTO — panel oculto en líneas T2/T3 ────────────────────────────────
 
