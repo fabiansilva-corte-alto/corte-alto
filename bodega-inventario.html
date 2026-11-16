@@ -857,6 +857,8 @@ window.abrirTarjeta=function(id){
   if((r.volFresca||0)>0)   calRows.push(`<div class="tarjeta-cal-row"><span>Fresca</span><span>${fmt(r.volFresca)} m³</span></div>`);
   if((r.volEsporada||0)>0) calRows.push(`<div class="tarjeta-cal-row"><span>Esporada</span><span>${fmt(r.volEsporada)} m³</span></div>`);
   if((r.volManchada||0)>0) calRows.push(`<div class="tarjeta-cal-row"><span>Manchada</span><span>${fmt(r.volManchada)} m³</span></div>`);
+  const prodAdicTotal=(r.produccionAdicional||[]).reduce((s,p)=>s+(p.volumen||0),0);
+  if(prodAdicTotal>0) calRows.push(`<div class="tarjeta-cal-row"><span>+ Prod. adicional</span><span>${fmt(prodAdicTotal)} m³</span></div>`);
   if(tieneCalidades)        calRows.push(`<div class="tarjeta-cal-row"><span>Total</span><span>${fmt(r.inventarioInterno)} m³</span></div>`);
 
   document.getElementById('tarjeta-contenido').innerHTML=`
