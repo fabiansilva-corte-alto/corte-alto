@@ -644,7 +644,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   initializeFirestore, persistentLocalCache,
   collection, addDoc, updateDoc, deleteDoc, doc,
-  query, orderBy, limit, getDocs, serverTimestamp
+  query, orderBy, where, limit, getDocs, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -2162,21 +2162,35 @@ window.cerrarVer = function () {
 /* ============================================================
    EXPORTAR EXCEL
    ============================================================ */
-window.abrirModalExport = function () {
-  // Poblar fundos y líneas únicos desde historialCache
-  const fundos = [...new Set(historialCache.map(r => r.fundo).filter(Boolean))].sort();
-  const lineas = [...new Set(historialCache.map(r => r.linea).filter(Boolean))].sort();
-
+window.abrirModalExport = async function () {
+  // Poblar fundos y líneas desde Firestore (sin límite) para que aparezcan todos
   const chkFundos = document.getElementById("exp-fundos");
   const chkLineas = document.getElementById("exp-lineas");
+  chkFundos.innerHTML = '<span style="color:#999;font-size:12px">Cargando…</span>';
+  chkLineas.innerHTML = '<span style="color:#999;font-size:12px">Cargando…</span>';
+  document.getElementById("modal-export").classList.add("visible");
 
-  chkFundos.innerHTML = fundos.map(f =>
-    `<label><input type="checkbox" value="${esc(f)}"> ${esc(f)}</label>`
-  ).join("") || '<span style="color:#999;font-size:12px">Sin fundos en historial</span>';
-
-  chkLineas.innerHTML = lineas.map(l =>
-    `<label><input type="checkbox" value="${esc(l)}"> ${esc(l)}</label>`
-  ).join("") || '<span style="color:#999;font-size:12px">Sin líneas en historial</span>';
+  try {
+    const snap = await getDocs(query(collection(db, COLECCION), orderBy("fecha", "desc")));
+    const allFundos = new Set();
+    const allLineas = new Set();
+    snap.forEach(d => {
+      const v = d.data();
+      if (v.fundo) allFundos.add(v.fundo);
+      if (v.linea) allLineas.add(v.linea);
+    });
+    const fundos = [...allFundos].sort();
+    const lineas = [...allLineas].sort();
+    chkFundos.innerHTML = fundos.map(f =>
+      `<label><input type="checkbox" value="${esc(f)}"> ${esc(f)}</label>`
+    ).join("") || '<span style="color:#999;font-size:12px">Sin fundos</span>';
+    chkLineas.innerHTML = lineas.map(l =>
+      `<label><input type="checkbox" value="${esc(l)}"> ${esc(l)}</label>`
+    ).join("") || '<span style="color:#999;font-size:12px">Sin líneas</span>';
+  } catch(e) {
+    chkFundos.innerHTML = '<span style="color:#999;font-size:12px">Error al cargar</span>';
+    chkLineas.innerHTML = '';
+  }
 
   // Fechas por defecto: últimos 7 días
   const hoy = new Date();
@@ -2185,36 +2199,54 @@ window.abrirModalExport = function () {
   document.getElementById("exp-fecha-desde").value = fmt(hace7);
   document.getElementById("exp-fecha-hasta").value = fmt(hoy);
   document.getElementById("exp-info").textContent = "";
-
-  document.getElementById("modal-export").classList.add("visible");
 };
 
 window.cerrarModalExport = function () {
   document.getElementById("modal-export").classList.remove("visible");
 };
 
-window.generarExcel = function () {
+window.generarExcel = async function () {
   const desde = document.getElementById("exp-fecha-desde").value;
   const hasta = document.getElementById("exp-fecha-hasta").value;
   const fundosSel = [...document.querySelectorAll("#exp-fundos input:checked")].map(c => c.value);
   const lineasSel = [...document.querySelectorAll("#exp-lineas input:checked")].map(c => c.value);
 
-  // Filtrar reportes
-  const reportes = historialCache.filter(r => {
-    if (desde && r.fecha < desde) return false;
-    if (hasta && r.fecha > hasta) return false;
-    if (fundosSel.length && !fundosSel.includes(r.fundo)) return false;
-    if (lineasSel.length && !lineasSel.includes(r.linea)) return false;
-    return true;
-  });
+  if (!desde || !hasta) {
+    document.getElementById("exp-info").textContent = "⚠️ Seleccione rango de fechas.";
+    return;
+  }
+
+  document.getElementById("exp-info").textContent = "Consultando Firestore…";
+  document.getElementById("btn-generar-excel").disabled = true;
+
+  // Consulta directa a Firestore por rango de fechas (sin límite de registros)
+  let reportes = [];
+  try {
+    const q = query(
+      collection(db, COLECCION),
+      where("fecha", ">=", desde),
+      where("fecha", "<=", hasta),
+      orderBy("fecha", "desc")
+    );
+    const snap = await getDocs(q);
+    snap.forEach(d => reportes.push({ id: d.id, ...d.data() }));
+  } catch(e) {
+    document.getElementById("exp-info").textContent = "⚠️ Error al consultar datos. Revise conexión.";
+    document.getElementById("btn-generar-excel").disabled = false;
+    return;
+  }
+
+  // Filtrar por fundo y línea si hay selección
+  if (fundosSel.length) reportes = reportes.filter(r => fundosSel.includes(r.fundo));
+  if (lineasSel.length) reportes = reportes.filter(r => lineasSel.includes(r.linea));
 
   if (!reportes.length) {
     document.getElementById("exp-info").textContent = "⚠️ No hay reportes con esos filtros.";
+    document.getElementById("btn-generar-excel").disabled = false;
     return;
   }
 
   document.getElementById("exp-info").textContent = `Generando Excel con ${reportes.length} reporte(s)…`;
-  document.getElementById("btn-generar-excel").disabled = true;
 
   try {
     const wb = XLSX.utils.book_new();
