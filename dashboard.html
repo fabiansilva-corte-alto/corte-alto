@@ -638,7 +638,15 @@ input[type=month]{width:100%;font-size:14px;font-family:var(--font);padding:8px 
 
   <!-- ═══ 3b. GRÁFICO ACUMULADO: REAL vs META CALTO vs META FORMIN ═══ -->
   <div class="section" id="seccion-acumulado" style="display:none">
-    <div class="section-title"><i class="ti ti-trending-up"></i> Producción acumulada vs. metas — total faena</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem">
+      <div class="section-title" style="margin-bottom:0"><i class="ti ti-trending-up"></i> Producción acumulada vs. metas — <span id="acum-titulo">total faena</span></div>
+      <div class="chart-filter-btns" id="chart-acum-filter-btns">
+        <button class="chart-filter-btn active" data-linea="todas">Todas</button>
+        <button class="chart-filter-btn" data-linea="T1">T1</button>
+        <button class="chart-filter-btn" data-linea="T2">T2</button>
+        <button class="chart-filter-btn" data-linea="T3">T3</button>
+      </div>
+    </div>
     <div class="chart-wrap" id="chart-acum-wrap" style="height:260px">
       <canvas id="chart-acum"></canvas>
     </div>
@@ -1026,6 +1034,7 @@ function getEqmFiltro()   { return MS_SEL.eqm; }
 let G = { prod:[], jefe:[], meta:{}, inicio:[], desde:'', hasta:'' };
 let chartInst = null;
 let _chartGraficoData = null; // guarda datos para re-filtrar sin re-consultar
+let _chartAcumData = null;    // guarda datos gráfico acumulado para re-filtrar
 let VMA_MININCO = {};
 
 // ── CONSULTAR ─────────────────────────────────────────────────────────────
@@ -1201,6 +1210,8 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
   }
   // Exponer al scope global para que renderGrafico pueda usar metas por línea
   window._metasPorLinea = metasPorLinea;
+  // Inicializar objeto para meta CALTO por línea (se llena abajo en cada bloque async)
+  window._metaCaltoLinea = {};
 
   // Meta acumulada hasta diaBase() — antes de las 20h usamos ayer, después usamos hoy
   const ayerISO = diaBaseISO();
@@ -1275,6 +1286,7 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
       const lineasT2T3 = lineasReales; // todas las líneas
       if(!lineasT2T3.length) return;
       let metaCaltoTotal = 0;
+      if(!window._metaCaltoLinea) window._metaCaltoLinea = {};
       for(const lin of lineasT2T3) {
         const datos = await cargarOfertaRodalesLinea(lin, mesStr);
         if(!datos) continue;
@@ -1287,6 +1299,8 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
             if(vn != null) mc += (totalOf>0 ? vol/totalOf : 0) * vn;
           });
         }
+        // Guardar meta CALTO por línea para gráfico 1
+        window._metaCaltoLinea[lin] = { total: mc, mesStr };
         metaCaltoTotal += mc;
       }
       // metaCaltoTotal está en miles (×1000 para m³)
@@ -1593,6 +1607,10 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
             if(vn != null) metaCalto += (totalOf>0 ? vol/totalOf : 0) * vn;
           });
         }
+        // Exponer meta CALTO de esta línea para que renderGrafico la use
+        if(!window._metaCaltoLinea) window._metaCaltoLinea = {};
+        window._metaCaltoLinea[lin] = { total: metaCalto, mesStr };
+
         const [a,m] = mesStr.split('-').map(Number);
         const diasMesC = new Date(a,m,0).getDate();
         const mesTerminadoC = diaBaseISO() > `${mesStr}-${String(diasMesC).padStart(2,'0')}`;
@@ -1644,10 +1662,9 @@ async function renderEjecutivo(prodTodo, jefeTodo, desde, hasta, mesStr, prodHis
   // ── Últimos 3 días ────────────────────────────────────────────────────────
   await renderUltimos3(prodHistorico || prodTodo, metasPorLinea);
 
-  // ── Re-dibujar gráfico acumulado ahora que _metaCaltoTotal1000 está listo ──
-  // renderEjecutivo termina después de renderProduccion, así que el gráfico 2
-  // se re-dibuja aquí con el valor correcto de Meta CALTO.
+  // ── Re-dibujar gráficos ahora que _metaCaltoLinea y _metaCaltoTotal1000 están listos ──
   if(window._prodGlobal && window._metaGlobal && window._desdeGlobal && window._hastaGlobal) {
+    renderGrafico(window._prodGlobal, window._metaGlobal, window._desdeGlobal, window._hastaGlobal);
     renderGraficoAcumulado(window._prodGlobal, window._metaGlobal, window._desdeGlobal, window._hastaGlobal);
   }
 }
@@ -1836,10 +1853,13 @@ function renderProduccion() {
     </div>`;
 
   // ── Gráfico ──
-  // Resetear filtro a "Todas" al nueva consulta
-  document.querySelectorAll('.chart-filter-btn').forEach(b => b.classList.remove('active'));
-  const btnTodas = document.querySelector('.chart-filter-btn[data-linea="todas"]');
+  // Resetear filtros a "Todas" al nueva consulta
+  document.querySelectorAll('#chart-filter-btns .chart-filter-btn').forEach(b => b.classList.remove('active'));
+  const btnTodas = document.querySelector('#chart-filter-btns .chart-filter-btn[data-linea="todas"]');
   if(btnTodas) btnTodas.classList.add('active');
+  document.querySelectorAll('#chart-acum-filter-btns .chart-filter-btn').forEach(b => b.classList.remove('active'));
+  const btnAcumTodas = document.querySelector('#chart-acum-filter-btns .chart-filter-btn[data-linea="todas"]');
+  if(btnAcumTodas) btnAcumTodas.classList.add('active');
   renderGrafico(prod, meta, desde, hasta);
   renderGraficoAcumulado(prod, meta, desde, hasta);
 }
@@ -2187,13 +2207,38 @@ function renderGrafico(prod, meta, desde, hasta) {
     prodLinFecha[lin][f] = (prodLinFecha[lin][f]||0) + (parseFloat(d.totalGlobal)||0);
   });
 
-  // Meta por línea y fecha — se reconstruye desde G.metasPorLinea si existe,
-  // si no, prorratea la meta total entre las líneas con producción
+  // Meta por línea y fecha — usa meta CALTO lineal (misma base que panel ejecutivo)
+  // Si no está disponible aún, fallback a Formin, luego a prorrateo
   const lineas = Object.keys(prodLinFecha).sort();
   const metaLinFecha = {}; // { 'LÍNEA T1': { '2026-11-01': 383, ... }, ... }
 
-  if(window._metasPorLinea && Object.keys(window._metasPorLinea).length) {
-    // Usar metas reales por línea cargadas por renderEjecutivo
+  // Construir eje X (días del período) — antes de calcular metas
+  const labels = [], fechas = [];
+  let cur = new Date(desde+'T12:00:00');
+  const fin = new Date(hasta+'T12:00:00');
+  while(cur <= fin) {
+    const f = toISO(cur);
+    fechas.push(f);
+    labels.push(`${String(cur.getDate()).padStart(2,'0')}/${String(cur.getMonth()+1).padStart(2,'0')}`);
+    cur.setDate(cur.getDate()+1);
+  }
+
+  const caltoLinea = window._metaCaltoLinea || {};
+  const hayCalto = lineas.some(lin => caltoLinea[lin]?.total > 0);
+
+  if(hayCalto) {
+    // Usar meta CALTO lineal (misma base que panel ejecutivo): meta_total/diasMes por día
+    lineas.forEach(lin => {
+      metaLinFecha[lin] = {};
+      const cl = caltoLinea[lin];
+      if(!cl) return;
+      const [ay, am] = (cl.mesStr || desde.slice(0,7)).split('-').map(Number);
+      const diasMes = new Date(ay, am, 0).getDate();
+      const metaDiaria = diasMes > 0 ? (cl.total * 1000) / diasMes : 0;
+      fechas.forEach(f => { metaLinFecha[lin][f] = metaDiaria; });
+    });
+  } else if(window._metasPorLinea && Object.keys(window._metasPorLinea).length) {
+    // Fallback: Formin
     lineas.forEach(lin => {
       metaLinFecha[lin] = {};
       const ml = window._metasPorLinea[lin];
@@ -2206,17 +2251,6 @@ function renderGrafico(prod, meta, desde, hasta) {
       metaLinFecha[lin] = {};
       Object.entries(meta).forEach(([f,v]) => { metaLinFecha[lin][f] = v/nLin; });
     });
-  }
-
-  // Construir eje X (días del período)
-  const labels = [], fechas = [];
-  let cur = new Date(desde+'T12:00:00');
-  const fin = new Date(hasta+'T12:00:00');
-  while(cur <= fin) {
-    const f = toISO(cur);
-    fechas.push(f);
-    labels.push(`${String(cur.getDate()).padStart(2,'0')}/${String(cur.getMonth()+1).padStart(2,'0')}`);
-    cur.setDate(cur.getDate()+1);
   }
 
   // Calcular diferencia acumulada por línea
@@ -2315,22 +2349,10 @@ function _dibujarGrafico(labels, datasets, filtro) {
 }
 
 // ── GRÁFICO ACUMULADO: Real vs Meta CALTO vs Meta Formin ─────────────────
-// Muestra 3 curvas que suben día a día para ver desde cuándo se separó la real.
 let chartAcumInst = null;
+
 function renderGraficoAcumulado(prod, meta, desde, hasta) {
   const sec = document.getElementById('seccion-acumulado');
-
-  // Producción real total por fecha (todas las líneas sumadas)
-  const prodPorFecha = {};
-  prod.forEach(d => {
-    const f = d.fecha||'';
-    if(f) prodPorFecha[f] = (prodPorFecha[f]||0) + (parseFloat(d.totalGlobal)||0);
-  });
-
-  // Meta Formin por fecha (ya viene sumada de todas las líneas en `meta`)
-  // Meta CALTO lineal: metaCaltoTotal / diasMes por día
-  // Obtenemos metaCaltoTotal de window._metaCaltoTotal si fue expuesto
-  const metaCaltoTotal1000 = window._metaCaltoTotal1000 || 0;
 
   // Construir eje X
   const labels = [], fechas = [];
@@ -2342,65 +2364,123 @@ function renderGraficoAcumulado(prod, meta, desde, hasta) {
     labels.push(`${String(cur.getDate()).padStart(2,'0')}/${String(cur.getMonth()+1).padStart(2,'0')}`);
     cur.setDate(cur.getDate()+1);
   }
-
   if(!fechas.length) { sec.style.display='none'; return; }
 
-  // Días del mes (usar el mes de `desde`)
+  const caltoLinea = window._metaCaltoLinea || {};
+  const metaCaltoTotal1000 = window._metaCaltoTotal1000 || 0;
   const [ay, am] = desde.split('-').map(Number);
   const diasMes = new Date(ay, am, 0).getDate();
-  const metaDiariaCalto = metaCaltoTotal1000 > 0 ? metaCaltoTotal1000 / diasMes : 0;
 
-  // Acumular día a día
-  let acumReal=0, acumFormin=0, acumCalto=0;
-  const dataReal=[], dataFormin=[], dataCalto=[];
+  // Producción real por línea y fecha
+  const prodLinFecha = {};
+  const lineasPresentes = [];
+  prod.forEach(d => {
+    const lin = d.linea || d.codLinea || '';
+    const f = d.fecha || '';
+    if(!lin || !f) return;
+    if(!prodLinFecha[lin]) { prodLinFecha[lin] = {}; lineasPresentes.push(lin); }
+    prodLinFecha[lin][f] = (prodLinFecha[lin][f]||0) + (parseFloat(d.totalGlobal)||0);
+  });
+  const lineas = [...new Set(lineasPresentes)].sort();
 
-  fechas.forEach((f, i) => {
-    acumReal   += prodPorFecha[f] || 0;
-    acumFormin += meta[f] || 0;
-    // CALTO: acumular por número de día del mes (no por índice del array)
-    const diaNum = parseInt(f.split('-')[2], 10);
-    acumCalto = metaDiariaCalto * diaNum;
-
-    dataReal.push(parseFloat(acumReal.toFixed(1)));
-    dataFormin.push(parseFloat(acumFormin.toFixed(1)));
-    dataCalto.push(metaCaltoTotal1000 > 0 ? parseFloat(acumCalto.toFixed(1)) : null);
+  // Acumular por línea
+  const acumPorLinea = {}; // { 'LÍNEA T1': [v1,v2,...], ... }
+  lineas.forEach(lin => {
+    let a = 0;
+    acumPorLinea[lin] = fechas.map(f => { a += prodLinFecha[lin]?.[f]||0; return parseFloat(a.toFixed(1)); });
+  });
+  // Real total
+  let ar=0;
+  const dataRealTotal = fechas.map(f => {
+    ar += lineas.reduce((s,l)=>(s+(prodLinFecha[l]?.[f]||0)),0);
+    return parseFloat(ar.toFixed(1));
   });
 
-  const hayDatos = dataReal.some(v=>v>0) || dataFormin.some(v=>v>0);
+  // Meta Formin total y por línea
+  let af=0;
+  const dataForminTotal = fechas.map(f => { af += meta[f]||0; return parseFloat(af.toFixed(1)); });
+  const forminLinea = window._metasPorLinea || {};
+  const dataForminLinea = {};
+  lineas.forEach(lin => {
+    let a=0;
+    dataForminLinea[lin] = fechas.map(f => { a += forminLinea[lin]?.porDia?.[f]||0; return parseFloat(a.toFixed(1)); });
+  });
+
+  // Meta CALTO total y por línea (lineal)
+  const dataCaltoTotal = metaCaltoTotal1000>0
+    ? fechas.map(f => parseFloat((metaCaltoTotal1000/diasMes * parseInt(f.split('-')[2],10)).toFixed(1)))
+    : null;
+  const dataCaltoLinea = {};
+  lineas.forEach(lin => {
+    const cl = caltoLinea[lin];
+    if(!cl?.total) { dataCaltoLinea[lin]=null; return; }
+    const md = (cl.total*1000) / diasMes;
+    dataCaltoLinea[lin] = fechas.map(f => parseFloat((md * parseInt(f.split('-')[2],10)).toFixed(1)));
+  });
+
+  const hayDatos = dataRealTotal.some(v=>v>0) || dataForminTotal.some(v=>v>0);
   sec.style.display = hayDatos ? '' : 'none';
   if(!hayDatos) return;
+
+  // Guardar para re-filtrar
+  _chartAcumData = { labels, fechas, lineas, dataRealTotal, acumPorLinea,
+    dataForminTotal, dataForminLinea, dataCaltoTotal, dataCaltoLinea };
+
+  _dibujarGraficoAcumulado(labels, _chartAcumData, 'todas');
+}
+
+function _dibujarGraficoAcumulado(labels, d, filtro) {
+  const LINEA_COLORS = {
+    'LÍNEA T1': '#E07040', 'LÍNEA T2': '#3B6D11', 'LÍNEA T3': '#1D5FAD'
+  };
+  const nPts = d.fechas.length;
+  let datasets;
+
+  if(filtro === 'todas') {
+    datasets = [
+      { label:'Real acumulada', data:d.dataRealTotal,
+        borderColor:'#1D5FAD', backgroundColor:'rgba(29,95,173,.08)',
+        borderWidth:2.5, pointRadius:nPts<=15?3:2, pointBackgroundColor:'#1D5FAD',
+        tension:.2, fill:true, order:1 },
+      { label:'Meta Formin acum.', data:d.dataForminTotal,
+        borderColor:'#3B6D11', backgroundColor:'transparent',
+        borderWidth:2, borderDash:[5,3], pointRadius:nPts<=15?2:1,
+        pointBackgroundColor:'#3B6D11', tension:.2, fill:false, order:2 },
+      ...(d.dataCaltoTotal ? [{ label:'Meta CALTO acum.', data:d.dataCaltoTotal,
+        borderColor:'#E07040', backgroundColor:'transparent',
+        borderWidth:2, borderDash:[8,4], pointRadius:0, tension:0, fill:false, order:3 }] : [])
+    ];
+  } else {
+    // Buscar la línea que contiene el código (T1, T2, T3)
+    const lin = d.lineas.find(l => l.includes(filtro));
+    const color = lin ? (LINEA_COLORS[lin]||'#888') : '#888';
+    const dataReal = lin ? d.acumPorLinea[lin] : d.dataRealTotal;
+    const dataFormin = lin ? d.dataForminLinea[lin] : d.dataForminTotal;
+    const dataCalto = lin ? d.dataCaltoLinea[lin] : d.dataCaltoTotal;
+    datasets = [
+      { label:`Real acum. ${filtro}`, data:dataReal,
+        borderColor:color, backgroundColor:(()=>{const h=color.replace('#','');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return `rgba(${r},${g},${b},.08)`;})(),
+        borderWidth:2.5, pointRadius:nPts<=15?3:2, pointBackgroundColor:color,
+        tension:.2, fill:true, order:1 },
+      { label:`Meta Formin ${filtro}`, data:dataFormin||[],
+        borderColor:'#3B6D11', backgroundColor:'transparent',
+        borderWidth:2, borderDash:[5,3], pointRadius:nPts<=15?2:1,
+        pointBackgroundColor:'#3B6D11', tension:.2, fill:false, order:2 },
+      ...(dataCalto ? [{ label:`Meta CALTO ${filtro}`, data:dataCalto,
+        borderColor:'#E07040', backgroundColor:'transparent',
+        borderWidth:2, borderDash:[8,4], pointRadius:0, tension:0, fill:false, order:3 }] : [])
+    ];
+  }
+
+  // Actualizar subtítulo
+  const titulo = document.getElementById('acum-titulo');
+  if(titulo) titulo.textContent = filtro==='todas' ? 'total faena' : `Línea ${filtro}`;
 
   if(chartAcumInst) chartAcumInst.destroy();
   const ctx = document.getElementById('chart-acum').getContext('2d');
   chartAcumInst = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        // Real acumulada — línea sólida azul oscuro
-        { label:'Real acumulada',
-          data: dataReal,
-          borderColor:'#1D5FAD', backgroundColor:'rgba(29,95,173,.08)',
-          borderWidth:2.5, pointRadius: fechas.length<=15?3:2,
-          pointBackgroundColor:'#1D5FAD', tension:.2, fill:true, order:1 },
-        // Meta Formin acumulada — punteada verde
-        { label:'Meta Formin acum.',
-          data: dataFormin,
-          borderColor:'#3B6D11', backgroundColor:'transparent',
-          borderWidth:2, borderDash:[5,3],
-          pointRadius: fechas.length<=15?2:1,
-          pointBackgroundColor:'#3B6D11', tension:.2, fill:false, order:2 },
-        // Meta CALTO lineal — punteada naranja (solo si hay dato)
-        ...(metaCaltoTotal1000 > 0 ? [{
-          label:'Meta CALTO acum.',
-          data: dataCalto,
-          borderColor:'#E07040', backgroundColor:'transparent',
-          borderWidth:2, borderDash:[8,4],
-          pointRadius:0, tension:.0, fill:false, order:3
-        }] : [])
-      ]
-    },
-    options: {
+    type:'line', data:{ labels, datasets },
+    options:{
       responsive:true, maintainAspectRatio:false,
       interaction:{ mode:'index', intersect:false },
       plugins:{
@@ -3512,6 +3592,16 @@ window.addEventListener('DOMContentLoaded', () => {
     // Re-dibujar con filtro
     const filtro = btn.dataset.linea;
     _dibujarGrafico(_chartGraficoData.labels, _chartGraficoData.datasets, filtro);
+  });
+
+  // Botones filtro gráfico 2 (acumulado)
+  document.getElementById('chart-acum-filter-btns').addEventListener('click', e => {
+    const btn = e.target.closest('.chart-filter-btn');
+    if(!btn || !_chartAcumData) return;
+    document.querySelectorAll('#chart-acum-filter-btns .chart-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filtro = btn.dataset.linea;
+    _dibujarGraficoAcumulado(_chartAcumData.labels, _chartAcumData, filtro);
   });
 });
 
