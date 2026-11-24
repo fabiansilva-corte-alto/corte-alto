@@ -502,7 +502,10 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
           <div class="contenido-titulo">Anexos pendientes</div>
           <div class="contenido-sub">Cruza el último registro de Cuadrilla diaria de cada trabajador (últimos 45 días) con su anexo de cambio de fundo vigente. Si falta, indica si ya tiene el anexo (solo falta marcarlo vigente) o si hay que generarlo desde cero.</div>
         </div>
-        <button class="btn-secondary" onclick="fetchAnexosPendientes(true)">Actualizar</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-secondary" id="anexos-btn-exportar" onclick="exportarAnexosPendientes()">Exportar Excel</button>
+          <button class="btn-secondary" onclick="fetchAnexosPendientes(true)">Actualizar</button>
+        </div>
       </div>
 
       <div class="toolbar-desktop">
@@ -3911,20 +3914,10 @@ function poblarFiltrosAnexos(){
   ).join("");
 }
 
-window.renderAnexosPendientes = function(){
-  const cuerpo = document.getElementById("anexos-tabla-body");
-  const contador = document.getElementById("anexos-contador");
-  if(!cuerpo || anexosDatos === null) return;
-
-  actualizarTextoDescartados();
-  const chkDesc = document.getElementById("anexos-ver-descartados");
-  if(chkDesc && chkDesc.checked){
-    renderAnexosDescartados();
-    return;
-  }
-  const theadAnexos = document.getElementById("anexos-thead");
-  if(theadAnexos) theadAnexos.innerHTML = `<tr><th>Trabajador</th><th>Centro</th><th>Fundo actual (cuadrilla)</th><th>Anexo vigente</th><th>Estado</th><th>Proceso</th></tr>`;
-
+// Filas que se ven hoy en la lista principal de Anexos pendientes (según casillas y filtros).
+// La usan tanto el render como "Exportar Excel", para que el archivo traiga EXACTAMENTE lo que
+// aparece en pantalla.
+function anexosFilasVisibles(){
   const chkSolo = document.getElementById("anexos-solo-pendientes");
   const soloPendientes = chkSolo ? chkSolo.checked : true;
   // Filtros agregados (pedido por Fabián 2 nov 2026, al crecer mucho la lista con los
@@ -3962,6 +3955,24 @@ window.renderAnexosPendientes = function(){
     if(a.estado === "pendiente" && (b.diasEnFundo||0) !== (a.diasEnFundo||0)) return (b.diasEnFundo||0) - (a.diasEnFundo||0);
     return String(a.trabajador.nombre||"").localeCompare(String(b.trabajador.nombre||""), "es");
   });
+  return { filas, hayFiltrosActivos, soloPendientes };
+}
+
+window.renderAnexosPendientes = function(){
+  const cuerpo = document.getElementById("anexos-tabla-body");
+  const contador = document.getElementById("anexos-contador");
+  if(!cuerpo || anexosDatos === null) return;
+
+  actualizarTextoDescartados();
+  const chkDesc = document.getElementById("anexos-ver-descartados");
+  if(chkDesc && chkDesc.checked){
+    renderAnexosDescartados();
+    return;
+  }
+  const theadAnexos = document.getElementById("anexos-thead");
+  if(theadAnexos) theadAnexos.innerHTML = `<tr><th>Trabajador</th><th>Centro</th><th>Fundo actual (cuadrilla)</th><th>Anexo vigente</th><th>Estado</th><th>Proceso</th></tr>`;
+
+  const { filas, hayFiltrosActivos, soloPendientes } = anexosFilasVisibles();
 
   const totalPendientes = anexosDatos.filter(f => f.estado === "pendiente" && !esFilaDescartada(f)).length;
   contador.textContent = hayFiltrosActivos
@@ -4064,21 +4075,26 @@ function actualizarTextoDescartados(){
   if(span) span.textContent = anexosDescartados.length ? `Ver descartados (${anexosDescartados.length})` : "Ver descartados";
 }
 
+// Descartados que se ven hoy (según buscador y filtro de fundo) — también la usa "Exportar Excel".
+function anexosDescartadosVisibles(){
+  const elBuscar = document.getElementById("anexos-buscar");
+  const term = elBuscar ? normalizar(elBuscar.value) : "";
+  const elFundo = document.getElementById("anexos-filtro-fundo");
+  const filtroFundo = elFundo ? elFundo.value : "";
+  return anexosDescartados.filter(d => {
+    if(term && !(normalizar(d.nombre) + " " + normalizar(d.trabajadorId)).includes(term.replace(/\./g, ""))) return false;
+    if(filtroFundo && !fundosCoinciden(d.fundo, filtroFundo)) return false;
+    return true;
+  }).sort((a,b) => String(b.descartadoEn || "").localeCompare(String(a.descartadoEn || "")));
+}
+
 function renderAnexosDescartados(){
   const cuerpo = document.getElementById("anexos-tabla-body");
   const contador = document.getElementById("anexos-contador");
   const thead = document.getElementById("anexos-thead");
   if(thead) thead.innerHTML = `<tr><th>Trabajador</th><th>Fundo descartado</th><th>Descartado</th><th></th></tr>`;
 
-  const elBuscar = document.getElementById("anexos-buscar");
-  const term = elBuscar ? normalizar(elBuscar.value) : "";
-  const elFundo = document.getElementById("anexos-filtro-fundo");
-  const filtroFundo = elFundo ? elFundo.value : "";
-  const lista = anexosDescartados.filter(d => {
-    if(term && !(normalizar(d.nombre) + " " + normalizar(d.trabajadorId)).includes(term.replace(/\./g, ""))) return false;
-    if(filtroFundo && !fundosCoinciden(d.fundo, filtroFundo)) return false;
-    return true;
-  }).sort((a,b) => String(b.descartadoEn || "").localeCompare(String(a.descartadoEn || "")));
+  const lista = anexosDescartadosVisibles();
 
   contador.textContent = `${lista.length} descartado${lista.length === 1 ? "" : "s"}`;
   if(!lista.length){
@@ -4094,6 +4110,101 @@ function renderAnexosDescartados(){
     </tr>
   `).join("");
 }
+
+// ---- Exportar Anexos pendientes a Excel (pedido por Fabián 24 nov 2026) ----
+// Baja EXACTAMENTE lo que aparece en pantalla (con los filtros y casillas activos). Si está
+// activada la casilla "Ver descartados", baja la lista de descartados. Usa SheetJS, que se
+// carga al hacer clic (misma función que usa "Exportar Excel" de Dotación).
+const EXPORT_ANEXOS_ENCABEZADO = ["Trabajador", "RUT", "Centro", "Fundo actual", "Última cuadrilla", "Jefe de faena", "Anexo vigente", "Estado", "Días en el fundo", "Proceso"];
+const EXPORT_DESCARTADOS_ENCABEZADO = ["Trabajador", "RUT", "Fundo descartado", "Fecha", "Descartado por"];
+
+function fechaExcelAnexos(iso){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : (iso || "");
+}
+
+function textoEstadoAnexo(f){
+  if(f.estado !== "pendiente") return "Al día";
+  if(f.subEstado === "tiene_no_vigente" && f.anexoSugerido){
+    return `Pendiente — Ya tiene anexo de ${f.anexoSugerido.fundo || f.fundoActual}, falta marcarlo vigente`;
+  }
+  return `Pendiente — Sin anexo de ${f.fundoActual || "este fundo"}, generar y firmar uno nuevo`;
+}
+
+function textoProcesoAnexo(f){
+  if(f.estado !== "pendiente") return "";
+  const est = f.seguimiento && ESTADOS_SEGUIMIENTO[f.seguimiento.estado];
+  return est ? est.label : "Sin estado";
+}
+
+// Devuelve [encabezado, ...filas] a partir de las filas ya filtradas y ordenadas.
+function armarFilasExportAnexos(filas){
+  const datos = (filas || []).map(f => {
+    const t = f.trabajador;
+    return [
+      t.nombre || "",
+      formatRut(t.rut) || "",
+      t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente de asignar",
+      f.fundoActual || "",
+      f.rotativo ? "Rotativo (todos los fundos)" : fechaExcelAnexos(f.fechaCuadrilla),
+      f.jefeFaena || "",
+      (f.anexosVigentes && f.anexosVigentes.length)
+        ? f.anexosVigentes.map(a => `${a.fundo || "(sin fundo)"} · ${fechaExcelAnexos(a.fechaSubida)}`).join("; ")
+        : "Sin anexo vigente",
+      textoEstadoAnexo(f),
+      f.estado === "pendiente" && f.diasEnFundo ? f.diasEnFundo : "",
+      textoProcesoAnexo(f),
+    ];
+  });
+  return [EXPORT_ANEXOS_ENCABEZADO, ...datos];
+}
+
+function armarFilasExportDescartados(lista){
+  const datos = (lista || []).map(d => [
+    d.nombre || "",
+    formatRut(d.trabajadorId) || "",
+    d.fundo || "",
+    fechaExcelAnexos(d.descartadoEn),
+    d.descartadoPor || "",
+  ]);
+  return [EXPORT_DESCARTADOS_ENCABEZADO, ...datos];
+}
+
+window.exportarAnexosPendientes = async function(){
+  if(anexosDatos === null){
+    alert("Espera a que termine de cargar la lista e intenta de nuevo.");
+    return;
+  }
+  const boton = document.getElementById("anexos-btn-exportar");
+  const chkDesc = document.getElementById("anexos-ver-descartados");
+  const verDescartados = !!(chkDesc && chkDesc.checked);
+  const aoa = verDescartados
+    ? armarFilasExportDescartados(anexosDescartadosVisibles())
+    : armarFilasExportAnexos(anexosFilasVisibles().filas);
+  if(aoa.length < 2){
+    alert("No hay filas para exportar con los filtros actuales.");
+    return;
+  }
+  boton.disabled = true;
+  boton.textContent = "Preparando…";
+  try{
+    const XLSX = await cargarSheetJS();
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = verDescartados
+      ? [{wch:34},{wch:14},{wch:24},{wch:14},{wch:22}]
+      : [{wch:34},{wch:14},{wch:18},{wch:22},{wch:24},{wch:22},{wch:40},{wch:58},{wch:14},{wch:34}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, verDescartados ? "Descartados" : "Anexos pendientes");
+    const hoy = new Date();
+    const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,"0")}-${String(hoy.getDate()).padStart(2,"0")}`;
+    XLSX.writeFile(wb, `${verDescartados ? "anexos_descartados" : "anexos_pendientes"}_${fecha}.xlsx`);
+  }catch(e){
+    alert("No se pudo generar el archivo. Revisa tu conexión e intenta de nuevo.");
+  }finally{
+    boton.disabled = false;
+    boton.textContent = "Exportar Excel";
+  }
+};
 
 window.abrirDescartarAnexo = function(claveFila){
   const fila = (anexosDatos || []).find(f => f.claveFila === claveFila);
