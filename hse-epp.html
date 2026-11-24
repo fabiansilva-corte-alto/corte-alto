@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta name="theme-color" content="#1b5e20">
+<title>EPP — Corte Alto</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f3f5f1;--card:#fff;--border:#dde4dd;--text:#1c2b1e;--text2:#3d4f40;--text3:#56685a;
+  --green:#1b5e20;--green2:#2e7d32;--green-bg:#e2f2e3;
+  --red:#9b1c17;--red-bg:#fde2e1;--amber:#7a5200;--amber-bg:#fff1c2;--blue:#1546a0;--blue-bg:#e3f0ff;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+.hidden{display:none !important}
+button{font-family:inherit}
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+header.top{background:var(--green);color:#fff;padding:14px 16px}
+header.top .in{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header.top .t1{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c8e6c9}
+header.top .t2{font-size:19px;font-weight:700}
+header.top .who{margin-left:auto;text-align:right;font-size:12px;color:#c8e6c9}
+header.top .who button{margin-top:4px;background:transparent;border:1px solid #81c784;color:#fff;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer}
+.back{color:#fff;text-decoration:none;font-size:13px;opacity:.85}
+.tabs{display:flex;gap:6px;margin:4px 0 14px;flex-wrap:wrap}
+.tab{height:38px;padding:0 14px;border-radius:99px;border:1px solid var(--border);background:#fff;color:var(--text2);font-weight:600;font-size:13.5px;cursor:pointer}
+.tab.on{background:var(--green);color:#fff;border-color:var(--green)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px}
+.field{display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:700;color:var(--text2);margin-bottom:12px}
+.input,select.input{height:44px;border:1px solid #c5cfc6;border-radius:10px;padding:0 12px;font:inherit;font-size:14px;font-weight:500;color:var(--text);background:#fff;width:100%}
+.btn{height:46px;border:none;border-radius:12px;background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;padding:0 18px}
+.btn:disabled{opacity:.55}
+.btn2{height:40px;border:1px solid #c5cfc6;border-radius:10px;background:#fff;color:var(--text2);font-size:13.5px;font-weight:600;cursor:pointer;padding:0 14px}
+.full{width:100%}
+.msg{border-radius:10px;padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:12px}
+.msg.err{background:var(--red-bg);color:var(--red)}
+.msg.ok{background:var(--green-bg);color:var(--green)}
+.msg.info{background:var(--blue-bg);color:var(--blue)}
+.chip{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.c-falta,.c-vencido{background:var(--red-bg);color:var(--red)}
+.c-por_vencer{background:var(--amber-bg);color:var(--amber)}
+.c-vigente{background:var(--green-bg);color:var(--green)}
+.c-info{background:var(--blue-bg);color:var(--blue)}
+.c-gris{background:#eef1ed;color:var(--text3)}
+.row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #eef1ed}
+.row:last-child{border-bottom:none}
+.row .main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.row .n{font-size:14.5px;font-weight:600}
+.row .d{font-size:12px;color:var(--text3)}
+button.row{width:100%;background:none;border:none;border-bottom:1px solid #eef1ed;text-align:left;cursor:pointer;font:inherit;color:inherit}
+button.row:hover{background:#fafbf9}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.sec{font-size:13px;font-weight:700;color:var(--text2);margin:16px 0 8px}
+.kv{display:flex;justify-content:space-between;font-size:13px;padding:4px 0}
+.kv span:first-child{color:var(--text3)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.center{min-height:80vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.login{width:100%;max-width:380px;padding:24px}
+.muted{font-size:12.5px;color:var(--text3)}
+table.cat{width:100%;border-collapse:collapse;font-size:13px}
+table.cat th{text-align:left;font-size:12px;color:var(--text3);padding:8px 10px;border-bottom:1px solid var(--border)}
+table.cat td{padding:8px 10px;border-bottom:1px solid #eef1ed;vertical-align:top}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="in">
+    <a class="back" href="index.html">‹ Corte Alto</a>
+    <div>
+      <div class="t1">Prevención · EPP</div>
+      <div class="t2">Entrega de EPP</div>
+    </div>
+    <div class="who hidden" id="who">
+      <div id="who-nombre"></div>
+      <div id="who-rol"></div>
+      <button onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<!-- ===== LOGIN ===== -->
+<section id="pantalla-login" class="center hidden">
+  <div class="card login">
+    <div style="font-size:18px;font-weight:700;margin-bottom:4px">Ingresar</div>
+    <div class="muted" style="margin-bottom:16px">Usa la misma cuenta del sistema de RRHH.</div>
+    <div class="msg err hidden" id="login-error"></div>
+    <label class="field">Correo<input class="input" id="login-correo" type="email" autocomplete="username"></label>
+    <label class="field">Contraseña<input class="input" id="login-clave" type="password" autocomplete="current-password"></label>
+    <button class="btn full" id="btn-ingresar" onclick="ingresar()">Ingresar</button>
+  </div>
+</section>
+
+<!-- ===== SIN ACCESO ===== -->
+<section id="pantalla-sinacceso" class="center hidden">
+  <div class="card login">
+    <div style="font-size:17px;font-weight:700;margin-bottom:8px">Sin acceso al módulo EPP</div>
+    <div class="muted" style="margin-bottom:16px">Tu cuenta existe, pero no tiene un rol de prevención asignado. Pídele al administrador que te asigne uno.</div>
+    <button class="btn2 full" onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>
+</section>
+
+<!-- ===== APP ===== -->
+<section id="pantalla-app" class="hidden">
+  <div class="wrap">
+    <div class="tabs" id="tabs"></div>
+    <div id="vista"></div>
+  </div>
+</section>
+
+<script type="application/json" id="seed-epp">[{"id":"filtro_6001_mascarilla_antigas","nombre":"Filtro 6001 Mascarilla Antigás","vigenciaMeses":6,"cargos":["CALIBRADOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":1},{"id":"mascarilla_antigas_6200","nombre":"Mascarilla Antigás 6200","vigenciaMeses":24,"cargos":["CALIBRADOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":2},{"id":"radio_portatil","nombre":"Radio Portátil","vigenciaMeses":120,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":3},{"id":"rodillera_mecanico_industrial_poliester","nombre":"Rodillera Mecánico (Industrial Poliéster)","vigenciaMeses":24,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":4},{"id":"cuna_de_volteo_roja","nombre":"Cuña de Volteo (Roja)","vigenciaMeses":24,"cargos":["MOTOSIERRISTA"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":5},{"id":"cuna_de_volteo_mvl_2_doble_tumbado","nombre":"Cuña de Volteo MVL 2 (Doble Tumbado)","vigenciaMeses":24,"cargos":["MOTOSIERRISTA"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":6},{"id":"cuna_de_volteo_mvl_1","nombre":"Cuña de Volteo MVL 1","vigenciaMeses":24,"cargos":["MOTOSIERRISTA"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":7},{"id":"cinturon_forestal_motosierrista","nombre":"Cinturón Forestal Motosierrista","vigenciaMeses":24,"cargos":["MOTOSIERRISTA"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":8},{"id":"mochila_forestal","nombre":"Mochila Forestal","vigenciaMeses":36,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":9},{"id":"anilla_de_alta_resistencia_120cm","nombre":"Anilla de Alta Resistencia 120cm","vigenciaMeses":24,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":10},{"id":"anilla_de_alta_resistencia_80cm","nombre":"Anilla de Alta Resistencia 80cm","vigenciaMeses":24,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":11},{"id":"anilla_de_alta_resistencia_60cm","nombre":"Anilla de Alta Resistencia 60cm","vigenciaMeses":24,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":12},{"id":"mosqueton_de_23_kilonewton","nombre":"Mosquetón de 23 Kilonewton","vigenciaMeses":24,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":13},{"id":"amortiguador_de_caida","nombre":"Amortiguador de Caída","vigenciaMeses":60,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":14},{"id":"linea_de_posicionamiento","nombre":"Línea de Posicionamiento","vigenciaMeses":24,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":15},{"id":"linea_de_vida_retractil","nombre":"Línea de Vida Retráctil","vigenciaMeses":24,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":16},{"id":"tarjeta_no_operar_imantada","nombre":"Tarjeta No Operar Imantada","vigenciaMeses":24,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":17},{"id":"candado_con_pinza_corta_corriente","nombre":"Candado con Pinza Corta Corriente","vigenciaMeses":48,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":18},{"id":"arnes_cuerpo_completo","nombre":"Arnés Cuerpo Completo","vigenciaMeses":60,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":19},{"id":"fono_casco","nombre":"Fono Casco","vigenciaMeses":12,"cargos":["MECANICO","MOTOSIERRISTA"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":20},{"id":"casco_yako_naranjo","nombre":"Casco Yako Naranjo","vigenciaMeses":24,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":21},{"id":"cubre_calzado","nombre":"Cubre Calzado","vigenciaMeses":24,"cargos":["OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE"],"tipoTalla":"calzado","soloPorTrabajador":false,"orden":22},{"id":"traje_agua_naranjo","nombre":"Traje Agua Naranjo","vigenciaMeses":12,"cargos":["ADMINISTRATIVO","ASESOR EN PREVENCION DE RIESGOS","BODEGUERO","CALIBRADOR","CELADOR","CONDUCTOR CAMA BAJA","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","GERENTE","JEFE DE FAENA","LOGISTICA","MECANICO","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERFILERO","PERSONAL DE APOYO ASEO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"ropa","soloPorTrabajador":false,"orden":23},{"id":"bota_termica","nombre":"Bota Térmica","vigenciaMeses":24,"cargos":["ADMINISTRATIVO","ASESOR EN PREVENCION DE RIESGOS","BODEGUERO","CALIBRADOR","CELADOR","CONDUCTOR CAMA BAJA","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","ESTROBERO","GERENTE","JEFE DE FAENA","LOGISTICA","MECANICO","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERSONAL DE APOYO ASEO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"calzado","soloPorTrabajador":false,"orden":24},{"id":"casco_de_seguridad_blanco","nombre":"Casco de Seguridad Blanco","vigenciaMeses":12,"cargos":["ASESOR EN PREVENCION DE RIESGOS","CALIBRADOR","GERENTE","JEFE DE FAENA","LOGISTICA","MECANICO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":25},{"id":"barbiquejo_de_4_puntas","nombre":"Barbiquejo de 4 Puntas","vigenciaMeses":12,"cargos":["ADMINISTRATIVO","ASESOR EN PREVENCION DE RIESGOS","BODEGUERO","CALIBRADOR","CELADOR","CONDUCTOR CAMA BAJA","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","ESTROBERO","GERENTE","JEFE DE FAENA","LOGISTICA","MECANICO","MOTOSIERRISTA","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERFILERO","PERSONAL DE APOYO ASEO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":26},{"id":"geologo_amarillo_fluor_basico","nombre":"Geólogo Amarillo Flúor Básico","vigenciaMeses":6,"cargos":["BODEGUERO","CELADOR","CONDUCTOR CAMA BAJA","LOGISTICA"],"tipoTalla":"ropa","soloPorTrabajador":false,"orden":27},{"id":"traje_termico","nombre":"Traje Térmico","vigenciaMeses":24,"cargos":["CALIBRADOR","CELADOR","CONDUCTOR TRANSPORTE DE PERSONAL","JEFE DE FAENA"],"tipoTalla":"ropa","soloPorTrabajador":false,"orden":28},{"id":"traje_agua_amarillo","nombre":"Traje Agua Amarillo","vigenciaMeses":24,"cargos":["ESTROBERO","MOTOSIERRISTA"],"tipoTalla":"ropa","soloPorTrabajador":false,"orden":29},{"id":"silbato","nombre":"Silbato","vigenciaMeses":24,"cargos":["ASESOR EN PREVENCION DE RIESGOS","CALIBRADOR","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","ESTROBERO","GERENTE","JEFE DE FAENA","MECANICO","MOTOSIERRISTA","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERFILERO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":30},{"id":"porta_radio","nombre":"Porta Radio","vigenciaMeses":24,"cargos":["ESTROBERO","MOTOSIERRISTA"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":31},{"id":"porta_cunas","nombre":"Porta Cuñas","vigenciaMeses":24,"cargos":["MOTOSIERRISTA"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":32},{"id":"perneras_2_unidades","nombre":"Perneras (2 Unidades)","vigenciaMeses":12,"cargos":["ESTROBERO","MOTOSIERRISTA","PERFILERO"],"tipoTalla":"ropa","soloPorTrabajador":false,"orden":33},{"id":"pantalon_soldador","nombre":"Pantalón Soldador","vigenciaMeses":12,"cargos":[],"tipoTalla":"ropa","soloPorTrabajador":true,"orden":34},{"id":"pantalon_cargo_2_unidades","nombre":"Pantalón Cargo (2 Unidades)","vigenciaMeses":12,"cargos":["ASESOR EN PREVENCION DE RIESGOS","CALIBRADOR","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","JEFE DE FAENA","LOGISTICA","MECANICO","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERFILERO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"ropa","soloPorTrabajador":false,"orden":35},{"id":"pantalon_anticorte","nombre":"Pantalón Anticorte","vigenciaMeses":6,"cargos":["MOTOSIERRISTA"],"tipoTalla":"ropa","soloPorTrabajador":false,"orden":36},{"id":"panete","nombre":"Pañete","vigenciaMeses":6,"cargos":["MOTOSIERRISTA"],"tipoTalla":"ropa","soloPorTrabajador":false,"orden":37},{"id":"malla_facial_para_casco","nombre":"Malla Facial para Casco","vigenciaMeses":6,"cargos":["ESTROBERO","MOTOSIERRISTA","PERFILERO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":38},{"id":"linterna_casco","nombre":"Linterna Casco","vigenciaMeses":24,"cargos":["CALIBRADOR","CELADOR","CONDUCTOR CAMA BAJA","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","GERENTE","JEFE DE FAENA","MECANICO","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":39},{"id":"lente_oxigenista","nombre":"Lente Oxigenista","vigenciaMeses":12,"cargos":[],"tipoTalla":"unica","soloPorTrabajador":true,"orden":40},{"id":"lente_de_seguridad_uv","nombre":"Lente de Seguridad UV","vigenciaMeses":12,"cargos":["ASESOR EN PREVENCION DE RIESGOS","BODEGUERO","CALIBRADOR","CELADOR","CONDUCTOR CAMA BAJA","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","ESTROBERO","GERENTE","JEFE DE FAENA","LOGISTICA","MECANICO","MOTOSIERRISTA","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERFILERO","PERSONAL DE APOYO ASEO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":41},{"id":"legionario","nombre":"Legionario","vigenciaMeses":12,"cargos":["ADMINISTRATIVO","ASESOR EN PREVENCION DE RIESGOS","BODEGUERO","CALIBRADOR","CELADOR","CONDUCTOR CAMA BAJA","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","ESTROBERO","GERENTE","JEFE DE FAENA","LOGISTICA","MECANICO","MOTOSIERRISTA","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERFILERO","PERSONAL DE APOYO ASEO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":42},{"id":"huincha_motosierrista_15_mt","nombre":"Huincha Motosierrista 15 mt.","vigenciaMeses":12,"cargos":["MOTOSIERRISTA"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":43},{"id":"guante_nitrilo_texturizado_1_caja","nombre":"Guante Nitrilo Texturizado (1 Caja)","vigenciaMeses":6,"cargos":["BODEGUERO","LOGISTICA","MECANICO","PERSONAL DE APOYO ASEO","PLANIFICADOR TALLER"],"tipoTalla":"guante","soloPorTrabajador":false,"orden":44},{"id":"guante_nitrilo_puno_tejido","nombre":"Guante Nitrilo Puño Tejido","vigenciaMeses":6,"cargos":["BODEGUERO","CONDUCTOR COMBUSTIBLE","LOGISTICA"],"tipoTalla":"guante","soloPorTrabajador":false,"orden":45},{"id":"guante_largo_soldador","nombre":"Guante Largo Soldador","vigenciaMeses":12,"cargos":[],"tipoTalla":"guante","soloPorTrabajador":true,"orden":46},{"id":"guante_calibrador","nombre":"Guante Calibrador","vigenciaMeses":6,"cargos":["CALIBRADOR"],"tipoTalla":"guante","soloPorTrabajador":false,"orden":47},{"id":"guante_cabritilla","nombre":"Guante Cabritilla","vigenciaMeses":6,"cargos":["ASESOR EN PREVENCION DE RIESGOS","BODEGUERO","CELADOR","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","ESTROBERO","GERENTE","JEFE DE FAENA","LOGISTICA","MOTOSIERRISTA","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERSONAL DE APOYO ASEO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"guante","soloPorTrabajador":false,"orden":48},{"id":"guante_antivibracion_antigolpe","nombre":"Guante Antivibración Antigolpe","vigenciaMeses":6,"cargos":["ASESOR EN PREVENCION DE RIESGOS","MECANICO","PERFILERO"],"tipoTalla":"guante","soloPorTrabajador":false,"orden":49},{"id":"guante_antivibracion","nombre":"Guante Antivibración","vigenciaMeses":6,"cargos":["MOTOSIERRISTA"],"tipoTalla":"guante","soloPorTrabajador":false,"orden":50},{"id":"guante_anticorte","nombre":"Guante Anticorte","vigenciaMeses":6,"cargos":["MECANICO","OP PROCESADOR","OP SHOVEL"],"tipoTalla":"guante","soloPorTrabajador":false,"orden":51},{"id":"gorro_soldador","nombre":"Gorro Soldador","vigenciaMeses":12,"cargos":[],"tipoTalla":"unica","soloPorTrabajador":true,"orden":52},{"id":"geologo_rojo_2_unidades","nombre":"Geólogo Rojo (2 Unidades)","vigenciaMeses":12,"cargos":["CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE"],"tipoTalla":"ropa","soloPorTrabajador":false,"orden":53},{"id":"geologo_reflectante_naranjo_2_unidades","nombre":"Geólogo Reflectante Naranjo (2 Unidades)","vigenciaMeses":12,"cargos":["CALIBRADOR"],"tipoTalla":"ropa","soloPorTrabajador":false,"orden":54},{"id":"geologo_amarillo_fluor","nombre":"Geólogo Amarillo Flúor","vigenciaMeses":12,"cargos":["ASESOR EN PREVENCION DE RIESGOS","BODEGUERO","GERENTE","JEFE DE FAENA","MECANICO","PERFILERO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"ropa","soloPorTrabajador":false,"orden":55},{"id":"filtro_solar","nombre":"Filtro Solar","vigenciaMeses":12,"cargos":["ADMINISTRATIVO","ASESOR EN PREVENCION DE RIESGOS","BODEGUERO","CALIBRADOR","CELADOR","CONDUCTOR CAMA BAJA","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","ESTROBERO","GERENTE","JEFE DE FAENA","LOGISTICA","MECANICO","MOTOSIERRISTA","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERFILERO","PERSONAL DE APOYO ASEO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":56},{"id":"escala_telescopica","nombre":"Escala Telescópica","vigenciaMeses":24,"cargos":["CALIBRADOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":57},{"id":"equipo_de_trabajo_en_altura","nombre":"Equipo de Trabajo en Altura","vigenciaMeses":60,"cargos":["MECANICO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":58},{"id":"cubrevisera_para_casco","nombre":"Cubrevisera para Casco","vigenciaMeses":12,"cargos":["MOTOSIERRISTA"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":59},{"id":"crampon","nombre":"Crampón","vigenciaMeses":12,"cargos":["ASESOR EN PREVENCION DE RIESGOS","GERENTE","JEFE DE FAENA","OP SHOVEL","OP SKIDDER","SUPERVISOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":60},{"id":"clavos_forestales","nombre":"Clavos Forestales","vigenciaMeses":6,"cargos":["ESTROBERO","MOTOSIERRISTA","PERFILERO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":61},{"id":"chaqueta_soldador","nombre":"Chaqueta Soldador","vigenciaMeses":12,"cargos":[],"tipoTalla":"ropa","soloPorTrabajador":true,"orden":62},{"id":"casco_yako_blanco","nombre":"Casco Yako Blanco","vigenciaMeses":24,"cargos":["PERFILERO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":63},{"id":"careta_transparente","nombre":"Careta Transparente","vigenciaMeses":12,"cargos":["OP PROCESADOR","OP SHOVEL"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":64},{"id":"casco_de_seguridad_naranjo","nombre":"Casco de Seguridad Naranjo","vigenciaMeses":24,"cargos":["BODEGUERO","CELADOR","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","ESTROBERO","LOGISTICA","MOTOSIERRISTA","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERSONAL DE APOYO ASEO"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":65},{"id":"casaquilla_manga_larga_estrobero_y_motosierrista_2_unidades","nombre":"Casaquilla Manga Larga Estrobero y Motosierrista (2 Unidades)","vigenciaMeses":12,"cargos":["ESTROBERO","MOTOSIERRISTA"],"tipoTalla":"ropa","soloPorTrabajador":false,"orden":66},{"id":"careta_para_soldar","nombre":"Careta para Soldar","vigenciaMeses":12,"cargos":[],"tipoTalla":"unica","soloPorTrabajador":true,"orden":67},{"id":"canillera_con_rodillera","nombre":"Canillera con Rodillera","vigenciaMeses":24,"cargos":["OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":68},{"id":"buzo_piloto_2_unidades","nombre":"Buzo Piloto (2 Unidades)","vigenciaMeses":12,"cargos":[],"tipoTalla":"ropa","soloPorTrabajador":true,"orden":69},{"id":"botin_de_seguridad","nombre":"Botín de Seguridad","vigenciaMeses":12,"cargos":["ASESOR EN PREVENCION DE RIESGOS","BODEGUERO","CALIBRADOR","CELADOR","CONDUCTOR CAMA BAJA","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","GERENTE","JEFE DE FAENA","LOGISTICA","MECANICO","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERFILERO","PERSONAL DE APOYO ASEO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"calzado","soloPorTrabajador":false,"orden":70},{"id":"botas_de_goma_concretera","nombre":"Botas de Goma Concretera","vigenciaMeses":12,"cargos":["ASESOR EN PREVENCION DE RIESGOS","BODEGUERO","CALIBRADOR","CELADOR","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","GERENTE","JEFE DE FAENA","LOGISTICA","MECANICO","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERSONAL DE APOYO ASEO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"calzado","soloPorTrabajador":false,"orden":71},{"id":"botas_de_goma_con_clavos","nombre":"Botas de Goma con Clavos","vigenciaMeses":12,"cargos":["ESTROBERO","MOTOSIERRISTA","PERFILERO"],"tipoTalla":"calzado","soloPorTrabajador":false,"orden":72},{"id":"botas_de_cuero_con_clavos_motosierrista","nombre":"Botas de Cuero con Clavos (Motosierrista)","vigenciaMeses":12,"cargos":["MOTOSIERRISTA"],"tipoTalla":"calzado","soloPorTrabajador":false,"orden":73},{"id":"botas_de_cuero_con_clavos_estrobero","nombre":"Botas de Cuero con Clavos (Estrobero)","vigenciaMeses":12,"cargos":["ESTROBERO","PERFILERO"],"tipoTalla":"calzado","soloPorTrabajador":false,"orden":74},{"id":"bolso_pintura_spray","nombre":"Bolso Pintura Spray","vigenciaMeses":24,"cargos":["CALIBRADOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":75},{"id":"antirruido_para_casco","nombre":"Antirruido para Casco","vigenciaMeses":12,"cargos":["MOTOSIERRISTA"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":76},{"id":"antiparra_clara","nombre":"Antiparra Clara","vigenciaMeses":24,"cargos":["ASESOR EN PREVENCION DE RIESGOS","BODEGUERO","CALIBRADOR","CELADOR","CONDUCTOR COMBUSTIBLE","CONDUCTOR TRANSPORTE DE PERSONAL","ESTROBERO","GERENTE","JEFE DE FAENA","LOGISTICA","MECANICO","MOTOSIERRISTA","OP GARRA","OP PROCESADOR","OP SHOVEL","OP SKIDDER","OP TORRE","PERFILERO","PERSONAL DE APOYO ASEO","PLANIFICADOR TALLER","SUPERVISOR"],"tipoTalla":"unica","soloPorTrabajador":false,"orden":77}]</script>
+
+<!-- ===== Lógica pura (sin Firebase): se prueba aparte ===== -->
+<script id="hse-logic">
+(function(){
+  const ROLES = {
+    prevencionista: 'Prevencionista',
+    gestor_epp: 'Gestión EPP',
+    jefe_faena: 'Jefe de faena',
+    fiscalizador: 'Fiscalizador (solo lectura)'
+  };
+  const PUEDE = {
+    editarCatalogo: r => r === 'prevencionista',
+    editarFicha: r => ['prevencionista','gestor_epp','jefe_faena'].includes(r),
+    agregarAdicional: r => r === 'prevencionista',
+    verTodosLosCentros: r => r !== 'jefe_faena'
+  };
+  const DIAS_POR_VENCER = 30; // criterio acordado: amarillo ≤ 30 días
+  const TALLAS = {
+    ropa: ['XS','S','M','L','XL','XXL','XXXL'],
+    calzado: ['35','36','37','38','39','40','41','42','43','44','45','46','47'],
+    guante: ['S','M','L','XL'],
+    unica: []
+  };
+  const NOMBRE_TALLA = { ropa: 'Ropa', calzado: 'Calzado', guante: 'Guantes' };
+
+  function normalizar(s){
+    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase().replace(/\s+/g, ' ');
+  }
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function limpiarRut(r){ return String(r || '').replace(/\./g, '').replace(/\s+/g, '').toUpperCase(); }
+  function formatRut(r){
+    const l = limpiarRut(r); if (!l) return '';
+    const i = l.indexOf('-');
+    const cuerpo = i === -1 ? l.slice(0, -1) : l.slice(0, i);
+    const dv = i === -1 ? l.slice(-1) : l.slice(i + 1);
+    return cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
+  }
+  function cargosDe(t){
+    return Array.isArray(t.cargos) ? t.cargos : (t.cargo ? [t.cargo] : []);
+  }
+  function esActivo(t){ return t.activo !== false; }
+
+  // ---- fechas (AAAA-MM-DD, sin zona horaria) ----
+  function parseFecha(s){
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || ''));
+    return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) : null;
+  }
+  function fmtFecha(d){
+    if (!d) return '';
+    return String(d.getUTCDate()).padStart(2,'0') + '-' + String(d.getUTCMonth()+1).padStart(2,'0') + '-' + d.getUTCFullYear();
+  }
+  function isoFecha(d){ return d.toISOString().slice(0,10); }
+  function sumarMeses(fechaIso, meses){
+    const d = parseFecha(fechaIso); if (!d) return null;
+    const dia = d.getUTCDate();
+    const r = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + meses, 1));
+    const ultimo = new Date(Date.UTC(r.getUTCFullYear(), r.getUTCMonth() + 1, 0)).getUTCDate();
+    r.setUTCDate(Math.min(dia, ultimo)); // 31-ene + 1 mes = 28/29-feb
+    return r;
+  }
+  function diasEntre(a, b){ return Math.round((b - a) / 86400000); }
+
+  // EPP que le corresponden a un trabajador: unión de los de todos sus cargos + adicionales de su ficha
+  function eppDeTrabajador(t, catalogo, ficha){
+    const cargos = cargosDe(t).map(normalizar);
+    const adic = new Set(((ficha && ficha.eppAdicionales) || []));
+    return catalogo.filter(e => e.activo !== false && (
+      adic.has(e.id) || (e.cargos || []).some(c => cargos.includes(normalizar(c)))
+    )).map(e => ({ ...e, esAdicional: adic.has(e.id) && !(e.cargos || []).some(c => cargos.includes(normalizar(c))) }));
+  }
+
+  // Estado de un EPP según su última entrega (no anulada)
+  function estadoEpp(ultimaEntregaIso, vigenciaMeses, hoyIso){
+    if (!ultimaEntregaIso) return { estado: 'falta', etiqueta: 'Nunca entregado', vence: null, dias: null };
+    const vence = sumarMeses(ultimaEntregaIso, vigenciaMeses);
+    const dias = diasEntre(parseFecha(hoyIso), vence);
+    let estado = 'vigente';
+    if (dias < 0) estado = 'vencido'; else if (dias <= DIAS_POR_VENCER) estado = 'por_vencer';
+    return { estado, vence, dias, etiqueta: { vigente: 'Vigente', vencido: 'Vencido', por_vencer: 'Por vencer' }[estado] };
+  }
+  function textoPlazo(st){
+    if (st.estado === 'falta') return 'nunca entregado';
+    if (st.dias < 0) return 'venció hace ' + plural(-st.dias, 'día');
+    if (st.dias === 0) return 'vence hoy';
+    if (st.dias <= 60) return 'vence en ' + plural(st.dias, 'día');
+    const meses = Math.round(st.dias / 30);
+    return 'vence en ' + plural(meses, 'mes', 'meses');
+  }
+  function plural(n, s, p){ return n + ' ' + (n === 1 ? s : (p || s + 's')); }
+
+  // Última entrega vigente (no anulada) por EPP, a partir de la lista de entregas de UN trabajador
+  function ultimasEntregas(entregas){
+    const m = {};
+    (entregas || []).forEach(en => {
+      if (en.anulada) return;
+      (en.items || []).forEach(it => {
+        const f = en.fecha;
+        if (!m[it.eppId] || m[it.eppId].fecha < f) m[it.eppId] = { fecha: f, talla: it.talla || '' };
+      });
+    });
+    return m;
+  }
+
+  const ORDEN_ESTADO = { falta: 0, vencido: 0, por_vencer: 1, vigente: 2 };
+  function fichaEpp(t, catalogo, ficha, entregas, hoyIso){
+    const ult = ultimasEntregas(entregas);
+    const tallas = (ficha && ficha.tallas) || {};
+    const lista = eppDeTrabajador(t, catalogo, ficha).map(e => {
+      const u = ult[e.id];
+      const st = estadoEpp(u && u.fecha, e.vigenciaMeses, hoyIso);
+      const talla = e.tipoTalla === 'unica' ? 'Única' : (tallas[e.tipoTalla] || (u && u.talla) || '');
+      return { ...e, st, talla, ultima: u ? u.fecha : null };
+    });
+    lista.sort((a, b) => (ORDEN_ESTADO[a.st.estado] - ORDEN_ESTADO[b.st.estado]) || (a.st.dias ?? -1e9) - (b.st.dias ?? -1e9) || a.nombre.localeCompare(b.nombre, 'es'));
+    const resumen = { falta: 0, vencido: 0, por_vencer: 0, vigente: 0 };
+    lista.forEach(x => resumen[x.st.estado]++);
+    return { lista, resumen };
+  }
+
+  // Cargos del trabajador que no tienen ningún EPP en el catálogo (para avisar)
+  function cargosSinMatriz(t, catalogo){
+    const conEpp = new Set();
+    catalogo.forEach(e => (e.cargos || []).forEach(c => conEpp.add(normalizar(c))));
+    return cargosDe(t).filter(c => !conEpp.has(normalizar(c)));
+  }
+
+  // Visibilidad de trabajadores según rol: jefe de faena ve su centro + ROTATIVO
+  function trabajadoresVisibles(dotacion, usuario){
+    let l = dotacion.filter(esActivo);
+    if (!PUEDE.verTodosLosCentros(usuario.rolHSE)) {
+      l = l.filter(t => t.centro === usuario.centro || t.centro === 'ROTATIVO');
+    }
+    return l.sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es'));
+  }
+  function filtrarTrabajadores(lista, texto, centro){
+    const q = normalizar(texto), qr = limpiarRut(texto).replace(/-/g, '');
+    return lista.filter(t => (!centro || t.centro === centro) && (!q ||
+      normalizar(t.nombre).includes(q) ||
+      (qr && limpiarRut(t.rut || t.id).replace(/-/g, '').includes(qr)) ||
+      cargosDe(t).some(c => normalizar(c).includes(q))));
+  }
+
+  // ---- render (devuelve HTML) ----
+  function chipsResumen(r){
+    const p = [];
+    const rojo = r.falta + r.vencido;
+    if (rojo) p.push('<span class="chip c-vencido">' + rojo + (rojo === 1 ? ' pendiente' : ' pendientes') + '</span>');
+    if (r.por_vencer) p.push('<span class="chip c-por_vencer">' + r.por_vencer + ' por vencer</span>');
+    if (!rojo && !r.por_vencer && r.vigente) p.push('<span class="chip c-vigente">Al día</span>');
+    return p.join('');
+  }
+  function renderListaTrabajadores(items){
+    if (!items.length) return '<div class="card" style="padding:18px"><div class="muted">No hay trabajadores que coincidan.</div></div>';
+    return '<div class="card">' + items.map(x =>
+      '<button class="row" data-rut="' + esc(x.t.id) + '" onclick="abrirFicha(this.dataset.rut)">' +
+        '<span class="main"><span class="n">' + esc(x.t.nombre) + '</span>' +
+        '<span class="d">' + esc(cargosDe(x.t).join(' + ') || 'Sin cargo asignado') + ' · ' + esc(x.t.centro || 'Sin centro') + '</span></span>' +
+        '<span class="chips">' + (cargosDe(x.t).length ? chipsResumen(x.resumen) : '<span class="chip c-gris">Sin cargo</span>') + '</span>' +
+      '</button>').join('') + '</div>';
+  }
+  function opcionesTalla(tipo, actual, puede){
+    const ops = TALLAS[tipo] || [];
+    return '<select class="input" data-talla="' + tipo + '"' + (puede ? '' : ' disabled') + '><option value="">—</option>' +
+      ops.map(o => '<option' + (o === actual ? ' selected' : '') + '>' + o + '</option>').join('') + '</select>';
+  }
+  function renderFicha(t, fe, ficha, rol, sinMatriz, catalogo){
+    const r = fe.resumen;
+    const tallas = (ficha && ficha.tallas) || {};
+    const puede = PUEDE.editarFicha(rol);
+    let h = '<button class="btn2" onclick="volverLista()" style="margin-bottom:12px">‹ Volver</button>';
+    h += '<div class="card" style="padding:14px;margin-bottom:12px">' +
+      '<div style="font-size:18px;font-weight:700">' + esc(t.nombre) + '</div>' +
+      '<div class="muted" style="margin:2px 0 10px">RUT ' + esc(formatRut(t.rut || t.id)) + '</div>' +
+      '<div class="kv"><span>Cargo</span><span><strong>' + esc(cargosDe(t).join(' + ') || '—') + '</strong></span></div>' +
+      '<div class="kv"><span>Centro</span><span><strong>' + esc(t.centro || '—') + '</strong></span></div>' +
+      '<div class="kv"><span>Empresa</span><span>' + esc(t.empresa || '—') + '</span></div>' +
+      '<div class="kv"><span>Correo</span><span>' + esc(t.correo || 'sin correo') + '</span></div>' +
+      '<div class="chips" style="margin-top:10px">' + chipsResumen(r) + '</div></div>';
+    if (!cargosDe(t).length) h += '<div class="msg info">Este trabajador no tiene cargo en RRHH, así que no se sabe qué EPP le corresponden. Asígnale el cargo en Dotación de personal.</div>';
+    if (sinMatriz.length) h += '<div class="msg info">El cargo ' + esc(sinMatriz.join(', ')) + ' no tiene EPP definidos en el catálogo.</div>';
+
+    h += '<div class="sec">EPP que le corresponden (' + fe.lista.length + ')</div>';
+    h += '<div class="card">' + (fe.lista.length ? fe.lista.map(e =>
+      '<div class="row"><span class="main"><span class="n">' + esc(e.nombre) + (e.esAdicional ? ' <span class="chip c-info">adicional</span>' : '') + '</span>' +
+      '<span class="d">' + esc(e.talla ? 'Talla ' + e.talla : 'Talla sin definir') + ' · ' + esc(textoPlazo(e.st)) +
+      (e.ultima ? ' · entregado el ' + fmtFecha(parseFecha(e.ultima)) : '') + ' · vigencia ' + plural(e.vigenciaMeses, 'mes', 'meses') + '</span></span>' +
+      '<span class="chip c-' + e.st.estado + '">' + esc(e.st.etiqueta) + '</span></div>').join('')
+      : '<div class="row"><span class="muted">Sin EPP asignados.</span></div>') + '</div>';
+
+    h += '<div class="sec">Tallas</div><div class="card" style="padding:14px">' +
+      '<div class="grid2">' + ['ropa','calzado','guante'].map(k =>
+        '<label class="field" style="margin:0">' + NOMBRE_TALLA[k] + opcionesTalla(k, tallas[k] || '', puede) + '</label>').join('') + '</div>' +
+      (puede ? '<div class="msg ok hidden" id="tallas-ok" style="margin:12px 0 0">Tallas guardadas.</div><button class="btn full" style="margin-top:12px" onclick="guardarTallas()">Guardar tallas</button>' : '') +
+      '<div class="muted" style="margin-top:8px">Las tallas se usan para prellenar las solicitudes.</div></div>';
+
+    if (PUEDE.agregarAdicional(rol)) {
+      const ya = new Set(fe.lista.map(e => e.id));
+      const extras = catalogo.filter(e => e.activo !== false && !ya.has(e.id));
+      h += '<div class="sec">EPP adicional para este trabajador</div><div class="card" style="padding:14px">' +
+        '<div class="muted" style="margin-bottom:8px">Para EPP que no van por cargo (por ejemplo, ropa de soldador).</div>' +
+        '<select class="input" id="sel-adicional"><option value="">Elegir EPP…</option>' +
+        extras.map(e => '<option value="' + esc(e.id) + '">' + esc(e.nombre) + '</option>').join('') + '</select>' +
+        '<button class="btn2 full" style="margin-top:10px" onclick="agregarAdicional()">Agregar</button>' +
+        (((ficha && ficha.eppAdicionales) || []).length ? '<div class="muted" style="margin-top:10px">Para quitar uno: </div>' +
+          ficha.eppAdicionales.map(id => { const e = catalogo.find(c => c.id === id); return '<button class="btn2" style="margin:6px 6px 0 0" data-id="' + esc(id) + '" onclick="quitarAdicional(this.dataset.id)">✕ ' + esc(e ? e.nombre : id) + '</button>'; }).join('') : '') +
+        '</div>';
+    }
+    return h;
+  }
+  function renderCatalogo(catalogo, rol, cargosRRHH){
+    const puede = PUEDE.editarCatalogo(rol);
+    let h = '';
+    if (!catalogo.length) {
+      h += '<div class="card" style="padding:16px"><div style="font-weight:700;margin-bottom:6px">El catálogo está vacío</div>' +
+        '<div class="muted" style="margin-bottom:12px">Se puede cargar de una vez con los 77 EPP de la matriz aprobada (v2, 10-11-2026).</div>' +
+        (puede ? '<button class="btn full" onclick="sembrarCatalogo()">Cargar catálogo inicial</button>' : '<div class="muted">Solo un prevencionista puede cargarlo.</div>') + '</div>';
+      return h;
+    }
+    const usados = new Set(); catalogo.forEach(e => (e.cargos || []).forEach(c => usados.add(normalizar(c))));
+    const faltan = (cargosRRHH || []).filter(c => !usados.has(normalizar(c)));
+    if (faltan.length) h += '<div class="msg info">Cargos de RRHH sin ningún EPP: ' + esc(faltan.join(', ')) + '.</div>';
+    h += '<div class="muted" style="margin-bottom:8px">' + catalogo.length + ' EPP · la vigencia está en meses' + (puede ? ' · toca un EPP para editarlo' : '') + '</div>';
+    h += '<div class="card scroll"><table class="cat"><thead><tr><th>EPP</th><th>Vigencia</th><th>Cargos</th></tr></thead><tbody>' +
+      catalogo.map(e => '<tr' + (puede ? ' style="cursor:pointer" data-id="' + esc(e.id) + '" onclick="editarEpp(this.dataset.id)"' : '') + '>' +
+        '<td><strong>' + esc(e.nombre) + '</strong>' + (e.activo === false ? ' <span class="chip c-gris">inactivo</span>' : '') + '</td>' +
+        '<td>' + e.vigenciaMeses + ' m</td>' +
+        '<td class="muted">' + esc((e.cargos || []).join(', ') || 'Solo por trabajador') + '</td></tr>').join('') +
+      '</tbody></table></div>';
+    return h;
+  }
+  function renderEditorEpp(e, cargosRRHH){
+    const sel = new Set((e.cargos || []).map(normalizar));
+    const todos = Array.from(new Set([...(cargosRRHH || []), ...(e.cargos || [])])).sort();
+    return '<button class="btn2" onclick="mostrarTab(\'catalogo\')" style="margin-bottom:12px">‹ Volver</button>' +
+      '<div class="card" style="padding:16px"><div style="font-size:17px;font-weight:700;margin-bottom:12px">' + esc(e.nombre) + '</div>' +
+      '<div class="msg err hidden" id="epp-error"></div>' +
+      '<label class="field">Vigencia (meses)<input class="input" id="epp-vig" type="number" min="1" max="240" value="' + e.vigenciaMeses + '"></label>' +
+      '<label class="field">Tipo de talla<select class="input" id="epp-talla">' +
+        ['unica','ropa','calzado','guante'].map(k => '<option value="' + k + '"' + (e.tipoTalla === k ? ' selected' : '') + '>' + ({unica:'Única',ropa:'Ropa',calzado:'Calzado',guante:'Guantes'})[k] + '</option>').join('') + '</select></label>' +
+      '<div class="field" style="margin-bottom:6px">Cargos a los que corresponde</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px" id="epp-cargos">' +
+        todos.map(c => '<label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" value="' + esc(c) + '"' + (sel.has(normalizar(c)) ? ' checked' : '') + '> ' + esc(c) + '</label>').join('') + '</div>' +
+      '<label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-bottom:14px"><input type="checkbox" id="epp-activo"' + (e.activo === false ? '' : ' checked') + '> EPP activo</label>' +
+      '<button class="btn full" onclick="guardarEpp(\'' + esc(e.id) + '\')">Guardar</button></div>';
+  }
+
+  window.HSE = { ROLES, PUEDE, TALLAS, DIAS_POR_VENCER, normalizar, esc, limpiarRut, formatRut, cargosDe, esActivo,
+    parseFecha, fmtFecha, isoFecha, sumarMeses, estadoEpp, textoPlazo, ultimasEntregas, eppDeTrabajador, fichaEpp,
+    cargosSinMatriz, trabajadoresVisibles, filtrarTrabajadores, renderListaTrabajadores, renderFicha, renderCatalogo, renderEditorEpp };
+})();
+</script>
+
+<!-- ===== Firebase + pantallas ===== -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, collection, query, where, getDocs, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBCAK6CdwawIyo4IjsJedNx_KkR_4ROqN4",
+  authDomain: "reporte-inicio-faena-forestal.firebaseapp.com",
+  projectId: "reporte-inicio-faena-forestal",
+  storageBucket: "reporte-inicio-faena-forestal.firebasestorage.app",
+  messagingSenderId: "962534414054",
+  appId: "1:962534414054:web:fa43371d31413fc0524d27"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const H = window.HSE;
+
+const S = { usuario: null, dotacion: [], catalogo: [], entregasPorRut: {}, fichas: {}, tab: 'trabajadores', fichaRut: null, filtroTexto: '', filtroCentro: '' };
+const $ = id => document.getElementById(id);
+const hoyIso = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+
+function mostrar(id){ ['pantalla-login','pantalla-sinacceso','pantalla-app'].forEach(p => $(p).classList.toggle('hidden', p !== id)); }
+
+window.ingresar = async function(){
+  const err = $('login-error'); err.classList.add('hidden');
+  const b = $('btn-ingresar'); b.disabled = true; b.textContent = 'Ingresando…';
+  try { await signInWithEmailAndPassword(auth, $('login-correo').value.trim(), $('login-clave').value); }
+  catch(e){ err.textContent = (e.code && e.code.includes('invalid')) || e.code === 'auth/user-not-found' ? 'Correo o contraseña incorrectos.' : 'No se pudo iniciar sesión. Intenta de nuevo.'; err.classList.remove('hidden'); }
+  finally { b.disabled = false; b.textContent = 'Ingresar'; }
+};
+window.cerrarSesion = () => signOut(auth);
+
+onAuthStateChanged(auth, async user => {
+  $('who').classList.toggle('hidden', !user);
+  if (!user) { mostrar('pantalla-login'); return; }
+  try {
+    const snap = await getDoc(doc(db, 'usuarios', user.uid));
+    const u = snap.exists() ? snap.data() : null;
+    if (!u || u.activo !== true || !H.ROLES[u.rolHSE]) { mostrar('pantalla-sinacceso'); return; }
+    S.usuario = { uid: user.uid, nombre: u.nombre || user.email, rolHSE: u.rolHSE, centro: u.centro || null };
+    $('who-nombre').textContent = S.usuario.nombre;
+    $('who-rol').textContent = H.ROLES[u.rolHSE] + (u.rolHSE === 'jefe_faena' && u.centro ? ' · ' + u.centro : '');
+    mostrar('pantalla-app');
+    $('vista').innerHTML = '<div class="muted">Cargando…</div>';
+    await cargarTodo();
+    pintarTabs(); mostrarTab('trabajadores');
+  } catch(e) {
+    console.error(e); mostrar('pantalla-app');
+    $('vista').innerHTML = '<div class="msg err">No se pudo cargar la información (' + H.esc(e.code || e.message) + '). Revisa que las reglas de Firestore del módulo EPP estén publicadas.</div>';
+  }
+});
+
+async function cargarTodo(){
+  const [dot, cat, ent] = await Promise.all([
+    getDocs(collection(db, 'dotacion')),
+    getDocs(collection(db, 'hse_epp')),
+    getDocs(collection(db, 'hse_entregas')).catch(() => ({ forEach(){} }))
+  ]);
+  S.dotacion = []; dot.forEach(d => S.dotacion.push({ id: d.id, ...d.data() }));
+  S.catalogo = []; cat.forEach(d => S.catalogo.push({ id: d.id, ...d.data() }));
+  S.catalogo.sort((a, b) => (a.orden || 0) - (b.orden || 0));
+  S.entregasPorRut = {}; ent.forEach(d => { const x = d.data(); (S.entregasPorRut[x.rut] = S.entregasPorRut[x.rut] || []).push(x); });
+}
+
+function pintarTabs(){
+  const tabs = [['trabajadores','Trabajadores'],['catalogo','Catálogo EPP']];
+  $('tabs').innerHTML = tabs.map(([k, l]) => '<button class="tab' + (S.tab === k ? ' on' : '') + '" onclick="mostrarTab(\'' + k + '\')">' + l + '</button>').join('');
+}
+window.mostrarTab = function(k){ S.tab = k; S.fichaRut = null; pintarTabs(); k === 'catalogo' ? pintarCatalogo() : pintarLista(); };
+
+function cargosRRHH(){ return Array.from(new Set(S.dotacion.flatMap(H.cargosDe))).sort(); }
+
+function pintarLista(){
+  const visibles = H.trabajadoresVisibles(S.dotacion, S.usuario);
+  const centros = Array.from(new Set(visibles.map(t => t.centro).filter(Boolean))).sort();
+  const filtrados = H.filtrarTrabajadores(visibles, S.filtroTexto, S.filtroCentro);
+  const items = filtrados.map(t => ({ t, resumen: H.fichaEpp(t, S.catalogo, S.fichas[t.id], S.entregasPorRut[t.id], hoyIso()).resumen }));
+  $('vista').innerHTML =
+    (S.catalogo.length ? '' : '<div class="msg info">El catálogo de EPP está vacío. Cárgalo en la pestaña Catálogo EPP.</div>') +
+    '<div class="grid2" style="margin-bottom:12px">' +
+      '<input class="input" id="f-texto" placeholder="Buscar por nombre, RUT o cargo" value="' + H.esc(S.filtroTexto) + '">' +
+      '<select class="input" id="f-centro"><option value="">Todos los centros</option>' + centros.map(c => '<option' + (c === S.filtroCentro ? ' selected' : '') + '>' + H.esc(c) + '</option>').join('') + '</select></div>' +
+    '<div class="muted" style="margin-bottom:8px">' + filtrados.length + ' trabajadores activos</div>' +
+    '<div id="lista">' + H.renderListaTrabajadores(items) + '</div>';
+  $('f-texto').oninput = e => { S.filtroTexto = e.target.value; refrescarLista(); };
+  $('f-centro').onchange = e => { S.filtroCentro = e.target.value; refrescarLista(); };
+}
+function refrescarLista(){
+  const visibles = H.trabajadoresVisibles(S.dotacion, S.usuario);
+  const filtrados = H.filtrarTrabajadores(visibles, S.filtroTexto, S.filtroCentro);
+  $('lista').innerHTML = H.renderListaTrabajadores(filtrados.map(t => ({ t, resumen: H.fichaEpp(t, S.catalogo, S.fichas[t.id], S.entregasPorRut[t.id], hoyIso()).resumen })));
+}
+
+window.abrirFicha = async function(rut){
+  S.fichaRut = rut;
+  if (!(rut in S.fichas)) {
+    try { const s = await getDoc(doc(db, 'hse_fichas', rut)); S.fichas[rut] = s.exists() ? s.data() : null; }
+    catch(e) { S.fichas[rut] = null; }
+  }
+  pintarFicha(); window.scrollTo(0, 0);
+};
+window.volverLista = () => { S.fichaRut = null; pintarLista(); };
+function pintarFicha(){
+  const t = S.dotacion.find(x => x.id === S.fichaRut); if (!t) return pintarLista();
+  const ficha = S.fichas[t.id];
+  const fe = H.fichaEpp(t, S.catalogo, ficha, S.entregasPorRut[t.id], hoyIso());
+  $('vista').innerHTML = H.renderFicha(t, fe, ficha, S.usuario.rolHSE, H.cargosSinMatriz(t, S.catalogo), S.catalogo);
+}
+window.guardarTallas = async function(){
+  const rut = S.fichaRut, tallas = {};
+  document.querySelectorAll('[data-talla]').forEach(s => { if (s.value) tallas[s.dataset.talla] = s.value; });
+  await setDoc(doc(db, 'hse_fichas', rut), { tallas, actualizadoPor: S.usuario.uid, actualizadoEn: serverTimestamp() }, { merge: true });
+  S.fichas[rut] = { ...(S.fichas[rut] || {}), tallas };
+  pintarFicha(); $('tallas-ok').classList.remove('hidden');
+};
+async function guardarAdicionales(lista){
+  const rut = S.fichaRut;
+  await setDoc(doc(db, 'hse_fichas', rut), { eppAdicionales: lista, actualizadoPor: S.usuario.uid, actualizadoEn: serverTimestamp() }, { merge: true });
+  S.fichas[rut] = { ...(S.fichas[rut] || {}), eppAdicionales: lista };
+  pintarFicha();
+}
+window.agregarAdicional = function(){
+  const id = $('sel-adicional').value; if (!id) return;
+  const actual = (S.fichas[S.fichaRut] && S.fichas[S.fichaRut].eppAdicionales) || [];
+  if (!actual.includes(id)) guardarAdicionales([...actual, id]);
+};
+window.quitarAdicional = function(id){
+  const actual = (S.fichas[S.fichaRut] && S.fichas[S.fichaRut].eppAdicionales) || [];
+  guardarAdicionales(actual.filter(x => x !== id));
+};
+
+function pintarCatalogo(){ $('vista').innerHTML = H.renderCatalogo(S.catalogo, S.usuario.rolHSE, cargosRRHH()); }
+window.sembrarCatalogo = async function(){
+  if (!H.PUEDE.editarCatalogo(S.usuario.rolHSE)) return;
+  const seed = JSON.parse($('seed-epp').textContent);
+  const batch = writeBatch(db);
+  seed.forEach(e => batch.set(doc(db, 'hse_epp', e.id), { nombre: e.nombre, vigenciaMeses: e.vigenciaMeses, cargos: e.cargos, tipoTalla: e.tipoTalla, orden: e.orden, activo: true, creadoPor: S.usuario.uid, creadoEn: serverTimestamp() }));
+  $('vista').innerHTML = '<div class="muted">Cargando catálogo…</div>';
+  await batch.commit();
+  await cargarTodo(); pintarCatalogo();
+};
+window.editarEpp = function(id){
+  const e = S.catalogo.find(x => x.id === id); if (!e) return;
+  $('vista').innerHTML = H.renderEditorEpp(e, cargosRRHH());
+};
+window.guardarEpp = async function(id){
+  const vig = parseInt($('epp-vig').value, 10);
+  if (!(vig >= 1 && vig <= 240)) { const er = $('epp-error'); er.textContent = 'La vigencia debe ser un número de meses entre 1 y 240.'; er.classList.remove('hidden'); return; }
+  const cargos = Array.from(document.querySelectorAll('#epp-cargos input:checked')).map(i => i.value);
+  const datos = { vigenciaMeses: vig, tipoTalla: $('epp-talla').value, cargos, activo: $('epp-activo').checked, actualizadoPor: S.usuario.uid, actualizadoEn: serverTimestamp() };
+  await setDoc(doc(db, 'hse_epp', id), datos, { merge: true });
+  Object.assign(S.catalogo.find(x => x.id === id), datos);
+  pintarCatalogo();
+};
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+      reg.addEventListener('updatefound', () => {
+        const nuevoWorker = reg.installing;
+        nuevoWorker.addEventListener('statechange', () => {
+          if (nuevoWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            nuevoWorker.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+      reg.update();
+    }).catch(() => {});
+    let yaRecargo = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (yaRecargo) return;
+      yaRecargo = true;
+      window.location.reload();
+    });
+  });
+}
+</script>
+</body>
+</html>
