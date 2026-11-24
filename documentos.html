@@ -4854,7 +4854,9 @@ window.abrirModalCumplimientoDia = async function(nombreJefe, fecha){
     snap.forEach(d => {
       const data = d.data();
       const ids = data.trabajadorIds || [];
-      const trabajadores = ids.map(id => dotPorId[id]).filter(Boolean)
+      // Función que el jefe informó para cada trabajador ese día (registros anteriores no la traen).
+      const funcs = data.trabajadorFunciones || {};
+      const trabajadores = ids.map(id => dotPorId[id] ? Object.assign({}, dotPorId[id], { funcionDia: funcs[id] || "" }) : null).filter(Boolean)
         .sort((a,b) => String(a.nombre||"").localeCompare(String(b.nombre||""), "es"));
       grupos.push({ fundo: data.fundo || "(sin fundo)", trabajadores });
     });
@@ -4871,7 +4873,7 @@ window.abrirModalCumplimientoDia = async function(nombreJefe, fecha){
           <div class="doc-item">
             <div>
               <div class="doc-item-nombre">${escapeHtml(t.nombre || "—")}</div>
-              <div class="doc-item-meta">${escapeHtml(limpiarRut(t.rut || ""))}${t.centro ? " · " + escapeHtml(t.centro) : ""}</div>
+              <div class="doc-item-meta">${escapeHtml(limpiarRut(t.rut || ""))}${t.centro ? " · " + escapeHtml(t.centro) : ""}${t.funcionDia ? " · Función: <b>" + escapeHtml(t.funcionDia) + "</b>" : ""}</div>
             </div>
           </div>
         `).join("") : `<p class="status-note">No se pudo identificar a los trabajadores de este registro (puede que ya no estén en Dotación).</p>`}

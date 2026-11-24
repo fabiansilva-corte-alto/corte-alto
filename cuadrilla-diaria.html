@@ -93,6 +93,12 @@
   .fila-trab .meta{font-size:12px;color:var(--texto3)}
   .badge-centro-mini{display:inline-block;font-size:11px;background:#eeeeee;color:var(--texto2);padding:2px 7px;border-radius:20px;margin-left:6px}
   .sin-resultados{padding:24px;text-align:center;color:var(--texto3);font-size:13px}
+  /* Función que hizo cada trabajador marcado ese día (pedido por Fabián 24 nov 2026) */
+  .func-trab{margin-top:8px}
+  .func-trab label{display:block;font-size:11px;font-weight:700;color:var(--texto2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em}
+  .func-trab select{width:100%;max-width:300px;padding:8px 10px;border:1.5px solid var(--borde);border-radius:8px;font-size:13.5px;background:#fff;color:var(--texto)}
+  .func-trab select.falta{border-color:var(--rojo);background:#ffebee}
+  .func-trab .func-otra{margin-top:6px}
 
   .tabla-historial{width:100%;border-collapse:collapse;font-size:13px}
   .tabla-historial th{text-align:left;color:var(--texto2);font-weight:600;padding:8px 10px;border-bottom:2px solid var(--borde)}
@@ -249,6 +255,7 @@ function guardarBorradorLocal(){
       fecha: contextoActual.fecha,
       fundo: contextoActual.fundo,
       trabajadorIds: Array.from(seleccionados),
+      funciones: funciones,
       guardadoEn: new Date().toISOString()
     }));
   }catch(e){ /* localStorage puede fallar (ventana privada, cuota llena, etc.) — el
@@ -280,6 +287,15 @@ let usuarioActual = null; // {rol, nombre, centro}
 let confirmaciones = { celador: undefined, petrolero: undefined, mecanico: undefined, turnoNoche: undefined };
 let respuestasPendientes = {}; // lo que se va marcando en el panel, antes de "Confirmar y guardar"
 
+// Función que hizo cada trabajador marcado ese día (pedido por Fabián 24 nov 2026): el jefe elige
+// entre los cargos del trabajador o "Otro…" (todos los cargos del catálogo de RRHH, sin texto
+// libre). Se guarda por día en el registro (trabajadorFunciones), NO cambia la ficha de Dotación.
+let funciones = {};                 // { trabajadorId: "Op Torre" }
+let otroAbierto = new Set();        // ids con la segunda lista ("Otro…") desplegada
+let mostrarFaltantes = false;       // true tras un intento de guardar con funciones sin elegir
+let cargosCatalogo = [];            // [{id, nombre, activo}] desde config_cargos (puede quedar vacío si no hay permiso)
+const OTRO = "__otro__";
+
 function mostrarPantalla(id){
   ["pantalla-clave", "pantalla-sinacceso", "pantalla-app"].forEach(v => {
     document.getElementById(v).classList.toggle("hidden", v !== id);
@@ -295,6 +311,12 @@ function haySeleccionSinGuardar(){
   const guardados = new Set((docExistenteActual && docExistenteActual.trabajadorIds) || []);
   if(guardados.size !== seleccionados.size) return true;
   for(const id of seleccionados){ if(!guardados.has(id)) return true; }
+  // También cuenta como cambio sin guardar si se modificó la función de alguien — pero solo se
+  // compara cuando el registro guardado ya traía funciones (los anteriores a esta mejora no).
+  const funcGuardadas = docExistenteActual && docExistenteActual.trabajadorFunciones;
+  if(funcGuardadas){
+    for(const id of seleccionados){ if((funciones[id] || "") !== (funcGuardadas[id] || "")) return true; }
+  }
   return false;
 }
 
@@ -489,7 +511,7 @@ function hoyISO(){
 
 async function iniciarApp(){
   document.getElementById("sel-fecha").value = hoyISO();
-  await Promise.all([cargarJefes(), cargarFundos()]);
+  await Promise.all([cargarJefes(), cargarFundos(), cargarCargosCatalogo()]);
   aplicarBloqueoJefe();
 }
 
@@ -542,6 +564,50 @@ async function cargarFundos(){
   }
 }
 
+// Catálogo de cargos de RRHH (config_cargos): alimenta la lista "Otro…". Si por permisos o
+// conexión no se puede leer, no se cae nada: la lista "Otro…" usa los cargos que ya tienen los
+// trabajadores en Dotación (ver opcionesOtro).
+async function cargarCargosCatalogo(){
+  try{
+    const snap = await getDocs(collection(db, "config_cargos"));
+    const datos = [];
+    snap.forEach(d => datos.push({ id: d.id, nombre: d.data().nombre || d.id, activo: d.data().activo !== false }));
+    datos.sort((a,b) => a.nombre.localeCompare(b.nombre, "es"));
+    cargosCatalogo = datos;
+  }catch(e){
+    cargosCatalogo = [];
+  }
+}
+
+// Cargos propios del trabajador (formato nuevo: lista "cargos"; formato viejo: texto "cargo").
+function cargosPropiosDe(t){
+  const lista = Array.isArray(t && t.cargos) ? t.cargos : ((t && t.cargo) ? [t.cargo] : []);
+  return [...new Set(lista.map(c => (c || "").toString().trim()).filter(Boolean))];
+}
+
+// Lista de "Otro…": todos los cargos ACTIVOS del catálogo menos los que ya son del trabajador.
+function opcionesOtro(t){
+  const propios = cargosPropiosDe(t);
+  let nombres = cargosCatalogo.filter(c => c.activo !== false).map(c => c.nombre);
+  if(!nombres.length){
+    // Sin catálogo (sin permiso/conexión): se usan los cargos que ya tiene alguien en Dotación.
+    nombres = [...new Set((dotDatos || []).flatMap(x => cargosPropiosDe(x)))];
+  }
+  return nombres.filter(n => !propios.includes(n)).sort((a,b) => a.localeCompare(b, "es"));
+}
+
+// Un trabajador con un solo cargo parte con esa función elegida; con varios (o ninguno) el jefe
+// debe elegir. Solo rellena a quien todavía no tiene función (no pisa lo que ya venía guardado,
+// precargado o recuperado del borrador).
+function aplicarFuncionesPorDefecto(){
+  const porId = {}; (dotDatos || []).forEach(t => porId[t.id] = t);
+  seleccionados.forEach(id => {
+    if(funciones[id]) return;
+    const propios = cargosPropiosDe(porId[id]);
+    if(propios.length === 1) funciones[id] = propios[0];
+  });
+}
+
 async function asegurarDotacion(){
   if(dotDatos !== null) return;
   const cont = document.getElementById("trabajadores-cont");
@@ -577,6 +643,9 @@ async function cargarContextoYPreseleccion(){
   const cont = document.getElementById("trabajadores-cont");
   cont.innerHTML = `<p class="cargando">Buscando registro…</p>`;
   seleccionados = new Set();
+  funciones = {};
+  otroAbierto = new Set();
+  mostrarFaltantes = false;
   docExistenteActual = null;
   let avisoHtml = "";
   try{
@@ -584,6 +653,7 @@ async function cargarContextoYPreseleccion(){
     if(snapExistente.exists()){
       docExistenteActual = snapExistente.data();
       (docExistenteActual.trabajadorIds || []).forEach(id => seleccionados.add(id));
+      funciones = Object.assign({}, docExistenteActual.trabajadorFunciones || {});
       avisoHtml = `<div class="aviso-editando">✏️ Ya registraste tu cuadrilla para este día y fundo. Puedes ajustarla y guardar de nuevo.</div>`;
     }else{
       // Sin registro guardado en Firestore todavía para este día/fundo: primero se busca si
@@ -592,16 +662,21 @@ async function cargarContextoYPreseleccion(){
       const borrador = leerBorradorLocal();
       if(borrador && borrador.docId === contextoActual.docId && (borrador.trabajadorIds || []).length){
         borrador.trabajadorIds.forEach(id => seleccionados.add(id));
+        funciones = Object.assign({}, borrador.funciones || {});
         avisoHtml = `<div class="aviso-borrador">↩️ Recuperamos un avance sin guardar de este mismo día y fundo.<br><button onclick="descartarBorradorRecuperado()">No, prefiero empezar de nuevo</button></div>`;
       }else{
         const previa = await buscarUltimaCuadrilla(contextoActual.jefe, contextoActual.fundo, contextoActual.fecha);
         if(previa){
           (previa.trabajadorIds || []).forEach(id => seleccionados.add(id));
+          funciones = Object.assign({}, previa.trabajadorFunciones || {});
           avisoHtml = `<div class="aviso-precarga">Precargado desde tu última cuadrilla en este fundo (${fechaLegible(previa.fecha)}). Revisa y ajusta antes de guardar.</div>`;
         }
       }
     }
   }catch(e){ /* sin registro previo o sin conexión — se sigue con lista vacía */ }
+  // La función solo tiene sentido para quienes están marcados; y los de un solo cargo parten elegidos.
+  Object.keys(funciones).forEach(id => { if(!seleccionados.has(id)) delete funciones[id]; });
+  aplicarFuncionesPorDefecto();
   // Las 4 confirmaciones (celador/petrolero/mecánico/turno noche) son por registro: si este día/fundo
   // ya tenía algo contestado, se respeta; si no, quedan pendientes y se preguntarán al guardar.
   confirmaciones = {
@@ -621,14 +696,19 @@ window.descartarBorradorRecuperado = async function(){
   if(!contextoActual) return;
   borrarBorradorLocal();
   seleccionados = new Set();
+  funciones = {};
+  otroAbierto = new Set();
   let avisoHtml = "";
   try{
     const previa = await buscarUltimaCuadrilla(contextoActual.jefe, contextoActual.fundo, contextoActual.fecha);
     if(previa){
       (previa.trabajadorIds || []).forEach(id => seleccionados.add(id));
+      funciones = Object.assign({}, previa.trabajadorFunciones || {});
       avisoHtml = `<div class="aviso-precarga">Precargado desde tu última cuadrilla en este fundo (${fechaLegible(previa.fecha)}). Revisa y ajusta antes de guardar.</div>`;
     }
   }catch(e){ /* sin precarga disponible — se sigue con lista vacía */ }
+  Object.keys(funciones).forEach(id => { if(!seleccionados.has(id)) delete funciones[id]; });
+  aplicarFuncionesPorDefecto();
   renderListaTrabajadores(avisoHtml);
   guardarBorradorLocal();
 };
@@ -680,20 +760,100 @@ function renderFilasTrabajadores(){
   body.innerHTML = filas.length ? filas.map(t => {
     const marcado = seleccionados.has(t.id);
     const centroTxt = t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente";
-    return `<div class="fila-trab" onclick="toggleTrabajador('${t.id}')">
+    return `<div class="fila-trab" data-id="${escapeHtml(t.id)}" onclick="toggleTrabajador('${t.id}')">
       <input type="checkbox" ${marcado ? "checked" : ""} onclick="event.stopPropagation();toggleTrabajador('${t.id}')">
       <div>
         <div class="nombre">${escapeHtml(t.nombre)}<span class="badge-centro-mini">${escapeHtml(centroTxt)}</span></div>
         <div class="meta">${escapeHtml(formatRut(t.rut) || "—")}</div>
+        ${marcado ? htmlFuncionTrabajador(t) : ""}
       </div>
     </div>`;
   }).join("") : `<div class="sin-resultados">Sin resultados.</div>`;
   actualizarContadorSel();
 }
 
+// Selector de función de un trabajador marcado: sus cargos + "Otro…"; si elige "Otro…" aparece
+// una segunda lista con los demás cargos del catálogo (solo se selecciona, no se escribe).
+function htmlFuncionTrabajador(t){
+  const propios = cargosPropiosDe(t);
+  const valor = funciones[t.id] || "";
+  const esOtra = otroAbierto.has(t.id) || (valor && !propios.includes(valor));
+  const falta = mostrarFaltantes && !valor;
+  const primera = esOtra ? OTRO : valor;
+  const optsPropias = propios.map(c => `<option value="${escapeHtml(c)}"${c === primera ? " selected" : ""}>${escapeHtml(c)}</option>`).join("");
+  let html = `<div class="func-trab" onclick="event.stopPropagation()">
+    <label>Función hoy</label>
+    <select class="${falta && !esOtra ? "falta" : ""}" onchange="cambiarFuncionTrabajador('${t.id}', this.value)">
+      <option value=""${primera ? "" : " selected"}>Elige la función…</option>
+      ${optsPropias}
+      <option value="${OTRO}"${primera === OTRO ? " selected" : ""}>Otro…</option>
+    </select>`;
+  if(esOtra){
+    const lista = opcionesOtro(t);
+    // Si la función guardada ya no figura en la lista (ej. cargo desactivado), se conserva visible.
+    if(valor && !lista.includes(valor) && !propios.includes(valor)) lista.push(valor);
+    html += `<div class="func-otra">
+      <label>¿Qué función hizo?</label>
+      <select class="${falta ? "falta" : ""}" onchange="cambiarFuncionOtra('${t.id}', this.value)">
+        <option value=""${valor ? "" : " selected"}>Elige la función…</option>
+        ${lista.map(c => `<option value="${escapeHtml(c)}"${c === valor ? " selected" : ""}>${escapeHtml(c)}</option>`).join("")}
+      </select>
+    </div>`;
+  }
+  return html + `</div>`;
+}
+
+window.cambiarFuncionTrabajador = function(id, valor){
+  if(valor === OTRO){
+    otroAbierto.add(id);
+    const propios = cargosPropiosDe((dotDatos || []).find(x => x.id === id));
+    if(propios.includes(funciones[id])) delete funciones[id]; // venía de su lista: ahora debe elegir la otra
+  }else{
+    otroAbierto.delete(id);
+    if(valor) funciones[id] = valor; else delete funciones[id];
+  }
+  guardarBorradorLocal();
+  renderFilasTrabajadores();
+};
+
+window.cambiarFuncionOtra = function(id, valor){
+  if(valor) funciones[id] = valor; else delete funciones[id];
+  guardarBorradorLocal();
+  renderFilasTrabajadores();
+};
+
+// Trabajadores marcados que todavía no tienen función elegida (en el orden de la lista).
+function trabajadoresSinFuncion(){
+  return (dotDatos || []).filter(t => seleccionados.has(t.id) && !funciones[t.id]);
+}
+
+// Avisa quién falta y lleva la vista al primero. Devuelve true si falta alguien.
+function avisarFuncionesFaltantes(){
+  const faltan = trabajadoresSinFuncion();
+  if(!faltan.length) return false;
+  mostrarFaltantes = true;
+  renderFilasTrabajadores();
+  const nombres = faltan.slice(0, 4).map(t => t.nombre);
+  const resto = faltan.length - nombres.length;
+  const estado = document.getElementById("estado-guardado");
+  if(estado){
+    estado.className = "estado-guardado error";
+    estado.textContent = `Falta indicar la función de: ${nombres.join(", ")}${resto > 0 ? ` y ${resto} más` : ""}.`;
+  }
+  const fila = document.querySelector(`.fila-trab[data-id="${faltan[0].id}"]`);
+  if(fila) fila.scrollIntoView({ behavior: "smooth", block: "center" });
+  return true;
+}
+
 window.toggleTrabajador = function(id){
-  if(seleccionados.has(id)) seleccionados.delete(id);
-  else seleccionados.add(id);
+  if(seleccionados.has(id)){
+    seleccionados.delete(id);
+    delete funciones[id];
+    otroAbierto.delete(id);
+  }else{
+    seleccionados.add(id);
+    aplicarFuncionesPorDefecto();
+  }
   guardarBorradorLocal();
   renderFilasTrabajadores();
 };
@@ -708,6 +868,7 @@ function actualizarContadorSel(){
 // de verdad ocurre recién al presionar "Confirmar y guardar" dentro del panel.
 window.guardarCuadrilla = async function(){
   if(!contextoActual) return;
+  if(avisarFuncionesFaltantes()) return;
   if(hayConfirmacionesPendientes()){
     respuestasPendientes = {};
     const boton = document.getElementById("btn-guardar");
@@ -720,6 +881,14 @@ window.guardarCuadrilla = async function(){
 };
 
 async function guardarCuadrillaDeVerdad(){
+  // Defensa extra: la selección pudo cambiar mientras estaba abierto el panel de confirmaciones.
+  if(avisarFuncionesFaltantes()){
+    const panel = document.getElementById("panel-confirmaciones");
+    if(panel) panel.remove();
+    const btnG = document.getElementById("btn-guardar");
+    if(btnG) btnG.classList.remove("hidden");
+    return;
+  }
   const boton = document.getElementById("btn-guardar");
   const estado = document.getElementById("estado-guardado");
   boton.disabled = true;
@@ -735,6 +904,7 @@ async function guardarCuadrillaDeVerdad(){
       lineaJefe: contextoActual.linea,
       trabajadorIds: idsArr,
       trabajadorNombres: idsArr.map(id => nombresPorId[id] || ""),
+      trabajadorFunciones: Object.fromEntries(idsArr.map(id => [id, funciones[id] || ""])),
       celadorReportado: confirmaciones.celador === true,
       petroleroReportado: confirmaciones.petrolero === true,
       mecanicoReportado: confirmaciones.mecanico === true,
@@ -745,6 +915,7 @@ async function guardarCuadrillaDeVerdad(){
     estado.textContent = "✓ Cuadrilla guardada.";
     docExistenteActual = {
       trabajadorIds: idsArr,
+      trabajadorFunciones: Object.fromEntries(idsArr.map(id => [id, funciones[id] || ""])),
       celadorReportado: confirmaciones.celador === true,
       petroleroReportado: confirmaciones.petrolero === true,
       mecanicoReportado: confirmaciones.mecanico === true,
