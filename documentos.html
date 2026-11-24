@@ -134,6 +134,8 @@ table.tabla td{padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:13.5p
 table.tabla tr:last-child td{border-bottom:none}
 table.tabla tbody tr:hover td{background:#fbfbfb}
 .nombre-cell{font-weight:700}
+.btn-descartar-anexo{width:26px;height:26px;border-radius:50%;border:1.5px solid #bdbdbd;background:#fff;color:#757575;font-size:13px;line-height:1;cursor:pointer;flex-shrink:0;margin-top:1px;padding:0;font-family:inherit}
+.btn-descartar-anexo:hover{border-color:var(--red);color:var(--red);background:#ffebee}
 .badge-centro{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--green-light);color:var(--green2);white-space:nowrap}
 .badge-centro.pendiente{background:var(--amber-bg);color:var(--amber)}
 .badge-inactivo{font-size:10px;font-weight:700;color:var(--red);background:var(--red-bg);padding:2px 8px;border-radius:20px;margin-left:6px}
@@ -505,6 +507,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 
       <div class="toolbar-desktop">
         <label class="chk-row" style="margin:0"><input type="checkbox" id="anexos-solo-pendientes" checked onchange="renderAnexosPendientes()"> Mostrar solo pendientes</label>
+        <label class="chk-row" style="margin:0"><input type="checkbox" id="anexos-ver-descartados" onchange="renderAnexosPendientes()"> <span id="anexos-ver-descartados-txt">Ver descartados</span></label>
         <input class="field-input buscar-desktop" id="anexos-buscar" type="text" placeholder="Buscar por nombre o RUT..." oninput="renderAnexosPendientes()">
         <select class="field-input filtro-desktop" id="anexos-filtro-centro" onchange="renderAnexosPendientes()">
           <option value="">Todos los centros</option>
@@ -531,7 +534,7 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
       <div class="contador-desktop" id="anexos-contador">Cargando…</div>
       <div class="tabla-wrap">
         <table class="tabla">
-          <thead>
+          <thead id="anexos-thead">
             <tr><th>Trabajador</th><th>Centro</th><th>Fundo actual (cuadrilla)</th><th>Anexo vigente</th><th>Estado</th><th>Proceso</th></tr>
           </thead>
           <tbody id="anexos-tabla-body"></tbody>
@@ -773,6 +776,17 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
     <button class="btn-primary full" onclick="guardarTrabajador()">Guardar</button>
     <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModales()">Cancelar</button>
     <p class="status-note" style="margin-top:10px">Un trabajador nunca se elimina de la dotación — cuando deja la empresa, márcalo como Inactivo (arriba) y conserva su documentación en la Bóveda.</p>
+  </div>
+</div>
+
+<!-- ===== MODAL: DESCARTAR DE ANEXOS PENDIENTES ===== -->
+<div id="modal-descartar" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-titulo" id="modal-descartar-titulo">¿Descartar de la lista?</div>
+    <div class="status-note" id="modal-descartar-contenido" style="margin:0 0 12px;text-align:left"></div>
+    <div class="msg-error" id="modal-descartar-error"></div>
+    <button class="btn-primary full" id="modal-descartar-btn" style="margin-top:6px" onclick="confirmarDescartarAnexo()">Descartar</button>
+    <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarDescartarAnexo()">Cancelar</button>
   </div>
 </div>
 
@@ -3567,6 +3581,12 @@ window.bovedaEliminarDocumento = async function(docId, storagePath, nombreArchiv
 // ================= ANEXOS PENDIENTES =================
 
 let anexosDatos = null; // [{id, trabajador, fundoActual, fechaCuadrilla, jefeFaena, anexosVigentes, estado}]
+// Descartes manuales (pedido por Fabián 24 nov 2026): cuando ya no se trabaja en un fundo, o por
+// cualquier otra razón, RRHH saca de la lista a un trabajador PARA ESE FUNDO — sin borrar nada.
+// Colección "anexos_descartados" (docId = trabajadorId + "__" + fundo en minúsculas sin tildes).
+// Si el trabajador después aparece en OTRO fundo, vuelve a figurar como pendiente.
+let anexosDescartados = []; // [{docId, trabajadorId, nombre, fundo, descartadoPor, descartadoEn}]
+let descartarContexto = null; // {id, nombre, candidatas:[claveFila], clickeada}
 
 function normalizarFundo(s){
   return normalizar(s).replace(/[^a-z0-9]+/g, " ").trim();
@@ -3697,12 +3717,22 @@ window.fetchAnexosPendientes = async function(forzar){
     const haceRato = new Date(hoy.getTime() - 45*24*60*60*1000);
     const fechaCorte = haceRato.toISOString().slice(0,10);
 
-    const [snapCuadrilla, snapAnexos, snapContratos, snapSeguimiento] = await Promise.all([
+    const [snapCuadrilla, snapAnexos, snapContratos, snapSeguimiento, snapDescartados] = await Promise.all([
       getDocs(query(collection(db, "cuadrilla_diaria"), where("fecha", ">=", fechaCorte))),
       getDocs(query(collection(db, "documentos"), where("tipo", "==", "anexo_fundo"))),
       getDocs(query(collection(db, "documentos"), where("tipo", "==", "contrato"))),
-      getDocs(collection(db, "anexos_seguimiento"))
+      getDocs(collection(db, "anexos_seguimiento")),
+      // Tolerante a fallos: si las reglas de Firestore todavía no incluyen "anexos_descartados",
+      // esto NO debe tumbar toda la pantalla — simplemente no hay descartes.
+      getDocs(collection(db, "anexos_descartados")).catch(() => null)
     ]);
+    anexosDescartados = [];
+    if(snapDescartados){
+      snapDescartados.forEach(d => {
+        const x = d.data();
+        anexosDescartados.push({ docId: d.id, trabajadorId: x.trabajadorId || "", nombre: x.nombre || "", fundo: x.fundo || "", descartadoPor: x.descartadoPor || "", descartadoEn: x.descartadoEn || "" });
+      });
+    }
 
     // Seguimiento manual del trámite (celador/jefe/oficina) por trabajador — ver ESTADOS_SEGUIMIENTO.
     const seguimientoPorTrabajador = {};
@@ -3846,6 +3876,7 @@ window.fetchAnexosPendientes = async function(forzar){
       });
     }
 
+    filas.forEach(marcarDescarteFila);
     anexosDatos = filas;
     poblarFiltrosAnexos();
   }catch(e){
@@ -3885,6 +3916,15 @@ window.renderAnexosPendientes = function(){
   const contador = document.getElementById("anexos-contador");
   if(!cuerpo || anexosDatos === null) return;
 
+  actualizarTextoDescartados();
+  const chkDesc = document.getElementById("anexos-ver-descartados");
+  if(chkDesc && chkDesc.checked){
+    renderAnexosDescartados();
+    return;
+  }
+  const theadAnexos = document.getElementById("anexos-thead");
+  if(theadAnexos) theadAnexos.innerHTML = `<tr><th>Trabajador</th><th>Centro</th><th>Fundo actual (cuadrilla)</th><th>Anexo vigente</th><th>Estado</th><th>Proceso</th></tr>`;
+
   const chkSolo = document.getElementById("anexos-solo-pendientes");
   const soloPendientes = chkSolo ? chkSolo.checked : true;
   // Filtros agregados (pedido por Fabián 2 nov 2026, al crecer mucho la lista con los
@@ -3903,7 +3943,8 @@ window.renderAnexosPendientes = function(){
   const filtroJefe = elJefe ? elJefe.value : "";
   const hayFiltrosActivos = !!(term || filtroCentro || filtroTipo || filtroFundo || filtroJefe);
 
-  let filas = anexosDatos.slice();
+  // Los descartados (ver "Ver descartados") no aparecen en la lista ni cuentan como pendientes.
+  let filas = anexosDatos.filter(f => !esFilaDescartada(f));
   if(soloPendientes) filas = filas.filter(f => f.estado === "pendiente");
   if(term){
     filas = filas.filter(f => (normalizar(f.trabajador.nombre) + " " + normalizar(f.trabajador.rut || "")).includes(term));
@@ -3922,7 +3963,7 @@ window.renderAnexosPendientes = function(){
     return String(a.trabajador.nombre||"").localeCompare(String(b.trabajador.nombre||""), "es");
   });
 
-  const totalPendientes = anexosDatos.filter(f => f.estado === "pendiente").length;
+  const totalPendientes = anexosDatos.filter(f => f.estado === "pendiente" && !esFilaDescartada(f)).length;
   contador.textContent = hayFiltrosActivos
     ? `${filas.length} de ${totalPendientes} pendiente${totalPendientes === 1 ? "" : "s"} (con los filtros aplicados)`
     : `${totalPendientes} pendiente${totalPendientes === 1 ? "" : "s"} de ${anexosDatos.length} con cuadrilla reciente`;
@@ -3986,8 +4027,13 @@ window.renderAnexosPendientes = function(){
     return `
       <tr>
         <td class="nombre-cell">
-          ${escapeHtml(t.nombre)}
-          <div style="margin-top:4px"><button class="btn-secondary" style="padding:3px 8px;font-size:11.5px" onclick="irABovedaDesdeAnexos('${f.id}')" title="Ver los documentos de este trabajador en la Bóveda">Ver en Bóveda</button></div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            ${f.estado === "pendiente" ? `<button class="btn-descartar-anexo" onclick="abrirDescartarAnexo('${f.claveFila}')" title="Descartar de esta lista" aria-label="Descartar de esta lista">✕</button>` : ""}
+            <div>
+              ${escapeHtml(t.nombre)}
+              <div style="margin-top:4px"><button class="btn-secondary" style="padding:3px 8px;font-size:11.5px" onclick="irABovedaDesdeAnexos('${f.id}')" title="Ver los documentos de este trabajador en la Bóveda">Ver en Bóveda</button></div>
+            </div>
+          </div>
         </td>
         <td><span class="badge-centro${t.centro ? "" : " pendiente"}">${escapeHtml(etiquetaCentro)}</span></td>
         <td>${escapeHtml(f.fundoActual || "—")} ${f.rotativo ? `<span style="color:var(--text3)">· Rotativo (todos los fundos)</span>` : `<span style="color:var(--text3)">· ${fechaLegibleAnexos(f.fechaCuadrilla)} (${escapeHtml(f.jefeFaena||"—")})</span>`}</td>
@@ -3997,6 +4043,143 @@ window.renderAnexosPendientes = function(){
       </tr>
     `;
   }).join("");
+};
+
+// ---- Descartar filas de Anexos pendientes (pedido por Fabián 24 nov 2026) ----
+function slugFundoDescarte(fundo){
+  return normalizarFundo(fundo).replace(/ /g, "_") || "sin_fundo";
+}
+
+// Una fila está descartada cuando existe un descarte del MISMO trabajador para un fundo que
+// coincide con el fundo de la fila (misma regla de comparación que el resto de la pantalla).
+function marcarDescarteFila(f){
+  f.descarte = anexosDescartados.find(d => d.trabajadorId === f.id && fundosCoinciden(d.fundo, f.fundoActual)) || null;
+}
+function esFilaDescartada(f){
+  return f.estado === "pendiente" && !!f.descarte;
+}
+
+function actualizarTextoDescartados(){
+  const span = document.getElementById("anexos-ver-descartados-txt");
+  if(span) span.textContent = anexosDescartados.length ? `Ver descartados (${anexosDescartados.length})` : "Ver descartados";
+}
+
+function renderAnexosDescartados(){
+  const cuerpo = document.getElementById("anexos-tabla-body");
+  const contador = document.getElementById("anexos-contador");
+  const thead = document.getElementById("anexos-thead");
+  if(thead) thead.innerHTML = `<tr><th>Trabajador</th><th>Fundo descartado</th><th>Descartado</th><th></th></tr>`;
+
+  const elBuscar = document.getElementById("anexos-buscar");
+  const term = elBuscar ? normalizar(elBuscar.value) : "";
+  const elFundo = document.getElementById("anexos-filtro-fundo");
+  const filtroFundo = elFundo ? elFundo.value : "";
+  const lista = anexosDescartados.filter(d => {
+    if(term && !(normalizar(d.nombre) + " " + normalizar(d.trabajadorId)).includes(term.replace(/\./g, ""))) return false;
+    if(filtroFundo && !fundosCoinciden(d.fundo, filtroFundo)) return false;
+    return true;
+  }).sort((a,b) => String(b.descartadoEn || "").localeCompare(String(a.descartadoEn || "")));
+
+  contador.textContent = `${lista.length} descartado${lista.length === 1 ? "" : "s"}`;
+  if(!lista.length){
+    cuerpo.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">${anexosDescartados.length ? "No hay descartados con esos filtros." : "Todavía no has descartado a nadie."}</td></tr>`;
+    return;
+  }
+  cuerpo.innerHTML = lista.map(d => `
+    <tr>
+      <td class="nombre-cell">${escapeHtml(d.nombre || d.trabajadorId)}</td>
+      <td>${escapeHtml(d.fundo || "—")}</td>
+      <td>${fechaLegibleAnexos(d.descartadoEn)}${d.descartadoPor ? ` <span style="color:var(--text3)">· ${escapeHtml(d.descartadoPor)}</span>` : ""}</td>
+      <td><button class="btn-secondary" style="padding:4px 10px;font-size:12.5px" onclick="restaurarDescartadoAnexo('${escapeHtml(d.docId)}', this)">Restaurar</button></td>
+    </tr>
+  `).join("");
+}
+
+window.abrirDescartarAnexo = function(claveFila){
+  const fila = (anexosDatos || []).find(f => f.claveFila === claveFila);
+  if(!fila) return;
+  // Todas las filas pendientes de ESTE trabajador que aún no están descartadas: un trabajador
+  // normal tiene una sola; un Rotativo puede tener una por cada fundo que le falte.
+  const candidatas = anexosDatos.filter(f => f.id === fila.id && f.estado === "pendiente" && !f.descarte);
+  descartarContexto = { id: fila.id, nombre: fila.trabajador.nombre || "", candidatas: candidatas.map(f => f.claveFila), clickeada: claveFila };
+  const titulo = document.getElementById("modal-descartar-titulo");
+  const cont = document.getElementById("modal-descartar-contenido");
+  const btn = document.getElementById("modal-descartar-btn");
+  document.getElementById("modal-descartar-error").classList.remove("show");
+  btn.disabled = false;
+  if(candidatas.length > 1){
+    titulo.textContent = "¿De qué fundo lo descartas?";
+    cont.innerHTML = `<b>${escapeHtml(descartarContexto.nombre)}</b> tiene anexo pendiente en estos fundos. Marca los que quieres sacar de la lista:<div style="margin-top:10px">` +
+      candidatas.map(f => `<label class="chk-row" style="margin:0 0 8px"><input type="checkbox" value="${escapeHtml(f.claveFila)}"${f.claveFila === claveFila ? " checked" : ""}> ${escapeHtml(f.fundoActual || "—")}</label>`).join("") + `</div>`;
+    btn.textContent = "Descartar seleccionados";
+  }else{
+    titulo.textContent = "¿Descartar de la lista?";
+    cont.innerHTML = `<b>${escapeHtml(descartarContexto.nombre)}</b> — fundo <b>${escapeHtml(fila.fundoActual || "—")}</b>.<br>Dejará de aparecer en Anexos pendientes. No se borra nada y se puede restaurar desde “Ver descartados”.`;
+    btn.textContent = "Descartar";
+  }
+  document.getElementById("modal-descartar").classList.remove("hidden");
+};
+
+window.cerrarDescartarAnexo = function(){
+  document.getElementById("modal-descartar").classList.add("hidden");
+  descartarContexto = null;
+};
+
+window.confirmarDescartarAnexo = async function(){
+  if(!descartarContexto) return;
+  const errorBox = document.getElementById("modal-descartar-error");
+  const btn = document.getElementById("modal-descartar-btn");
+  errorBox.classList.remove("show");
+  let claves;
+  if(descartarContexto.candidatas.length > 1){
+    claves = Array.from(document.querySelectorAll("#modal-descartar-contenido input[type=checkbox]:checked")).map(i => i.value);
+    if(!claves.length){
+      errorBox.textContent = "Marca al menos un fundo.";
+      errorBox.classList.add("show");
+      return;
+    }
+  }else{
+    claves = [descartarContexto.clickeada];
+  }
+  btn.disabled = true;
+  const quien = (usuarioActual && usuarioActual.nombre) || "—";
+  const cuando = new Date().toISOString();
+  let huboError = false;
+  for(const clave of claves){
+    const f = (anexosDatos || []).find(x => x.claveFila === clave);
+    if(!f) continue;
+    const docId = `${f.id}__${slugFundoDescarte(f.fundoActual)}`;
+    const registro = { trabajadorId: f.id, nombre: f.trabajador.nombre || "", fundo: f.fundoActual || "", descartadoPor: quien, descartadoEn: cuando };
+    try{
+      await setDoc(doc(db, "anexos_descartados", docId), registro, { merge: true });
+      anexosDescartados = anexosDescartados.filter(d => d.docId !== docId).concat([{ docId, ...registro }]);
+    }catch(e){
+      huboError = true;
+      break;
+    }
+  }
+  (anexosDatos || []).forEach(marcarDescarteFila);
+  renderAnexosPendientes();
+  if(huboError){
+    errorBox.textContent = "No se pudo descartar. Intenta de nuevo.";
+    errorBox.classList.add("show");
+    btn.disabled = false;
+    return;
+  }
+  cerrarDescartarAnexo();
+};
+
+window.restaurarDescartadoAnexo = async function(docId, boton){
+  boton.disabled = true;
+  try{
+    await deleteDoc(doc(db, "anexos_descartados", docId));
+    anexosDescartados = anexosDescartados.filter(d => d.docId !== docId);
+    (anexosDatos || []).forEach(marcarDescarteFila);
+    renderAnexosPendientes();
+  }catch(e){
+    alert("No se pudo restaurar. Intenta de nuevo.");
+    boton.disabled = false;
+  }
 };
 
 // Atajo pedido por Fabián (26 oct 2026): desde cualquier fila de Anexos pendientes, ir directo
