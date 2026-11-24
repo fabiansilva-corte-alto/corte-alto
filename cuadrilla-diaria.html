@@ -70,7 +70,7 @@
   .aviso-borrador{background:#e3f2fd;border:1px solid #90caf9;border-radius:9px;padding:10px 12px;font-size:13px;color:#1565c0;margin-bottom:12px}
   .aviso-borrador button{background:none;border:none;color:#1565c0;text-decoration:underline;font-size:12.5px;font-weight:600;cursor:pointer;padding:0;margin-top:4px;font-family:inherit}
 
-  /* Panel de confirmaciones (celador / petrolero / turno noche) que aparece al presionar
+  /* Panel de confirmaciones (celador / petrolero / mecánico / turno noche) que aparece al presionar
      Guardar/Actualizar cuando alguna de las tres sigue pendiente — pedido por Fabián el 27
      oct 2026 para no olvidar reportar a quienes no están en el turno diurno habitual. */
   .panel-confirm{background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:16px;margin-top:10px}
@@ -272,12 +272,12 @@ let contextoActual = null; // {jefe, fecha, fundo, linea, docId}
 let docExistenteActual = null; // doc que ya existía para el contexto (edición) o null
 let usuarioActual = null; // {rol, nombre, centro}
 
-// Estado de las 3 confirmaciones (celador / petrolero / turno noche) para el contexto actual.
+// Estado de las 4 confirmaciones (celador / petrolero / mecánico / turno noche) para el contexto actual.
 // "si"/true = resuelto, no se vuelve a preguntar. "no"/"falta" = pendiente, se vuelve a
 // preguntar la próxima vez que se presione Guardar/Actualizar en ESTE MISMO registro.
 // undefined = nunca se preguntó (también pendiente). Se carga desde el doc existente en
 // cargarContextoYPreseleccion y se guarda junto con el resto en guardarCuadrillaDeVerdad.
-let confirmaciones = { celador: undefined, petrolero: undefined, turnoNoche: undefined };
+let confirmaciones = { celador: undefined, petrolero: undefined, mecanico: undefined, turnoNoche: undefined };
 let respuestasPendientes = {}; // lo que se va marcando en el panel, antes de "Confirmar y guardar"
 
 function mostrarPantalla(id){
@@ -336,16 +336,17 @@ window.addEventListener("beforeunload", (e) => {
   }
 });
 
-// ---------- Confirmaciones antes de guardar: celador / petrolero / turno noche ----------
-// Celador y petrolero siempre deben existir, así que son un sí/no simple. Turno noche no
+// ---------- Confirmaciones antes de guardar: celador / petrolero / mecánico / turno noche ----------
+// Celador, petrolero y mecánico siempre deben existir, así que son un sí/no simple. Turno noche no
 // siempre existe ese día, así que tiene una tercera opción ("no corresponde hoy"). Ninguna
 // respuesta bloquea el guardado — el jefe puede contestar "no"/"me falta" y guardar igual;
 // la única consecuencia es que se le vuelve a preguntar la próxima vez que guarde este mismo
 // registro, hasta que quede en "sí" o "no corresponde".
 function faltaCeladorConfirmar(){ return confirmaciones.celador !== true; }
 function faltaPetroleroConfirmar(){ return confirmaciones.petrolero !== true; }
+function faltaMecanicoConfirmar(){ return confirmaciones.mecanico !== true; }
 function faltaTurnoNocheConfirmar(){ return confirmaciones.turnoNoche !== "si" && confirmaciones.turnoNoche !== "no_corresponde"; }
-function hayConfirmacionesPendientes(){ return faltaCeladorConfirmar() || faltaPetroleroConfirmar() || faltaTurnoNocheConfirmar(); }
+function hayConfirmacionesPendientes(){ return faltaCeladorConfirmar() || faltaPetroleroConfirmar() || faltaMecanicoConfirmar() || faltaTurnoNocheConfirmar(); }
 
 function htmlPanelConfirmaciones(){
   const items = [];
@@ -363,6 +364,14 @@ function htmlPanelConfirmaciones(){
       <div class="confirm-botones">
         <button type="button" data-valor="si" onclick="responderConfirmacion('petrolero','si')">Sí</button>
         <button type="button" data-valor="no" onclick="responderConfirmacion('petrolero','no')">No</button>
+      </div>
+    </div>`);
+  if(faltaMecanicoConfirmar()) items.push(`
+    <div class="confirm-item" data-campo="mecanico">
+      <p class="confirm-pregunta">¿Reportaste al mecánico?</p>
+      <div class="confirm-botones">
+        <button type="button" data-valor="si" onclick="responderConfirmacion('mecanico','si')">Sí</button>
+        <button type="button" data-valor="no" onclick="responderConfirmacion('mecanico','no')">No</button>
       </div>
     </div>`);
   if(faltaTurnoNocheConfirmar()) items.push(`
@@ -398,6 +407,7 @@ window.responderConfirmacion = function(campo, valor){
 window.confirmarYGuardar = async function(){
   if(respuestasPendientes.celador !== undefined) confirmaciones.celador = (respuestasPendientes.celador === "si");
   if(respuestasPendientes.petrolero !== undefined) confirmaciones.petrolero = (respuestasPendientes.petrolero === "si");
+  if(respuestasPendientes.mecanico !== undefined) confirmaciones.mecanico = (respuestasPendientes.mecanico === "si");
   if(respuestasPendientes.turnoNoche !== undefined) confirmaciones.turnoNoche = respuestasPendientes.turnoNoche;
   const panel = document.getElementById("panel-confirmaciones");
   if(panel) panel.remove();
@@ -592,11 +602,12 @@ async function cargarContextoYPreseleccion(){
       }
     }
   }catch(e){ /* sin registro previo o sin conexión — se sigue con lista vacía */ }
-  // Las 3 confirmaciones (celador/petrolero/turno noche) son por registro: si este día/fundo
+  // Las 4 confirmaciones (celador/petrolero/mecánico/turno noche) son por registro: si este día/fundo
   // ya tenía algo contestado, se respeta; si no, quedan pendientes y se preguntarán al guardar.
   confirmaciones = {
     celador: docExistenteActual ? docExistenteActual.celadorReportado : undefined,
     petrolero: docExistenteActual ? docExistenteActual.petroleroReportado : undefined,
+    mecanico: docExistenteActual ? docExistenteActual.mecanicoReportado : undefined,
     turnoNoche: docExistenteActual ? docExistenteActual.turnoNoche : undefined
   };
   renderListaTrabajadores(avisoHtml);
@@ -726,6 +737,7 @@ async function guardarCuadrillaDeVerdad(){
       trabajadorNombres: idsArr.map(id => nombresPorId[id] || ""),
       celadorReportado: confirmaciones.celador === true,
       petroleroReportado: confirmaciones.petrolero === true,
+      mecanicoReportado: confirmaciones.mecanico === true,
       turnoNoche: confirmaciones.turnoNoche || "falta",
       actualizadoEn: new Date().toISOString()
     });
@@ -735,6 +747,7 @@ async function guardarCuadrillaDeVerdad(){
       trabajadorIds: idsArr,
       celadorReportado: confirmaciones.celador === true,
       petroleroReportado: confirmaciones.petrolero === true,
+      mecanicoReportado: confirmaciones.mecanico === true,
       turnoNoche: confirmaciones.turnoNoche || "falta"
     };
     boton.textContent = "Actualizar cuadrilla";
