@@ -134,6 +134,9 @@ table.tabla td{padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:13.5p
 table.tabla tr:last-child td{border-bottom:none}
 table.tabla tbody tr:hover td{background:#fbfbfb}
 .nombre-cell{font-weight:700}
+.centro-envio-seg{margin-top:6px;font-size:12.5px;color:var(--text)}
+.centro-envio-seg b{color:var(--blue)}
+.centro-envio-seg button{background:none;border:none;color:var(--text2);text-decoration:underline;font-size:12px;margin-left:6px;cursor:pointer;padding:0;font-family:inherit}
 .btn-descartar-anexo{width:26px;height:26px;border-radius:50%;border:1.5px solid #bdbdbd;background:#fff;color:#757575;font-size:13px;line-height:1;cursor:pointer;flex-shrink:0;margin-top:1px;padding:0;font-family:inherit}
 .btn-descartar-anexo:hover{border-color:var(--red);color:var(--red);background:#ffebee}
 .badge-centro{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--green-light);color:var(--green2);white-space:nowrap}
@@ -779,6 +782,18 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
     <button class="btn-primary full" onclick="guardarTrabajador()">Guardar</button>
     <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarModales()">Cancelar</button>
     <p class="status-note" style="margin-top:10px">Un trabajador nunca se elimina de la dotación — cuando deja la empresa, márcalo como Inactivo (arriba) y conserva su documentación en la Bóveda.</p>
+  </div>
+</div>
+
+<!-- ===== MODAL: CENTRO AL QUE SE ENVIÓ EL ANEXO ===== -->
+<div id="modal-centro-envio" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-titulo">¿A qué centro se envió el anexo?</div>
+    <div class="status-note" id="modal-centro-envio-quien" style="margin:0 0 12px;text-align:left"></div>
+    <select class="field-input" id="centro-envio-sel"></select>
+    <div class="msg-error" id="modal-centro-envio-error"></div>
+    <button class="btn-primary full" id="modal-centro-envio-btn" style="margin-top:10px" onclick="confirmarCentroEnvioAnexo()">Guardar</button>
+    <button class="btn-secondary full" style="margin-top:10px" onclick="cerrarCentroEnvioAnexo(true)">Cancelar</button>
   </div>
 </div>
 
@@ -3675,21 +3690,35 @@ function htmlSeguimientoAnexo(f){
   const opciones = `<option value=""${actual ? "" : " selected"}>Sin estado</option>` + Object.keys(ESTADOS_SEGUIMIENTO).map(clave =>
     `<option value="${clave}"${clave === actual ? " selected" : ""}>${escapeHtml(ESTADOS_SEGUIMIENTO[clave].label)}</option>`
   ).join("");
-  return `<select class="selector-seguimiento" style="color:${color};background:${bg};border-color:${color}" onchange="actualizarSeguimientoAnexo('${f.claveFila}', this.value, this)">${opciones}</select>`;
+  // Centro al que se envió el anexo (pedido por Fabián 24 nov 2026): se pide al marcar "Anexo
+  // enviado a faena" y se sigue mostrando mientras el trámite avance.
+  const centroEnvio = f.seguimiento && f.seguimiento.centroEnvio;
+  const lineaCentro = centroEnvio
+    ? `<div class="centro-envio-seg">Enviado a: <b>${escapeHtml(NOMBRES_CENTRO[centroEnvio] || centroEnvio)}</b> <button type="button" onclick="abrirCentroEnvioAnexo('${f.claveFila}', true)">cambiar</button></div>`
+    : "";
+  return `<select class="selector-seguimiento" style="color:${color};background:${bg};border-color:${color}" onchange="actualizarSeguimientoAnexo('${f.claveFila}', this.value, this)">${opciones}</select>${lineaCentro}`;
 }
 
 // claveFila identifica la FILA (no al trabajador): para un trabajador normal es igual a su id,
 // pero un "Rotativo" puede tener varias filas a la vez (una por cada fundo que le falte) — ver
 // fetchAnexosPendientes más abajo. Por eso el seguimiento se guarda por claveFila, no por id.
 window.actualizarSeguimientoAnexo = async function(claveFila, estado, selectEl){
+  // "Anexo enviado a faena" no se guarda de inmediato: primero se pregunta a qué centro se envió.
+  if(estado === "enviado_faena"){
+    abrirCentroEnvioAnexo(claveFila, false);
+    return;
+  }
   selectEl.disabled = true;
   try{
     const fila = (anexosDatos || []).find(f => f.claveFila === claveFila);
     if(estado){
       const actualizadoPor = (usuarioActual && usuarioActual.nombre) || "—";
       const actualizadoEn = new Date().toISOString();
-      await setDoc(doc(db, "anexos_seguimiento", claveFila), { estado, actualizadoPor, actualizadoEn });
-      if(fila) fila.seguimiento = { estado, actualizadoPor, actualizadoEn };
+      const datos = { estado, actualizadoPor, actualizadoEn };
+      // Si ya se había dicho a qué centro se envió, se conserva mientras el trámite avanza.
+      if(fila && fila.seguimiento && fila.seguimiento.centroEnvio) datos.centroEnvio = fila.seguimiento.centroEnvio;
+      await setDoc(doc(db, "anexos_seguimiento", claveFila), datos);
+      if(fila) fila.seguimiento = datos;
     }else{
       // "Sin estado" elegido de nuevo: borra el seguimiento guardado.
       await deleteDoc(doc(db, "anexos_seguimiento", claveFila));
@@ -3699,6 +3728,70 @@ window.actualizarSeguimientoAnexo = async function(claveFila, estado, selectEl){
   }catch(e){
     alert("No se pudo guardar el estado. Intenta de nuevo.");
     renderAnexosPendientes(); // deja el selector como estaba antes del cambio
+  }
+};
+
+// ---- Centro al que se envió el anexo (pedido por Fabián 24 nov 2026) ----
+const CENTROS_ENVIO_ANEXO = ["FORMIN 1", "FORMIN 2", "FORMIN 3", "TALLER_COIHUE"];
+let centroEnvioContexto = null; // {claveFila, soloCambiar}
+
+// soloCambiar=true: el trámite ya tiene estado y solo se corrige el centro (enlace "cambiar").
+// soloCambiar=false: recién se eligió "Anexo enviado a faena" en el selector de Proceso.
+window.abrirCentroEnvioAnexo = function(claveFila, soloCambiar){
+  const fila = (anexosDatos || []).find(f => f.claveFila === claveFila);
+  if(!fila){ renderAnexosPendientes(); return; }
+  centroEnvioContexto = { claveFila, soloCambiar: !!soloCambiar };
+  const actual = fila.seguimiento && fila.seguimiento.centroEnvio;
+  // Ayuda: si no hay centro guardado, se preselecciona el centro del trabajador (si es una
+  // faena de la lista; un Rotativo no tiene centro fijo y queda sin elegir).
+  const preseleccion = actual || (CENTROS_ENVIO_ANEXO.includes(fila.trabajador.centro) ? fila.trabajador.centro : "");
+  document.getElementById("modal-centro-envio-quien").innerHTML = `<b>${escapeHtml(fila.trabajador.nombre || "")}</b> — ${escapeHtml(fila.fundoActual || "—")}`;
+  document.getElementById("centro-envio-sel").innerHTML = `<option value="">Selecciona el centro…</option>` +
+    CENTROS_ENVIO_ANEXO.map(c => `<option value="${c}"${c === preseleccion ? " selected" : ""}>${escapeHtml(NOMBRES_CENTRO[c] || c)}</option>`).join("");
+  document.getElementById("modal-centro-envio-error").classList.remove("show");
+  document.getElementById("modal-centro-envio-btn").disabled = false;
+  document.getElementById("modal-centro-envio").classList.remove("hidden");
+};
+
+// cancelado=true: se cerró sin guardar — se vuelve a dibujar la lista para que el selector de
+// Proceso quede como estaba antes de elegir.
+window.cerrarCentroEnvioAnexo = function(cancelado){
+  document.getElementById("modal-centro-envio").classList.add("hidden");
+  centroEnvioContexto = null;
+  if(cancelado) renderAnexosPendientes();
+};
+
+window.confirmarCentroEnvioAnexo = async function(){
+  if(!centroEnvioContexto) return;
+  const errorBox = document.getElementById("modal-centro-envio-error");
+  const btn = document.getElementById("modal-centro-envio-btn");
+  errorBox.classList.remove("show");
+  const centro = document.getElementById("centro-envio-sel").value;
+  if(!centro || !CENTROS_ENVIO_ANEXO.includes(centro)){
+    errorBox.textContent = "Elige el centro al que se envió.";
+    errorBox.classList.add("show");
+    return;
+  }
+  const { claveFila, soloCambiar } = centroEnvioContexto;
+  const fila = (anexosDatos || []).find(f => f.claveFila === claveFila);
+  if(!fila){ cerrarCentroEnvioAnexo(true); return; }
+  btn.disabled = true;
+  const estado = soloCambiar && fila.seguimiento ? fila.seguimiento.estado : "enviado_faena";
+  const datos = {
+    estado,
+    centroEnvio: centro,
+    actualizadoPor: (usuarioActual && usuarioActual.nombre) || "—",
+    actualizadoEn: new Date().toISOString()
+  };
+  try{
+    await setDoc(doc(db, "anexos_seguimiento", claveFila), datos);
+    fila.seguimiento = datos;
+    cerrarCentroEnvioAnexo(false);
+    renderAnexosPendientes();
+  }catch(e){
+    errorBox.textContent = "No se pudo guardar. Intenta de nuevo.";
+    errorBox.classList.add("show");
+    btn.disabled = false;
   }
 };
 
@@ -4134,7 +4227,9 @@ function textoEstadoAnexo(f){
 function textoProcesoAnexo(f){
   if(f.estado !== "pendiente") return "";
   const est = f.seguimiento && ESTADOS_SEGUIMIENTO[f.seguimiento.estado];
-  return est ? est.label : "Sin estado";
+  if(!est) return "Sin estado";
+  const c = f.seguimiento.centroEnvio;
+  return c ? `${est.label} — ${NOMBRES_CENTRO[c] || c}` : est.label;
 }
 
 // Devuelve [encabezado, ...filas] a partir de las filas ya filtradas y ordenadas.
