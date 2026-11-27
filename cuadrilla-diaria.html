@@ -94,6 +94,7 @@
   .badge-centro-mini{display:inline-block;font-size:11px;background:#eeeeee;color:var(--texto2);padding:2px 7px;border-radius:20px;margin-left:6px}
   .sin-resultados{padding:24px;text-align:center;color:var(--texto3);font-size:13px}
   /* Función que hizo cada trabajador marcado ese día (pedido por Fabián 24 nov 2026) */
+  .confirm-faltan{font-size:12.5px;font-weight:600;color:var(--rojo);margin:8px 0 0;min-height:16px}
   .func-trab{margin-top:8px}
   .func-trab label{display:block;font-size:11px;font-weight:700;color:var(--texto2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em}
   .func-trab select{width:100%;max-width:300px;padding:8px 10px;border:1.5px solid var(--borde);border-radius:8px;font-size:13.5px;background:#fff;color:var(--texto)}
@@ -409,6 +410,7 @@ function htmlPanelConfirmaciones(){
     <p class="panel-confirm-titulo">Antes de guardar, confirma:</p>
     ${items.join("")}
     <button class="btn btn-primario" style="width:100%;margin-top:6px" onclick="confirmarYGuardar()" id="btn-confirmar-guardar" disabled>Confirmar y guardar</button>
+    <p class="confirm-faltan" id="confirm-faltan"></p>
   </div>`;
 }
 
@@ -421,7 +423,20 @@ window.responderConfirmacion = function(campo, valor){
   const necesarios = Array.from(document.querySelectorAll("#panel-confirmaciones .confirm-item")).map(el => el.dataset.campo);
   const listo = necesarios.length > 0 && necesarios.every(k => respuestasPendientes[k] !== undefined);
   document.getElementById("btn-confirmar-guardar").disabled = !listo;
+  actualizarFaltanPanel();
 };
+
+// Debajo del botón gris "Confirmar y guardar": dice cuáles preguntas del panel faltan por
+// contestar, para que se entienda por qué el botón todavía no se activa (27 nov 2026).
+function actualizarFaltanPanel(){
+  const el = document.getElementById("confirm-faltan");
+  if(!el) return;
+  const faltan = Array.from(document.querySelectorAll("#panel-confirmaciones .confirm-item"))
+    .filter(it => respuestasPendientes[it.dataset.campo] === undefined)
+    .map(it => (it.querySelector(".confirm-pregunta") || {}).textContent || "")
+    .filter(Boolean);
+  el.textContent = faltan.length ? `Para guardar, responde: ${faltan.join(" · ")}` : "";
+}
 
 // Vuelca lo contestado en el panel al estado y recién ahí guarda de verdad. No valida el
 // contenido de las respuestas (adrede: no poner trabas) — solo exige que haya una respuesta
@@ -814,17 +829,29 @@ window.cambiarFuncionTrabajador = function(id, valor){
   }
   guardarBorradorLocal();
   renderFilasTrabajadores();
+  if(!trabajadoresSinFuncion().length) limpiarAvisoFunciones();
 };
 
 window.cambiarFuncionOtra = function(id, valor){
   if(valor) funciones[id] = valor; else delete funciones[id];
   guardarBorradorLocal();
   renderFilasTrabajadores();
+  if(!trabajadoresSinFuncion().length) limpiarAvisoFunciones();
 };
 
 // Trabajadores marcados que todavía no tienen función elegida (en el orden de la lista).
 function trabajadoresSinFuncion(){
   return (dotDatos || []).filter(t => seleccionados.has(t.id) && !funciones[t.id]);
+}
+
+// Borra el aviso "Falta indicar la función de…" (solo ese aviso, no otros mensajes de estado).
+function limpiarAvisoFunciones(){
+  mostrarFaltantes = false;
+  const estado = document.getElementById("estado-guardado");
+  if(estado && estado.textContent.startsWith("Falta indicar la función")){
+    estado.className = "estado-guardado";
+    estado.textContent = "";
+  }
 }
 
 // Avisa quién falta y lleva la vista al primero. Devuelve true si falta alguien.
@@ -869,10 +896,12 @@ function actualizarContadorSel(){
 window.guardarCuadrilla = async function(){
   if(!contextoActual) return;
   if(avisarFuncionesFaltantes()) return;
+  limpiarAvisoFunciones(); // ya no falta ninguna: el aviso rojo de un intento anterior no debe quedarse pegado
   if(hayConfirmacionesPendientes()){
     respuestasPendientes = {};
     const boton = document.getElementById("btn-guardar");
     boton.insertAdjacentHTML("afterend", htmlPanelConfirmaciones());
+    actualizarFaltanPanel();
     boton.classList.add("hidden");
     document.getElementById("panel-confirmaciones").scrollIntoView({ behavior: "smooth", block: "center" });
     return;

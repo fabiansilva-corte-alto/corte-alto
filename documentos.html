@@ -139,6 +139,15 @@ table.tabla tbody tr:hover td{background:#fbfbfb}
 .centro-envio-seg button{background:none;border:none;color:var(--text2);text-decoration:underline;font-size:12px;margin-left:6px;cursor:pointer;padding:0;font-family:inherit}
 .btn-descartar-anexo{width:26px;height:26px;border-radius:50%;border:1.5px solid #bdbdbd;background:#fff;color:#757575;font-size:13px;line-height:1;cursor:pointer;flex-shrink:0;margin-top:1px;padding:0;font-family:inherit}
 .btn-descartar-anexo:hover{border-color:var(--red);color:var(--red);background:#ffebee}
+/* Pregunta "¿es el mismo fundo?" (anexo escrito distinto al del catálogo) — Anexos pendientes y Bandeja */
+.sug-fundo{margin-top:8px;padding:9px 11px;background:var(--amber-bg);border:1px solid #ffcc80;border-radius:8px;max-width:420px}
+.sug-fundo-txt{font-size:12.5px;font-weight:600;color:var(--text)}
+.sug-fundo-botones{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap}
+.sug-fundo-botones button{padding:5px 11px;font-size:12.5px;border-radius:8px;cursor:pointer;font-weight:600;font-family:inherit;border:1.5px solid var(--green);background:#fff;color:var(--green)}
+.sug-fundo-botones button.primario{background:var(--green);color:#fff}
+.sug-fundo-botones button.neutro{border-color:#bdbdbd;color:var(--text2);font-weight:500}
+.sug-fundo-botones button:disabled{opacity:.6;cursor:default}
+.sug-fundo-nota{margin-top:6px;font-size:11.5px;color:var(--text3)}
 .badge-centro{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--green-light);color:var(--green2);white-space:nowrap}
 .badge-centro.pendiente{background:var(--amber-bg);color:var(--amber)}
 .badge-inactivo{font-size:10px;font-weight:700;color:var(--red);background:var(--red-bg);padding:2px 8px;border-radius:20px;margin-left:6px}
@@ -2419,7 +2428,8 @@ function extraerFundo(nombreArchivo, nombreTrabajador){
       resultado.push(palabra);
     }
     const extraido = resultado.join(" ").trim();
-    if(extraido) return extraido;
+    // Si ese texto ya fue confirmado antes como variante de un fundo (alias), se reconoce solo.
+    if(extraido) return fundoPorAliasExacto(extraido) || extraido;
   }
   // No dice la palabra "fundo" (o no quedó nada después de ella): revisamos si el nombre
   // menciona directamente un fundo ya conocido del catálogo, ej. "Anexo Santa Rosa ...".
@@ -2828,13 +2838,61 @@ function renderBandejaArchivosCarpeta(card){
           ${TIPOS_DOCUMENTO.map(td => `<option value="${td.slug}" ${a.tipo === td.slug ? "selected" : ""}>${td.label}</option>`).join("")}
         </select>
       </td>
-      <td>${a.tipo === "anexo_fundo" ? `<input class="bandeja-input-fundo" list="fundos-catalogo-datalist" value="${escapeHtml(a.fundo)}" placeholder="Nombre del fundo" oninput="actualizarFundoArchivoBandeja('${card.id}', ${i}, this.value)">` : "—"}</td>
+      <td>${a.tipo === "anexo_fundo" ? `<input class="bandeja-input-fundo" list="fundos-catalogo-datalist" value="${escapeHtml(a.fundo)}" placeholder="Nombre del fundo" oninput="actualizarFundoArchivoBandeja('${card.id}', ${i}, this.value)">${htmlSugerenciaFundoBandeja(card, a, i)}` : "—"}</td>
       <td style="text-align:center">${a.tipo === "anexo_fundo" ? `<input type="checkbox" ${a.vigente ? "checked" : ""} onchange="marcarVigenteArchivoBandeja('${card.id}', ${i}, this.checked)">` : "—"}</td>
       <td style="text-align:center"><input type="checkbox" ${a.incluir ? "checked" : ""} onchange="marcarIncluirArchivoBandeja('${card.id}', ${i}, this.checked)" title="${a.duplicado ? "Ya estaba subido — márcalo para subirlo de todas formas" : "Subir este archivo"}"></td>
       <td><button class="bandeja-quitar" onclick="quitarArchivoBandeja('${card.id}', ${i})" aria-label="Quitar">✕</button></td>
     </tr>
   `).join("");
 }
+
+// Pregunta "¿es el mismo fundo?" bajo el campo Fundo de un anexo (ver candidatosFundoParecido).
+// Se calcula al dibujar la fila y se guarda en el archivo (a.fundoSug) para que los botones
+// usen exactamente lo que se mostró, aunque después se haya tecleado algo en el campo.
+function htmlSugerenciaFundoBandeja(card, a, i){
+  a.fundoSug = null;
+  if(a.fundoSugDescartada) return "";
+  const cands = candidatosFundoParecido(a.fundo);
+  if(!cands.length) return "";
+  a.fundoSug = { texto: a.fundo, candidatos: cands.map(c => ({ id: c.id, nombre: c.nombre, activo: c.activo !== false })) };
+  return htmlPreguntaFundoParecido(
+    a.fundo, a.fundoSug.candidatos, null,
+    k => `elegirFundoSugeridoBandeja('${card.id}', ${i}, ${k}, this)`,
+    `descartarSugerenciaFundoBandeja('${card.id}', ${i})`
+  );
+}
+
+window.elegirFundoSugeridoBandeja = async function(cardId, i, k, boton){
+  const card = encontrarCarpetaBandeja(cardId);
+  const a = card && card.archivos[i];
+  const sug = a && a.fundoSug;
+  const cand = sug && sug.candidatos[k];
+  const destino = cand && FUNDOS_CATALOGO.find(x => x.id === cand.id);
+  if(!destino) return;
+  const botones = boton && boton.parentElement ? boton.parentElement.querySelectorAll("button") : [];
+  botones.forEach(b => { b.disabled = true; });
+  try{
+    // Solo se recuerda la variante (alias); los anexos ya subidos con ese texto se corrigen
+    // desde Anexos pendientes. Este archivo, todavía sin subir, ya queda con el nombre del catálogo.
+    const v = String(sug.texto || "").trim();
+    const aliasNuevos = Array.from(new Set([...(destino.alias || []), ...(normalizarFundo(v) !== normalizarFundo(destino.nombre) ? [v] : [])]));
+    await setDoc(doc(db, "config_fundos", destino.id), { nombre: destino.nombre, alias: aliasNuevos }, { merge: true });
+    destino.alias = aliasNuevos;
+    a.fundo = destino.nombre;
+    renderBandejaArchivosCarpeta(card);
+  }catch(e){
+    alert("No se pudo guardar. Intenta de nuevo.");
+    botones.forEach(b => { b.disabled = false; });
+  }
+};
+
+window.descartarSugerenciaFundoBandeja = function(cardId, i){
+  const card = encontrarCarpetaBandeja(cardId);
+  const a = card && card.archivos[i];
+  if(!a) return;
+  a.fundoSugDescartada = true;
+  renderBandejaArchivosCarpeta(card);
+};
 
 window.marcarIncluirArchivoBandeja = function(cardId, i, marcado){
   const card = encontrarCarpetaBandeja(cardId);
@@ -3644,6 +3702,69 @@ function fundosCoinciden(a, b){
   return inter >= Math.min(wa.size, wb.size);
 }
 
+// ---- Reconocer fundos "parecidos" (pedido por Fabián 27 nov 2026) ----
+// Los anexos que escanea RRHH llevan nombres como "Fundo Los Alpes 001" o "Fundo Olivillo 02",
+// distintos al del catálogo ("LOS ALPES HIJ 1", "EL OLIVILLO"), y fundosCoinciden() no los une.
+// En vez de que alguien anote cada variante a mano, el sistema compara solo la PALABRA
+// PRINCIPAL del fundo (sin números, "Hij", "Lote", "Fundo"…) y PREGUNTA si es el mismo.
+// Nunca decide solo: si varios fundos del catálogo comparten esa palabra (Los Alpes Hij 1 /
+// Hij 3), se muestran todos para elegir — el número del archivo puede ser el del escaneo.
+const FUNDO_PALABRAS_RUIDO = new Set(["el","la","los","las","de","del","fundo","predio","sector","potrero","rodal","lote","hijuela","hijuelas"]);
+
+function nucleoFundo(s){
+  return normalizarFundo(s).split(" ").filter(w =>
+    w.length > 1 && !FUNDO_PALABRAS_RUIDO.has(w) && !/^\d+$/.test(w) && !/^hij/.test(w) && !/^fundo\d*$/.test(w) && !/^lote\d*[a-z]?$/.test(w)
+  );
+}
+
+function nucleosFundoCoinciden(a, b){
+  const A = new Set(nucleoFundo(a)), B = new Set(nucleoFundo(b));
+  if(!A.size || !B.size) return false;
+  let inter = 0;
+  A.forEach(w => { if(B.has(w)) inter++; });
+  return inter === Math.min(A.size, B.size);
+}
+
+// ¿Este texto ya "es" un fundo del catálogo, según la misma regla que usa Anexos pendientes?
+function fundoResueltoEnCatalogo(raw){
+  return (FUNDOS_CATALOGO || []).some(f => fundosCoinciden(raw, f.nombre));
+}
+
+// Si el texto es EXACTAMENTE un alias ya confirmado antes de algún fundo, devuelve el nombre del catálogo.
+function fundoPorAliasExacto(raw){
+  const n = normalizarFundo(raw);
+  if(!n) return null;
+  const f = (FUNDOS_CATALOGO || []).find(x => (x.alias || []).some(a => normalizarFundo(a) === n));
+  return f ? f.nombre : null;
+}
+
+// Fundos del catálogo que podrían ser el que dice el texto (vacío si ya coincide con alguno,
+// si parece un número de escaneo o si no se parece a nada). Activos primero.
+function candidatosFundoParecido(raw){
+  if(!raw || !String(raw).trim() || fundoEsSospechoso(raw) || fundoResueltoEnCatalogo(raw)) return [];
+  const n = normalizarFundo(raw);
+  return (FUNDOS_CATALOGO || [])
+    .filter(f => nucleosFundoCoinciden(raw, f.nombre) || (f.alias || []).some(a => normalizarFundo(a) === n))
+    .sort((a, b) => (b.activo !== false) - (a.activo !== false) || a.nombre.localeCompare(b.nombre, "es"));
+}
+
+// HTML de la pregunta (lo comparten Anexos pendientes y Bandeja). `onElegir(i)` / `onNinguno`
+// son los textos de los onclick ya armados por quien llama.
+function htmlPreguntaFundoParecido(textoAnexo, candidatos, afectados, onElegir, onNinguno){
+  const uno = candidatos.length === 1;
+  const botones = uno
+    ? `<button type="button" class="primario" onclick="${onElegir(0)}">Sí, es el mismo</button><button type="button" class="neutro" onclick="${onNinguno}">No</button>`
+    : candidatos.map((c, i) => `<button type="button" onclick="${onElegir(i)}">${escapeHtml(c.nombre)}${c.activo === false ? " (inactivo)" : ""}</button>`).join("") + `<button type="button" class="neutro" onclick="${onNinguno}">${afectados === null ? "Dejar como está" : "Ninguno de estos"}</button>`;
+  const pregunta = uno
+    ? `¿Es el mismo fundo que <b>${escapeHtml(candidatos[0].nombre)}</b>?`
+    : (afectados === null ? `¿Cuál es?` : `En el catálogo hay varios con ese nombre, ¿a cuál corresponde?`);
+  const intro = afectados === null
+    ? `El fundo del archivo (“<b>${escapeHtml(textoAnexo)}</b>”) se parece a más de uno del catálogo.`
+    : `Tiene un anexo guardado como “<b>${escapeHtml(textoAnexo)}</b>”.`;
+  const nota = (afectados !== null && afectados > 1) ? `<div class="sug-fundo-nota">Se corregirán los ${afectados} anexos que están escritos así.</div>` : "";
+  return `<div class="sug-fundo"><div class="sug-fundo-txt">${afectados === null && uno ? `El fundo del archivo (“<b>${escapeHtml(textoAnexo)}</b>”): ` : intro + " "}${pregunta}</div><div class="sug-fundo-botones">${botones}</div>${nota}</div>`;
+}
+
 // Cuenta, caminando hacia atrás día a día desde fechaInicio (inclusive), cuántos días seguidos
 // el trabajador aparece informado en un fundo que coincide con fundoObjetivo. Se corta en el
 // primer día sin registro o con un fundo distinto. No necesita ninguna colección nueva: usa el
@@ -3845,7 +3966,9 @@ window.fetchAnexosPendientes = async function(forzar){
       ids.forEach(id => {
         const actual = ultimaCuadrillaPorTrabajador[id];
         if(!actual || (data.fecha || "") > (actual.fecha || "")){
-          ultimaCuadrillaPorTrabajador[id] = { fundo: data.fundo || "", fecha: data.fecha || "", jefeFaena: data.jefeFaena || "" };
+          // `funcion`: la que el jefe de faena informó para este trabajador ese día en Cuadrilla
+          // diaria (vacía en registros anteriores a esa mejora). Solo se muestra; no cambia el cálculo.
+          ultimaCuadrillaPorTrabajador[id] = { fundo: data.fundo || "", fecha: data.fecha || "", jefeFaena: data.jefeFaena || "", funcion: ((data.trabajadorFunciones || {})[id] || "") };
         }
         if(!historialPorTrabajador[id]) historialPorTrabajador[id] = {};
         historialPorTrabajador[id][data.fecha || ""] = data.fundo || "";
@@ -3859,9 +3982,14 @@ window.fetchAnexosPendientes = async function(forzar){
     // "Pendiente", si ya tiene el documento del fundo actual y solo falta marcarlo vigente,
     // o si de verdad no existe ningún documento de ese fundo (caso "Pedrito").
     const anexosTodosPorTrabajador = {};
+    // Cuántos anexos hay con cada texto de fundo exacto (para avisar cuántos se corrigen al confirmar
+    // "es el mismo fundo" — ver sugerenciaFundoParaFila).
+    const conteoTextoFundo = {};
     snapAnexos.forEach(d => {
       const data = d.data();
-      const item = { id: d.id, fundo: data.fundo || "", vigente: data.vigente === true, fechaSubida: data.fechaSubida || "", nombreArchivo: data.nombreArchivo || "" };
+      const item = { id: d.id, fundo: data.fundo || "", vigente: data.vigente === true, fechaSubida: data.fechaSubida || "", nombreArchivo: data.nombreArchivo || "", sugerenciaDescartada: data.fundoSugerenciaDescartada === true };
+      const tf = (data.fundo || "").trim();
+      if(tf) conteoTextoFundo[tf] = (conteoTextoFundo[tf] || 0) + 1;
       (anexosTodosPorTrabajador[data.trabajadorId] || (anexosTodosPorTrabajador[data.trabajadorId] = [])).push(item);
       if(item.vigente){
         (anexosVigentesPorTrabajador[data.trabajadorId] || (anexosVigentesPorTrabajador[data.trabajadorId] = [])).push(item);
@@ -3920,6 +4048,7 @@ window.fetchAnexosPendientes = async function(forzar){
       filas.push({
         id, claveFila: id, trabajador: t,
         fundoActual: cuadrilla.fundo, fechaCuadrilla: cuadrilla.fecha, jefeFaena: cuadrilla.jefeFaena,
+        funcionInformada: cuadrilla.funcion || "",
         anexosVigentes: anexos,
         estado: alDia ? "al_dia" : "pendiente",
         subEstado, anexoSugerido, diasEnFundo, contratoPorConfirmar,
@@ -3972,6 +4101,13 @@ window.fetchAnexosPendientes = async function(forzar){
       });
     }
 
+    // Pregunta "¿es el mismo fundo?": solo para filas sin ningún anexo del fundo actual, cuando el
+    // trabajador SÍ tiene un anexo escrito parecido ("Fundo Los Alpes 001" vs "LOS ALPES HIJ 1").
+    filas.forEach(f => {
+      f.sugerenciaFundo = (f.estado === "pendiente" && f.subEstado === "sin_anexo")
+        ? sugerenciaFundoParaFila(f, anexosTodosPorTrabajador[f.id] || [], conteoTextoFundo)
+        : null;
+    });
     filas.forEach(marcarDescarteFila);
     anexosDatos = filas;
     poblarFiltrosAnexos();
@@ -3984,6 +4120,90 @@ window.fetchAnexosPendientes = async function(forzar){
   }
 
   renderAnexosPendientes();
+};
+
+// Devuelve la pregunta "¿es el mismo fundo?" para una fila, o null. Mira los anexos del trabajador
+// del más nuevo al más viejo; sirve el primero que (a) no se descartó antes, (b) no coincide ya con
+// un fundo del catálogo, y (c) se parece a varios/uno cuyo conjunto INCLUYE el fundo de esta fila.
+function sugerenciaFundoParaFila(fila, anexosDelTrabajador, conteoTextoFundo){
+  for(const a of anexosDelTrabajador){
+    if(a.sugerenciaDescartada || !a.fundo) continue;
+    const cands = candidatosFundoParecido(a.fundo);
+    if(!cands.length) continue;
+    if(!cands.some(c => fundosCoinciden(c.nombre, fila.fundoActual))) continue;
+    return {
+      anexoId: a.id,
+      fundoTexto: a.fundo,
+      candidatos: cands.map(c => ({ id: c.id, nombre: c.nombre, activo: c.activo !== false })),
+      afectados: conteoTextoFundo[(a.fundo || "").trim()] || 1
+    };
+  }
+  return null;
+}
+
+function htmlSugerenciaFundoAnexo(f){
+  const s = f.sugerenciaFundo;
+  if(!s) return "";
+  return htmlPreguntaFundoParecido(
+    s.fundoTexto, s.candidatos, s.afectados,
+    i => `confirmarFundoSugeridoAnexo('${f.claveFila}', ${i}, this)`,
+    `descartarSugerenciaFundoAnexo('${f.claveFila}', this)`
+  );
+}
+
+// Guarda la variante como alias del fundo elegido y reescribe TODOS los anexos que estaban
+// escritos exactamente así con el nombre del catálogo (mismo criterio que "Detectar fundos
+// similares" en Configuración), para que Anexos pendientes y el correo diario los reconozcan.
+async function aplicarVarianteDeFundo(variante, destino){
+  const v = String(variante || "").trim();
+  const aliasNuevos = Array.from(new Set([...(destino.alias || []), ...(normalizarFundo(v) !== normalizarFundo(destino.nombre) ? [v] : [])]));
+  // merge:true — config_fundos también lo usa/edita configuracion.html (rodales/VMA/centros)
+  await setDoc(doc(db, "config_fundos", destino.id), { nombre: destino.nombre, alias: aliasNuevos }, { merge: true });
+  const snap = await getDocs(query(collection(db, "documentos"), where("tipo", "==", "anexo_fundo")));
+  const escrituras = [];
+  snap.forEach(d => {
+    const fu = (d.data().fundo || "").trim();
+    if(fu === v && fu !== destino.nombre){
+      escrituras.push(setDoc(doc(db, "documentos", d.id), { fundo: destino.nombre }, { merge: true }));
+    }
+  });
+  await Promise.all(escrituras);
+}
+
+window.confirmarFundoSugeridoAnexo = async function(claveFila, idx, boton){
+  const fila = (anexosDatos || []).find(f => f.claveFila === claveFila);
+  const sug = fila && fila.sugerenciaFundo;
+  const cand = sug && sug.candidatos[idx];
+  const destino = cand && FUNDOS_CATALOGO.find(x => x.id === cand.id);
+  if(!destino) return;
+  const botones = boton && boton.parentElement ? boton.parentElement.querySelectorAll("button") : [];
+  botones.forEach(b => { b.disabled = true; });
+  try{
+    await aplicarVarianteDeFundo(sug.fundoTexto, destino);
+    await fetchFundosCatalogo();
+    bovedaConteos = null;
+    await fetchAnexosPendientes(true);
+  }catch(e){
+    alert("No se pudo guardar. Intenta de nuevo.");
+    botones.forEach(b => { b.disabled = false; });
+  }
+};
+
+window.descartarSugerenciaFundoAnexo = async function(claveFila, boton){
+  const fila = (anexosDatos || []).find(f => f.claveFila === claveFila);
+  const sug = fila && fila.sugerenciaFundo;
+  if(!sug) return;
+  const botones = boton && boton.parentElement ? boton.parentElement.querySelectorAll("button") : [];
+  botones.forEach(b => { b.disabled = true; });
+  try{
+    // Se marca en el propio anexo: "este anexo no es de ninguno de esos fundos", no vuelve a preguntar.
+    await setDoc(doc(db, "documentos", sug.anexoId), { fundoSugerenciaDescartada: true }, { merge: true });
+    (anexosDatos || []).forEach(f => { if(f.sugerenciaFundo && f.sugerenciaFundo.anexoId === sug.anexoId) f.sugerenciaFundo = null; });
+    renderAnexosPendientes();
+  }catch(e){
+    alert("No se pudo guardar. Intenta de nuevo.");
+    botones.forEach(b => { b.disabled = false; });
+  }
 };
 
 // Llena las opciones de los filtros "Fundo" y "Jefe de faena" con los valores que de verdad
@@ -4123,8 +4343,9 @@ window.renderAnexosPendientes = function(){
       ` : "";
       estadoBadge = `
         <span class="badge-inactivo">Pendiente</span>
-        <div style="margin-top:4px;font-size:12px;color:var(--red)">Sin anexo de ${escapeHtml(f.fundoActual || "este fundo")} — generar y firmar uno nuevo</div>
+        <div style="margin-top:4px;font-size:12px;color:var(--red)">Sin anexo de ${escapeHtml(f.fundoActual || "este fundo")}${f.funcionInformada ? ` como <b>${escapeHtml(f.funcionInformada)}</b>` : ""} — generar y firmar uno nuevo</div>
         ${f.diasEnFundo >= 2 ? `<div style="margin-top:2px;font-size:11.5px;font-weight:700;color:var(--amber)">Lleva ${f.diasEnFundo} días informado en este fundo</div>` : ""}
+        ${htmlSugerenciaFundoAnexo(f)}
         ${pregunta}
       `;
     }
@@ -4140,7 +4361,7 @@ window.renderAnexosPendientes = function(){
           </div>
         </td>
         <td><span class="badge-centro${t.centro ? "" : " pendiente"}">${escapeHtml(etiquetaCentro)}</span></td>
-        <td>${escapeHtml(f.fundoActual || "—")} ${f.rotativo ? `<span style="color:var(--text3)">· Rotativo (todos los fundos)</span>` : `<span style="color:var(--text3)">· ${fechaLegibleAnexos(f.fechaCuadrilla)} (${escapeHtml(f.jefeFaena||"—")})</span>`}</td>
+        <td>${escapeHtml(f.fundoActual || "—")} ${f.rotativo ? `<span style="color:var(--text3)">· Rotativo (todos los fundos)</span>` : `<span style="color:var(--text3)">· ${fechaLegibleAnexos(f.fechaCuadrilla)} (${escapeHtml(f.jefeFaena||"—")})</span>`}${f.funcionInformada ? `<div style="margin-top:4px;font-size:12px;color:var(--text2)">Función informada: <b style="color:var(--text)">${escapeHtml(f.funcionInformada)}</b></div>` : ""}</td>
         <td>${anexoTxt}</td>
         <td>${estadoBadge}</td>
         <td>${f.estado === "pendiente" ? htmlSeguimientoAnexo(f) : ""}</td>
@@ -4208,7 +4429,7 @@ function renderAnexosDescartados(){
 // Baja EXACTAMENTE lo que aparece en pantalla (con los filtros y casillas activos). Si está
 // activada la casilla "Ver descartados", baja la lista de descartados. Usa SheetJS, que se
 // carga al hacer clic (misma función que usa "Exportar Excel" de Dotación).
-const EXPORT_ANEXOS_ENCABEZADO = ["Trabajador", "RUT", "Centro", "Fundo actual", "Última cuadrilla", "Jefe de faena", "Anexo vigente", "Estado", "Días en el fundo", "Proceso"];
+const EXPORT_ANEXOS_ENCABEZADO = ["Trabajador", "RUT", "Centro", "Fundo actual", "Función informada", "Última cuadrilla", "Jefe de faena", "Anexo vigente", "Estado", "Días en el fundo", "Proceso"];
 const EXPORT_DESCARTADOS_ENCABEZADO = ["Trabajador", "RUT", "Fundo descartado", "Fecha", "Descartado por"];
 
 function fechaExcelAnexos(iso){
@@ -4221,7 +4442,7 @@ function textoEstadoAnexo(f){
   if(f.subEstado === "tiene_no_vigente" && f.anexoSugerido){
     return `Pendiente — Ya tiene anexo de ${f.anexoSugerido.fundo || f.fundoActual}, falta marcarlo vigente`;
   }
-  return `Pendiente — Sin anexo de ${f.fundoActual || "este fundo"}, generar y firmar uno nuevo`;
+  return `Pendiente — Sin anexo de ${f.fundoActual || "este fundo"}${f.funcionInformada ? " como " + f.funcionInformada : ""}, generar y firmar uno nuevo`;
 }
 
 function textoProcesoAnexo(f){
@@ -4241,6 +4462,7 @@ function armarFilasExportAnexos(filas){
       formatRut(t.rut) || "",
       t.centro ? (NOMBRES_CENTRO[t.centro] || t.centro) : "Pendiente de asignar",
       f.fundoActual || "",
+      f.funcionInformada || "",
       f.rotativo ? "Rotativo (todos los fundos)" : fechaExcelAnexos(f.fechaCuadrilla),
       f.jefeFaena || "",
       (f.anexosVigentes && f.anexosVigentes.length)
